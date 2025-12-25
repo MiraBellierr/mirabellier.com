@@ -22,19 +22,40 @@ function App() {
         <AuthProvider>
         <CursorManager />
         <Helmet>
-          <title>Mirabellier ⭐</title>
-          <link rel="icon" href="https://mirabellier.my.id/favicon.jpg" />
+          <title>Mirabellier ⭐ — Cute thoughts & cozy corners</title>
+          <link rel="icon" href="https://mirabellier.com/favicon.jpg" />
+          <link rel="canonical" href="https://mirabellier.com/" />
+          <meta name="description" content="Mirabellier — a tiny, cozy blog where I share cute thoughts, fuzzy photos, and little projects. Come say hi and find something to smile about!" />
+          <meta name="keywords" content="mirabellier, blog, cute, kittens, art, videos, personal" />
+          <meta name="author" content="Mirabellier" />
+          <meta name="robots" content="index, follow" />
           <meta name="theme-color" content="#EE82EE" />
-          <meta content="Mirabellier ⭐ | My blog" property="og:title" />
-          <meta content="This site is just my little corner of the web where I share my thoughts, memories, and maybe some projects I’m working on! I might add more pages soon." property="og:description" />
-          <meta content="Mirabellier" property="og:site_name" />
-          <meta content='https://mirabellier.my.id/favicon.jpg' property='og:image' />
-          <meta name="twitter:card" content="summary" />
-          <meta name="twitter:site" content="Mirabellier ⭐" />
+
+          <meta property="og:type" content="website" />
+          <meta property="og:title" content="Mirabellier ⭐ — Cute thoughts & cozy corners" />
+          <meta property="og:description" content="A tiny, cozy blog sharing small joys: photos, videos, and short posts." />
+          <meta property="og:site_name" content="Mirabellier" />
+          <meta property="og:url" content="https://mirabellier.com/" />
+          <meta property="og:image" content="https://mirabellier.com/background.jpg" />
+
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:site" content="@mirabellier" />
           <meta name="twitter:creator" content="@mirabellier" />
-          <meta name="twitter:title" content="Mirabellier ⭐ | My blog" />
-          <meta name="twitter:description" content="This site is just my little corner of the web where I share my thoughts, memories, and maybe some projects I’m working on! I might add more pages soon." />
-          <meta name="twitter:image" content="https://mirabellier.my.id/background.jpg" />
+          <meta name="twitter:title" content="Mirabellier ⭐ — Cute thoughts & cozy corners" />
+          <meta name="twitter:description" content="A tiny, cozy blog sharing small joys: photos, videos, and short posts." />
+          <meta name="twitter:image" content="https://mirabellier.com/background.jpg" />
+
+          <script type="application/ld+json">{`{
+            "@context": "https://schema.org",
+            "@type": "Blog",
+            "name": "Mirabellier",
+            "url": "https://mirabellier.com",
+            "description": "A tiny, cozy blog sharing small joys: photos, videos, and short posts.",
+            "publisher": {
+              "@type": "Person",
+              "name": "Mirabellier"
+            }
+          }`}</script>
         </Helmet>
         <Routes>
           <Route path="/" element={<Home />} />
