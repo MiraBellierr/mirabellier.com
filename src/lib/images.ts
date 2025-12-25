@@ -9,7 +9,7 @@ export type ImageEntry = {
 
 export async function fetchImages(): Promise<ImageEntry[]> {
   try {
-    const res = await fetch(`${API_BASE}/images`)
+    const res = await fetch(`${API_BASE}/images/list`)
     if (!res.ok) return []
     return await res.json()
   } catch (err) {
