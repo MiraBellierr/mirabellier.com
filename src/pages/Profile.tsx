@@ -5,7 +5,6 @@ import Header from '../parts/Header'
 import Footer from '../parts/Footer'
 import Navigation from '../parts/Navigation'
 import background from '../assets/background.jpeg'
-import { fetchImages, imageUrl } from '@/lib/images'
 
 const Profile = () => {
   const auth = useAuth()
@@ -14,8 +13,6 @@ const Profile = () => {
   const [password, setPassword] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(user?.avatar || null)
-  const [images, setImages] = useState<Array<{filename:string;url:string}>>([])
-  const [selectedExisting, setSelectedExisting] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -45,13 +42,11 @@ const Profile = () => {
       fd.append('username', username)
       if (password) fd.append('password', password)
       if (avatarFile) fd.append('avatar', avatarFile)
-      else if (selectedExisting) fd.append('avatar', selectedExisting)
       const updated = await auth.updateProfile(fd)
       setMessage('Profile updated')
       setPreview(updated.avatar || preview)
       setPassword('')
       setAvatarFile(null)
-      setSelectedExisting(null)
     } catch (err) {
       setMessage('Update failed')
     } finally {
@@ -59,11 +54,6 @@ const Profile = () => {
     }
   }
 
-  useEffect(()=>{
-    let mounted = true
-    fetchImages().then(list=>{ if (mounted) setImages(list) })
-    return ()=>{ mounted=false }
-  }, [])
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
@@ -111,14 +101,6 @@ const Profile = () => {
                 <div>
                   <label className="block text-sm font-medium text-blue-600">Avatar</label>
                   <input type="file" accept="image/*" onChange={e=>setAvatarFile(e.target.files?.[0]||null)} className="mt-2" />
-                  <div className="mt-3 text-sm text-blue-600">Or pick an existing image:</div>
-                  <div className="mt-2 grid grid-cols-5 gap-2">
-                    {images.slice(0,25).map(img=> (
-                      <button key={img.filename} type="button" onClick={()=>{ setSelectedExisting(img.url); setPreview(img.url); setAvatarFile(null) }} className={`w-12 h-12 overflow-hidden rounded-md border ${selectedExisting===img.url? 'border-pink-500':'border-transparent'}`}>
-                        <img src={imageUrl(img.url) || undefined} alt={img.filename} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {message && <div className="text-green-600">{message}</div>}
