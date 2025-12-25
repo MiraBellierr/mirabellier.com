@@ -115,7 +115,7 @@ const Profile = () => {
                   <div className="mt-2 grid grid-cols-5 gap-2">
                     {images.slice(0,25).map(img=> (
                       <button key={img.filename} type="button" onClick={()=>{ setSelectedExisting(img.url); setPreview(img.url); setAvatarFile(null) }} className={`w-12 h-12 overflow-hidden rounded-md border ${selectedExisting===img.url? 'border-pink-500':'border-transparent'}`}>
-                        <img src={imageUrl(img.url)} alt={img.filename} className="w-full h-full object-cover" />
+                        <img src={imageUrl(img.url) || undefined} alt={img.filename} className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
