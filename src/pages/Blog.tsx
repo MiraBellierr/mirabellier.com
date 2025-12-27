@@ -432,7 +432,7 @@ const Blog = () => {
                 <div className="flex flex-col flex-grow p-3 max-w-7xl mx-auto w-full justify-center">
                     {}
                     {totalPages > 1 && (
-                        <div className="flex justify-center items-center mt-6 lg:mt-[-200px] space-x-2 opacity-90">
+                        <div className="flex justify-center items-center mt-6 space-x-2 opacity-90">
                             <button
                                 onClick={() => paginate(currentPage - 1)}
                                 disabled={currentPage === 1}
