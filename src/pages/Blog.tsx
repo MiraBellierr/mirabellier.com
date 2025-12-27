@@ -270,7 +270,7 @@ const Blog = () => {
     const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
     return (
-        <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
+        <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col blog-page">
             <Header />
             
             <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
@@ -319,21 +319,23 @@ const Blog = () => {
                                                                 {currentPosts.map((post) => (
                                                                     <div key={post.id}>
                                                                         <div className="p-2 card-border flex gap-4 items-start">
-                                                                            {post.thumbnail ? (
-                                                                                <img src={resolveAsset(post.thumbnail) ?? undefined} alt="thumbnail" className="w-28 h-20 object-cover rounded-md" />
-                                                                            ) : (
-                                                                                <div className="w-28 h-20 bg-blue-50 rounded-md" />
-                                                                            )}
+                                                                            <Link to={`/blog/${slugify(post.title)}-${post.id}`} className="flex-1 flex gap-4 items-start no-underline">
+                                                                                {post.thumbnail ? (
+                                                                                    <img src={resolveAsset(post.thumbnail) ?? undefined} alt="thumbnail" className="w-28 h-20 object-cover rounded-md" />
+                                                                                ) : (
+                                                                                    <div className="w-28 h-20 bg-blue-50 rounded-md" />
+                                                                                )}
 
-                                                                            <div className="flex-1">
-                                                                                <h2 className="text-lg font-bold text-blue-700 mb-1">
-                                                                                    <Link to={`/blog/${slugify(post.title)}-${post.id}`}>{post.title}</Link>
-                                                                                </h2>
-                                                                                <p className="text-sm text-blue-500 mb-2">By {post.author} • {new Date(post.createdAt).toLocaleDateString()}</p>
-                                                                                {post.shortDescription ? (
-                                                                                    <p className="text-sm text-blue-600">{post.shortDescription}</p>
-                                                                                ) : null}
-                                                                            </div>
+                                                                                <div>
+                                                                                    <h2 className="text-lg font-bold text-blue-700 mb-1">
+                                                                                        {post.title}
+                                                                                    </h2>
+                                                                                    <p className="text-sm text-blue-500 mb-2">By {post.author} • {new Date(post.createdAt).toLocaleDateString()}</p>
+                                                                                    {post.shortDescription ? (
+                                                                                        <p className="text-sm text-blue-600">{post.shortDescription}</p>
+                                                                                    ) : null}
+                                                                                </div>
+                                                                            </Link>
 
                                                                             {auth?.user?.id && String(auth.user.id) === String((post as any).userId) ? (
                                                                                 <div className="relative ml-2">

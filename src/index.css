@@ -81,6 +81,26 @@ html, body {
 	z-index: 1;
 }
 
+/* card hover animation: only in blog page - use transforms and box-shadow for efficient GPU compositing */
+.blog-page .card-border {
+	transition: transform 200ms cubic-bezier(.2,.8,.2,1), box-shadow 200ms cubic-bezier(.2,.8,.2,1);
+	will-change: transform, box-shadow;
+}
+
+.blog-page .card-border img {
+	transition: transform 220ms cubic-bezier(.2,.8,.2,1);
+	will-change: transform;
+}
+
+.blog-page .card-border:hover {
+	transform: translateY(-6px);
+	box-shadow: 0 12px 30px rgba(2,6,23,0.35);
+}
+
+.blog-page .card-border:hover img {
+	transform: scale(1.03);
+}
+
 .dark .card-border {
 	border-image-source: none !important;
 	border-image: none !important;
