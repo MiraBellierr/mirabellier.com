@@ -87,15 +87,14 @@ html, body {
 	border-width: 1px !important;
 	border-style: solid !important;
 	border-color: rgba(255,255,255,0.06) !important;
-	/* reduced shadow depth to lower paint cost */
 	box-shadow: 0 4px 12px rgba(2,6,23,0.45);
-	background: transparent;
+	background: var(--tt-card-bg-color);
 	color: var(--white) !important;
 }
 
 .dark .card-border::before {
-	/* avoid backdrop-filter; use a subtle semi-transparent fill instead */
-	background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.008));
+	/* solid card fill in dark mode (no glass blur / no transparency) */
+	background: var(--tt-card-bg-color);
 }
 
 .dark .card-border h2 {
