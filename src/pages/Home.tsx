@@ -3,15 +3,55 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
 
-import background from "../assets/background.jpeg";
+import { useEffect, useState } from 'react'
+import { useOptionalAuth } from '@/hooks/use-optional-auth'
+
+import { Link } from 'react-router-dom'
+import { API_BASE } from '@/lib/config'
+
+type AnimeItem = { id: string; title: string; url: string; img: string }
+const STORAGE_KEY = 'miraiscute-anime-list'
+
+const defaultAnime: AnimeItem[] = [
+  { id: '1', title: 'The Fragrant Flower Blooms with Dignity', url: 'https://myanimelist.net/anime/59845/Kaoru_Hana_wa_Rin_to_Saku', img: 'https://i.pinimg.com/736x/a2/f6/94/a2f694c10cc0294b62d136e1c54a7731.jpg' },
+  { id: '2', title: 'Dan Da Dan Season 2', url: 'https://myanimelist.net/anime/60543/Dandadan_2nd_Season', img: 'https://i.pinimg.com/736x/23/e7/f5/23e7f559ae81d246abb9ba9e456f9075.jpg' },
+  { id: '3', title: 'One Piece', url: 'https://myanimelist.net/anime/21/One_Piece', img: 'https://i.pinimg.com/736x/eb/ad/26/ebad2683b9ce3d2eb0fdd23f4e3f8eda.jpg' },
+]
 
 const Home = () => {
+  const auth = useOptionalAuth()
+  const [animeList, setAnimeList] = useState<AnimeItem[]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/anime`)
+        if (res.ok) {
+          const data = await res.json()
+          setAnimeList(data)
+          return
+        }
+      } catch (err) {
+        console.error('Failed fetching anime from server', err)
+      }
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (raw) setAnimeList(JSON.parse(raw))
+        else setAnimeList(defaultAnime)
+      } catch {
+        setAnimeList(defaultAnime)
+      }
+    }
+
+    load()
+  }, [])
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
       
-     <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: `url(${background})` }}>
+      <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
           
           <div className="flex-grow flex-col">
@@ -25,7 +65,7 @@ const Home = () => {
 
           <main className="w-full lg:w-3/5 space-y-2 p-4">
             
-            <div className="space-y-1 p-2 border-[10px] [border-image:url('/border.png')_10_fill_round]">
+            <div className="space-y-1 p-2 card-border">
               <h2 className="text-xl font-bold text-blue-700 mb-2">🌸 About Me 🌸</h2>
               <p>Hiya!! I'm Mirabellier! 💙</p>
               <p>I'm just a <span className="font-bold text-blue-600">chill internet spirit</span> who loves <span className="underline font-bold text-blue-600">cute</span> things, and making friends!</p>
@@ -40,7 +80,7 @@ const Home = () => {
 
             <Divider />   
 
-            <div className="space-y-1 p-2 border-[10px] [border-image:url('/border.png')_10_fill_round]">
+            <div className="space-y-1 p-2 card-border">
               <h2 className="text-xl font-bold text-blue-700 mb-2">🧠 Random Facts!</h2>
               <p className="">• My favorite color is <span className="font-bold text-blue-300">pastel blue</span> 💙</p>
               <p className="">• I love collecting plushies and stickers</p>
@@ -50,7 +90,7 @@ const Home = () => {
 
             <Divider />
 
-            <div className="space-y-1 p-2 border-[10px] [border-image:url('/border.png')_10_fill_round]">
+            <div className="space-y-1 p-2 card-border">
               <h2 className="text-xl font-bold text-blue-700 mb-2">💬 What You’ll Find Here</h2>
               <p className="">This site is just my little corner of the web where I share my thoughts, memories, and maybe some projects I’m working on!
                 I might add more pages soon, like:</p>
@@ -67,24 +107,19 @@ const Home = () => {
               <h2 className="text-blue-600 font-bold text-lg text-center">anime updatess!!</h2>
               <p>updates of my currently watching anime displayed here</p>
               <div className="flex flex-col mt-3 space-y-5">
-                <a href="https://myanimelist.net/anime/59845/Kaoru_Hana_wa_Rin_to_Saku" target="_blank" rel="noopener noreferrer">
-                  <div className="hover:animate-zoom-out-once border bg-pink-100 border-blue-300 rounded-lg p-2">
-                    <h3 className="font-bold text-blue-700">1. The Fragrant Flower Blooms with Dignity</h3>
-                    <img className="rounded w-full object-cover" src="https://i.pinimg.com/736x/a2/f6/94/a2f694c10cc0294b62d136e1c54a7731.jpg" />
+                {animeList.map((a, idx) => (
+                  <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer">
+                    <div className="hover:animate-zoom-out-once card-border rounded-lg p-2">
+                      <h3 className="font-bold text-blue-700">{idx + 1}. {a.title}</h3>
+                      {a.img && <img className="rounded w-full object-cover" src={a.img} />}
+                    </div>
+                  </a>
+                ))}
+                {auth && auth.user && auth.user.username === 'mira' && (
+                  <div className="mt-2 text-center">
+                    <Link to="/admin/anime" className="text-sm text-pink-500 underline">Edit anime list</Link>
                   </div>
-                </a>
-                <a href="https://myanimelist.net/anime/60543/Dandadan_2nd_Season" target="_blank" rel="noopener noreferrer">
-                  <div className="hover:animate-zoom-out-once  bg-green-100 border border-blue-300 rounded-lg p-2">
-                    <h3 className="font-bold text-blue-700">2. Dan Da Dan Season 2</h3>
-                    <img className="rounded w-full object-cover" src="https://i.pinimg.com/736x/23/e7/f5/23e7f559ae81d246abb9ba9e456f9075.jpg" />
-                  </div>
-                </a>
-                <a href="https://myanimelist.net/anime/21/One_Piece" target="_blank" rel="noopener noreferrer">
-                  <div className="hover:animate-zoom-out-once  bg-yellow-100 border border-blue-300 rounded-lg p-2">
-                    <h3 className="font-bold text-blue-700">3. One Piece</h3>
-                    <img className="rounded w-full object-cover" src="https://i.pinimg.com/736x/eb/ad/26/ebad2683b9ce3d2eb0fdd23f4e3f8eda.jpg" />
-                  </div>
-                </a>
+                )}
               </div>
             </div>
           </aside>

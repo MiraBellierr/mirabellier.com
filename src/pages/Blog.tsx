@@ -5,8 +5,6 @@ import Footer from "../parts/Footer";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Divider from '../parts/Divider';
 import Post from '../parts/Post';
-
-import background from '../assets/background.jpeg';
 import { API_BASE } from '@/lib/config';
 
 const resolveAsset = (val?: string | null) => {
@@ -211,7 +209,7 @@ const Blog = () => {
         <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
             <Header />
             
-            <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: `url(${background})` }}>
+            <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
                 <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
                     <div className="flex-grow flex-col space-y-4">
                         <Navigation />
@@ -238,7 +236,7 @@ const Blog = () => {
 
                     <main className="w-full lg:w-3/5 space-y-4 p-4">
                         {loading ? (
-                            <div className="p-2 border-[10px] [border-image:url('/border.png')_10_fill_round] text-center">
+                            <div className="p-2 card-border text-center">
                                 <p>Loading posts...</p>
                             </div>
                         ) : error ? (
@@ -246,7 +244,7 @@ const Blog = () => {
                                 Error: {error}
                             </div>
                         ) : filteredPosts.length === 0 ? (
-                            <div className="space-y-1 p-2 border-[10px] [border-image:url('/border.png')_10_fill_round]">
+                            <div className="space-y-1 p-2 card-border">
                                 <h2 className="text-xl font-bold text-blue-700 mb-2 text-center">
                                     {searchTerm ? 'No matching posts found' : 'No posts yet'}
                                 </h2>
@@ -256,7 +254,7 @@ const Blog = () => {
                             <>
                                 {currentPosts.map((post, index) => (
                                     <>
-                                        <div key={post.id} className="p-2 border-[10px] [border-image:url('/border.png')_10_fill_round]">
+                                        <div key={post.id} className="p-2 card-border">
                                             <h2 className="text-xl font-bold text-blue-700 mb-2">{post.title}</h2>
                                                                                         <p className="text-sm text-blue-500 mb-2 flex items-center gap-2">
                                                                                             {post.authorAvatar ? (

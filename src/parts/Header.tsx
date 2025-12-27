@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useOptionalAuth } from '@/hooks/use-optional-auth'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE } from '@/lib/config'
+import DarkToggle from '../components/DarkToggle'
 
 const Header = () => {
     const auth = useOptionalAuth()
@@ -33,9 +34,10 @@ const Header = () => {
     }, [open])
 
     return (
-     <header className="bg-blue-200 border-b-2 border-blue-300 p-4 text-4xl font-bold text-blue-700 shadow-sm flex items-center justify-between">
+     <header className="bg-blue-200 border-b-2 border-blue-500 dark:border-black p-4 text-4xl font-bold text-blue-700 dark:text-white shadow-sm flex items-center justify-between">
         <h1 className="tracking-widest text-center flex-1">Welcome to my website</h1>
         <div className="flex items-center space-x-3">
+          <DarkToggle />
           {auth && auth.user ? (
             <div className="relative" ref={menuRef}>
               <button onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }} className="inline-flex items-center gap-2 bg-white border border-blue-200 text-blue-700 px-2 py-1 rounded-full text-sm shadow-sm hover:scale-105 transform transition">

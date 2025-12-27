@@ -66,7 +66,7 @@ export function useCursorVisibility({
       if (windowHeight < rect.height) {
         if (cursorCoords) {
           const availableSpace = windowHeight - cursorCoords.top
-          if (availableSpace < overlayHeight) {
+          if (availableSpace < overlayHeight) {
             const targetCursorY = Math.max(windowHeight / 2, overlayHeight)
             const currentScrollY = window.scrollY
             const cursorAbsoluteY = cursorCoords.top + currentScrollY

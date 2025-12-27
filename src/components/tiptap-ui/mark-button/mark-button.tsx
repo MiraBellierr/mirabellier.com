@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from "react"
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import { useMark, type UseMarkConfig } from "@/components/tiptap-ui/mark-button"
 import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"

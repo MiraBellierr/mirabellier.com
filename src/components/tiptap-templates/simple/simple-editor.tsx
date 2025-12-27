@@ -46,7 +46,7 @@ import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
 import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
 import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
 import { LinkIcon } from "@/components/tiptap-icons/link-icon"
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 import "@/components/tiptap-templates/simple/simple-editor.scss"
 
@@ -225,7 +225,7 @@ export function SimpleEditor({
     <div className="simple-editor-wrapper border bg-white rounded-lg border-blue-300">
       <EditorContext.Provider value={{ editor }}>
         <Toolbar
-          ref={toolbarRef}
+          ref={toolbarRef}
         >
           {mobileView === "main" ? (
             <MainToolbarContent

@@ -4,7 +4,7 @@ import { useAuth } from '@/states/AuthContext'
 import Header from '../parts/Header'
 import Footer from '../parts/Footer'
 import Navigation from '../parts/Navigation'
-import background from '../assets/background.jpeg'
+
 
 const Login = () => {
   const [username, setUsername] = useState('')
@@ -33,7 +33,7 @@ const Login = () => {
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
 
-      <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: `url(${background})` }}>
+      <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
           <div className="flex-grow flex-col">
             <Navigation />
@@ -44,7 +44,7 @@ const Login = () => {
           </div>
 
           <main className="w-full lg:w-3/5 flex items-center justify-center p-4">
-            <div className="w-full max-w-md backdrop-blur-sm border-[10px] [border-image:url('/border.png')_10_fill_round] rounded-2xl p-6 shadow-lg">
+            <div className="w-full max-w-md backdrop-blur-sm card-border rounded-2xl p-6 shadow-lg">
               <div className="text-center">
                 <div className="text-4xl">🌸</div>
                 <h2 className="text-2xl font-bold text-blue-700 mt-2">Welcome back!</h2>

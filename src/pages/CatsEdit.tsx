@@ -2,7 +2,7 @@ import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Toast from "../parts/Toast";
-import background from "../assets/background.jpeg";
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from '@/lib/config';
@@ -104,7 +104,7 @@ const CatsEdit = () => {
         <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
             <Header />
 
-            <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: `url(${background})` }}>
+            <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
                 <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
                     <div className="flex-grow flex-col">
                         <Navigation />

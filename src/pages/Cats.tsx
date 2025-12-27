@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from '@/states/AuthContext';
 import Navigation from "../parts/Navigation";
@@ -6,7 +5,7 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import background from "../assets/background.jpeg";
+
 import { API_BASE } from '@/lib/config';
 
 
@@ -47,7 +46,7 @@ const Videos = () => {
     const [isMuted, setIsMuted] = useState(true);
     const resolveAsset = (asset?: string | null) => {
         if (!asset) return `${API_BASE}/images/default-avatar.png`;
-        if (/^https?:\/\//.test(asset)) return asset
+        if (/^https?:\/\//.test(asset)) return asset;
         if (asset.startsWith('/')) return `${API_BASE}${asset}`;
         if (asset.includes('/')) return `${API_BASE}/${asset}`;
         return `${API_BASE}/images/${asset}`;
@@ -584,7 +583,7 @@ const Videos = () => {
         <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
             <Header />
             
-            <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: `url(${background})` }}>
+            <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
                 <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
                     {}
                     <div className="flex-grow flex-col">

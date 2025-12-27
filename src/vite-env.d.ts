@@ -1,4 +1,4 @@
-/// <reference types="vite/client" />
+
 
 declare module '*.png'
 declare module '*.jpg'
@@ -18,7 +18,8 @@ declare module '*.module.scss'
 
 interface ImportMetaEnv {
 	readonly VITE_API_BASE?: string
-	// add other VITE_ env variables here as needed
+	readonly VITE_ANIME_STORAGE_KEY?: string
+	
 }
 
 interface ImportMeta {

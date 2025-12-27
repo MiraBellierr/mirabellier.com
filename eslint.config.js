@@ -18,6 +18,9 @@ export default tseslint.config([
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
       'react-refresh/only-export-components': 'warn',
+      'no-console': 'warn',
+      'no-control-regex': 'warn',
+      'no-useless-escape': 'warn',
     },
     languageOptions: {
       ecmaVersion: 2020,

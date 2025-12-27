@@ -7,6 +7,7 @@ import Art from "./pages/Art";
 import BlogEdit from "./pages/BlogEdit";
 import Videos from "./pages/Videos";
 import VideosEdit from "./pages/VideosEdit";
+import AdminAnime from './pages/AdminAnime'
 import CursorManager from "./parts/CursorManager";
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from './states/AuthContext'
@@ -57,6 +58,7 @@ function App() {
             }
           }`}</script>
         </Helmet>
+        
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/spill" element={<Home />} />
@@ -67,6 +69,7 @@ function App() {
           <Route path="/blog/edit" element={<BlogEdit />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/videos/edit" element={<VideosEdit />} />
+          <Route path="/admin/anime" element={<AdminAnime />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />

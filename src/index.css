@@ -4,3 +4,115 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+html, body {
+	background: var(--tt-bg-color);
+	color: var(--tt-color-text-gray);
+	transition: background 200ms ease, color 200ms ease;
+}
+
+
+[class*="border-"][class*="rounded"] {
+	background: var(--tt-card-bg-color) !important;
+	border-color: var(--tt-card-border-color) !important;
+	color: var(--tt-color-text-gray) !important;
+}
+
+
+.dark body::before {
+	content: "";
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	background-image: radial-gradient(circle at 10% 10%, rgba(99,102,241,0.06), transparent 6%), radial-gradient(circle at 90% 80%, rgba(236,72,153,0.04), transparent 8%);
+	mix-blend-mode: overlay;
+}
+
+.dark img {
+	filter: saturate(0.95) contrast(0.95) brightness(0.95);
+	transition: filter 200ms ease;
+}
+
+
+.dark h2 {
+	text-shadow: 0 2px 8px rgba(98, 41, 255, 0.08);
+}
+
+
+.dark footer, .dark header {
+	background: transparent;
+}
+
+
+.fixed.bottom-6.right-6 {
+	transform: translateZ(0);
+}
+
+
+.card-border {
+	border-width: 10px;
+	border-image-source: url('/border.png');
+	border-image-slice: 10;
+	border-image-repeat: round;
+	border-image-outset: 0;
+	border-image-width: 10px;
+	border-radius: 0.75rem;
+	position: relative;
+	background: transparent;
+	overflow: visible;
+}
+
+.card-border::before {
+	content: '';
+	position: absolute;
+	inset: 0px;
+	border-radius: calc(0.75rem - 10px);
+	background: var(--tt-card-bg-color);
+	z-index: 0;
+	pointer-events: none;
+}
+
+.card-border > * {
+	position: relative;
+	z-index: 1;
+}
+
+.dark .card-border {
+	border-image-source: none !important;
+	border-image: none !important;
+	border-width: 1px !important;
+	border-style: solid !important;
+	border-color: rgba(255,255,255,0.06) !important;
+	box-shadow: 0 8px 24px rgba(2,6,23,0.6);
+	background: transparent;
+	color: var(--white) !important;
+}
+
+.dark .card-border::before {
+	background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+	backdrop-filter: blur(6px);
+}
+
+.dark .card-border h2 {
+	color: var(--tt-color-text-blue) !important;
+}
+
+.dark .card-border p,
+.dark .card-border a,
+.dark .card-border span,
+.dark .card-border li,
+.dark .card-border div {
+	color: rgba(255,255,255,0.92) !important;
+}
+
+
+:root {
+	--page-bg: url('/src/assets/background.jpeg');
+}
+.dark {
+	--page-bg: url('/src/assets/dark.jpg');
+}

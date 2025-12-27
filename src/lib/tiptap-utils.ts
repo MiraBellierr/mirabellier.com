@@ -1,4 +1,3 @@
-/* eslint-disable no-control-regex, no-useless-escape */
 import type { Node as TiptapNode } from "@tiptap/pm/model"
 import { NodeSelection } from "@tiptap/pm/state"
 import type { Editor } from "@tiptap/react"
@@ -329,8 +328,8 @@ export function sanitizeUrl(
     if (isAllowedUri(url.href, protocols)) {
       return url.href
     }
-  } catch {
-    /* ignore invalid URL */
+  } catch (e) {
+    console.error("Failed to sanitize URL:", e)
   }
   return "#"
 }

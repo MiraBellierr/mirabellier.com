@@ -4,7 +4,7 @@ import { API_BASE } from '@/lib/config'
 import Header from '../parts/Header'
 import Footer from '../parts/Footer'
 import Navigation from '../parts/Navigation'
-import background from '../assets/background.jpeg'
+
 
 const Profile = () => {
   const auth = useAuth()
@@ -60,7 +60,7 @@ const Profile = () => {
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
 
-      <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: `url(${background})` }}>
+      <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
           <div className="flex-grow flex-col">
             <Navigation />
@@ -71,7 +71,7 @@ const Profile = () => {
           </div>
 
           <main className="w-full lg:w-3/5 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg backdrop-blur-sm border-[10px] [border-image:url('/border.png')_10_fill_round] rounded-2xl p-6 shadow-lg">
+            <div className="w-full max-w-lg backdrop-blur-sm card-border rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">
                   {preview ? (
