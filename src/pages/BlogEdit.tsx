@@ -291,12 +291,22 @@ const BlogEdit = () => {
                                         <label className="font-bold text-blue-600" htmlFor="tags">Tags</label>
 
                                         <div className="flex flex-wrap gap-2">
-                                            {tags.map(t => (
-                                                <span key={t} className={`inline-flex items-center gap-2 text-xs px-2 py-1 rounded-md font-medium border transform transition duration-150 ease-in-out hover:shadow-sm hover:scale-105 ${typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'bg-gray-700 text-white border-gray-600' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
-                                                    <span>{t}</span>
-                                                    <button type="button" onClick={() => removeTag(t)} className="opacity-80 hover:opacity-100">✕</button>
-                                                </span>
-                                            ))}
+                                            {tags.map(t => {
+                                                const lower = String(t || '').toLowerCase();
+                                                const isRainbow = ['cat', 'cats', 'kitten', 'kittens'].includes(lower);
+                                                const rainbowStyle: Record<string, string> | undefined = isRainbow
+                                                    ? { background: 'linear-gradient(90deg, #ff4d4d, #ffb84d, #fff14d, #4dff88, #4da6ff, #b84dff)', color: '#ffffff', border: 'none', backgroundSize: '300% 100%' }
+                                                    : undefined;
+                                                const themeDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+                                                const baseClass = `inline-flex items-center gap-2 text-xs px-2 py-1 rounded-md font-medium border transform transition duration-150 ease-in-out hover:shadow-sm hover:scale-105 ${themeDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-200 text-gray-800 border-gray-300'}`;
+                                                const rainbowClass = isRainbow ? 'rainbow-tag' : '';
+                                                return (
+                                                    <span key={t} className={`${baseClass} ${rainbowClass}`} style={rainbowStyle}>
+                                                        <span>{t}</span>
+                                                        <button type="button" onClick={() => removeTag(t)} className="opacity-80 hover:opacity-100">✕</button>
+                                                    </span>
+                                                )
+                                            })}
                                         </div>
 
                                         <input

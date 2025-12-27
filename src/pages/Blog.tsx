@@ -350,11 +350,20 @@ const Blog = () => {
                                                                                     ) : null}
                                                                                     {post.tags && post.tags.length > 0 && (
                                                                                         <div className="mt-2 flex flex-wrap gap-2">
-                                                                                            {post.tags.map((t) => (
-                                                                                                <span key={t} className={`inline-flex items-center text-xs px-2 py-1 rounded-md font-medium border transform transition duration-150 ease-in-out hover:shadow-sm hover:scale-105 ${isDark ? 'bg-gray-700 text-white border-gray-600' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
-                                                                                                    {t}
-                                                                                                </span>
-                                                                                            ))}
+                                                                                            {post.tags.map((t) => {
+                                                                                                const lower = String(t || '').toLowerCase();
+                                                                                                const isRainbow = ['cat', 'cats', 'kitten', 'kittens'].includes(lower);
+                                                                                                const rainbowStyle: Record<string, string> | undefined = isRainbow
+                                                                                                    ? { background: 'linear-gradient(90deg, #ff4d4d, #ffb84d, #fff14d, #4dff88, #4da6ff, #b84dff)', color: '#ffffff', border: 'none', backgroundSize: '300% 100%' }
+                                                                                                    : undefined;
+                                                                                                const baseClass = `inline-flex items-center text-xs px-2 py-1 rounded-md font-medium border transform transition duration-150 ease-in-out hover:shadow-sm hover:scale-105 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-200 text-gray-800 border-gray-300'}`;
+                                                                                                const rainbowClass = isRainbow ? 'rainbow-tag' : '';
+                                                                                                return (
+                                                                                                    <span key={t} className={`${baseClass} ${rainbowClass}`} style={rainbowStyle}>
+                                                                                                        {t}
+                                                                                                    </span>
+                                                                                                );
+                                                                                            })}
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
