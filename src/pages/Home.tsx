@@ -106,15 +106,17 @@ const Home = () => {
             <div className="space-y-2 text-sm">
               <h2 className="text-blue-600 font-bold text-lg text-center">anime updatess!!</h2>
               <p>updates of my currently watching anime displayed here</p>
-              <div className="flex flex-col mt-3 space-y-5">
+              <div className="flex flex-col mt-3">
+                <div className="space-y-5 max-h-[60vh] overflow-auto pr-2">
                 {animeList.map((a, idx) => (
                   <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer">
                     <div className="hover:animate-zoom-out-once card-border rounded-lg p-2">
                       <h3 className="font-bold text-blue-700">{idx + 1}. {a.title}</h3>
-                      {a.img && <img className="rounded w-full object-cover" src={a.img} />}
+                      {a.img && <img className="rounded w-full object-cover max-h-36" src={a.img} />}
                     </div>
                   </a>
                 ))}
+                </div>
                 {auth && auth.user && auth.user.username === 'mira' && (
                   <div className="mt-2 text-center">
                     <Link to="/admin/anime" className="text-sm text-pink-500 underline">Edit anime list</Link>
