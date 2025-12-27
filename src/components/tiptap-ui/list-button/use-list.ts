@@ -4,17 +4,11 @@ import * as React from "react"
 import { type Editor } from "@tiptap/react"
 import { useHotkeys } from "react-hotkeys-hook"
 import { NodeSelection, TextSelection } from "@tiptap/pm/state"
-
-// --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import { useIsMobile } from "@/hooks/use-mobile"
-
-// --- Icons ---
 import { ListIcon } from "@/components/tiptap-icons/list-icon"
 import { ListOrderedIcon } from "@/components/tiptap-icons/list-ordered-icon"
 import { ListTodoIcon } from "@/components/tiptap-icons/list-todo-icon"
-
-// --- Lib ---
 import {
   findNodePosition,
   isNodeInSchema,
@@ -24,26 +18,15 @@ import {
 
 export type ListType = "bulletList" | "orderedList" | "taskList"
 
-/**
- * Configuration for the list functionality
- */
+
 export interface UseListConfig {
-  /**
-   * The Tiptap editor instance.
-   */
+  
   editor?: Editor | null
-  /**
-   * The type of list to toggle.
-   */
+  
   type: ListType
-  /**
-   * Whether the button should hide when list is not available.
-   * @default false
-   */
+  
   hideWhenUnavailable?: boolean
-  /**
-   * Callback function called after a successful toggle.
-   */
+  
   onToggled?: () => void
 }
 
@@ -65,9 +48,7 @@ export const LIST_SHORTCUT_KEYS: Record<ListType, string> = {
   taskList: "mod+shift+9",
 }
 
-/**
- * Checks if a list can be toggled in the current editor state
- */
+
 export function canToggleList(
   editor: Editor | null,
   type: ListType,
@@ -109,9 +90,7 @@ export function canToggleList(
   }
 }
 
-/**
- * Checks if list is currently active
- */
+
 export function isListActive(editor: Editor | null, type: ListType): boolean {
   if (!editor || !editor.isEditable) return false
 
@@ -127,9 +106,7 @@ export function isListActive(editor: Editor | null, type: ListType): boolean {
   }
 }
 
-/**
- * Toggles list in the editor
- */
+
 export function toggleList(editor: Editor | null, type: ListType): boolean {
   if (!editor || !editor.isEditable) return false
   if (!canToggleList(editor, type)) return false
@@ -138,8 +115,6 @@ export function toggleList(editor: Editor | null, type: ListType): boolean {
     const view = editor.view
     let state = view.state
     let tr = state.tr
-
-    // No selection, find the the cursor position
     if (state.selection.empty || state.selection instanceof TextSelection) {
       const pos = findNodePosition({
         editor,
@@ -155,8 +130,6 @@ export function toggleList(editor: Editor | null, type: ListType): boolean {
     const selection = state.selection
 
     let chain = editor.chain().focus()
-
-    // Handle NodeSelection
     if (selection instanceof NodeSelection) {
       const firstChild = selection.node.firstChild?.firstChild
       const lastChild = selection.node.lastChild?.lastChild
@@ -173,7 +146,6 @@ export function toggleList(editor: Editor | null, type: ListType): boolean {
     }
 
     if (editor.isActive(type)) {
-      // Unwrap list
       chain
         .liftListItem("listItem")
         .lift("bulletList")
@@ -181,7 +153,6 @@ export function toggleList(editor: Editor | null, type: ListType): boolean {
         .lift("taskList")
         .run()
     } else {
-      // Wrap in specific list type
       const toggleMap: Record<ListType, () => typeof chain> = {
         bulletList: () => chain.toggleBulletList(),
         orderedList: () => chain.toggleOrderedList(),
@@ -202,9 +173,7 @@ export function toggleList(editor: Editor | null, type: ListType): boolean {
   }
 }
 
-/**
- * Determines if the list button should be shown
- */
+
 export function shouldShowButton(props: {
   editor: Editor | null
   type: ListType
@@ -222,43 +191,7 @@ export function shouldShowButton(props: {
   return true
 }
 
-/**
- * Custom hook that provides list functionality for Tiptap editor
- *
- * @example
- * ```tsx
- * // Simple usage
- * function MySimpleListButton() {
- *   const { isVisible, handleToggle, isActive } = useList({ type: "bulletList" })
- *
- *   if (!isVisible) return null
- *
- *   return <button onClick={handleToggle}>Bullet List</button>
- * }
- *
- * // Advanced usage with configuration
- * function MyAdvancedListButton() {
- *   const { isVisible, handleToggle, label, isActive } = useList({
- *     type: "orderedList",
- *     editor: myEditor,
- *     hideWhenUnavailable: true,
- *     onToggled: () => console.log('List toggled!')
- *   })
- *
- *   if (!isVisible) return null
- *
- *   return (
- *     <MyButton
- *       onClick={handleToggle}
- *       aria-label={label}
- *       aria-pressed={isActive}
- *     >
- *       Toggle List
- *     </MyButton>
- *   )
- * }
- * ```
- */
+
 export function useList(config: UseListConfig) {
   const {
     editor: providedEditor,

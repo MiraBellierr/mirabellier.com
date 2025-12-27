@@ -27,7 +27,7 @@ export default function TextCursor({ position, isActive }: TextCursorProps) {
         background: `url(${config.image}) no-repeat`,
         backgroundSize: 'contain',
         pointerEvents: 'none',
-        zIndex: 10000, // Highest priority
+        zIndex: 10000, 
         transform: 'translateY(-50%)'
       }}
     />

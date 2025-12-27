@@ -1,70 +1,51 @@
-## Quick orientation
+  ## Quick orientation
 
-- **What this repo is:** Vite + React (TypeScript) frontend at the project root and a minimal Express backend in miraiscute-backend/ that serves/stores posts, images, and videos.
-- **Frontend entry:** `src/main.tsx` (uses HashRouter) and `src/App.tsx` for routes and page wiring.
-- **Backend entry:** `miraiscute-backend/app.js` — file-backed JSON endpoints and static files under `miraiscute-backend/images` and `miraiscute-backend/videos`.
+  - **What this repo is:** Vite + React (TypeScript) single-page frontend (root) plus a minimal Express backend in `miraiscute-backend/` that serves posts, images, videos, and sessions.
+  - **Frontend entry:** `src/main.tsx` (uses `HashRouter`) and `src/App.tsx` for route wiring.
+  - **Backend entry:** `miraiscute-backend/app.js` (binds to port `3000`) with route implementations under `miraiscute-backend/routes/`.
 
-## Key files & patterns
+  ## Key components & where to look
 
-- **Backend endpoints:** `miraiscute-backend/app.js` implements `GET /posts`, `POST /posts`, `POST /posts-img`, `GET /videos`, `POST /upload-video`. Runtime data files: `miraiscute-backend/blog.json`, `miraiscute-backend/videos.json` (gitignored).
-- **API usage in frontend:** several pages call the API directly (see `src/pages/Cats.tsx`, `src/pages/Videos.tsx`, `src/pages/BlogEdit.tsx`). Many call-sites use a hardcoded base: `https://mirabellier.my.id/api`.
-- **Editor & uploads:** `src/lib/tiptap-utils.ts` and `src/pages/BlogEdit.tsx` handle image uploads and Tiptap integration. `vite.config.ts` creates a manual `tiptap` chunk.
-- **Path alias:** `@` → `./src` (configured in `vite.config.ts`) — preserve when adding imports.
+  - **Frontend views:** `src/pages/` — examples: `Blog.tsx`, `BlogEdit.tsx`, `Videos.tsx`, `Cats.tsx`. Editor/upload helpers in `src/lib/tiptap-utils.ts`.
+  - **Bundling & alias:** `vite.config.ts` sets `@` → `./src` and creates a manual `tiptap` chunk; preserve `@` imports and be mindful of editor code size.
+  - **Backend:** `miraiscute-backend/app.js` wires `routes/` and uses helpers in `miraiscute-backend/lib/` (`db.js`, `uploads.js`, `users.js`). DB file: `miraiscute-backend/database.sqlite3`.
+  - **Media & storage:** static files served from `miraiscute-backend/images/` and `miraiscute-backend/videos/` (created by ` lib/uploads.js`).
 
-## Architecture notes (big picture)
+  ## Runtime facts & API surface
 
-- Single-page frontend (Vite + React) + minimal file-backed Express backend. Frontend is static; backend is stateful via JSON files and saved media.
-- Routing is hash-based (`HashRouter`) to support static hosting without server rewrites.
-- The design favors a small local dev backend that mirrors the production API surface (but not the production database).
+  - **Dev backend port:** `3000` (see [miraiscute-backend/app.js](../miraiscute-backend/app.js)).
+  - **Notable endpoints:** `GET /posts`, `POST /posts`, auth endpoints in `routes/auth.js`, and upload endpoints in `routes/videos.js` and `routes/images.js`.
+  - **Persistence:** SQLite (`miraiscute-backend/database.sqlite3`) with schema created in [miraiscute-backend/lib/db.js](../miraiscute-backend/lib/db.js).
 
-## Developer workflows & useful commands
+  ## Developer workflows & commands
 
-- Frontend dev:
+  - **Install (root):** `npm install`
+  - **Frontend dev:** `npm run dev`
+  - **Build:** `npm run build` (`tsc -b && vite build`)
+  - **Lint:** `npm run lint`
+  - **Start backend locally:**
 
-  - Install deps: `npm install`
-  - Run dev server: `npm run dev`
-  - Build: `npm run build` (runs `tsc -b && vite build`)
-  - Lint: `npm run lint`
+    cd miraiscute-backend && npm install && node app.js
 
-- Backend dev (local):
+    (server will log `Server running on http://localhost:3000`)
 
-  - Install & run: `cd miraiscute-backend && npm install && node app.js`
-  - Backend stores runtime files under `miraiscute-backend/` — do not commit these.
+  ## Project-specific conventions & gotchas
 
-- Override API base for local testing: replace hardcoded strings or set a Vite env var (suggestion: `VITE_API_BASE=http://localhost:3000`) and update call-sites in `src/pages/*` and `src/lib/tiptap-utils.ts`.
+  - **Hardcoded production API:** many frontend call-sites reference `https://mirabellier.my.id/api`. Prefer parameterizing via `VITE_API_BASE` and use `import.meta.env.VITE_API_BASE`.
+  - **Editor uploads & chunking:** `src/lib/tiptap-utils.ts` and `src/pages/BlogEdit.tsx` manage uploads; `vite.config.ts` intentionally chunks tiptap — avoid large, unchunked editor changes.
+  - **Runtime artifacts:** do not commit `miraiscute-backend/database.sqlite3`, `miraiscute-backend/images/*`, or `miraiscute-backend/videos/*`.
 
-## Project-specific conventions & gotchas
+  ## Actionable guidance for an AI coding agent (first actions)
 
-- Hardcoded production API: search for `https://mirabellier.my.id/api` and replace or parameterize before local testing.
-- File-backed persistence: `blog.json` and `videos.json` are created/updated at runtime and are gitignored — treat them as ephemeral local DB files.
-- Media uploads: `multer` is used in the backend; uploaded media lands in `miraiscute-backend/images/` or `miraiscute-backend/videos/`.
-- Large editor bundle: Tiptap extensions are manually chunked in `vite.config.ts`; changes to editor code can increase bundle size.
+  - **Inspect endpoints & shapes:** open ../miraiscute-backend/app.js and ../miraiscute-backend/routes/* to confirm request/response payloads before changing callers.
+  - **Search for hardcoded base:** run a repo search for `mirabellier.my.id/api` and update specific files (recommended: [../src/pages/BlogEdit.tsx](../src/pages/BlogEdit.tsx), [../src/lib/tiptap-utils.ts](../src/lib/tiptap-utils.ts)).
+  - **Safe replacement pattern:** use `const API_BASE = import.meta.env.VITE_API_BASE || 'https://mirabellier.my.id/api'` and update targeted call sites rather than mass-replacing.
+  - **Add backend routes:** follow patterns in `routes/*.js`; use `lib/db.js` and `lib/uploads.js` helpers and export dependency functions like existing routes do.
 
-## Integration points & external dependencies
+  ## Quick verification checklist
 
-- External API host referenced: `https://mirabellier.my.id/api` (production). Frontend currently expects the same API shape locally.
-- Backend packages: see `miraiscute-backend/package.json` (uses `express`, `multer`, etc.).
+  - Frontend: `npm run dev` — confirm pages render and the editor initializes.
+  - Backend: `cd miraiscute-backend && node app.js` — confirm `GET /posts` returns JSON.
+  - After changing API base: set `VITE_API_BASE=http://localhost:3000` and rebuild/refresh the frontend.
 
-## Actionable guidance for an AI coding agent
-
-- First steps:
-  - Locate hardcoded API bases: grep for `mirabellier.my.id/api` and list files (likely `src/pages/*` and `src/lib/tiptap-utils.ts`).
-  - Inspect `miraiscute-backend/app.js` to confirm endpoint behavior before changing frontend calls.
-  - Do not commit runtime files created under `miraiscute-backend/`.
-
-- When editing:
-  - Preserve `@` alias imports.
-  - If adding backend routes, follow the existing file-backed pattern and update `.gitignore` if new runtime files will be created.
-  - Keep changes minimal, and prefer parameterizing API base via `VITE_API_BASE` rather than mass-replacing hardcoded URLs.
-
-- Examples to reference when implementing changes:
-  - Replace API base: update `src/pages/BlogEdit.tsx` and `src/lib/tiptap-utils.ts` to read from `import.meta.env.VITE_API_BASE`.
-  - Start local backend for testing: `cd miraiscute-backend && node app.js` and test endpoints with curl or the frontend dev server.
-
-## Quick verification checklist (what to run locally)
-
-- Frontend dev server: `npm run dev` — verify pages load and editor initializes.
-- Start backend: `cd miraiscute-backend && node app.js` — verify `GET /posts` returns JSON.
-- If changing API base: set `VITE_API_BASE=http://localhost:3000` and rebuild/refresh the frontend.
-
-If anything above is unclear or you want this merged differently (more/less detail, prefer a stronger env-var approach), tell me which section to expand or revise.
+  If you'd like, I can run a repo-wide search for hardcoded API bases and open a small PR that replaces a couple of call-sites with `VITE_API_BASE`. Tell me which you'd prefer.

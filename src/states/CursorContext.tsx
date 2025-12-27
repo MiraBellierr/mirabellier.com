@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 
 type CursorContextType = {
@@ -12,8 +13,6 @@ const CursorContext = createContext<CursorContextType>({
 
 export function CursorProvider({ children }: { children: React.ReactNode }) {
   const [isCustomCursor, setIsCustomCursor] = useState(true);
-
-  // Initialize cursor state on mount
   useEffect(() => {
     if (!isCustomCursor) {
       document.body.style.cursor = 'default';
@@ -23,10 +22,7 @@ export function CursorProvider({ children }: { children: React.ReactNode }) {
   }, [isCustomCursor]);
 
   useEffect(() => {
-  // Hide/show system cursor based on preference
   document.body.style.cursor = isCustomCursor ? 'none' : 'default';
-  
-  // Also hide cursor on all interactive elements when custom cursor is enabled
   const interactiveSelectors = 'a, button, input, [role="button"], [onclick]';
   const interactiveElements = document.querySelectorAll(interactiveSelectors);
   
@@ -39,8 +35,6 @@ export function CursorProvider({ children }: { children: React.ReactNode }) {
   const toggleCursor = () => {
     const newValue = !isCustomCursor;
     setIsCustomCursor(newValue);
-    
-    // Update cursor visibility immediately
     if (newValue) {
       document.body.style.cursor = 'none';
     } else {

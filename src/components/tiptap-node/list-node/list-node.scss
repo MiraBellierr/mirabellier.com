@@ -16,11 +16,8 @@
   }
 }
 
-/* =====================
-     LISTS
-     ===================== */
+
 .tiptap.ProseMirror {
-  // Common list styles
   ol,
   ul {
     margin-top: 1.5em;
@@ -48,8 +45,6 @@
       line-height: 1.6;
     }
   }
-
-  // Ordered lists
   ol {
     list-style: decimal;
 
@@ -61,8 +56,6 @@
       }
     }
   }
-
-  // Unordered lists
   ul:not([data-type="taskList"]) {
     list-style: disc;
 
@@ -74,8 +67,6 @@
       }
     }
   }
-
-  // Task lists
   ul[data-type="taskList"] {
     padding-left: 0.25em;
 

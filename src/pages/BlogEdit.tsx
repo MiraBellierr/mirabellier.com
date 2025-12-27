@@ -40,12 +40,10 @@ const BlogEdit = () => {
         setIsSubmitting(true);
         
         try {
-            const blogData: any = {
+            const blogData: Record<string, unknown> = {
                 title,
                 content: content,
             };
-
-            // include userId when available
             if (auth?.user?.id) blogData.userId = auth.user.id
 
             const response = await fetch(`${API_BASE}/posts`, {
@@ -102,7 +100,7 @@ const BlogEdit = () => {
                         <h2 className="font-bold text-2xl text-blue-600">Create a new Post</h2>
                         
                         <form onSubmit={handleSubmit}>      
-                                            {/* Author is taken from the logged-in user */}
+                                            {}
 
                             <div className="flex flex-col p-2 space-y-2">
                                 <label className="font-bold text-blue-600" htmlFor="title">Title</label>

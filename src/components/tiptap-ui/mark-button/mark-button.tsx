@@ -1,36 +1,19 @@
-import * as React from "react"
-
-// --- Lib ---
-
-// --- Hooks ---
+import * as React from "react"
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-
-// --- Tiptap UI ---
 import { useMark, type UseMarkConfig } from "@/components/tiptap-ui/mark-button"
-
-// --- UI Primitives ---
 import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
 import { Button } from "@/components/tiptap-ui-primitive/button"
 
 export interface MarkButtonProps
   extends Omit<ButtonProps, "type">,
     UseMarkConfig {
-  /**
-   * Optional text to display alongside the icon.
-   */
+  
   text?: string
-  /**
-   * Optional show shortcut keys in the button.
-   * @default false
-   */
+  
   showShortcut?: boolean
 }
 
-/**
- * Button component for toggling marks in a Tiptap editor.
- *
- * For custom button implementations, use the `useMark` hook instead.
- */
+
 export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
   (
     {

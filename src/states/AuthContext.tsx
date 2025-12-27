@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { API_BASE } from '@/lib/config'
 
@@ -54,7 +55,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     })
     if (!res.ok) throw new Error('Register failed')
     const data = await res.json()
-    // auto-login on register
     setToken(data.token)
     localStorage.setItem('token', data.token)
     setUser(data.user)
@@ -62,7 +62,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     if (token) {
-      // attempt server-side logout, fire-and-forget
       fetch(`${API_BASE}/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(()=>{})
     }
     setUser(null)

@@ -12,9 +12,9 @@ import { Selection } from "@tiptap/extensions"
 const CustomImage = Image.extend({
   addAttributes() {
     return {
-      ...this.parent?.(), // Keep existing attributes (src, alt, title)
+      ...this.parent?.(), 
       loading: {
-        default: 'lazy', // Default attribute
+        default: 'lazy', 
         parseHTML: element => element.getAttribute('loading'),
         renderHTML: attributes => ({ loading: attributes.loading }),
       },

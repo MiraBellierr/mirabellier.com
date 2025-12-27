@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from '@/states/AuthContext';
 import Navigation from "../parts/Navigation";
@@ -38,7 +39,7 @@ const Videos = () => {
     const commentInputRef = useRef<HTMLInputElement | null>(null);
     const { token, user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
-    const [_isMobile, setIsMobile] = useState(false);
+    const [, setIsMobile] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const prevBodyOverflow = useRef<string | null>(null);
@@ -46,16 +47,12 @@ const Videos = () => {
     const [isMuted, setIsMuted] = useState(true);
     const resolveAsset = (asset?: string | null) => {
         if (!asset) return `${API_BASE}/images/default-avatar.png`;
-        if (/^https?:\/\//.test(asset)) return asset;
+        if (/^https?:\/\//.test(asset)) return asset
         if (asset.startsWith('/')) return `${API_BASE}${asset}`;
-        // if asset contains a path (e.g. "images/foo.png"), prefix directly
         if (asset.includes('/')) return `${API_BASE}/${asset}`;
-        // bare filename -> assume it's under /images/
         return `${API_BASE}/images/${asset}`;
     }
     const [userCache, setUserCache] = useState<Record<string, any>>({});
-
-    // fetch user public info by id if not already present
     useEffect(() => {
         let mounted = true;
         const cur = filteredVideos[currentVideoIndex];
@@ -68,14 +65,12 @@ const Videos = () => {
                 const data = await res.json();
                 if (!mounted) return;
             setUserCache(prev => ({ ...prev, [(cur.userId as string)]: data }));
-            } catch (e) {
-                // ignore
+            } catch (error) {
+                console.error(error)
             }
         })();
         return () => { mounted = false }
     }, [currentVideoIndex, filteredVideos, userCache]);
-
-    // helper: fetch a user and cache it
     const fetchAndCacheUser = async (id?: string | null) => {
         if (!id) return null;
         if (userCache[id]) return userCache[id];
@@ -85,7 +80,8 @@ const Videos = () => {
             const data = await res.json();
             setUserCache(prev => ({ ...prev, [id]: data }));
             return data;
-        } catch (e) {
+        } catch (error) {
+            console.error(error)
             return null;
         }
     }
@@ -122,12 +118,9 @@ const Videos = () => {
                     setVideos(data);
                     setFilteredVideos(data);
                     setVideoError(null);
-
-                    // Merge server-provided likes/comments into local state, preserving local overrides
                     setLikesMap(prev => {
                         const initial: Record<string, { count: number; liked: boolean }> = {};
                         data.forEach((v: any) => {
-                            // server now returns likes as array of userIds
                             if (Array.isArray(v.likes)) {
                                 initial[v.id] = { count: v.likes.length, liked: prev[v.id]?.liked ?? (user ? v.likes.includes(user.id) : false) };
                             } else if (typeof v.likes === 'number') {
@@ -146,7 +139,6 @@ const Videos = () => {
                         });
                         return { ...initial, ...prev };
                     });
-                    // prefetch user profiles for videos and comments so UI shows latest avatar/username
                     (async () => {
                         try {
                             const ids = new Set<string>();
@@ -163,7 +155,7 @@ const Videos = () => {
                                 }
                             });
                             await Promise.all(Array.from(ids).map(id => fetchAndCacheUser(id)));
-                        } catch (e) {}
+                        } catch (error) { console.error(error) }
                     })();
                 }
             } catch (err) {
@@ -204,33 +196,28 @@ const Videos = () => {
         } 
     }, [filteredVideos.length, searchQuery, videos]);
 
-    // useEffect(() => {
-    //     if (filteredVideos.length > 0 && !loading) {
-    //         setVideoLoading(true);
-            
-    //         const attemptPlay = () => {
-    //             if (videoRef.current && !isIOS) {
-    //                 const playPromise = videoRef.current.play();
-                    
-    //                 if (playPromise !== undefined) {
-    //                     playPromise
-    //                         .then(() => {
-    //                             setVideoLoading(false);
-    //                             setVideoError(null);
-    //                         })
-    //                         .catch(error => {
-    //                             console.log("Autoplay prevented:", error);
-    //                             setVideoError("Video loaded but couldn't autoplay.");
-    //                             setVideoLoading(false);
-    //                         });
-    //                 }
-    //             }
-    //         };
 
-    //         const timer = setTimeout(attemptPlay, 100);
-    //         return () => clearTimeout(timer);
-    //     }
-    // }, [currentVideoIndex, filteredVideos, isIOS, loading]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     useEffect(() => {
         const isMobileDevice = () => {
@@ -239,8 +226,6 @@ const Videos = () => {
         };
         setIsMobile(isMobileDevice());
     }, []);
-
-    // try to load react-icons dynamically; fall back to inline SVG if not available
     useEffect(() => {
         let mounted = true;
         import('react-icons/fi').then(mod => {
@@ -253,7 +238,6 @@ const Videos = () => {
                 VolumeOff: mod.FiVolumeX
             });
         }).catch(() => {
-            // ignore — we'll use inline SVGs
         });
         return () => { mounted = false }
     }, []);
@@ -286,13 +270,8 @@ const Videos = () => {
         setVideoError(null);
         
         try {
-            // First try to reload the video source
             videoRef.current.load();
-            
-            // Wait a moment for the reload to take effect
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Attempt to play with muted audio (required for autoplay on most browsers)
             videoRef.current.muted = true;
             const playPromise = videoRef.current.play();
             
@@ -306,8 +285,6 @@ const Videos = () => {
             setVideoLoading(false);
         }
     };
-
-    // Load likes and comments from localStorage
     useEffect(() => {
         try {
             const rawLikes = localStorage.getItem('cat_likes');
@@ -320,7 +297,6 @@ const Videos = () => {
     }, []);
 
     const toggleVideoLike = async (id: string) => {
-        // optimistic update
         let nextLiked = false;
         setLikesMap(prev => {
             const cur = prev[id] || { count: 0, liked: false };
@@ -342,7 +318,6 @@ const Videos = () => {
             if (!res.ok) {
                 const text = await res.text();
                 console.error('like API error', res.status, text);
-                // rollback by toggling again
                 setLikesMap(prev => {
                     const cur = prev[id] || { count: 0, liked: false };
                     const rollback = { count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1, liked: !cur.liked };
@@ -351,12 +326,10 @@ const Videos = () => {
                 return;
             }
             const data = await res.json();
-            // backend now returns likes as array of userIds
             const likesArr: string[] = Array.isArray(data.likes) ? data.likes : [];
             setLikesMap(prev => ({ ...prev, [id]: { count: likesArr.length, liked: user ? likesArr.includes(user.id) : nextLiked } }));
         } catch (e) {
             console.error('like request failed', e);
-            // rollback
             setLikesMap(prev => {
                 const cur = prev[id] || { count: 0, liked: false };
                 const rollback = { count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1, liked: !cur.liked };
@@ -366,11 +339,10 @@ const Videos = () => {
     }
 
     const insertNestedComment = (arr: any[], comment: any) => {
-        // insert as child when parentId present, otherwise push at root
         if (!comment.parentId) return [...arr, comment];
         const clone = arr.map(a => ({ ...a, children: a.children ? [...a.children] : [] }));
         const walker = (nodes: any[]): boolean => {
-            for (let n of nodes) {
+            for (const n of nodes) {
                 if (n.id === comment.parentId) {
                     n.children = n.children || [];
                     n.children.push(comment);
@@ -384,7 +356,6 @@ const Videos = () => {
         }
         const found = walker(clone);
         if (found) return clone;
-        // parent not found, append to root
         return [...clone, comment];
     }
 
@@ -407,7 +378,7 @@ const Videos = () => {
 
             if (!res.ok) {
                 let details = '';
-                try { details = await res.text(); } catch (e) { details = String(e) }
+                try { details = await res.text(); } catch (error) { details = String(error) }
                 console.error('Failed to post comment', res.status, details);
                 alert(`Failed to post comment: ${res.status} ${details}`);
                 return;
@@ -420,11 +391,10 @@ const Videos = () => {
                 const updated = insertNestedComment(cur, created);
                 return { ...prev, [videoId]: updated };
             });
-            // ensure we have the latest profile for the comment author
             try {
                 const uid = created.user?.id || created.userId || (user && user.id);
                 if (uid) fetchAndCacheUser(uid);
-            } catch (e) {}
+            } catch (error) { console.error(error) }
             setNewComment('');
             setReplyTo(null);
         } catch (e) {
@@ -450,8 +420,6 @@ const Videos = () => {
             console.warn('share failed', e)
         }
     }
-
-    // Swipe support for mobile
     const touchStartY = useRef<number | null>(null);
     const lockBodyScroll = () => {
         if (typeof document === 'undefined') return;
@@ -488,8 +456,6 @@ const Videos = () => {
 
     const handlePointerEnter = () => lockBodyScroll();
     const handlePointerLeave = () => unlockBodyScroll();
-
-    // Keyboard navigation
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'ArrowDown' || e.key === 'PageDown') handleNext();
@@ -498,8 +464,6 @@ const Videos = () => {
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [filteredVideos]);
-
-    // wheel handler (throttled) for desktop scroll to change videos
     const lastWheel = useRef<number>(0);
     const handleWheel = (e: React.WheelEvent) => {
         const now = Date.now();
@@ -508,18 +472,12 @@ const Videos = () => {
 
         const atTop = currentVideoIndex === 0;
         const atBottom = currentVideoIndex === Math.max(0, filteredVideos.length - 1);
-
-        // If scrolling up at first video, allow native page scroll (don't intercept)
         if (e.deltaY < 0 && atTop) {
             return;
         }
-
-        // If scrolling down at last video, allow native page scroll (don't intercept)
         if (e.deltaY > 0 && atBottom) {
             return;
         }
-
-        // Intercept wheel to change videos
         e.preventDefault();
         e.stopPropagation();
         lastWheel.current = now;
@@ -527,31 +485,25 @@ const Videos = () => {
     }
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        // prevent page from scrolling while swiping the video container
         e.preventDefault();
         e.stopPropagation();
     }
-
-    // Prefetch next video so playback is smoother
     useEffect(() => {
         const next = filteredVideos[currentVideoIndex + 1];
         if (!next) return;
         const pre = document.createElement('video');
         pre.preload = 'auto';
         pre.src = `${API_BASE}${next.url}`;
-        // keep in DOM for a short while to warm browser cache
         pre.style.display = 'none';
         document.body.appendChild(pre);
         const t = setTimeout(() => {
-            try { document.body.removeChild(pre); } catch (e) {}
+            try { document.body.removeChild(pre); } catch (error) { console.error(error) }
         }, 15000);
         return () => {
             clearTimeout(t);
-            try { if (pre.parentNode) pre.parentNode.removeChild(pre); } catch (e) {}
+            try { if (pre.parentNode) pre.parentNode.removeChild(pre); } catch (error) { console.error(error) }
         }
     }, [currentVideoIndex, filteredVideos]);
-
-    // show loading overlay until video is ready
     useEffect(() => {
         setVideoLoading(true);
     }, [currentVideoIndex]);
@@ -559,8 +511,7 @@ const Videos = () => {
     const handleVideoCanPlay = async () => {
         try {
             if (videoRef.current) {
-                // ensure muted/autoplay policy: set muted according to state then attempt play
-                try { videoRef.current.muted = isMuted } catch (e) {}
+                try { videoRef.current.muted = isMuted } catch (error) { console.error(error) }
                 const p = videoRef.current.play();
                 if (p && p instanceof Promise) {
                     await p.catch(() => {});
@@ -576,12 +527,10 @@ const Videos = () => {
     };
 
     const currentVideo = filteredVideos[currentVideoIndex];
-
-    // When the active video changes, if the comments sidebar is open, switch it to the new video's comments
     useEffect(() => {
         const cur = filteredVideos[currentVideoIndex];
         if (!cur) return;
-        if (!showCommentsFor) return; // only switch when sidebar is open
+        if (!showCommentsFor) return; 
         setShowCommentsFor(cur.id);
         setCommentsMap(prev => {
             if (prev[cur.id]) return prev;
@@ -606,7 +555,7 @@ const Videos = () => {
                             </div>
                         </div>
                         <div className="flex flex-col items-end space-y-2">
-                            <button onClick={() => { /* comment-like not implemented */ }} className="text-pink-500 p-1 rounded-full hover:bg-pink-50">
+                            <button onClick={() => {  }} className="text-pink-500 p-1 rounded-full hover:bg-pink-50">
                                 {Icons && Icons.Like ? <Icons.Like size={18} /> : '❤'}
                             </button>
                         </div>
@@ -616,8 +565,7 @@ const Videos = () => {
                         <button onClick={() => {
                             setReplyTo(comment.id);
                             setNewComment(`@${author?.username || 'user'} `);
-                            // focus input
-                            setTimeout(() => { try { commentInputRef.current?.focus(); } catch (e) {} }, 50);
+                            setTimeout(() => { try { commentInputRef.current?.focus(); } catch (error) { console.error(error) } }, 50);
                         }} className="text-pink-600 text-sm hover:underline">Reply ✨</button>
                     </div>
                 </div>
@@ -638,11 +586,11 @@ const Videos = () => {
             
             <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: `url(${background})` }}>
                 <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-                    {/* Left Navigation */}
+                    {}
                     <div className="flex-grow flex-col">
                         <Navigation />
 
-                        {/* Search Bar */}
+                        {}
                         <div className="mt-4 p-4 border border-blue-300 rounded-lg bg-blue-100 shadow-md">
                             <h2 className="font-bold text-blue-500 text-lg pb-2">search video here</h2>
                             <div className="relative">
@@ -666,7 +614,7 @@ const Videos = () => {
                         </div>
                     </div>
     
-                    {/* Main Content */}
+                    {}
                     <main className="w-full lg:w-3/5 space-y-2 p-4">
                         <div className="flex flex-col justify-center items-center p-4">
                             {loading ? (
@@ -691,7 +639,7 @@ const Videos = () => {
                                 null
                             )}
 
-                                    {/* Single-video TikTok-style viewer */}
+                                    {}
                                     <div
                                         ref={el => { containerRef.current = el }}
                                         onWheel={handleWheel}
@@ -730,12 +678,12 @@ const Videos = () => {
                                                         </div>
                                                     )}
 
-                                                    {/* Mute toggle top-left */}
+                                                    {}
                                                     <button
                                                         onClick={() => {
                                                             const next = !isMuted;
                                                             setIsMuted(next);
-                                                            try { if (videoRef.current) videoRef.current.muted = next } catch (e) {}
+                                                            try { if (videoRef.current) videoRef.current.muted = next } catch (error) { console.error(error) }
                                                         }}
                                                         className="absolute left-3 top-3 z-50 p-2 rounded-full bg-black/40 text-white hover:bg-black/60"
                                                         aria-label={isMuted ? 'Unmute' : 'Mute'}
@@ -751,7 +699,7 @@ const Videos = () => {
                                                         )}
                                                     </button>
 
-                                                    {/* Bottom-left overlay: username and description (inside panel) */}
+                                                    {}
                                                     <div className="absolute left-4 bottom-4 bg-black/50 text-white p-3 rounded-md max-w-[70%]">
                                                         <div className="font-semibold">{(currentVideo.userId && (userCache[currentVideo.userId]?.username || currentVideo.author)) || currentVideo.author || 'Unknown'}</div>
                                                         {currentVideo.description && (
@@ -780,14 +728,14 @@ const Videos = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* Bottom-center: current / total */}
+                                                    {}
                                                     <div className="absolute left-0 right-0 bottom-3 flex justify-center">
                                                         <div className="bg-black/40 text-white text-sm px-3 py-1 rounded-md">
                                                             {filteredVideos.length > 0 ? `${currentVideoIndex + 1} / ${filteredVideos.length}` : '0 / 0'}
                                                         </div>
                                                     </div>
 
-                                                    {/* Right-side vertical profile + actions inside panel */}
+                                                    {}
                                                         <div className="absolute right-4 bottom-8 flex flex-col items-center space-y-4">
                                                         <img src={resolveAsset((currentVideo.userId && (userCache[currentVideo.userId]?.avatar)) || currentVideo.authorAvatar || '/images/default-avatar.png')} alt="author" className="w-12 h-12 rounded-full border-2 border-white shadow-md object-cover" />
 
@@ -831,11 +779,11 @@ const Videos = () => {
                                         
                                     </div>
 
-                                    {/* Comments are shown in the right sidebar when `showCommentsFor` is set */}
+                                    {}
                         </div>
                     </main>
 
-                    {/* Right Sidebar */}
+                    {}
                     <div className="flex-col">
                         <div className="mt-3 mb-auto lg:w-[260px] space-y-4">
                             {showCommentsFor ? (
@@ -859,7 +807,6 @@ const Videos = () => {
                                                         {replyTo && (
                                                             <div className="flex items-center justify-between bg-pink-50 border border-pink-100 rounded-full px-3 py-1 text-sm text-pink-600">
                                                                 <div>Replying to <span className="font-semibold">@{(function(){
-                                                                    // find username for replyTo id
                                                                     const find = (nodes: any[]): any => {
                                                                         for (const n of nodes || []) {
                                                                             if (n.id === replyTo) return n;

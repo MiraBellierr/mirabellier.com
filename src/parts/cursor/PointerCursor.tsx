@@ -10,8 +10,6 @@ type PointerCursorProps = {
 
 export default function PointerCursor({ position, isActive }: PointerCursorProps) {
   const { isCustomCursor } = useCursor();
-  
-  // Hide system pointer cursor when our custom pointer is active
   useEffect(() => {
     if (isActive && isCustomCursor) {
       const elements = document.querySelectorAll(

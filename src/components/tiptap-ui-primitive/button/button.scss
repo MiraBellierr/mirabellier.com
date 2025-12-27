@@ -17,8 +17,6 @@
   transition-property: background, color, opacity;
   transition-duration: var(--tt-transition-duration-default);
   transition-timing-function: var(--tt-transition-easing-default);
-
-  // focus-visible
   &:focus-visible {
     outline: none;
   }
@@ -27,7 +25,6 @@
   &[data-focus-visible="true"] {
     background-color: var(--tt-button-hover-bg-color);
     color: var(--tt-button-hover-text-color);
-    // outline: 2px solid var(--tt-button-active-icon-color);
   }
 
   &[data-weight="small"] {
@@ -37,7 +34,7 @@
     padding-left: 0;
   }
 
-  /* button size large */
+  
   &[data-size="large"] {
     font-size: 0.9375rem;
     height: 2.375rem;
@@ -45,7 +42,7 @@
     padding: 0.625rem;
   }
 
-  /* button size small */
+  
   &[data-size="small"] {
     font-size: 0.75rem;
     line-height: 1.2;
@@ -55,7 +52,7 @@
     border-radius: var(--tt-radius-md, 0.5rem);
   }
 
-  /* trim / expand text of the button */
+  
   .tiptap-button-text {
     padding: 0 0.125rem;
     flex-grow: 1;
@@ -70,7 +67,7 @@
     }
   }
 
-  /* global icon settings */
+  
   .tiptap-button-icon,
   .tiptap-button-icon-sub,
   .tiptap-button-dropdown-arrows,
@@ -78,7 +75,7 @@
     flex-shrink: 0;
   }
 
-  /* standard icon, what is used */
+  
   .tiptap-button-icon {
     width: 1rem;
     height: 1rem;
@@ -94,7 +91,7 @@
     height: 0.875rem;
   }
 
-  /* if 2 icons are used and this icon should be more subtle */
+  
   .tiptap-button-icon-sub {
     width: 1rem;
     height: 1rem;
@@ -110,7 +107,7 @@
     height: 0.875rem;
   }
 
-  /* dropdown menus or arrows that are slightly smaller */
+  
   .tiptap-button-dropdown-arrows {
     width: 0.75rem;
     height: 0.75rem;
@@ -126,7 +123,7 @@
     height: 0.625rem;
   }
 
-  /* dropdown menu for icon buttons only */
+  
   .tiptap-button-dropdown-small {
     width: 0.625rem;
     height: 0.625rem;
@@ -142,7 +139,7 @@
     height: 0.5rem;
   }
 
-  /* button only has icons */
+  
   &:has(> svg):not(:has(> :not(svg))) {
     gap: 0.125rem;
 
@@ -152,7 +149,7 @@
     }
   }
 
-  /* button only has 2 icons and one of them is dropdown small */
+  
   &:has(> svg:nth-of-type(2)):has(> .tiptap-button-dropdown-small):not(
       :has(> svg:nth-of-type(3))
     ):not(:has(> .tiptap-button-text)) {
@@ -168,7 +165,7 @@
     }
   }
 
-  /* Emoji is used in a button */
+  
   .tiptap-button-emoji {
     width: 1rem;
     display: flex;
@@ -184,9 +181,7 @@
   }
 }
 
-/* --------------------------------------------
------------ BUTTON COLOR SETTINGS -------------
--------------------------------------------- */
+
 
 .tiptap-button {
   background-color: var(--tt-button-default-bg-color);
@@ -208,7 +203,7 @@
     color: var(--tt-button-default-dropdown-arrows-color);
   }
 
-  /* hover state of a button */
+  
   &:hover:not([data-active-item="true"]):not([disabled]),
   &[data-active-item="true"]:not([disabled]),
   &[data-highlighted]:not([disabled]):not([data-highlighted="false"]) {
@@ -229,7 +224,7 @@
     }
   }
 
-  /* Active state of a button */
+  
   &[data-active-state="on"]:not([disabled]),
   &[data-state="open"]:not([disabled]) {
     background-color: var(--tt-button-active-bg-color);
@@ -252,7 +247,7 @@
       background-color: var(--tt-button-active-hover-bg-color);
     }
 
-    /* Emphasized */
+    
     &[data-appearance="emphasized"] {
       background-color: var(--tt-button-active-bg-color-emphasized);
       color: var(--tt-button-active-text-color-emphasized);
@@ -275,7 +270,7 @@
       }
     }
 
-    /* Subdued */
+    
     &[data-appearance="subdued"] {
       background-color: var(--tt-button-active-bg-color-subdued);
       color: var(--tt-button-active-text-color-subdued);

@@ -2,68 +2,41 @@
 
 import * as React from "react"
 import type { Editor } from "@tiptap/react"
-
-// --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-
-// --- Icons ---
 import { LinkIcon } from "@/components/tiptap-icons/link-icon"
-
-// --- Lib ---
 import { isMarkInSchema, sanitizeUrl } from "@/lib/tiptap-utils"
 
-/**
- * Configuration for the link popover functionality
- */
+
 export interface UseLinkPopoverConfig {
-  /**
-   * The Tiptap editor instance.
-   */
+  
   editor?: Editor | null
-  /**
-   * Whether to hide the link popover when not available.
-   * @default false
-   */
+  
   hideWhenUnavailable?: boolean
-  /**
-   * Callback function called when the link is set.
-   */
+  
   onSetLink?: () => void
 }
 
-/**
- * Configuration for the link handler functionality
- */
+
 export interface LinkHandlerProps {
-  /**
-   * The Tiptap editor instance.
-   */
+  
   editor: Editor | null
-  /**
-   * Callback function called when the link is set.
-   */
+  
   onSetLink?: () => void
 }
 
-/**
- * Checks if a link can be set in the current editor state
- */
+
 export function canSetLink(editor: Editor | null): boolean {
   if (!editor || !editor.isEditable) return false
   return editor.can().setMark("link")
 }
 
-/**
- * Checks if a link is currently active in the editor
- */
+
 export function isLinkActive(editor: Editor | null): boolean {
   if (!editor || !editor.isEditable) return false
   return editor.isActive("link")
 }
 
-/**
- * Determines if the link button should be shown
- */
+
 export function shouldShowLinkButton(props: {
   editor: Editor | null
   hideWhenUnavailable: boolean
@@ -83,17 +56,13 @@ export function shouldShowLinkButton(props: {
   return true
 }
 
-/**
- * Custom hook for handling link operations in a Tiptap editor
- */
+
 export function useLinkHandler(props: LinkHandlerProps) {
   const { editor, onSetLink } = props
   const [url, setUrl] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (!editor) return
-
-    // Get URL immediately on mount
     const { href } = editor.getAttributes("link")
 
     if (isLinkActive(editor) && url === null) {
@@ -169,9 +138,7 @@ export function useLinkHandler(props: LinkHandlerProps) {
   }
 }
 
-/**
- * Custom hook for link popover state management
- */
+
 export function useLinkState(props: {
   editor: Editor | null
   hideWhenUnavailable: boolean
@@ -211,43 +178,7 @@ export function useLinkState(props: {
   }
 }
 
-/**
- * Main hook that provides link popover functionality for Tiptap editor
- *
- * @example
- * ```tsx
- * // Simple usage
- * function MyLinkButton() {
- *   const { isVisible, canSet, isActive, Icon, label } = useLinkPopover()
- *
- *   if (!isVisible) return null
- *
- *   return <button disabled={!canSet}>Link</button>
- * }
- *
- * // Advanced usage with configuration
- * function MyAdvancedLinkButton() {
- *   const { isVisible, canSet, isActive, Icon, label } = useLinkPopover({
- *     editor: myEditor,
- *     hideWhenUnavailable: true,
- *     onSetLink: () => console.log('Link set!')
- *   })
- *
- *   if (!isVisible) return null
- *
- *   return (
- *     <MyButton
- *       disabled={!canSet}
- *       aria-label={label}
- *       aria-pressed={isActive}
- *     >
- *       <Icon />
- *       {label}
- *     </MyButton>
- *   )
- * }
- * ```
- */
+
 export function useLinkPopover(config?: UseLinkPopoverConfig) {
   const {
     editor: providedEditor,

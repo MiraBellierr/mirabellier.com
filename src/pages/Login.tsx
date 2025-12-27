@@ -21,7 +21,8 @@ const Login = () => {
     try {
       await auth.login(username, password)
       navigate('/')
-    } catch (err) {
+    } catch (error) {
+      console.error(error)
       setError('Login failed — check your credentials')
     } finally {
       setIsSubmitting(false)

@@ -4,18 +4,12 @@ import * as React from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 import type { ChainedCommands } from "@tiptap/react"
 import { type Editor } from "@tiptap/react"
-
-// --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import { useIsMobile } from "@/hooks/use-mobile"
-
-// --- Lib ---
 import {
   isExtensionAvailable,
   isNodeTypeSelected,
 } from "@/lib/tiptap-utils"
-
-// --- Icons ---
 import { AlignCenterIcon } from "@/components/tiptap-icons/align-center-icon"
 import { AlignJustifyIcon } from "@/components/tiptap-icons/align-justify-icon"
 import { AlignLeftIcon } from "@/components/tiptap-icons/align-left-icon"
@@ -23,26 +17,15 @@ import { AlignRightIcon } from "@/components/tiptap-icons/align-right-icon"
 
 export type TextAlign = "left" | "center" | "right" | "justify"
 
-/**
- * Configuration for the text align functionality
- */
+
 export interface UseTextAlignConfig {
-  /**
-   * The Tiptap editor instance.
-   */
+  
   editor?: Editor | null
-  /**
-   * The text alignment to apply.
-   */
+  
   align: TextAlign
-  /**
-   * Whether the button should hide when alignment is not available.
-   * @default false
-   */
+  
   hideWhenUnavailable?: boolean
-  /**
-   * Callback function called after a successful alignment change.
-   */
+  
   onAligned?: () => void
 }
 
@@ -67,9 +50,7 @@ export const textAlignLabels: Record<TextAlign, string> = {
   justify: "Align justify",
 }
 
-/**
- * Checks if text alignment can be performed in the current editor state
- */
+
 export function canSetTextAlign(
   editor: Editor | null,
   align: TextAlign
@@ -92,9 +73,7 @@ export function hasSetTextAlign(
   return "setTextAlign" in commands
 }
 
-/**
- * Checks if the text alignment is currently active
- */
+
 export function isTextAlignActive(
   editor: Editor | null,
   align: TextAlign
@@ -103,9 +82,7 @@ export function isTextAlignActive(
   return editor.isActive({ textAlign: align })
 }
 
-/**
- * Sets text alignment in the editor
- */
+
 export function setTextAlign(editor: Editor | null, align: TextAlign): boolean {
   if (!editor || !editor.isEditable) return false
   if (!canSetTextAlign(editor, align)) return false
@@ -118,9 +95,7 @@ export function setTextAlign(editor: Editor | null, align: TextAlign): boolean {
   return false
 }
 
-/**
- * Determines if the text align button should be shown
- */
+
 export function shouldShowButton(props: {
   editor: Editor | null
   hideWhenUnavailable: boolean
@@ -138,43 +113,7 @@ export function shouldShowButton(props: {
   return true
 }
 
-/**
- * Custom hook that provides text align functionality for Tiptap editor
- *
- * @example
- * ```tsx
- * // Simple usage
- * function MySimpleAlignButton() {
- *   const { isVisible, handleTextAlign } = useTextAlign({ align: "center" })
- *
- *   if (!isVisible) return null
- *
- *   return <button onClick={handleTextAlign}>Align Center</button>
- * }
- *
- * // Advanced usage with configuration
- * function MyAdvancedAlignButton() {
- *   const { isVisible, handleTextAlign, label, isActive } = useTextAlign({
- *     editor: myEditor,
- *     align: "right",
- *     hideWhenUnavailable: true,
- *     onAligned: () => console.log('Text aligned!')
- *   })
- *
- *   if (!isVisible) return null
- *
- *   return (
- *     <MyButton
- *       onClick={handleTextAlign}
- *       aria-pressed={isActive}
- *       aria-label={label}
- *     >
- *       Align Right
- *     </MyButton>
- *   )
- * }
- * ```
- */
+
 export function useTextAlign(config: UseTextAlignConfig) {
   const {
     editor: providedEditor,

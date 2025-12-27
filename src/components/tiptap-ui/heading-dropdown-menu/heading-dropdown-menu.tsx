@@ -1,17 +1,9 @@
 import * as React from "react"
-
-// --- Icons ---
 import { ChevronDownIcon } from "@/components/tiptap-icons/chevron-down-icon"
-
-// --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-
-// --- Tiptap UI ---
 import { HeadingButton } from "@/components/tiptap-ui/heading-button"
 import type { UseHeadingDropdownMenuConfig } from "@/components/tiptap-ui/heading-dropdown-menu"
 import { useHeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu"
-
-// --- UI Primitives ---
 import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
 import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"
 import {
@@ -25,22 +17,13 @@ import { Card, CardBody } from "@/components/tiptap-ui-primitive/card"
 export interface HeadingDropdownMenuProps
   extends Omit<ButtonProps, "type">,
     UseHeadingDropdownMenuConfig {
-  /**
-   * Whether to render the dropdown menu in a portal
-   * @default false
-   */
+  
   portal?: boolean
-  /**
-   * Callback for when the dropdown opens or closes
-   */
+  
   onOpenChange?: (isOpen: boolean) => void
 }
 
-/**
- * Dropdown menu component for selecting heading levels in a Tiptap editor.
- *
- * For custom dropdown implementations, use the `useHeadingDropdownMenu` hook instead.
- */
+
 export const HeadingDropdownMenu = React.forwardRef<
   HTMLButtonElement,
   HeadingDropdownMenuProps

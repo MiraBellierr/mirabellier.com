@@ -47,7 +47,8 @@ const Profile = () => {
       setPreview(updated.avatar || preview)
       setPassword('')
       setAvatarFile(null)
-    } catch (err) {
+    } catch (error) {
+      console.error(error)
       setMessage('Update failed')
     } finally {
       setIsSaving(false)
@@ -74,7 +75,6 @@ const Profile = () => {
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">
                   {preview ? (
-                    // eslint-disable-next-line jsx-a11y/img-redundant-alt
                     <img src={resolveAsset(preview) || undefined} alt="avatar preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="text-3xl">😺</div>

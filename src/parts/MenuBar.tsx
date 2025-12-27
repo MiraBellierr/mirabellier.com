@@ -3,8 +3,6 @@ import { useEditorState } from '@tiptap/react'
 
 
 function MenuBar({ editor }: { editor: Editor }) {
-  
-  // Read the current editor's state, and re-render the component when it changes
   const editorState = useEditorState({
     editor,
     selector: ctx => {

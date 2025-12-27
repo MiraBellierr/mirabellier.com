@@ -22,7 +22,8 @@ const Register = () => {
       await auth.register(username, password)
       navigate('/')
     } catch (err) {
-      setError('Register failed — try a different username')
+        console.error(err)
+        setError('Register failed — try a different username')
     } finally {
       setIsSubmitting(false)
     }

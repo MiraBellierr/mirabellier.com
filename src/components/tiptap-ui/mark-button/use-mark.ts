@@ -2,14 +2,8 @@
 
 import * as React from "react"
 import type { Editor } from "@tiptap/react"
-
-// --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-
-// --- Lib ---
 import { isMarkInSchema, isNodeTypeSelected } from "@/lib/tiptap-utils"
-
-// --- Icons ---
 import { BoldIcon } from "@/components/tiptap-icons/bold-icon"
 import { Code2Icon } from "@/components/tiptap-icons/code2-icon"
 import { ItalicIcon } from "@/components/tiptap-icons/italic-icon"
@@ -27,26 +21,15 @@ export type Mark =
   | "superscript"
   | "subscript"
 
-/**
- * Configuration for the mark functionality
- */
+
 export interface UseMarkConfig {
-  /**
-   * The Tiptap editor instance.
-   */
+  
   editor?: Editor | null
-  /**
-   * The type of mark to toggle
-   */
+  
   type: Mark
-  /**
-   * Whether the button should hide when mark is not available.
-   * @default false
-   */
+  
   hideWhenUnavailable?: boolean
-  /**
-   * Callback function called after a successful mark toggle.
-   */
+  
   onToggled?: () => void
 }
 
@@ -60,9 +43,7 @@ export const markIcons = {
   subscript: SubscriptIcon,
 }
 
-/**
- * Checks if a mark can be toggled in the current editor state
- */
+
 export function canToggleMark(editor: Editor | null, type: Mark): boolean {
   if (!editor || !editor.isEditable) return false
   if (!isMarkInSchema(type, editor) || isNodeTypeSelected(editor, ["image"]))
@@ -71,17 +52,13 @@ export function canToggleMark(editor: Editor | null, type: Mark): boolean {
   return editor.can().toggleMark(type)
 }
 
-/**
- * Checks if a mark is currently active
- */
+
 export function isMarkActive(editor: Editor | null, type: Mark): boolean {
   if (!editor || !editor.isEditable) return false
   return editor.isActive(type)
 }
 
-/**
- * Toggles a mark in the editor
- */
+
 export function toggleMark(editor: Editor | null, type: Mark): boolean {
   if (!editor || !editor.isEditable) return false
   if (!canToggleMark(editor, type)) return false
@@ -89,9 +66,7 @@ export function toggleMark(editor: Editor | null, type: Mark): boolean {
   return editor.chain().focus().toggleMark(type).run()
 }
 
-/**
- * Determines if the mark button should be shown
- */
+
 export function shouldShowButton(props: {
   editor: Editor | null
   type: Mark
@@ -109,50 +84,12 @@ export function shouldShowButton(props: {
   return true
 }
 
-/**
- * Gets the formatted mark name
- */
+
 export function getFormattedMarkName(type: Mark): string {
   return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
-/**
- * Custom hook that provides mark functionality for Tiptap editor
- *
- * @example
- * ```tsx
- * // Simple usage
- * function MySimpleBoldButton() {
- *   const { isVisible, handleMark } = useMark({ type: "bold" })
- *
- *   if (!isVisible) return null
- *
- *   return <button onClick={handleMark}>Bold</button>
- * }
- *
- * // Advanced usage with configuration
- * function MyAdvancedItalicButton() {
- *   const { isVisible, handleMark, label, isActive } = useMark({
- *     editor: myEditor,
- *     type: "italic",
- *     hideWhenUnavailable: true,
- *     onToggled: () => console.log('Mark toggled!')
- *   })
- *
- *   if (!isVisible) return null
- *
- *   return (
- *     <MyButton
- *       onClick={handleMark}
- *       aria-pressed={isActive}
- *       aria-label={label}
- *     >
- *       Italic
- *     </MyButton>
- *   )
- * }
- * ```
- */
+
 export function useMark(config: UseMarkConfig) {
   const {
     editor: providedEditor,

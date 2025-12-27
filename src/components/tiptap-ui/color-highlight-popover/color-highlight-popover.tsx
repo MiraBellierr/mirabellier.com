@@ -1,16 +1,10 @@
 import * as React from "react"
 import { type Editor } from "@tiptap/react"
-
-// --- Hooks ---
 import { useMenuNavigation } from "@/hooks/use-menu-navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-
-// --- Icons ---
 import { BanIcon } from "@/components/tiptap-icons/ban-icon"
 import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
-
-// --- UI Primitives ---
 import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
 import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"
 import {
@@ -24,8 +18,6 @@ import {
   CardBody,
   CardItemGroup,
 } from "@/components/tiptap-ui-primitive/card"
-
-// --- Tiptap UI ---
 import type {
   HighlightColor,
   UseColorHighlightConfig,
@@ -37,14 +29,9 @@ import {
 } from "@/components/tiptap-ui/color-highlight-button"
 
 export interface ColorHighlightPopoverContentProps {
-  /**
-   * The Tiptap editor instance.
-   */
+  
   editor?: Editor | null
-  /**
-   * Optional colors to use in the highlight popover.
-   * If not provided, defaults to a predefined set of colors.
-   */
+  
   colors?: HighlightColor[]
 }
 
@@ -54,10 +41,7 @@ export interface ColorHighlightPopoverProps
       UseColorHighlightConfig,
       "editor" | "hideWhenUnavailable" | "onApplied"
     > {
-  /**
-   * Optional colors to use in the highlight popover.
-   * If not provided, defaults to a predefined set of colors.
-   */
+  
   colors?: HighlightColor[]
 }
 

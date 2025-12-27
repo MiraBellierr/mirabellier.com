@@ -3,30 +3,15 @@ import type { Editor } from "@tiptap/react"
 import { useWindowSize } from "@/hooks/use-window-size"
 
 export interface CursorVisibilityOptions {
-  /**
-   * The Tiptap editor instance
-   */
+  
   editor?: Editor | null
-  /**
-   * Reference to the toolbar element that may obscure the cursor
-   */
+  
   overlayHeight?: number
 }
 
 export type RectState = Omit<DOMRect, "toJSON">
 
-/**
- * Custom hook that ensures the cursor remains visible when typing in a Tiptap editor.
- * Automatically scrolls the window when the cursor would be hidden by the toolbar.
- *
- * This is particularly useful for long-form content editing where the cursor
- * might move out of the visible area as the user types.
- *
- * @param options Configuration options for cursor visibility behavior
- * @param options.editor The Tiptap editor instance
- * @param options.overlayHeight Reference to the toolbar element that may obscure the cursor
- * @returns void
- */
+
 export function useCursorVisibility({
   editor,
   overlayHeight = 0,
@@ -75,27 +60,16 @@ export function useCursorVisibility({
       const { state, view } = editor
 
       if (!view.hasFocus()) return
-
-      // Get current cursor position coordinates
       const { from } = state.selection
       const cursorCoords = view.coordsAtPos(from)
 
       if (windowHeight < rect.height) {
         if (cursorCoords) {
-          // Check if there's enough space between cursor and bottom of window
           const availableSpace = windowHeight - cursorCoords.top
-
-          // If not enough space, scroll to position cursor in the middle of viewport
-          if (availableSpace < overlayHeight) {
-            // Calculate target scroll position to center cursor in viewport
-            // Account for overlay height to ensure cursor is not hidden
+          if (availableSpace < overlayHeight) {
             const targetCursorY = Math.max(windowHeight / 2, overlayHeight)
-
-            // Get current scroll position and cursor's absolute position
             const currentScrollY = window.scrollY
             const cursorAbsoluteY = cursorCoords.top + currentScrollY
-
-            // Calculate new scroll position
             const newScrollY = cursorAbsoluteY - targetCursorY
 
             window.scrollTo({

@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { useOptionalAuth } from '@/hooks/use-optional-auth'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/states/AuthContext'
 import { API_BASE } from '@/lib/config'
 
 const Header = () => {
-    const auth = (() => {
-      try { return useAuth() } catch { return null }
-    })()
+    const auth = useOptionalAuth()
     const navigate = useNavigate()
     const menuRef = useRef<HTMLDivElement | null>(null)
     const [open, setOpen] = useState(false)
@@ -26,7 +24,6 @@ const Header = () => {
 
     useEffect(() => {
       if (open) {
-        // start enter animation on next frame
         setAnimateIn(false)
         requestAnimationFrame(() => setAnimateIn(true))
       } else {

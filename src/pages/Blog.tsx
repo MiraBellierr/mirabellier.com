@@ -77,17 +77,11 @@ type ContentNode =
   | ListItemNode
   | ImageNode
   | HardBreakNode;
-
-// Text Extraction Function
 function extractTextFromContent(content: DocumentNode | ContentNode[] | undefined): string {
   if (!content) return '';
-  
-  // Handle document object case
   if (typeof content === 'object' && 'type' in content && content.type === 'doc') {
     return extractTextFromContent(content.content);
   }
-  
-  // Handle array case
   if (Array.isArray(content)) {
     let result = '';
     
@@ -118,7 +112,6 @@ function extractTextFromContent(content: DocumentNode | ContentNode[] | undefine
           
         case 'image':
         case 'hardBreak':
-          // Skip these nodes
           break;
           
         default:
@@ -195,7 +188,7 @@ const Blog = () => {
     useEffect(() => {
         if (searchTerm.trim() === '') {
             setFilteredPosts(posts);
-            setCurrentPage(1); // Reset to first page when search is cleared
+            setCurrentPage(1); 
         } else {
             const term = searchTerm.toLowerCase();
             const filtered = posts.filter(post => 
@@ -204,11 +197,9 @@ const Blog = () => {
                 extractTextFromContent(post.content).toLowerCase().includes(term)
             );
             setFilteredPosts(filtered);
-            setCurrentPage(1); // Reset to first page when searching
+            setCurrentPage(1); 
         }
     }, [searchTerm, posts]);
-
-    // Get current posts for pagination
     const indexOfLastPost = currentPage * postsPerPage;
     const indexOfFirstPost = indexOfLastPost - postsPerPage;
     const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
@@ -319,7 +310,7 @@ const Blog = () => {
                     </div>
                 </div>
                 <div className="flex flex-col flex-grow p-4 max-w-7xl mx-auto w-full justify-center">
-                    {/* Pagination controls */}
+                    {}
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center mt-6 space-x-2 opacity-90">
                             <button

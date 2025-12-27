@@ -4,8 +4,6 @@
   --thread-text: var(--tt-gray-light-900);
   --placeholder-color: var(--tt-gray-light-a-400);
   --thread-bg-color: var(--tt-color-yellow-inc-2);
-
-  // ai
   --tiptap-ai-insertion-color: var(--tt-brand-color-600);
 
   .dark & {
@@ -19,29 +17,22 @@
   }
 }
 
-/* Ensure each top-level node has relative positioning 
-   so absolutely positioned placeholders work correctly */
+
 .tiptap.ProseMirror > * {
   position: relative;
 }
 
-/* =====================
-     CORE EDITOR STYLES
-     ===================== */
+
 .tiptap.ProseMirror {
   white-space: pre-wrap;
   outline: none;
   caret-color: var(--tt-cursor-color);
-
-  // Paragraph spacing
   p:not(:first-child) {
     font-size: 1rem;
     line-height: 1.6;
     font-weight: normal;
     margin-top: 20px;
   }
-
-  // Selection styles
   &:not(.readonly):not(.ProseMirror-hideselection) {
     ::selection {
       background-color: var(--tt-selection-color);
@@ -56,8 +47,6 @@
     display: inline;
     background-color: var(--tt-selection-color);
   }
-
-  // Selected node styles
   .ProseMirror-selectednode:not(img):not(pre):not(.react-renderer) {
     border-radius: var(--tt-radius-md);
     background-color: var(--tt-selection-color);
@@ -66,19 +55,14 @@
   .ProseMirror-hideselection {
     caret-color: transparent;
   }
-
-  // Resize cursor
   &.resize-cursor {
     cursor: ew-resize;
     cursor: col-resize;
   }
 }
 
-/* =====================
-     TEXT DECORATION
-     ===================== */
+
 .tiptap.ProseMirror {
-  // Text decoration inheritance for spans
   a span {
     text-decoration: underline;
   }
@@ -96,9 +80,7 @@
   }
 }
 
-/* =====================
-     COLLABORATION
-     ===================== */
+
 .tiptap.ProseMirror {
   .collaboration-carets {
     &__caret {
@@ -128,9 +110,7 @@
   }
 }
 
-/* =====================
-     EMOJI
-     ===================== */
+
 .tiptap.ProseMirror [data-type="emoji"] img {
   display: inline-block;
   width: 1.25em;
@@ -138,9 +118,7 @@
   cursor: text;
 }
 
-/* =====================
-     LINKS
-     ===================== */
+
 .tiptap.ProseMirror {
   a {
     color: var(--link-text-color);
@@ -148,9 +126,7 @@
   }
 }
 
-/* =====================
-     MENTION
-     ===================== */
+
 .tiptap.ProseMirror {
   [data-type="mention"] {
     display: inline-block;
@@ -158,11 +134,8 @@
   }
 }
 
-/* =====================
-     THREADS
-     ===================== */
+
 .tiptap.ProseMirror {
-  // Base styles for inline threads
   .tiptap-thread.tiptap-thread--unresolved.tiptap-thread--inline {
     transition:
       color 0.2s ease-in-out,
@@ -177,8 +150,6 @@
       border-bottom-color: transparent;
     }
   }
-
-  // Block thread styles with images
   .tiptap-thread.tiptap-thread--unresolved.tiptap-thread--block {
     &:has(img) {
       outline: 0.125rem solid var(--tt-color-yellow-base);
@@ -195,8 +166,6 @@
         outline-width: 0.25rem;
       }
     }
-
-    // Block thread styles without images
     &:not(:has(img)) {
       border-radius: 0.25rem;
       border-bottom: 0.125rem dashed var(--tt-color-yellow-base);
@@ -210,24 +179,18 @@
       }
     }
   }
-
-  // Resolved thread styles
   .tiptap-thread.tiptap-thread--resolved.tiptap-thread--inline.tiptap-thread--selected {
     background-color: var(--tt-color-yellow-base);
     border-color: transparent;
     opacity: 0.5;
   }
-
-  // React renderer specific styles
   .tiptap-thread.tiptap-thread--block:has(.react-renderer) {
     margin-top: 3rem;
     margin-bottom: 3rem;
   }
 }
 
-/* =====================
-     PLACEHOLDER
-     ===================== */
+
 .is-empty:not(.with-slash)[data-placeholder]:has(
     > .ProseMirror-trailingBreak:only-child
   )::before {
@@ -257,9 +220,7 @@
   color: var(--placeholder-color);
 }
 
-/* =====================
-     DROPCURSOR
-     ===================== */
+
 .prosemirror-dropcursor-block,
 .prosemirror-dropcursor-inline {
   background: var(--tt-brand-color-400) !important;

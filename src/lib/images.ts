@@ -12,7 +12,7 @@ export async function fetchImages(): Promise<ImageEntry[]> {
     const res = await fetch(`${API_BASE}/images/list`)
     if (!res.ok) return []
     return await res.json()
-  } catch (err) {
+  } catch {
     return []
   }
 }

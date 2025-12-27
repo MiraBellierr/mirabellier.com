@@ -1,18 +1,10 @@
 import * as React from "react"
 import { type Editor } from "@tiptap/react"
-
-// --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-
-// --- Icons ---
 import { ChevronDownIcon } from "@/components/tiptap-icons/chevron-down-icon"
-
-// --- Tiptap UI ---
 import { ListButton, type ListType } from "@/components/tiptap-ui/list-button"
 
 import { useListDropdownMenu } from "./use-list-dropdown-menu"
-
-// --- UI Primitives ---
 import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
 import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"
 import {
@@ -24,27 +16,15 @@ import {
 import { Card, CardBody } from "@/components/tiptap-ui-primitive/card"
 
 export interface ListDropdownMenuProps extends Omit<ButtonProps, "type"> {
-  /**
-   * The Tiptap editor instance.
-   */
+  
   editor?: Editor
-  /**
-   * The list types to display in the dropdown.
-   */
+  
   types?: ListType[]
-  /**
-   * Whether the dropdown should be hidden when no list types are available
-   * @default false
-   */
+  
   hideWhenUnavailable?: boolean
-  /**
-   * Callback for when the dropdown opens or closes
-   */
+  
   onOpenChange?: (isOpen: boolean) => void
-  /**
-   * Whether to render the dropdown menu in a portal
-   * @default false
-   */
+  
   portal?: boolean
 }
 
