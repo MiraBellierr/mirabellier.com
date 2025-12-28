@@ -726,7 +726,9 @@ const Videos = () => {
 
                                                     {}
                                                         <div className="absolute right-4 bottom-8 flex flex-col items-center space-y-4">
-                                                        <img src={resolveAsset((currentVideo.userId && (userCache[currentVideo.userId]?.avatar)) || currentVideo.authorAvatar || '/images/default-avatar.png')} alt="author" className="w-12 h-12 rounded-full border-2 border-white shadow-md object-cover" />
+                                                        <Link to={currentVideo.userId ? `/profile/${(userCache[currentVideo.userId]?.username || currentVideo.author)}` : '#'} className="block">
+                                                            <img src={resolveAsset((currentVideo.userId && (userCache[currentVideo.userId]?.avatar)) || currentVideo.authorAvatar || '/images/default-avatar.png')} alt="author" className="w-12 h-12 rounded-full border-2 border-white shadow-md object-cover hover:opacity-80 transition-opacity" />
+                                                        </Link>
 
                                                         <button onClick={() => toggleVideoLike(currentVideo.id)} className="flex flex-col items-center text-white">
                                                             <div className={`p-3 rounded-full bg-white/10 hover:bg-white/20 ${likesMap[currentVideo.id]?.liked ? 'text-pink-400' : 'text-white'}`}>

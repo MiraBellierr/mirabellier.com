@@ -344,7 +344,15 @@ const Blog = () => {
                                                                                     <h2 className="text-lg font-bold text-blue-700 mb-1">
                                                                                         {post.title}
                                                                                     </h2>
-                                                                                    <p className="text-sm text-blue-500 mb-2">By {post.author} • {new Date(post.createdAt).toLocaleDateString()}</p>
+                                                                                    <p className="text-sm text-blue-500 mb-2">
+                                                                                        By {(post as any).userId ? (
+                                                                                            <Link to={`/profile/${post.author}`} className="hover:underline font-medium">
+                                                                                                {post.author}
+                                                                                            </Link>
+                                                                                        ) : (
+                                                                                            <span>{post.author}</span>
+                                                                                        )} • {new Date(post.createdAt).toLocaleDateString()}
+                                                                                    </p>
                                                                                     {post.shortDescription ? (
                                                                                         <p className="text-sm text-blue-600">{post.shortDescription}</p>
                                                                                     ) : null}

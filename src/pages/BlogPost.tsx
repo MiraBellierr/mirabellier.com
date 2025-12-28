@@ -204,10 +204,22 @@ const BlogPost = () => {
                 <div className="p-2 card-border">
                   <h2 className="text-xl font-bold text-blue-700 mb-2">{post.title}</h2>
                   <p className="text-sm text-blue-500 mb-2 flex items-center gap-2">
-                    {post.authorAvatar ? (
-                      <img src={resolveAsset(post.authorAvatar) || undefined} className="w-6 h-6 rounded-full" alt="author avatar" />
-                    ) : null}
-                    <span>By {post.author} • {new Date(post.createdAt).toLocaleDateString()}</span>
+                    {(post as any).userId ? (
+                      <Link to={`/profile/${post.author}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        {post.authorAvatar && (
+                          <img src={resolveAsset(post.authorAvatar) || undefined} className="w-6 h-6 rounded-full" alt="author avatar" />
+                        )}
+                        <span>By {post.author}</span>
+                      </Link>
+                    ) : (
+                      <>
+                        {post.authorAvatar && (
+                          <img src={resolveAsset(post.authorAvatar) || undefined} className="w-6 h-6 rounded-full" alt="author avatar" />
+                        )}
+                        <span>By {post.author}</span>
+                      </>
+                    )}
+                    <span>• {new Date(post.createdAt).toLocaleDateString()}</span>
                   </p>
 
                   <div className="max-h-[500px] overflow-y-auto">
