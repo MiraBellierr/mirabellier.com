@@ -86,7 +86,7 @@ const Login = () => {
             <ul className="text-sm text-blue-600 space-y-2">
               <li>• Use a unique username (no spaces).</li>
               <li>• Passwords should be 8+ characters.</li>
-              <li>• To change avatar go to <strong>Profile</strong> after login.</li>
+              <li>• To change avatar go to <strong>Settings</strong> after login.</li>
               <li>• If you forget password, re-register with a new username.</li>
             </ul>
             <div className="mt-4 text-xs text-blue-400 text-center">Be kind — this site is cute 💖</div>

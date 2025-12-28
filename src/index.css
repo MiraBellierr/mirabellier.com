@@ -28,8 +28,8 @@ html, body {
 	width: 100%;
 	height: 100%;
 	pointer-events: none;
-	/* simplified decorative gradients to avoid expensive blend modes */
-	background-image: radial-gradient(circle at 10% 10%, rgba(99,102,241,0.03), transparent 6%), radial-gradient(circle at 90% 80%, rgba(236,72,153,0.02), transparent 8%);
+	/* cute purple/pink gradient overlay */
+	background-image: radial-gradient(circle at 10% 10%, rgba(200,140,255,0.08), transparent 40%), radial-gradient(circle at 90% 80%, rgba(255,150,200,0.06), transparent 40%), radial-gradient(circle at 50% 50%, rgba(180,140,255,0.03), transparent 60%);
 }
 
 .dark img {
@@ -39,7 +39,7 @@ html, body {
 
 
 .dark h2 {
-	text-shadow: 0 2px 8px rgba(98, 41, 255, 0.08);
+	text-shadow: 0 2px 12px rgba(200, 140, 255, 0.3);
 }
 
 
@@ -163,8 +163,8 @@ html, body {
 	border-image: none !important;
 	border-width: 1px !important;
 	border-style: solid !important;
-	border-color: rgba(255,255,255,0.06) !important;
-	box-shadow: 0 4px 12px rgba(2,6,23,0.45);
+	border-color: rgba(200,180,255,0.2) !important;
+	box-shadow: 0 4px 20px rgba(150,100,200,0.2), 0 0 40px rgba(200,140,255,0.05);
 	background: var(--tt-card-bg-color);
 	color: var(--white) !important;
 }
@@ -175,7 +175,7 @@ html, body {
 }
 
 .dark .card-border h2 {
-	color: var(--tt-color-text-blue) !important;
+	color: rgb(220, 180, 255) !important;
 }
 
 .dark .card-border p,
@@ -183,12 +183,12 @@ html, body {
 .dark .card-border span,
 .dark .card-border li,
 .dark .card-border div {
-	color: rgba(255,255,255,0.92) !important;
+	color: rgba(240,230,255,0.9) !important;
 }
 
 
 :root {
-	--page-bg: url('/src/assets/background.jpeg');
+	--page-bg: url('/src/assets/light.jpg');
 }
 .dark {
 	--page-bg: url('/src/assets/dark.jpg');

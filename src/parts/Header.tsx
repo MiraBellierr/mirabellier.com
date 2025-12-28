@@ -39,7 +39,7 @@ const Header = () => {
     }, [open])
 
     return (
-     <header className="bg-blue-200 border-b-2 border-blue-500 dark:border-black p-4 text-4xl font-bold text-blue-700 dark:text-white shadow-sm flex items-center justify-center relative">
+     <header className="bg-blue-50 border-b-2 border-blue-300 dark:bg-gradient-to-r dark:from-purple-900/40 dark:to-pink-900/30 dark:border-purple-500/30 p-4 text-4xl font-bold text-blue-600 dark:text-purple-200 shadow-sm flex items-center justify-center relative">
         <h1 className="tracking-widest text-center">Welcome to my website</h1>
         
         {/* Desktop menu */}
@@ -68,8 +68,7 @@ const Header = () => {
                 pointerEvents: open ? 'auto' : 'none'
               }}>
                 {!logoutConfirm ? (
-                  <div className="flex flex-col">
-                    <button onClick={(e) => { e.stopPropagation(); setOpen(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center gap-2">👤<span>Profile</span></button>
+                  <div className="flex flex-col">                    <button onClick={(e) => { e.stopPropagation(); setOpen(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center gap-2">👤<span>Profile</span></button>                    <button onClick={(e) => { e.stopPropagation(); setOpen(false); navigate('/settings') }} className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center gap-2">⚙️<span>Settings</span></button>
                     <button onClick={(e) => { e.stopPropagation(); setLogoutConfirm(true) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-blue-50 flex items-center gap-2">🚪<span>Logout</span></button>
                   </div>
                 ) : (
@@ -101,21 +100,21 @@ const Header = () => {
         <div className="md:hidden absolute right-4" ref={burgerRef}>
           <button 
             onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(o => !o) }}
-            className="flex flex-col gap-1.5 bg-white/80 dark:bg-neutral-800/70 backdrop-blur rounded p-2 shadow-md border border-blue-100 dark:border-neutral-700"
+            className="flex flex-col gap-1.5 bg-white/80 dark:bg-purple-900/70 backdrop-blur rounded p-2 shadow-md border border-blue-200 dark:border-purple-400/30"
             aria-label="Menu"
           >
-            <span className={`block w-5 h-0.5 bg-blue-700 dark:bg-white transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-            <span className={`block w-5 h-0.5 bg-blue-700 dark:bg-white transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
-            <span className={`block w-5 h-0.5 bg-blue-700 dark:bg-white transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+            <span className={`block w-5 h-0.5 bg-blue-500 dark:bg-purple-300 transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+            <span className={`block w-5 h-0.5 bg-blue-500 dark:bg-purple-300 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
+            <span className={`block w-5 h-0.5 bg-blue-500 dark:bg-purple-300 transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
           </button>
           
           {/* Mobile dropdown menu */}
           <div 
-            className={`absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 border border-blue-100 dark:border-neutral-700 rounded-md shadow-lg z-50 overflow-hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+            className={`absolute right-0 mt-2 w-48 bg-white dark:bg-purple-950/95 backdrop-blur-md border border-blue-200 dark:border-purple-400/30 rounded-md shadow-lg z-50 overflow-hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
           >
             <div className="flex flex-col p-2 space-y-2">
-              <div className="px-2 py-2 flex items-center justify-between border-b border-blue-100 dark:border-neutral-700">
-                <span className="text-sm text-blue-700 dark:text-white">Theme</span>
+              <div className="px-2 py-2 flex items-center justify-between border-b border-blue-200 dark:border-purple-500/30">
+                <span className="text-sm text-blue-600 dark:text-purple-200">Theme</span>
                 <DarkToggle />
               </div>
               
@@ -123,14 +122,21 @@ const Header = () => {
                 <>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); navigate('/profile') }} 
-                    className="w-full text-left px-3 py-2 text-sm text-blue-700 dark:text-white hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-purple-200 hover:bg-blue-50 dark:hover:bg-purple-800/50 rounded flex items-center gap-2"
                   >
                     <span>👤</span>
                     <span>Profile</span>
                   </button>
                   <button 
+                    onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); navigate('/settings') }} 
+                    className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-purple-200 hover:bg-blue-50 dark:hover:bg-purple-800/50 rounded flex items-center gap-2"
+                  >
+                    <span>⚙️</span>
+                    <span>Settings</span>
+                  </button>
+                  <button 
                     onClick={(e) => { e.stopPropagation(); if (auth?.token) { fetch(`${API_BASE}/logout`, { method: 'POST', headers: { Authorization: `Bearer ${auth.token}` } }).catch(()=>{}) }; auth.logout(); setMobileMenuOpen(false); navigate('/') }} 
-                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-pink-300 hover:bg-blue-50 dark:hover:bg-purple-800/50 rounded flex items-center gap-2"
                   >
                     <span>🚪</span>
                     <span>Logout</span>
@@ -141,7 +147,7 @@ const Header = () => {
                   <Link 
                     to="/login" 
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-left px-3 py-2 text-sm text-blue-700 dark:text-white hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-purple-200 hover:bg-blue-50 dark:hover:bg-purple-800/50 rounded flex items-center gap-2"
                   >
                     <span>🔐</span>
                     <span>Login</span>
@@ -149,7 +155,7 @@ const Header = () => {
                   <Link 
                     to="/register" 
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-left px-3 py-2 text-sm text-pink-500 hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-sm text-pink-500 dark:text-pink-300 hover:bg-blue-50 dark:hover:bg-purple-800/50 rounded flex items-center gap-2"
                   >
                     <span>✨</span>
                     <span>Register</span>

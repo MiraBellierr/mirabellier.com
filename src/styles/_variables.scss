@@ -176,15 +176,15 @@
 
 
 .dark {
-  --tt-bg-color: var(--black);
-  --tt-border-color: var(--tt-gray-dark-a-200);
-  --tt-border-color-tint: var(--tt-gray-dark-a-100);
-  --tt-sidebar-bg-color: var(--tt-gray-dark-100);
-  --tt-scrollbar-color: var(--tt-gray-dark-a-200);
-  --tt-cursor-color: var(--tt-brand-color-400);
-  --tt-selection-color: rgba(122, 82, 255, 0.2);
-  --tt-card-bg-color: var(--tt-gray-dark-50);
-  --tt-card-border-color: var(--tt-gray-dark-a-50);
+  --tt-bg-color: rgb(25, 20, 35);
+  --tt-border-color: rgba(200, 180, 255, 0.12);
+  --tt-border-color-tint: rgba(200, 180, 255, 0.08);
+  --tt-sidebar-bg-color: rgb(30, 25, 40);
+  --tt-scrollbar-color: rgba(200, 180, 255, 0.12);
+  --tt-cursor-color: rgb(200, 140, 255);
+  --tt-selection-color: rgba(200, 140, 255, 0.25);
+  --tt-card-bg-color: rgba(40, 35, 55, 0.85);
+  --tt-card-border-color: rgba(200, 180, 255, 0.15);
 
   --tt-shadow-elevated-md:
     0px 16px 48px 0px rgba(0, 0, 0, 0.5), 0px 12px 24px 0px rgba(0, 0, 0, 0.24),

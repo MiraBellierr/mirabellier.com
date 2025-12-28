@@ -102,7 +102,7 @@ const Register = () => {
             <ul className="text-sm text-blue-600 space-y-2">
               <li>• Pick a memorable, unique username (no spaces).</li>
               <li>• Use a strong password: 8+ chars with numbers/symbols.</li>
-              <li>• You can update your avatar in <strong>Profile</strong> after signing up.</li>
+              <li>• You can update your avatar in <strong>Settings</strong> after signing up.</li>
               <li>• Keep your token safe — this site uses simple tokens.</li>
             </ul>
             <div className="mt-4 text-xs text-blue-400 text-center">Welcome — be adorable and safe 💖</div>

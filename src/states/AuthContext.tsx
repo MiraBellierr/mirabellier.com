@@ -5,6 +5,10 @@ type User = {
   id: string
   username: string
   avatar?: string | null
+  banner?: string | null
+  bio?: string | null
+  location?: string | null
+  website?: string | null
 }
 
 type AuthContextType = {
