@@ -9,6 +9,7 @@ import Navigation from '../parts/Navigation'
 const Register = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const auth = useAuth()
@@ -17,6 +18,12 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+    
     setIsSubmitting(true)
     try {
       await auth.register(username, password)
@@ -66,6 +73,15 @@ const Register = () => {
                   type="password"
                   value={password}
                   onChange={e=>setPassword(e.target.value)}
+                  className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-200"
+                />
+
+                <label className="block text-sm font-medium text-blue-600">Confirm Password</label>
+                <input
+                  placeholder="confirm your password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e=>setConfirmPassword(e.target.value)}
                   className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-200"
                 />
 

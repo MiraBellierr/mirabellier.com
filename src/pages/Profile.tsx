@@ -11,6 +11,7 @@ const Profile = () => {
   const user = auth.user
   const [username, setUsername] = useState(user?.username || '')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(user?.avatar || null)
   const [message, setMessage] = useState<string | null>(null)
@@ -37,6 +38,13 @@ const Profile = () => {
     e.preventDefault()
     setIsSaving(true)
     setMessage(null)
+    
+    if (password && password !== confirmPassword) {
+      setMessage('Passwords do not match')
+      setIsSaving(false)
+      return
+    }
+    
     try {
       const fd = new FormData()
       fd.append('username', username)
@@ -46,6 +54,7 @@ const Profile = () => {
       setMessage('Profile updated')
       setPreview(updated.avatar || preview)
       setPassword('')
+      setConfirmPassword('')
       setAvatarFile(null)
     } catch (error) {
       console.error(error)
@@ -98,6 +107,13 @@ const Profile = () => {
                   <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-200" />
                 </div>
 
+                {password && (
+                  <div>
+                    <label className="block text-sm font-medium text-blue-600">Confirm New Password</label>
+                    <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-200" />
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-blue-600">Avatar</label>
                   <input type="file" accept="image/*" onChange={e=>setAvatarFile(e.target.files?.[0]||null)} className="mt-2" />
@@ -109,7 +125,7 @@ const Profile = () => {
                   <button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-full shadow-sm hover:scale-105 transform transition">
                     {isSaving ? 'Saving...' : 'Save changes'}
                   </button>
-                  <button type="button" onClick={() => { setUsername(user?.username||''); setPassword(''); setAvatarFile(null); setPreview(user?.avatar||null); }} className="text-sm text-blue-600 hover:underline">Reset</button>
+                  <button type="button" onClick={() => { setUsername(user?.username||''); setPassword(''); setConfirmPassword(''); setAvatarFile(null); setPreview(user?.avatar||null); }} className="text-sm text-blue-600 hover:underline">Reset</button>
                 </div>
               </form>
             </div>
