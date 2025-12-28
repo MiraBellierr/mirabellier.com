@@ -96,7 +96,7 @@ const Home = () => {
                 I might add more pages soon, like:</p>
               <p className="">• ✏️ My blog</p>
               <p className="">• 🎨 Art or doodles</p>
-              <p className="">• 🧩 Mini web games</p>
+              <p className="">• 🎥 Short videos</p>
               <p className="">• 💾 Programming experiments</p>
             </div>
 
