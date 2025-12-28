@@ -23,9 +23,6 @@ const DarkToggle: React.FC = () => {
         console.error('DarkToggle init localStorage error', err)
       }
     
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
     return false
   })
 

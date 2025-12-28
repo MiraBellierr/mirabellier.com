@@ -8,15 +8,20 @@ const Header = () => {
     const auth = useOptionalAuth()
     const navigate = useNavigate()
     const menuRef = useRef<HTMLDivElement | null>(null)
+    const burgerRef = useRef<HTMLDivElement | null>(null)
     const [open, setOpen] = useState(false)
     const [animateIn, setAnimateIn] = useState(false)
     const [logoutConfirm, setLogoutConfirm] = useState(false)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     useEffect(() => {
       const onDoc = (e: MouseEvent) => {
         if (!menuRef.current) return
         if (!(e.target instanceof Node)) return
         if (!menuRef.current.contains(e.target)) setOpen(false)
+        
+        if (!burgerRef.current) return
+        if (!burgerRef.current.contains(e.target)) setMobileMenuOpen(false)
       }
       document.addEventListener('click', onDoc)
 
@@ -34,9 +39,11 @@ const Header = () => {
     }, [open])
 
     return (
-     <header className="bg-blue-200 border-b-2 border-blue-500 dark:border-black p-4 text-4xl font-bold text-blue-700 dark:text-white shadow-sm flex items-center justify-between">
-        <h1 className="tracking-widest text-center flex-1">Welcome to my website</h1>
-        <div className="flex items-center space-x-3">
+     <header className="bg-blue-200 border-b-2 border-blue-500 dark:border-black p-4 text-4xl font-bold text-blue-700 dark:text-white shadow-sm flex items-center justify-center relative">
+        <h1 className="tracking-widest text-center">Welcome to my website</h1>
+        
+        {/* Desktop menu */}
+        <div className="hidden md:flex items-center space-x-3 absolute right-4">
           <DarkToggle />
           {auth && auth.user ? (
             <div className="relative" ref={menuRef}>
@@ -88,6 +95,69 @@ const Header = () => {
               </Link>
             </div>
           )}
+        </div>
+        
+        {/* Mobile burger menu */}
+        <div className="md:hidden absolute right-4" ref={burgerRef}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(o => !o) }}
+            className="flex flex-col gap-1.5 bg-white/80 dark:bg-neutral-800/70 backdrop-blur rounded p-2 shadow-md border border-blue-100 dark:border-neutral-700"
+            aria-label="Menu"
+          >
+            <span className={`block w-5 h-0.5 bg-blue-700 dark:bg-white transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+            <span className={`block w-5 h-0.5 bg-blue-700 dark:bg-white transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
+            <span className={`block w-5 h-0.5 bg-blue-700 dark:bg-white transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+          </button>
+          
+          {/* Mobile dropdown menu */}
+          <div 
+            className={`absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 border border-blue-100 dark:border-neutral-700 rounded-md shadow-lg z-50 overflow-hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+          >
+            <div className="flex flex-col p-2 space-y-2">
+              <div className="px-2 py-2 flex items-center justify-between border-b border-blue-100 dark:border-neutral-700">
+                <span className="text-sm text-blue-700 dark:text-white">Theme</span>
+                <DarkToggle />
+              </div>
+              
+              {auth && auth.user ? (
+                <>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); navigate('/profile') }} 
+                    className="w-full text-left px-3 py-2 text-sm text-blue-700 dark:text-white hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                  >
+                    <span>👤</span>
+                    <span>Profile</span>
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); if (auth?.token) { fetch(`${API_BASE}/logout`, { method: 'POST', headers: { Authorization: `Bearer ${auth.token}` } }).catch(()=>{}) }; auth.logout(); setMobileMenuOpen(false); navigate('/') }} 
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                  >
+                    <span>🚪</span>
+                    <span>Logout</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/login" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-left px-3 py-2 text-sm text-blue-700 dark:text-white hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                  >
+                    <span>🔐</span>
+                    <span>Login</span>
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-left px-3 py-2 text-sm text-pink-500 hover:bg-blue-50 dark:hover:bg-neutral-700 rounded flex items-center gap-2"
+                  >
+                    <span>✨</span>
+                    <span>Register</span>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </header>
     )

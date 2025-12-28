@@ -110,7 +110,7 @@ const Home = () => {
                 <div className="space-y-5 max-h-[60vh] overflow-auto pr-2">
                 {animeList.map((a, idx) => (
                   <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer">
-                    <div className="hover:animate-zoom-out-once card-border rounded-lg p-2">
+                    <div className="hover:animate-zoom-out-once card-border rounded-lg mt-4">
                       <h3 className="font-bold text-blue-700">{idx + 1}. {a.title}</h3>
                       {a.img && <img className="rounded w-full object-cover max-h-36" src={a.img} />}
                     </div>
