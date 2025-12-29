@@ -12,6 +12,9 @@
     <!-- Preload LCP background image in WebP format (smaller, faster) with JPEG fallback -->
     <link rel="preload" as="image" href="/background.webp" type="image/webp" fetchpriority="high" />
     
+      <!-- Preload theme-specific backgrounds so React inline styles don't delay discovery -->
+      <link rel="preload" as="image" href="/light.webp" type="image/webp" fetchpriority="high" />
+      <link rel="preload" as="image" href="/dark.webp" type="image/webp" fetchpriority="high" />
     
     
     <style>
