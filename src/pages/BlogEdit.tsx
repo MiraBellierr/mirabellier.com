@@ -47,23 +47,18 @@ const BlogEdit = () => {
             setIsLoadingPost(false);
             return;
         }
-        if (!auth?.user) return; // Wait for auth to be ready
 
         setPostId(id);
         setIsLoadingPost(true);
 
         const load = async () => {
             try {
-                const res = await fetch(`${API_BASE}/posts/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${auth.token}`,
-                    },
-                });
+                const res = await fetch(`${API_BASE}/posts/${id}`);
                 if (!res.ok) throw new Error('Failed to load post');
                 const data = await res.json();
 
                 // If the post has an owner, ensure current user is the owner
-                if (data.userId) {
+                if (data.userId && auth?.user) {
                     const currentUserId = auth?.user?.id;
                     if (!currentUserId || String(currentUserId) !== String(data.userId)) {
                         setToastMessage('❌ You are not allowed to edit this post');
@@ -96,7 +91,7 @@ const BlogEdit = () => {
         };
 
         load();
-    }, [location.search, auth?.user, auth?.token]);
+    }, [location.search, auth?.user]);
 
     useEffect(() => {
         // fetch existing tags from posts to use as suggestions
