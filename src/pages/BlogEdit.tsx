@@ -28,6 +28,7 @@ const BlogEdit = () => {
     const [, setSubmitSuccess] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
+    const [isLoadingPost, setIsLoadingPost] = useState(false);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -42,13 +43,22 @@ const BlogEdit = () => {
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const id = params.get('id');
-        if (!id) return;
+        if (!id) {
+            setIsLoadingPost(false);
+            return;
+        }
+        if (!auth?.user) return; // Wait for auth to be ready
 
         setPostId(id);
+        setIsLoadingPost(true);
 
         const load = async () => {
             try {
-                const res = await fetch(`${API_BASE}/posts/${id}`);
+                const res = await fetch(`${API_BASE}/posts/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${auth.token}`,
+                    },
+                });
                 if (!res.ok) throw new Error('Failed to load post');
                 const data = await res.json();
 
@@ -78,11 +88,15 @@ const BlogEdit = () => {
                 setTags(normalized);
             } catch (err) {
                 console.error('Failed to load post for edit', err);
+                setToastMessage('❌ Failed to load post');
+                setShowToast(true);
+            } finally {
+                setIsLoadingPost(false);
             }
         };
 
         load();
-    }, [location.search]);
+    }, [location.search, auth?.user, auth?.token]);
 
     useEffect(() => {
         // fetch existing tags from posts to use as suggestions
@@ -241,8 +255,18 @@ const BlogEdit = () => {
                         </div>
                     </div>
 
-                    <main className="w-full lg:w-3/5 space-y-2 p-4">
-                        <h2 className="font-bold text-2xl text-blue-600">Create a new Post</h2>
+                    <main className="w-full lg:w-3/5 space-y-2 p-4 relative">
+                        <h2 className="font-bold text-2xl text-blue-600">{postId ? 'Edit Post' : 'Create a new Post'}</h2>
+                        
+                        {isLoadingPost && (
+                            <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+                                <div className="text-center space-y-3">
+                                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                                    <p className="text-xl font-bold text-blue-600">Loading post content...</p>
+                                    <p className="text-sm text-gray-600">Please wait while we fetch your post</p>
+                                </div>
+                            </div>
+                        )}
                         
                         <form id="blog-form" onSubmit={handleSubmit}>      
                                             {}
@@ -254,6 +278,7 @@ const BlogEdit = () => {
                                     id="title"
                                     name="title"
                                     value={title}
+                                    disabled={isLoadingPost}
                                     onChange={handleTitleChange}
                                     placeholder="Enter the title of the post"
                                     className="form-input border rounded-lg border-blue-300 p-2"
@@ -268,6 +293,7 @@ const BlogEdit = () => {
                                         id="shortDescription"
                                         name="shortDescription"
                                         value={shortDescription}
+                                        disabled={isLoadingPost}
                                         onChange={(e) => setShortDescription(e.target.value)}
                                         placeholder="Brief summary (for listings, ~160 chars)"
                                         className="form-input border rounded-lg border-blue-300 p-2"
@@ -281,6 +307,7 @@ const BlogEdit = () => {
                                         id="thumbnail"
                                         name="thumbnail"
                                         value={thumbnail}
+                                        disabled={isLoadingPost}
                                         onChange={(e) => setThumbnail(e.target.value)}
                                         placeholder="Optional thumbnail image URL"
                                         className="form-input border rounded-lg border-blue-300 p-2"
@@ -314,6 +341,7 @@ const BlogEdit = () => {
                                             id="tags"
                                             name="tags"
                                             value={tagInput}
+                                            disabled={isLoadingPost}
                                             onChange={(e) => setTagInput(e.target.value)}
                                             onKeyDown={onTagKeyDown}
                                             placeholder="Add a tag and press Enter or comma (e.g. cats)"
@@ -338,7 +366,13 @@ const BlogEdit = () => {
                             <div className="flex flex-col p-2 space-y-2">
                                 <div className="block 2xl:block">
                                     <label className="font-bold text-blue-600" htmlFor="content">Content</label>
-                                    <SimpleEditor key={postId || 'new'} onContentChange={setContent} initialContent={content} />
+                                    {isLoadingPost ? (
+                                        <div className="border rounded-lg border-blue-300 p-4 text-center text-blue-600">
+                                            Loading post content...
+                                        </div>
+                                    ) : (
+                                        <SimpleEditor key={postId || 'new'} onContentChange={setContent} initialContent={content} />
+                                    )}
                                 </div>
                                                   
                             </div>
@@ -346,10 +380,10 @@ const BlogEdit = () => {
                             <div className="flex p-2">
                                 <button 
                                     type="submit"
-                                    disabled={isSubmitting}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg hover:animate-wiggle"
+                                    disabled={isSubmitting || isLoadingPost}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg hover:animate-wiggle disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isSubmitting ? "Publishing..." : "Publish Post"}
+                                    {isLoadingPost ? "Loading..." : isSubmitting ? "Publishing..." : "Publish Post"}
                                 </button>
                             </div>
                         </form>
@@ -373,11 +407,11 @@ const BlogEdit = () => {
             <button
                 type="submit"
                 form="blog-form"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingPost}
                 aria-label="Publish Post"
-                className={`fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full shadow-lg ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
+                className={`fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full shadow-lg ${isSubmitting || isLoadingPost ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-                {isSubmitting ? 'Publishing...' : 'Publish'}
+                {isLoadingPost ? 'Loading...' : isSubmitting ? 'Publishing...' : 'Publish'}
             </button>
             <Footer />
         </div>
