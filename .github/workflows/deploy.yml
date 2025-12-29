@@ -35,12 +35,23 @@ jobs:
     
     - name: Deploy to VPS
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          mkdir -p /var/www/miraiscute/dist
+          cd /var/www/miraiscute
+    
+    - name: Copy build files to VPS
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
-        source: "dist/*"
-        target: "/var/www/miraiscute/dist"
-        strip_components: 1
+        source: "dist/"
+        target: "/var/www/miraiscute"
+        rm: true
 
