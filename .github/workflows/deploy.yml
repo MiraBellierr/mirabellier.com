@@ -41,8 +41,8 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-          mkdir -p /var/www/miraiscute/dist
-          rm -rf /var/www/miraiscute/dist/*
+          mkdir -p /var/www/miraiscute/
+          rm -rf /var/www/miraiscute/*
     
     - name: Copy build files to VPS
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
@@ -52,5 +52,5 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         source: "dist/*"
-        target: "/var/www/miraiscute/dist"
+        target: "/var/www/miraiscute"
 
