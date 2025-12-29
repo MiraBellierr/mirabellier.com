@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
@@ -168,6 +169,7 @@ const Blog = () => {
     const navigate = useNavigate();
     const auth = useAuth();
     const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
+    const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
     useEffect(() => {
         const onDocClick = (e: MouseEvent) => {
@@ -175,20 +177,44 @@ const Blog = () => {
             if (!target) return;
             if (target.closest('[data-post-menu]') || target.closest('[data-post-menu-button]')) return;
             setOpenMenuId(null);
+            setMenuPos(null);
         };
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setOpenMenuId(null);
+            if (e.key === 'Escape') {
+                setOpenMenuId(null);
+                setMenuPos(null);
+            }
         };
+        const onScroll = () => {
+            setOpenMenuId(null);
+            setMenuPos(null);
+        };
+
         document.addEventListener('click', onDocClick);
         document.addEventListener('keydown', onKey);
+        window.addEventListener('scroll', onScroll, { passive: true });
         return () => {
             document.removeEventListener('click', onDocClick);
             document.removeEventListener('keydown', onKey);
+            window.removeEventListener('scroll', onScroll);
         };
     }, []);
 
-    const toggleMenu = (id: string | number) => {
-        setOpenMenuId(prev => (prev === id ? null : id));
+    const toggleMenu = (id: string | number, e: React.MouseEvent<HTMLButtonElement>) => {
+        const target = e.currentTarget as HTMLButtonElement | null;
+        setOpenMenuId(prev => {
+            const next = prev === id ? null : id;
+            if (next) {
+                if (!target) return prev; // safety guard
+                const rect = target.getBoundingClientRect();
+                const left = rect.right + window.scrollX - 144; // align with w-36 menu width
+                const top = rect.bottom + window.scrollY + 8;   // small gap below button
+                setMenuPos({ top, left });
+            } else {
+                setMenuPos(null);
+            }
+            return next;
+        });
     };
 
     useEffect(() => {
@@ -341,7 +367,7 @@ const Blog = () => {
                         ) : (
                             <>
                                                                 {currentPosts.map((post, index) => (
-                                                                    <div key={post.id}>
+                                                                    <div key={post.id} className="relative z-[1]" style={{ zIndex: openMenuId === post.id ? 13000 : undefined }}>
                                                                         <div className="p-2 card-border flex gap-4 items-start">
                                                                             <Link to={`/blog/${slugify(post.title)}-${post.id}`} className="flex-1 flex gap-4 items-start no-underline">
                                                                                 {post.thumbnail ? (
@@ -401,7 +427,7 @@ const Blog = () => {
                                                                             {auth?.user?.id && String(auth.user.id) === String((post as any).userId) ? (
                                                                                 <div className="relative ml-2">
                                                                                     <button
-                                                                                        onClick={() => toggleMenu(post.id)}
+                                                                                        onClick={(e) => toggleMenu(post.id, e)}
                                                                                         className={`p-1 rounded ${isDark ? 'hover:bg-gray-700' : 'hover:bg-blue-100'}`}
                                                                                         aria-haspopup="menu"
                                                                                         aria-expanded={openMenuId === post.id}
@@ -412,11 +438,18 @@ const Blog = () => {
                                                                                         </svg>
                                                                                     </button>
 
-                                                                                    {openMenuId === post.id && (
-                                                                                        <div data-post-menu className={`absolute right-0 mt-2 w-36 rounded z-50 text-sm ${isDark ? 'bg-gray-800 border border-gray-700 text-white shadow-lg' : 'bg-white border shadow'} transition-opacity duration-150 ease-in-out transform`}>
-                                                                                            <Link to={`/blog/edit?id=${post.id}`} className={`block px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? 'hover:bg-gray-700' : 'hover:bg-blue-50'}`}>Edit</Link>
-                                                                                            <button onClick={() => { setOpenMenuId(null); handleDelete(post.id); }} className={`w-full text-left px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? 'hover:bg-red-700 text-red-200' : 'hover:bg-red-50 text-red-700'}`}>Delete</button>
-                                                                                        </div>
+                                                                                    {openMenuId === post.id && menuPos && (
+                                                                                        createPortal(
+                                                                                            <div
+                                                                                                data-post-menu
+                                                                                                className={`fixed w-36 rounded z-[200000] text-sm ${isDark ? 'bg-gray-800 border border-gray-700 text-white shadow-lg' : 'bg-white border shadow'} transition-opacity duration-150 ease-in-out transform`}
+                                                                                                style={{ top: menuPos.top, left: menuPos.left, pointerEvents: 'auto' }}
+                                                                                            >
+                                                                                                <Link to={`/blog/edit?id=${post.id}`} className={`block px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? 'hover:bg-gray-700' : 'hover:bg-blue-50'}`}>Edit</Link>
+                                                                                                <button onClick={() => { setOpenMenuId(null); setMenuPos(null); handleDelete(post.id); }} className={`w-full text-left px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? 'hover:bg-red-700 text-red-200' : 'hover:bg-red-50 text-red-700'}`}>Delete</button>
+                                                                                            </div>,
+                                                                                            document.body
+                                                                                        )
                                                                                     )}
                                                                                 </div>
                                                                             ) : null}

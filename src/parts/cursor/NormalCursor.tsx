@@ -29,7 +29,7 @@ export default function NormalCursor({ position, isActive }: NormalCursorProps) 
         background: `url(${config.image}) no-repeat`,
         backgroundSize: 'contain',
         pointerEvents: 'none',
-        zIndex: 9998 
+        zIndex: 300000 
       }}
     />
   );

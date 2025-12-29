@@ -29,7 +29,7 @@ export default function TextCursor({ position, isActive }: TextCursorProps) {
         background: `url(${config.image}) no-repeat`,
         backgroundSize: 'contain',
         pointerEvents: 'none',
-        zIndex: 10000, 
+        zIndex: 300000, 
         // keep vertical alignment via translate3d above
       }}
     />

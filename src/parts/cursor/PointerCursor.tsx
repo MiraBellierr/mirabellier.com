@@ -50,7 +50,7 @@ export default function PointerCursor({ position, isActive }: PointerCursorProps
         background: `url(${config.image}) no-repeat`,
         backgroundSize: 'contain',
         pointerEvents: 'none',
-        zIndex: 9999,
+        zIndex: 300000,
       }}
     />
   );
