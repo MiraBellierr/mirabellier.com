@@ -16,7 +16,7 @@ import { useAuth } from '@/states/AuthContext'
 const BlogEdit = () => {
     const auth = useAuth()
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState({});
+    const [content, setContent] = useState<object | null>(null);
     const [shortDescription, setShortDescription] = useState('');
     const [thumbnail, setThumbnail] = useState('');
     const [tags, setTags] = useState<string[]>([]);
@@ -203,7 +203,7 @@ const BlogEdit = () => {
             setTimeout(() => setSubmitSuccess(false), 3000);
             
             setTitle('');
-            setContent({});
+            setContent(null);
             setShortDescription('');
             setThumbnail('');
             setTags([]);
@@ -338,7 +338,7 @@ const BlogEdit = () => {
                             <div className="flex flex-col p-2 space-y-2">
                                 <div className="block 2xl:block">
                                     <label className="font-bold text-blue-600" htmlFor="content">Content</label>
-                                    <SimpleEditor onContentChange={setContent} initialContent={content} />
+                                    <SimpleEditor key={postId || 'new'} onContentChange={setContent} initialContent={content} />
                                 </div>
                                                   
                             </div>
