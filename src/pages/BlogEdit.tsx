@@ -53,9 +53,16 @@ const BlogEdit = () => {
 
         const load = async () => {
             try {
+                console.log('Loading post with id:', id, 'from:', `${API_BASE}/posts/${id}`);
                 const res = await fetch(`${API_BASE}/posts/${id}`);
-                if (!res.ok) throw new Error('Failed to load post');
+                console.log('Response status:', res.status);
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('Failed to load post. Status:', res.status, 'Response:', errorText);
+                    throw new Error('Failed to load post');
+                }
                 const data = await res.json();
+                console.log('Loaded post data:', data);
 
                 // If the post has an owner, ensure current user is the owner
                 if (data.userId && auth?.user) {
