@@ -1,0 +1,22 @@
+# Allow all crawlers to index the site
+User-agent: *
+Allow: /
+
+# Specific rules for common bots
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Disallow crawling of certain paths
+Disallow: /admin
+Disallow: /api
+Disallow: *.mp4
+Disallow: *.webp
+Disallow: *.gif
+
+# Sitemap location
+Sitemap: https://mirabellier.com/sitemap.xml
