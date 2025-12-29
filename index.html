@@ -9,8 +9,8 @@
     <link rel="dns-prefetch" href="https://mirabellier.com" />
     <link rel="preconnect" href="https://mirabellier.com" crossorigin />
     
-    <!-- Preload LCP background image from public dir to keep it ready in cache -->
-    <link rel="preload" as="image" href="/background.jpg" type="image/jpeg" fetchpriority="high" />
+    <!-- Preload LCP background image in WebP format (smaller, faster) with JPEG fallback -->
+    <link rel="preload" as="image" href="/background.webp" type="image/webp" fetchpriority="high" />
     
     
     
@@ -39,12 +39,23 @@
       }
       /* Make LCP background image discoverable immediately with high priority */
       div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-        background-image: url('/background.jpg');
+        background-image: url('/background.webp');
         background-size: cover;
         background-position: center;
         background-attachment: scroll;
       }
+      /* Fallback for browsers that don't support WebP */
+      @supports not (background-image: url('/background.webp')) {
+        div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
+          background-image: url('/background.jpg');
+        }
+      }
       @media (prefers-color-scheme: dark) {
+        div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
+          background-image: url('/background.webp');
+        }
+      }
+      @media (prefers-color-scheme: dark) and (not (background-image: url('/background.webp'))) {
         div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
           background-image: url('/background.jpg');
         }
