@@ -1,7 +1,7 @@
 import home from "../assets/icons/img1-24.webp";
 import about from "../assets/icons/img2-24.webp";
 import blog from "../assets/icons/img3-24.webp";
-import art from "../assets/icons/img4-24.webp";
+import pics from "../assets/icons/img4-24.webp";
 import cats from "../assets/icons/cats-24.webp";
 import cursor from "../assets/icons/cursor-24.webp";
 
@@ -37,9 +37,9 @@ const Navigation = () => {
                   </Link>       
                 </div>
                 <div className="flex justify-center">
-                  <img className="h-4 w-4" src={art} alt="art icon"/>
-                  <Link className="hover:animate-wiggle hover:underline" to="/art">
-                    <div className={location.pathname === "/art" ? "text-blue-700 pl-1 text-sm text-center font-bold" : "text-blue-500 pl-1 text-sm text-center font-bold"}>art</div>
+                  <img className="h-4 w-4" src={pics} alt="pics icon"/>
+                  <Link className="hover:animate-wiggle hover:underline" to="/pics">
+                    <div className={location.pathname === "/pics" ? "text-blue-700 pl-1 text-sm text-center font-bold" : "text-blue-500 pl-1 text-sm text-center font-bold"}>pics</div>
                   </Link>             
                 </div>
                 <div className="flex justify-center">
