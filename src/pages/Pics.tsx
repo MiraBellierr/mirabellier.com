@@ -1,11 +1,9 @@
-import { useEffect, useState, useRef } from "react";
-import { useAuth } from '@/states/AuthContext';
+import { useEffect, useState } from "react";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import { Link } from "react-router-dom";
 import { API_BASE } from '@/lib/config';
-import kannaEating from '@/assets/anime/kanna-eating.webp'
 
 interface Pic {
     id: string;
@@ -24,7 +22,6 @@ const Pics = () => {
     const [currentPicIndex, setCurrentPicIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [userCache, setUserCache] = useState<Record<string, any>>({});
-    const { user } = useAuth();
 
     const resolveAsset = (asset?: string | null) => {
         if (!asset) return `${API_BASE}/images/default-avatar.png`;
