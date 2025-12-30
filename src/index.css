@@ -529,21 +529,21 @@ body {
 /* Reduce spacing for lists in blog post content */
 .prose ul,
 .prose ol {
-	margin-top: 0.5em;
-	margin-bottom: 0.5em;
+	margin-top: 0.1em;
+	margin-bottom: 0.1em;
 }
 
 .prose ul > li,
 .prose ol > li {
-	margin-top: 0.25em;
-	margin-bottom: 0.25em;
-	padding-left: 0.25em;
+	margin-top: 0.1em;
+	margin-bottom: 0.1em;
+	padding-left: 0.1em;
 }
 
 .prose ul > li > p,
 .prose ol > li > p {
-	margin-top: 0.25em;
-	margin-bottom: 0.25em;
+	margin-top: 0.1em;
+	margin-bottom: 0.1em;
 }
 
 /* For nested lists */
@@ -551,6 +551,45 @@ body {
 .prose ul ol,
 .prose ol ul,
 .prose ol ol {
-	margin-top: 0.25em;
-	margin-bottom: 0.25em;
+	margin-top: 0.1em;
+	margin-bottom: 0.1em;
+}
+
+/* Make bullet list markers black */
+.prose ul > li::marker {
+	color: black;
+}
+
+.dark .prose ul > li::marker {
+	color: white;
+}
+
+/* Light blue headers in blog post content (light mode) */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+	color: rgb(29 78 216);
+}
+
+/* Reduce H1 size */
+.prose h1 {
+	font-size: 1.9rem;
+}
+
+.prose p {
+  color: var(--tt-color-text-gray);
+  font-weight: 400;
+}
+
+/* Keep headers visible in dark mode */
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4,
+.dark .prose h5,
+.dark .prose h6 {
+	color: #bfdbfe;
 }
