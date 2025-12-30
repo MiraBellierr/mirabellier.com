@@ -40,6 +40,8 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
+        timeout: 60s
+        command_timeout: 30m
         script: |
           mkdir -p /var/www/miraiscute/
           rm -rf /var/www/miraiscute/*
@@ -51,6 +53,8 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
+        timeout: 60s
+        command_timeout: 30m
         source: "dist/*"
         target: "/var/www/miraiscute"
 
