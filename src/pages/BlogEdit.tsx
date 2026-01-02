@@ -29,7 +29,8 @@ const BlogEdit = () => {
     const [, setSubmitSuccess] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
-    const [existingPost, setExistingPost] = useState<any>(null);
+    const [isLoadingPost, setIsLoadingPost] = useState(false);
+    const [postId, setPostId] = useState<string | null>(null);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -48,14 +49,6 @@ const BlogEdit = () => {
             }
         };
     }, []);
-
-    useEffect(() => {
-    const [toastMessage, setToastMessage] = useState('');
-    const [isLoadingPost, setIsLoadingPost] = useState(false);
-
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [postId, setPostId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!auth?.token) {
