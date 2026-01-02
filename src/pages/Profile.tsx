@@ -30,6 +30,29 @@ const Profile = () => {
   const [profileUser, setProfileUser] = useState<UserData | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Update canonical URL to point to the Profile page
+    const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (canonicalLink) {
+      if (username) {
+        canonicalLink.href = `https://mirabellier.com/profile/${username}`;
+      } else {
+        canonicalLink.href = 'https://mirabellier.com/profile';
+      }
+    }
+
+    return () => {
+      const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (canonicalLink) {
+        canonicalLink.href = 'https://mirabellier.com/';
+      }
+    };
+  }, [username]);
+
+  useEffect(() => {
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Determine which user to display

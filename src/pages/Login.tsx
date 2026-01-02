@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { API_BASE } from '@/lib/config'
 import Header from '../parts/Header'
 import Footer from '../parts/Footer'
@@ -6,6 +7,21 @@ import kannaShy from '@/assets/anime/kanna-shy.webp'
 
 
 const Login = () => {
+  useEffect(() => {
+    // Update canonical URL to point to the Login page
+    const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (canonicalLink) {
+      canonicalLink.href = 'https://mirabellier.com/login';
+    }
+
+    return () => {
+      const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (canonicalLink) {
+        canonicalLink.href = 'https://mirabellier.com/';
+      }
+    };
+  }, []);
+
   const handleDiscordLogin = () => {
     // Redirect to Discord OAuth
     window.location.href = `${API_BASE}/auth/discord`

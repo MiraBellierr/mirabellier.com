@@ -85,6 +85,23 @@ const BlogPost = () => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Update canonical URL to point to the specific blog post
+    if (slug) {
+      const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (canonicalLink) {
+        canonicalLink.href = `https://mirabellier.com/blog/${slug}`;
+      }
+    }
+
+    return () => {
+      const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (canonicalLink) {
+        canonicalLink.href = 'https://mirabellier.com/';
+      }
+    };
+  }, [slug]);
+
+  useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {

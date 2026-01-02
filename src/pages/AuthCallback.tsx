@@ -8,6 +8,21 @@ const AuthCallback = () => {
   const auth = useAuth()
 
   useEffect(() => {
+    // Update canonical URL to point to the AuthCallback page
+    const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (canonicalLink) {
+      canonicalLink.href = 'https://mirabellier.com/auth/callback';
+    }
+
+    return () => {
+      const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (canonicalLink) {
+        canonicalLink.href = 'https://mirabellier.com/';
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(location.search)
     const token = params.get('token')
     

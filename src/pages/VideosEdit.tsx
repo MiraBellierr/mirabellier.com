@@ -21,6 +21,21 @@ const VideosEdit = () => {
     const auth = useAuth()
 
     useEffect(() => {
+        // Update canonical URL to point to the VideosEdit page
+        const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (canonicalLink) {
+            canonicalLink.href = 'https://mirabellier.com/videos/edit';
+        }
+
+        return () => {
+            const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+            if (canonicalLink) {
+                canonicalLink.href = 'https://mirabellier.com/';
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         if (!auth?.token) navigate('/login')
     }, [auth, navigate])
     

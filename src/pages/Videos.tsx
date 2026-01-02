@@ -95,6 +95,21 @@ const Videos = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        // Update canonical URL to point to the Videos page
+        const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (canonicalLink) {
+            canonicalLink.href = 'https://mirabellier.com/videos';
+        }
+
+        return () => {
+            const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+            if (canonicalLink) {
+                canonicalLink.href = 'https://mirabellier.com/';
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
         const urlSearchQuery = searchParams.get('search') || '';
         setSearchQuery(urlSearchQuery);

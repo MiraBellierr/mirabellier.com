@@ -14,7 +14,7 @@ const About = () => {
     // Update canonical URL to point to the About page
     const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (canonicalLink) {
-      canonicalLink.href = 'https://mirabellier.com/#/about';
+      canonicalLink.href = 'https://mirabellier.com/about';
     }
 
     // Cleanup: restore homepage canonical when unmounting

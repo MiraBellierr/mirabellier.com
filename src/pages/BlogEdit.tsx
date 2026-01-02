@@ -28,6 +28,28 @@ const BlogEdit = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [, setSubmitSuccess] = useState(false);
     const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+    const [existingPost, setExistingPost] = useState<any>(null);
+
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        // Update canonical URL to point to the BlogEdit page
+        const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (canonicalLink) {
+            canonicalLink.href = 'https://mirabellier.com/blog/edit';
+        }
+
+        return () => {
+            const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+            if (canonicalLink) {
+                canonicalLink.href = 'https://mirabellier.com/';
+            }
+        };
+    }, []);
+
+    useEffect(() => {
     const [toastMessage, setToastMessage] = useState('');
     const [isLoadingPost, setIsLoadingPost] = useState(false);
 

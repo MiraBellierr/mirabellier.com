@@ -22,6 +22,21 @@ const Settings = () => {
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
+    // Update canonical URL to point to the Settings page
+    const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (canonicalLink) {
+      canonicalLink.href = 'https://mirabellier.com/settings';
+    }
+
+    return () => {
+      const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (canonicalLink) {
+        canonicalLink.href = 'https://mirabellier.com/';
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (avatarFile) {
       const url = URL.createObjectURL(avatarFile)
       setPreview(url)

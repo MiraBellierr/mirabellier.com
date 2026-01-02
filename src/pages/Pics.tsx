@@ -32,6 +32,21 @@ const Pics = () => {
     }
 
     useEffect(() => {
+        // Update canonical URL to point to the Pics page
+        const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (canonicalLink) {
+            canonicalLink.href = 'https://mirabellier.com/pics';
+        }
+
+        return () => {
+            const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+            if (canonicalLink) {
+                canonicalLink.href = 'https://mirabellier.com/';
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         let isMounted = true;
         
         async function fetchPics() {

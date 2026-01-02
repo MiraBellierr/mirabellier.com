@@ -18,6 +18,21 @@ const AdminAnime = () => {
   const [img, setImg] = useState('')
 
   useEffect(() => {
+    // Update canonical URL to point to the AdminAnime page
+    const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (canonicalLink) {
+      canonicalLink.href = 'https://mirabellier.com/admin/anime';
+    }
+
+    return () => {
+      const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (canonicalLink) {
+        canonicalLink.href = 'https://mirabellier.com/';
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!auth?.user || (auth.user as any).discordId !== '548050617889980426') {
       return
     }

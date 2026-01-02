@@ -172,6 +172,21 @@ const Blog = () => {
     const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
     useEffect(() => {
+        // Update canonical URL to point to the Blog page
+        const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (canonicalLink) {
+            canonicalLink.href = 'https://mirabellier.com/blog';
+        }
+
+        return () => {
+            const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+            if (canonicalLink) {
+                canonicalLink.href = 'https://mirabellier.com/';
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         const onDocClick = (e: MouseEvent) => {
             const target = e.target as Element | null;
             if (!target) return;

@@ -26,6 +26,14 @@ const Home = () => {
   const ANIME_PREVIEW_LIMIT = 10;
 
   useEffect(() => {
+    // Update canonical URL to point to homepage
+    const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (canonicalLink) {
+      canonicalLink.href = 'https://mirabellier.com/';
+    }
+  }, []);
+
+  useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch(`${API_BASE}/anime`)
