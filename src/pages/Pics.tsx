@@ -38,11 +38,26 @@ const Pics = () => {
             canonicalLink.href = 'https://mirabellier.com/pics';
         }
 
+        // Add structured data for rich results
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = 'pics-structured-data';
+        script.text = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ImageGallery",
+            "name": "Mirabellier Pictures",
+            "description": "Collection of cute pictures and photos",
+            "url": "https://mirabellier.com/pics"
+        });
+        document.head.appendChild(script);
+
         return () => {
             const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
             if (canonicalLink) {
                 canonicalLink.href = 'https://mirabellier.com/';
             }
+            const oldScript = document.getElementById('pics-structured-data');
+            if (oldScript) oldScript.remove();
         };
     }, []);
 

@@ -17,12 +17,39 @@ const About = () => {
       canonicalLink.href = 'https://mirabellier.com/about';
     }
 
+    // Add structured data for rich results
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'about-structured-data';
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      "name": "About Mirabellier",
+      "description": "Full Stack Developer with 3 years of experience in React and NodeJS",
+      "url": "https://mirabellier.com/about",
+      "mainEntity": {
+        "@type": "Person",
+        "name": "Mirabellier",
+        "jobTitle": "Full Stack Developer",
+        "knowsAbout": ["JavaScript", "NodeJS", "TypeScript", "React", "React Native"],
+        "url": "https://mirabellier.com",
+        "sameAs": [
+          "https://github.com/MiraBellierr",
+          "https://www.patreon.com/c/jasminebot/",
+          "https://ko-fi.com/mirabellier"
+        ]
+      }
+    });
+    document.head.appendChild(script);
+
     // Cleanup: restore homepage canonical when unmounting
     return () => {
       const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
       if (canonicalLink) {
         canonicalLink.href = 'https://mirabellier.com/';
       }
+      const oldScript = document.getElementById('about-structured-data');
+      if (oldScript) oldScript.remove();
     };
   }, []);
 

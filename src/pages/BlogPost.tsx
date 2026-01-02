@@ -102,6 +102,37 @@ const BlogPost = () => {
   }, [slug]);
 
   useEffect(() => {
+    // Add structured data for rich results when post is loaded
+    if (post && slug) {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.id = 'blogpost-structured-data';
+      script.text = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "url": `https://mirabellier.com/blog/${slug}`,
+        "datePublished": post.createdAt,
+        "author": {
+          "@type": "Person",
+          "name": post.author
+        },
+        "publisher": {
+          "@type": "Person",
+          "name": "Mirabellier"
+        },
+        "description": post.shortDescription || post.title
+      });
+      document.head.appendChild(script);
+
+      return () => {
+        const oldScript = document.getElementById('blogpost-structured-data');
+        if (oldScript) oldScript.remove();
+      };
+    }
+  }, [post, slug]);
+
+  useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {

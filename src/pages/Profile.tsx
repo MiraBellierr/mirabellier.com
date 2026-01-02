@@ -43,13 +43,38 @@ const Profile = () => {
       }
     }
 
+    // Add structured data for rich results
+    if (profileUser || auth.user) {
+      const user = username ? profileUser : auth.user;
+      if (user) {
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = 'profile-structured-data';
+        script.text = JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ProfilePage",
+          "name": `${user.username} - Profile`,
+          "url": username ? `https://mirabellier.com/profile/${username}` : 'https://mirabellier.com/profile',
+          "mainEntity": {
+            "@type": "Person",
+            "name": user.username,
+            "description": user.bio || undefined,
+            "url": user.website || undefined
+          }
+        });
+        document.head.appendChild(script);
+      }
+    }
+
     return () => {
       const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
       if (canonicalLink) {
         canonicalLink.href = 'https://mirabellier.com/';
       }
+      const oldScript = document.getElementById('profile-structured-data');
+      if (oldScript) oldScript.remove();
     };
-  }, [username]);
+  }, [username, profileUser, auth.user]);
 
   // Determine which user to display
   const user = username ? profileUser : auth.user

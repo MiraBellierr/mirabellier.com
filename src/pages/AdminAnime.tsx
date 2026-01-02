@@ -24,11 +24,26 @@ const AdminAnime = () => {
       canonicalLink.href = 'https://mirabellier.com/admin/anime';
     }
 
+    // Add structured data for rich results
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'admin-structured-data';
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Admin - Anime Management",
+      "description": "Manage anime list",
+      "url": "https://mirabellier.com/admin/anime"
+    });
+    document.head.appendChild(script);
+
     return () => {
       const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
       if (canonicalLink) {
         canonicalLink.href = 'https://mirabellier.com/';
       }
+      const oldScript = document.getElementById('admin-structured-data');
+      if (oldScript) oldScript.remove();
     };
   }, []);
 

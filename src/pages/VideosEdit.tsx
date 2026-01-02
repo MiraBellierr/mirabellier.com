@@ -27,11 +27,26 @@ const VideosEdit = () => {
             canonicalLink.href = 'https://mirabellier.com/videos/edit';
         }
 
+        // Add structured data for rich results
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = 'videosedit-structured-data';
+        script.text = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Upload Video",
+            "description": "Upload a new video",
+            "url": "https://mirabellier.com/videos/edit"
+        });
+        document.head.appendChild(script);
+
         return () => {
             const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
             if (canonicalLink) {
                 canonicalLink.href = 'https://mirabellier.com/';
             }
+            const oldScript = document.getElementById('videosedit-structured-data');
+            if (oldScript) oldScript.remove();
         };
     }, []);
 

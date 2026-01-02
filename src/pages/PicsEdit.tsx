@@ -26,11 +26,26 @@ const PicsEdit = () => {
             canonicalLink.href = 'https://mirabellier.com/pics/edit';
         }
 
+        // Add structured data for rich results
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = 'picsedit-structured-data';
+        script.text = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Upload Picture",
+            "description": "Upload a new picture",
+            "url": "https://mirabellier.com/pics/edit"
+        });
+        document.head.appendChild(script);
+
         return () => {
             const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
             if (canonicalLink) {
                 canonicalLink.href = 'https://mirabellier.com/';
             }
+            const oldScript = document.getElementById('picsedit-structured-data');
+            if (oldScript) oldScript.remove();
         };
     }, []);
 

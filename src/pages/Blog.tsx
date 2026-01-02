@@ -178,11 +178,30 @@ const Blog = () => {
             canonicalLink.href = 'https://mirabellier.com/blog';
         }
 
+        // Add structured data for rich results
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = 'blog-structured-data';
+        script.text = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Blog",
+            "name": "Mirabellier Blog",
+            "description": "Personal blog with thoughts, stories, and updates",
+            "url": "https://mirabellier.com/blog",
+            "author": {
+                "@type": "Person",
+                "name": "Mirabellier"
+            }
+        });
+        document.head.appendChild(script);
+
         return () => {
             const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
             if (canonicalLink) {
                 canonicalLink.href = 'https://mirabellier.com/';
             }
+            const oldScript = document.getElementById('blog-structured-data');
+            if (oldScript) oldScript.remove();
         };
     }, []);
 

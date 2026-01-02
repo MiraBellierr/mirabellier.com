@@ -31,6 +31,29 @@ const Home = () => {
     if (canonicalLink) {
       canonicalLink.href = 'https://mirabellier.com/';
     }
+
+    // Add structured data for rich results
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'home-structured-data';
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Mirabellier",
+      "description": "A tiny, cozy blog sharing small joys: photos, videos, and short posts",
+      "url": "https://mirabellier.com/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://mirabellier.com/blog?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      const oldScript = document.getElementById('home-structured-data');
+      if (oldScript) oldScript.remove();
+    };
   }, []);
 
   useEffect(() => {

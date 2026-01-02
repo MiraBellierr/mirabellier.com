@@ -101,11 +101,26 @@ const Videos = () => {
             canonicalLink.href = 'https://mirabellier.com/videos';
         }
 
+        // Add structured data for rich results
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = 'videos-structured-data';
+        script.text = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "VideoGallery",
+            "name": "Mirabellier Videos",
+            "description": "Collection of cute videos and clips",
+            "url": "https://mirabellier.com/videos"
+        });
+        document.head.appendChild(script);
+
         return () => {
             const canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
             if (canonicalLink) {
                 canonicalLink.href = 'https://mirabellier.com/';
             }
+            const oldScript = document.getElementById('videos-structured-data');
+            if (oldScript) oldScript.remove();
         };
     }, []);
 
