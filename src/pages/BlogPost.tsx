@@ -169,15 +169,15 @@ const BlogPost = () => {
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
       <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
-        <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-            <div className="flex-grow flex-col space-y-4">
-            <Navigation />
+        <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
+            <div className="flex-col space-y-4 lg:sticky lg:top-4 lg:self-start lg:w-[250px]">
+            < Navigation />
             <div className=" mt-3 mb-auto justify-center items-center flex">
-              <img className="w-[350px] rounded-lg border border-blue-400" src={kannaHappy} width="350" height="350" alt="kanna gif" loading="eager" fetchPriority="high" />
+              <img className="w-full rounded-lg border border-blue-400" src={kannaHappy} width="350" height="350" alt="kanna gif" loading="eager" fetchPriority="high" />
             </div>
           </div>
 
-          <main className="w-full lg:w-3/5 space-y-4 p-4">
+          <main className="w-full lg:flex-1 space-y-4 p-4">
             {loading ? (
               <div className="p-2 card-border text-center">
                 <p>Loading post...</p>
@@ -209,7 +209,7 @@ const BlogPost = () => {
                     <span>• {new Date(post.createdAt).toLocaleDateString()}</span>
                   </p>
 
-                  <div className="max-h-[500px] overflow-y-auto">
+                  <div>
                     <Post html={post.content} />
                   </div>
                 </div>
@@ -221,33 +221,7 @@ const BlogPost = () => {
             )}
           </main>
 
-          <div className="flex-col">
-            <div className="mt-3 mb-auto lg:w-[200px] space-y-4">
-              <aside className="w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4">
-                <div className="space-y-2 text-sm text-center font-bold">
-                  <h2 className="text-blue-600 font-bold text-lg pb-2">Create 📒</h2>
-                  <Link to="/blog/edit" aria-label="Create a new blog post">
-                    <div className="border border-blue-300 rounded-2xl bg-blue-200 p-1 hover:bg-blue-300 hover:animate-wiggle">
-                      Create new post
-                    </div>
-                  </Link>
-                </div>
-              </aside>
-              <aside className="w-full lg:w-[200px] mb-auto bg-blue-50 border border-blue-200 rounded-xl shadow-md p-4 hidden lg:block">
-                <h3 className="text-blue-700 font-bold text-lg text-center mb-2">Blog Tips</h3>
-                <ul className="text-sm text-blue-600 space-y-2">
-                  <li>• Use short, clear titles (≤60 chars).</li>
-                  <li>• Split content into short paragraphs.</li>
-                  <li>• Upload images to illustrate points.</li>
-                  <li>• Preview posts before publishing.</li>
-                </ul>
-                <div className="mt-4 text-xs text-blue-400 text-center">Write kindly and credit sources 💖</div>
-              </aside>
-              <div className='flex justify-center'>
-                <img className="border border-blue-400 rounded-lg" src={kannaSmile} width="498" height="498" alt="kanna gif" />
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
       <Footer />

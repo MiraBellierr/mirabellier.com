@@ -14,7 +14,7 @@ const Navigation = () => {
     const { isCustomCursor } = useCursor();
 
     return (
-        <aside className="mb-auto lg:w-[339px] bg-blue-100 border border-blue-300 rounded-xl shadow-md opacity-90">
+        <aside className="mb-auto w-full bg-blue-100 border border-blue-300 rounded-xl shadow-md opacity-90">
             <nav className="space-y-2 mb-4">
               <h2 className="text-blue-600 font-bold text-lg text-center p-4">site navigation</h2>
               <div className="">

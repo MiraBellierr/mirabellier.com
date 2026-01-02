@@ -281,15 +281,15 @@ const BlogEdit = () => {
             <Header />
 
             <div className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: 'var(--page-bg)' }}>
-                <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-                    <div className="flex-grow flex-col space-y-4">
+                <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
+                    <div className="flex-col space-y-4 lg:sticky lg:top-4 lg:self-start lg:w-[250px]">
                         <Navigation />
                         <div className=" mt-3 mb-auto justify-center items-center flex">
-                            <img className="border-border-blue-300 rounded-lg shadow" src={missKobayashi} width="498" height="280" alt="anime gif" />
+                            <img className="w-full border-border-blue-300 rounded-lg shadow" src={missKobayashi} width="498" height="280" alt="anime gif" />
                         </div>
                     </div>
 
-                    <main className="w-full lg:w-3/5 space-y-2 p-4 relative">
+                    <main className="w-full lg:flex-1 space-y-2 p-4 relative">
                         <h2 className="font-bold text-2xl text-blue-600">{postId ? 'Edit Post' : 'Create a new Post'}</h2>
                         
                         {isLoadingPost && (
@@ -422,12 +422,6 @@ const BlogEdit = () => {
                             </div>
                         </form>
                     </main>
-
-                    <div className="flex-col">
-
-                        <div className="mt-3 mb-auto lg:w-[200px]">
-                        </div>
-                    </div>
                 </div>
             </div>
 
