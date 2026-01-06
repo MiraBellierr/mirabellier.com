@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "backend:dev": "node mirabellier-backend/app.js",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "generate:sitemap": "node generate-sitemap.cjs"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.13",

@@ -2,6 +2,9 @@
 User-agent: *
 Allow: /
 
+# Sitemap location
+Sitemap: https://mirabellier.com/sitemap.xml
+
 # Specific rules for common bots
 User-agent: Googlebot
 Allow: /
@@ -17,6 +20,5 @@ Disallow: /api
 Disallow: *.mp4
 Disallow: *.webp
 Disallow: *.gif
-
 # Sitemap location
 Sitemap: https://mirabellier.com/sitemap.xml
