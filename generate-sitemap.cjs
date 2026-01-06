@@ -32,26 +32,60 @@ const STATIC_ROUTES = [
 /**
  * Fetch data from API endpoint
  */
-function fetchFromAPI(endpoint) {
+function fetchFromAPI(endpoint, redirectsLeft = 3) {
   return new Promise((resolve, reject) => {
     const url = new URL(endpoint, API_BASE);
     const protocol = url.protocol === 'https:' ? https : http;
 
-    protocol
-      .get(url, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
+    const options = {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mirabellier-Sitemap/1.0 (+https://mirabellier.com)'
+      }
+    };
+
+    const req = protocol.request(url, options, (res) => {
+      // Handle redirects
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirectsLeft > 0) {
+        try {
+          const nextUrl = new URL(res.headers.location, url);
+          res.resume(); // discard data
+          return resolve(fetchFromAPI(nextUrl.pathname + nextUrl.search, redirectsLeft - 1));
+        } catch (e) {
+          return reject(new Error(`Redirect error from ${url.href}: ${e.message}`));
+        }
+      }
+
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        let preview = '';
+        res.on('data', (chunk) => { preview += chunk.toString(); });
         res.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            reject(new Error(`Failed to parse JSON from ${endpoint}: ${e.message}`));
-          }
+          reject(new Error(`HTTP ${res.statusCode} from ${url.href}. Preview: ${preview.slice(0, 120)}`));
         });
-      })
-      .on('error', reject);
+        return;
+      }
+
+      const contentType = (res.headers['content-type'] || '').toLowerCase();
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          if (!contentType.includes('application/json')) {
+            throw new Error(`Unexpected content-type '${contentType}'`);
+          }
+          resolve(JSON.parse(data));
+        } catch (e) {
+          const preview = String(data || '').slice(0, 120);
+          reject(new Error(`Failed to parse JSON from ${endpoint}: ${e.message}. Preview: ${preview}`));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.setTimeout(15000, () => {
+      req.destroy(new Error(`Request timed out for ${url.href}`));
+    });
+    req.end();
   });
 }
 
