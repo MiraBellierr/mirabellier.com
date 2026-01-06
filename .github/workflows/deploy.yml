@@ -30,6 +30,9 @@ jobs:
     - name: Run linter
       run: npm run lint --if-present
     
+    - name: Generate sitemap
+      run: npm run generate:sitemap
+    
     - name: Build application
       run: npm run build
     
@@ -58,16 +61,4 @@ jobs:
         source: "dist/*"
         target: "/var/www/mirabellier"
     
-    - name: Generate sitemap on server
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        timeout: 60s
-        command_timeout: 30m
-        script: |
-          cd /root/mirabellier-backend
-          NODE_ENV=production node lib/sitemap.js
 
