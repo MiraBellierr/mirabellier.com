@@ -37,9 +37,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
             <img
-              src={resolveAsset(
-                author?.avatar || "/images/default-avatar.png",
-              )}
+              src={resolveAsset(author?.avatar || "/images/default-avatar.png")}
               alt={`${author?.username || "user"} avatar`}
               className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
               loading="eager"

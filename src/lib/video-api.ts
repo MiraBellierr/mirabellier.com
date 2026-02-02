@@ -5,7 +5,9 @@ import { insertNestedComment } from "./video-utils";
 export const fetchAndCacheUser = async (
   id: string | null | undefined,
   userCache: Record<string, any>,
-  setUserCache: (fn: (prev: Record<string, any>) => Record<string, any>) => void,
+  setUserCache: (
+    fn: (prev: Record<string, any>) => Record<string, any>,
+  ) => void,
 ) => {
   if (!id) return null;
   if (userCache[id]) return userCache[id];

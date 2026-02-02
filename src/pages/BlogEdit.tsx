@@ -218,7 +218,8 @@ const BlogEdit = () => {
         shortDescription: shortDescription || undefined,
         thumbnail: thumbnail || undefined,
       };
-      if (tags && tags.length) blogData.tags = validateTags(tags).slice(0, MAX_TAGS);
+      if (tags && tags.length)
+        blogData.tags = validateTags(tags).slice(0, MAX_TAGS);
       if (auth?.user?.id) blogData.userId = auth.user.id;
 
       await savePost(postId, blogData, auth?.token || undefined);

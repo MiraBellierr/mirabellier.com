@@ -9,15 +9,13 @@ import { CommentItem } from "@/components/VideoCommentItem";
 
 import { API_BASE } from "@/lib/config";
 import kobayashiMaidDragon from "@/assets/anime/kobayashi-maid-dragon.webp";
-import type {
-  Video,
-} from "@/lib/video-utils";
+import type { Video } from "@/lib/video-utils";
+import { resolveAsset, shareVideo, isMobileDevice } from "@/lib/video-utils";
 import {
-  resolveAsset,
-  shareVideo,
-  isMobileDevice,
-} from "@/lib/video-utils";
-import { toggleVideoLike, addComment, fetchAndCacheUser } from "@/lib/video-api";
+  toggleVideoLike,
+  addComment,
+  fetchAndCacheUser,
+} from "@/lib/video-api";
 
 const Videos = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -180,7 +178,9 @@ const Videos = () => {
                 }
               });
               await Promise.all(
-                Array.from(ids).map((id) => fetchAndCacheUser(id, userCache, setUserCache)),
+                Array.from(ids).map((id) =>
+                  fetchAndCacheUser(id, userCache, setUserCache),
+                ),
               );
             } catch (error) {
               console.error(error);
@@ -329,17 +329,10 @@ const Videos = () => {
     text: string,
     parentId?: string | null,
   ) => {
-    addComment(
-      videoId,
-      text,
-      token,
-      parentId,
-      setCommentsMap,
-      () => {
-        setNewComment("");
-        setReplyTo(null);
-      },
-    );
+    addComment(videoId, text, token, parentId, setCommentsMap, () => {
+      setNewComment("");
+      setReplyTo(null);
+    });
   };
 
   const toggleExpand = (id: string) => {
@@ -901,7 +894,11 @@ const Videos = () => {
                         onChange={(e) => setNewComment(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && showCommentsFor) {
-                            handleAddComment(showCommentsFor, newComment, replyTo);
+                            handleAddComment(
+                              showCommentsFor,
+                              newComment,
+                              replyTo,
+                            );
                           }
                         }}
                         className="flex-grow min-w-0 border border-pink-200 rounded-full px-4 py-2 bg-white/90"
@@ -912,7 +909,11 @@ const Videos = () => {
                       <button
                         onClick={() => {
                           if (showCommentsFor)
-                            handleAddComment(showCommentsFor, newComment, replyTo);
+                            handleAddComment(
+                              showCommentsFor,
+                              newComment,
+                              replyTo,
+                            );
                         }}
                         className="bg-pink-500 text-white px-4 py-2 rounded-full flex-shrink-0 hover:bg-pink-600"
                       >

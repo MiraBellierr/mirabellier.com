@@ -174,12 +174,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         <div className="absolute left-0 right-0 bottom-3 flex justify-center">
           <div className="bg-black/40 text-white text-sm px-3 py-1 rounded-md">
-            {totalVideos > 0 ? `${currentVideoIndex + 1} / ${totalVideos}` : "0 / 0"}
+            {totalVideos > 0
+              ? `${currentVideoIndex + 1} / ${totalVideos}`
+              : "0 / 0"}
           </div>
         </div>
 
         <div className="absolute right-4 bottom-8 flex flex-col items-center space-y-4">
-          <a href={`/profile/${userCache[currentVideo?.userId || ""]?.username || currentVideo?.author || "#"}`} className="block">
+          <a
+            href={`/profile/${userCache[currentVideo?.userId || ""]?.username || currentVideo?.author || "#"}`}
+            className="block"
+          >
             <img
               src={resolveAsset(
                 (currentVideo?.userId &&
