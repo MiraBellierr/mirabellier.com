@@ -6,10 +6,15 @@ import Toast from "../parts/Toast";
 import React, { useEffect, useState } from "react";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { useNavigate, useLocation } from "react-router-dom";
-import { API_BASE } from "@/lib/config";
-// tags use neutral theme-aware styling now
 import { useAuth } from "@/states/AuthContext";
 import missKobayashi from "@/assets/anime/miss-kobayashi.webp";
+import {
+  fetchTagSuggestions,
+  fetchPostForEdit,
+  savePost,
+  validateTags,
+  normalizeTags,
+} from "@/lib/blog-edit-api";
 
 const BlogEdit = () => {
   const auth = useAuth();
@@ -85,26 +90,7 @@ const BlogEdit = () => {
 
     const load = async () => {
       try {
-        console.log(
-          "Loading post with id:",
-          id,
-          "from:",
-          `${API_BASE}/posts/${id}`,
-        );
-        const res = await fetch(`${API_BASE}/posts/${id}`);
-        console.log("Response status:", res.status);
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error(
-            "Failed to load post. Status:",
-            res.status,
-            "Response:",
-            errorText,
-          );
-          throw new Error("Failed to load post");
-        }
-        const data = await res.json();
-        console.log("Loaded post data:", data);
+        const data = await fetchPostForEdit(id);
 
         // If the post has an owner, ensure current user is the owner
         if (data.userId && auth?.user) {
@@ -125,24 +111,7 @@ const BlogEdit = () => {
         setContent(data.content || {});
         setShortDescription(data.shortDescription || "");
         setThumbnail(data.thumbnail || "");
-        const loadedTags = Array.isArray(data.tags)
-          ? data.tags
-          : data.tags
-            ? typeof data.tags === "string"
-              ? JSON.parse(data.tags)
-              : []
-            : [];
-        const normalized = Array.isArray(loadedTags)
-          ? loadedTags
-              .map((t: any) =>
-                String(t || "")
-                  .trim()
-                  .replace(/[^A-Za-z0-9_-]/g, "")
-                  .slice(0, 10),
-              )
-              .filter(Boolean)
-              .slice(0, MAX_TAGS)
-          : [];
+        const normalized = normalizeTags(data).slice(0, MAX_TAGS);
         setTags(normalized);
       } catch (err) {
         console.error("Failed to load post for edit", err);
@@ -157,19 +126,7 @@ const BlogEdit = () => {
   }, [location.search, auth?.user]);
 
   useEffect(() => {
-    // fetch existing tags from posts to use as suggestions
-    const loadSuggestions = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/tags`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data))
-          setSuggestions(data.filter(Boolean).slice(0, 100));
-      } catch {
-        // ignore
-      }
-    };
-    loadSuggestions();
+    fetchTagSuggestions().then(setSuggestions);
   }, []);
 
   const addTag = (t: string) => {
@@ -261,28 +218,10 @@ const BlogEdit = () => {
         shortDescription: shortDescription || undefined,
         thumbnail: thumbnail || undefined,
       };
-      if (tags && tags.length)
-        blogData.tags = tags.slice(0, MAX_TAGS).map((t) =>
-          String(t)
-            .trim()
-            .replace(/[^A-Za-z0-9_-]/g, "")
-            .slice(0, 10),
-        );
+      if (tags && tags.length) blogData.tags = validateTags(tags).slice(0, MAX_TAGS);
       if (auth?.user?.id) blogData.userId = auth.user.id;
 
-      const method = postId ? "PUT" : "POST";
-      const url = postId ? `${API_BASE}/posts/${postId}` : `${API_BASE}/posts`;
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          ...(auth?.token ? { Authorization: `Bearer ${auth.token}` } : {}),
-        },
-        body: JSON.stringify(blogData),
-      });
-
-      if (!response.ok) throw new Error("Failed to save post");
+      await savePost(postId, blogData, auth?.token || undefined);
 
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
@@ -300,14 +239,13 @@ const BlogEdit = () => {
         setToastMessage("");
         navigate("/blog");
       }, 3000);
-    } catch (error) {
+    } catch {
       setToastMessage("❌ Failed to publish post");
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
         setToastMessage("");
       }, 3000);
-      console.error("Error saving blog post:", error);
     } finally {
       setIsSubmitting(false);
     }

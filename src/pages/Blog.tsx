@@ -5,163 +5,21 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
-import Post from "../parts/Post";
-import { API_BASE } from "@/lib/config";
 import { useDebounce } from "@/hooks/use-debounce";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
-// tags use neutral theme-aware styling now
-
-const resolveAsset = (val?: string | null) => {
-  if (!val) return null;
-  if (val.startsWith("blob:")) return val;
-  if (/^https?:\/\//.test(val)) return val;
-  if (val.startsWith("/")) return `${API_BASE}${val}`;
-  if (val.includes("/")) return `${API_BASE}/${val}`;
-  return `${API_BASE}/images/${val}`;
-};
-
-function slugify(input?: string) {
-  if (!input) return "";
-  return input
-    .toString()
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 80);
-}
-
-type TextNode = {
-  type: "text";
-  text: string;
-  marks?: Array<{
-    type: string;
-    attrs?: Record<string, unknown>;
-  }>;
-};
-
-type ParagraphNode = {
-  type: "paragraph";
-  attrs?: { textAlign: string | null };
-  content: ContentNode[];
-};
-
-type HeadingNode = {
-  type: "heading";
-  attrs?: { textAlign: string | null; level: number };
-  content: ContentNode[];
-};
-
-type ListNode = {
-  type: "bulletList" | "orderedList";
-  content: ListItemNode[];
-};
-
-type ListItemNode = {
-  type: "listItem";
-  content: ContentNode[];
-};
-
-type ImageNode = {
-  type: "image";
-  attrs: {
-    src: string;
-    alt: string;
-    title: string;
-    width: number | null;
-    height: number | null;
-  };
-};
-
-type HardBreakNode = {
-  type: "hardBreak";
-};
-
-type DocumentNode = {
-  type: "doc";
-  content: ContentNode[];
-};
-
-type ContentNode =
-  | TextNode
-  | ParagraphNode
-  | HeadingNode
-  | ListNode
-  | ListItemNode
-  | ImageNode
-  | HardBreakNode;
-function extractTextFromContent(
-  content: DocumentNode | ContentNode[] | undefined,
-): string {
-  if (!content) return "";
-  if (
-    typeof content === "object" &&
-    "type" in content &&
-    content.type === "doc"
-  ) {
-    return extractTextFromContent(content.content);
-  }
-  if (Array.isArray(content)) {
-    let result = "";
-
-    content.forEach((node) => {
-      if (!node) return;
-
-      switch (node.type) {
-        case "text":
-          result += node.text + " ";
-          break;
-
-        case "paragraph":
-        case "heading":
-        case "listItem":
-          if (node.content) {
-            result += extractTextFromContent(node.content);
-          }
-          break;
-
-        case "bulletList":
-        case "orderedList":
-          if (node.content) {
-            node.content.forEach((item) => {
-              result += extractTextFromContent(item.content);
-            });
-          }
-          break;
-
-        case "image":
-        case "hardBreak":
-          break;
-
-        default:
-          break;
-      }
-    });
-
-    return result.trim();
-  }
-
-  return "";
-}
-type Post = {
-  id: string | number;
-  title: string;
-  author: string;
-  authorAvatar?: string | null;
-  createdAt: string;
-  content: ContentNode[];
-  shortDescription?: string | null;
-  thumbnail?: string | null;
-  tags?: string[];
-};
+import {
+  extractTextFromContent,
+  slugify,
+  resolveAsset,
+  type Post as PostType,
+} from "@/lib/blog-utils";
+import { fetchPosts, deletePost } from "@/lib/blog-api";
 
 const Blog = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostType[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -287,13 +145,9 @@ const Blog = () => {
   }, [searchTerm, navigate]);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const load = async () => {
       try {
-        const response = await fetch(`${API_BASE}/posts`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch posts");
-        }
-        const data = await response.json();
+        const data = await fetchPosts();
         setPosts(data);
         setFilteredPosts(data);
       } catch (err) {
@@ -307,30 +161,18 @@ const Blog = () => {
       }
     };
 
-    fetchPosts();
+    load();
   }, []);
 
   const handleDelete = async (id: string | number) => {
     if (!confirm("Delete this post? This cannot be undone.")) return;
 
     try {
-      const resp = await fetch(`${API_BASE}/posts/${id}`, {
-        method: "DELETE",
-        headers: {
-          ...(auth?.token ? { Authorization: `Bearer ${auth.token}` } : {}),
-        },
-      });
-
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}));
-        alert(body.error || "Failed to delete post");
-        return;
-      }
+      await deletePost(id, auth?.token || undefined);
 
       setPosts((prev) => prev.filter((p) => p.id !== id));
       setFilteredPosts((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Delete post error", err);
+    } catch {
       alert("Failed to delete post");
     }
   };

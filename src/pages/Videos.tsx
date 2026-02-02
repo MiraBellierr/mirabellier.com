@@ -5,22 +5,19 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/use-debounce";
+import { CommentItem } from "@/components/VideoCommentItem";
 
 import { API_BASE } from "@/lib/config";
 import kobayashiMaidDragon from "@/assets/anime/kobayashi-maid-dragon.webp";
-
-interface Video {
-  id: string;
-  name: string;
-  url: string;
-  createdAt: string;
-  description?: string;
-  likes?: number;
-  comments?: string[];
-  userId?: string;
-  author?: string;
-  authorAvatar?: string | null;
-}
+import type {
+  Video,
+} from "@/lib/video-utils";
+import {
+  resolveAsset,
+  shareVideo,
+  isMobileDevice,
+} from "@/lib/video-utils";
+import { toggleVideoLike, addComment, fetchAndCacheUser } from "@/lib/video-api";
 
 const Videos = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -54,14 +51,8 @@ const Videos = () => {
   const prevBodyOverflow = useRef<string | null>(null);
   const [Icons, setIcons] = useState<any>(null);
   const [isMuted, setIsMuted] = useState(true);
-  const resolveAsset = (asset?: string | null) => {
-    if (!asset) return `${API_BASE}/images/default-avatar.png`;
-    if (/^https?:\/\//.test(asset)) return asset;
-    if (asset.startsWith("/")) return `${API_BASE}${asset}`;
-    if (asset.includes("/")) return `${API_BASE}/${asset}`;
-    return `${API_BASE}/images/${asset}`;
-  };
   const [userCache, setUserCache] = useState<Record<string, any>>({});
+
   useEffect(() => {
     let mounted = true;
     const cur = filteredVideos[currentVideoIndex];
@@ -82,20 +73,6 @@ const Videos = () => {
       mounted = false;
     };
   }, [currentVideoIndex, filteredVideos, userCache]);
-  const fetchAndCacheUser = async (id?: string | null) => {
-    if (!id) return null;
-    if (userCache[id]) return userCache[id];
-    try {
-      const res = await fetch(`${API_BASE}/user/${id}`);
-      if (!res.ok) return null;
-      const data = await res.json();
-      setUserCache((prev) => ({ ...prev, [id]: data }));
-      return data;
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
-  };
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -203,7 +180,7 @@ const Videos = () => {
                 }
               });
               await Promise.all(
-                Array.from(ids).map((id) => fetchAndCacheUser(id)),
+                Array.from(ids).map((id) => fetchAndCacheUser(id, userCache, setUserCache)),
               );
             } catch (error) {
               console.error(error);
@@ -257,15 +234,8 @@ const Videos = () => {
     }
   }, [filteredVideos.length, debouncedSearchQuery, videos]);
   useEffect(() => {
-    const isMobileDevice = () => {
-      return (
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent,
-        ) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-      );
-    };
-    setIsMobile(isMobileDevice());
+    const isMobileCheck = isMobileDevice();
+    setIsMobile(isMobileCheck);
   }, []);
   useEffect(() => {
     let mounted = true;
@@ -350,157 +320,30 @@ const Videos = () => {
     }
   };
 
-  const toggleVideoLike = async (id: string) => {
-    let nextLiked = false;
-    setLikesMap((prev) => {
-      const cur = prev[id] || { count: 0, liked: false };
-      const next = {
-        count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1,
-        liked: !cur.liked,
-      };
-      nextLiked = next.liked;
-      return { ...prev, [id]: next };
-    });
-
-    try {
-      const action = nextLiked ? "like" : "unlike";
-      const res = await fetch(`${API_BASE}/videos/${id}/like`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ action }),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("like API error", res.status, text);
-        setLikesMap((prev) => {
-          const cur = prev[id] || { count: 0, liked: false };
-          const rollback = {
-            count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1,
-            liked: !cur.liked,
-          };
-          return { ...prev, [id]: rollback };
-        });
-        return;
-      }
-      const data = await res.json();
-      const likesArr: string[] = Array.isArray(data.likes) ? data.likes : [];
-      setLikesMap((prev) => ({
-        ...prev,
-        [id]: {
-          count: likesArr.length,
-          liked: user ? likesArr.includes(user.id) : nextLiked,
-        },
-      }));
-    } catch (e) {
-      console.error("like request failed", e);
-      setLikesMap((prev) => {
-        const cur = prev[id] || { count: 0, liked: false };
-        const rollback = {
-          count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1,
-          liked: !cur.liked,
-        };
-        return { ...prev, [id]: rollback };
-      });
-    }
+  const handleToggleLike = (id: string) => {
+    toggleVideoLike(id, token, user, setLikesMap);
   };
 
-  const insertNestedComment = (arr: any[], comment: any) => {
-    if (!comment.parentId) return [...arr, comment];
-    const clone = arr.map((a) => ({
-      ...a,
-      children: a.children ? [...a.children] : [],
-    }));
-    const walker = (nodes: any[]): boolean => {
-      for (const n of nodes) {
-        if (n.id === comment.parentId) {
-          n.children = n.children || [];
-          n.children.push(comment);
-          return true;
-        }
-        if (n.children && n.children.length) {
-          if (walker(n.children)) return true;
-        }
-      }
-      return false;
-    };
-    const found = walker(clone);
-    if (found) return clone;
-    return [...clone, comment];
-  };
-
-  const addComment = async (
+  const handleAddComment = (
     videoId: string,
     text: string,
     parentId?: string | null,
   ) => {
-    if (!text.trim()) return;
-    if (!token) {
-      alert("Please log in to comment");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/videos/${videoId}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text, parentId }),
-      });
-
-      if (!res.ok) {
-        let details = "";
-        try {
-          details = await res.text();
-        } catch (error) {
-          details = String(error);
-        }
-        console.error("Failed to post comment", res.status, details);
-        alert(`Failed to post comment: ${res.status} ${details}`);
-        return;
-      }
-
-      const created = await res.json();
-
-      setCommentsMap((prev) => {
-        const cur = prev[videoId] ? [...prev[videoId]] : [];
-        const updated = insertNestedComment(cur, created);
-        return { ...prev, [videoId]: updated };
-      });
-      try {
-        const uid = created.user?.id || created.userId || (user && user.id);
-        if (uid) fetchAndCacheUser(uid);
-      } catch (error) {
-        console.error(error);
-      }
-      setNewComment("");
-      setReplyTo(null);
-    } catch (e) {
-      console.error("post comment error", e);
-      alert("Failed to post comment: " + (e as any).message);
-    }
+    addComment(
+      videoId,
+      text,
+      token,
+      parentId,
+      setCommentsMap,
+      () => {
+        setNewComment("");
+        setReplyTo(null);
+      },
+    );
   };
 
   const toggleExpand = (id: string) => {
     setExpandedMap((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const shareVideo = async (video: Video) => {
-    const url = `${API_BASE}${video.url}`;
-    try {
-      if ((navigator as any).share) {
-        await (navigator as any).share({ title: video.name, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        alert("Video link copied to clipboard");
-      }
-    } catch (e) {
-      console.warn("share failed", e);
-    }
   };
   const touchStartY = useRef<number | null>(null);
   const lockBodyScroll = () => {
@@ -636,104 +479,16 @@ const Videos = () => {
     });
   }, [currentVideoIndex, filteredVideos]);
 
-  const CommentItem = ({
-    comment,
-    videoId,
-    depth,
-  }: {
-    comment: any;
-    videoId: string;
-    depth: number;
-  }) => {
-    const author = comment.userId
-      ? userCache[comment.userId] || comment.user
-      : comment.user || null;
-    const MAX_COMMENT_DEPTH = 3; // Prevent deep nesting that causes large DOM
-
-    return (
-      <div style={{ paddingLeft: depth * 12 }}>
-        <div className="p-3 rounded-lg bg-white shadow-sm border border-pink-50">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3">
-              <img
-                src={resolveAsset(
-                  author?.avatar || "/images/default-avatar.png",
-                )}
-                alt={`${author?.username || "user"} avatar`}
-                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                loading="eager"
-                width="40"
-                height="40"
-              />
-              <div>
-                <div className="flex items-center space-x-2">
-                  <div className="font-semibold text-sm text-pink-600">
-                    {author?.username || "Unknown"}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    @{(author?.username || "user").toLowerCase()}
-                  </div>
-                </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {new Date(comment.createdAt).toLocaleString()}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end space-y-2">
-              <button
-                onClick={() => {}}
-                className="text-pink-500 p-1 rounded-full hover:bg-pink-50"
-              >
-                {Icons && Icons.Like ? <Icons.Like size={18} /> : "❤"}
-              </button>
-            </div>
-          </div>
-          <div className="mt-3 text-sm text-gray-800">{comment.text}</div>
-          {depth < MAX_COMMENT_DEPTH && (
-            <div className="mt-3 flex items-center space-x-3">
-              <button
-                onClick={() => {
-                  setReplyTo(comment.id);
-                  setNewComment(`@${author?.username || "user"} `);
-                  setTimeout(() => {
-                    try {
-                      commentInputRef.current?.focus();
-                    } catch (error) {
-                      console.error(error);
-                    }
-                  }, 50);
-                }}
-                className="text-pink-600 text-sm hover:underline"
-              >
-                Reply ✨
-              </button>
-            </div>
-          )}
-        </div>
-        {comment.children &&
-          comment.children.length > 0 &&
-          depth < MAX_COMMENT_DEPTH && (
-            <div className="mt-3 space-y-3">
-              {comment.children.map((ch: any) => (
-                <CommentItem
-                  key={ch.id}
-                  comment={ch}
-                  videoId={videoId}
-                  depth={depth + 1}
-                />
-              ))}
-            </div>
-          )}
-        {comment.children &&
-          comment.children.length > 0 &&
-          depth >= MAX_COMMENT_DEPTH && (
-            <div className="mt-2 text-xs text-pink-500 italic">
-              + {comment.children.length} more repl
-              {comment.children.length === 1 ? "y" : "ies"}
-            </div>
-          )}
-      </div>
-    );
+  const handleReplyClick = (commentId: string, username: string) => {
+    setReplyTo(commentId);
+    setNewComment(`@${username} `);
+    setTimeout(() => {
+      try {
+        commentInputRef.current?.focus();
+      } catch (error) {
+        console.error(error);
+      }
+    }, 50);
   };
 
   return (
@@ -984,7 +739,7 @@ const Videos = () => {
                         </Link>
 
                         <button
-                          onClick={() => toggleVideoLike(currentVideo.id)}
+                          onClick={() => handleToggleLike(currentVideo.id)}
                           className="flex flex-col items-center text-white"
                         >
                           <div
@@ -1094,6 +849,9 @@ const Videos = () => {
                             comment={c}
                             videoId={showCommentsFor!}
                             depth={0}
+                            userCache={userCache}
+                            Icons={Icons}
+                            onReplyClick={handleReplyClick}
                           />
                         ))}
                       </div>
@@ -1143,7 +901,7 @@ const Videos = () => {
                         onChange={(e) => setNewComment(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && showCommentsFor) {
-                            addComment(showCommentsFor, newComment, replyTo);
+                            handleAddComment(showCommentsFor, newComment, replyTo);
                           }
                         }}
                         className="flex-grow min-w-0 border border-pink-200 rounded-full px-4 py-2 bg-white/90"
@@ -1154,7 +912,7 @@ const Videos = () => {
                       <button
                         onClick={() => {
                           if (showCommentsFor)
-                            addComment(showCommentsFor, newComment, replyTo);
+                            handleAddComment(showCommentsFor, newComment, replyTo);
                         }}
                         className="bg-pink-500 text-white px-4 py-2 rounded-full flex-shrink-0 hover:bg-pink-600"
                       >
