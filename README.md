@@ -75,6 +75,7 @@ The app will be available at `http://localhost:5173`
 To run the full stack locally:
 
 1. Start the backend server (in a separate terminal):
+
    ```bash
    npm run backend:dev
    ```
@@ -102,20 +103,21 @@ npm run preview
 
 ## 📝 Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
-| `npm run backend:dev` | Start backend server |
-| `npm run deploy` | Deploy to GitHub Pages |
+| Command               | Description              |
+| --------------------- | ------------------------ |
+| `npm run dev`         | Start development server |
+| `npm run build`       | Build for production     |
+| `npm run preview`     | Preview production build |
+| `npm run lint`        | Run ESLint               |
+| `npm run backend:dev` | Start backend server     |
+| `npm run deploy`      | Deploy to GitHub Pages   |
 
 ## 🎨 Key Features
 
 ### Tiptap Rich Text Editor
 
 The blog editor uses Tiptap with custom extensions:
+
 - Text formatting (bold, italic, code, etc.)
 - Headings, lists, blockquotes
 - Image uploads with drag & drop
@@ -148,6 +150,7 @@ The app uses HashRouter for GitHub Pages compatibility. Main routes:
 ## 🔐 Authentication
 
 Authentication is handled via Discord OAuth:
+
 1. User clicks "Login with Discord"
 2. Redirected to Discord OAuth flow
 3. Callback returns to `/auth/callback`
@@ -157,6 +160,7 @@ Authentication is handled via Discord OAuth:
 ## 📱 Responsive Design
 
 The UI adapts to different screen sizes:
+
 - Mobile-first approach
 - Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
 - Touch-friendly interfaces on mobile
@@ -166,17 +170,19 @@ The UI adapts to different screen sizes:
 The project uses `@` as an alias for the `src/` directory:
 
 ```typescript
-import { API_BASE } from '@/lib/config'
-import Header from '@/parts/Header'
+import { API_BASE } from "@/lib/config";
+import Header from "@/parts/Header";
 ```
 
 ## 🔄 API Integration
 
 API calls are made to the backend server. Base URL is configured via:
+
 - Environment variable: `VITE_API_BASE`
 - Defaults to: `https://mirabellier.my.id/api`
 
 Key API endpoints:
+
 - `GET /posts` - Fetch blog posts
 - `POST /posts` - Create new post
 - `PUT /posts/:id` - Update post
@@ -207,15 +213,18 @@ This project is private and proprietary.
 ## 🔍 Troubleshooting
 
 ### Images not loading
+
 - Check that `VITE_API_BASE` points to your backend server
 - Verify the backend is running and serving static files
 - Check browser console for CORS errors
 
 ### Editor not working
+
 - Tiptap requires modern browsers (Chrome 90+, Firefox 88+, Safari 14+)
 - Check that all tiptap packages are installed
 
 ### Build errors
+
 - Run `npm install` to ensure all dependencies are installed
 - Check Node.js version (requires Node 18+)
 - Clear node_modules and reinstall if issues persist

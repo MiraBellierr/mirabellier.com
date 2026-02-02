@@ -8,7 +8,7 @@ export function tagToColor(tag: string, darkMode: boolean) {
   if (darkMode) {
     // in dark mode, use a light pill with dark text for contrast
     const bg = `hsl(${hue} 70% 92%)`;
-    const color = '#000000';
+    const color = "#000000";
     return { bg, color };
   }
   const bg = `hsl(${hue} 70% 92%)`;

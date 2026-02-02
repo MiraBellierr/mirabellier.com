@@ -1,27 +1,30 @@
-import { useEffect } from 'react';
-import { useCursor } from '../../states/CursorContext';
+import { useEffect } from "react";
+import { useCursor } from "../../states/CursorContext";
 
-import pointerCursor from '/cursors/Pointer.gif'; 
+import pointerCursor from "/cursors/Pointer.gif";
 
 type PointerCursorProps = {
   position: { x: number; y: number };
   isActive: boolean;
 };
 
-export default function PointerCursor({ position, isActive }: PointerCursorProps) {
+export default function PointerCursor({
+  position,
+  isActive,
+}: PointerCursorProps) {
   const { isCustomCursor } = useCursor();
   useEffect(() => {
     if (isActive && isCustomCursor) {
       const elements = document.querySelectorAll(
-        'a, button, [role="button"], [onclick]'
+        'a, button, [role="button"], [onclick]',
       );
-      elements.forEach(el => {
-        (el as HTMLElement).style.cursor = 'none';
+      elements.forEach((el) => {
+        (el as HTMLElement).style.cursor = "none";
       });
-      
+
       return () => {
-        elements.forEach(el => {
-          (el as HTMLElement).style.cursor = '';
+        elements.forEach((el) => {
+          (el as HTMLElement).style.cursor = "";
         });
       };
     }
@@ -34,22 +37,22 @@ export default function PointerCursor({ position, isActive }: PointerCursorProps
     height: 32,
     offsetX: 0,
     offsetY: 0,
-    image: pointerCursor
+    image: pointerCursor,
   };
 
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         left: 0,
         top: 0,
         transform: `translate3d(${position.x + config.offsetX}px, ${position.y + config.offsetY}px, 0)`,
-        willChange: 'transform',
+        willChange: "transform",
         width: `${config.width}px`,
         height: `${config.height}px`,
         background: `url(${config.image}) no-repeat`,
-        backgroundSize: 'contain',
-        pointerEvents: 'none',
+        backgroundSize: "contain",
+        pointerEvents: "none",
         zIndex: 300000,
       }}
     />

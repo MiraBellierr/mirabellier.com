@@ -1,18 +1,18 @@
-import * as React from "react"
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-import { useMark, type UseMarkConfig } from "@/components/tiptap-ui/mark-button"
-import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
-import { Button } from "@/components/tiptap-ui-primitive/button"
+import * as React from "react";
+import { useTiptapEditor } from "@/hooks/use-tiptap-editor";
+import {
+  useMark,
+  type UseMarkConfig,
+} from "@/components/tiptap-ui/mark-button";
+import type { ButtonProps } from "@/components/tiptap-ui-primitive/button";
+import { Button } from "@/components/tiptap-ui-primitive/button";
 
 export interface MarkButtonProps
-  extends Omit<ButtonProps, "type">,
-    UseMarkConfig {
-  
-  text?: string
-  
-  showShortcut?: boolean
-}
+  extends Omit<ButtonProps, "type">, UseMarkConfig {
+  text?: string;
 
+  showShortcut?: boolean;
+}
 
 export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
   (
@@ -26,34 +26,29 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
       children,
       ...buttonProps
     },
-    ref
+    ref,
   ) => {
-    const { editor } = useTiptapEditor(providedEditor)
-    const {
-      isVisible,
-      handleMark,
-      label,
-      canToggle,
-      isActive,
-      Icon,
-    } = useMark({
-      editor,
-      type,
-      hideWhenUnavailable,
-      onToggled,
-    })
+    const { editor } = useTiptapEditor(providedEditor);
+    const { isVisible, handleMark, label, canToggle, isActive, Icon } = useMark(
+      {
+        editor,
+        type,
+        hideWhenUnavailable,
+        onToggled,
+      },
+    );
 
     const handleClick = React.useCallback(
       (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) return
-        handleMark()
+        onClick?.(event);
+        if (event.defaultPrevented) return;
+        handleMark();
       },
-      [handleMark, onClick]
-    )
+      [handleMark, onClick],
+    );
 
     if (!isVisible) {
-      return null
+      return null;
     }
 
     return (
@@ -79,8 +74,8 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
           </>
         )}
       </Button>
-    )
-  }
-)
+    );
+  },
+);
 
-MarkButton.displayName = "MarkButton"
+MarkButton.displayName = "MarkButton";

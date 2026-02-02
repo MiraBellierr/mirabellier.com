@@ -1,28 +1,24 @@
+declare module "*.png";
+declare module "*.jpg";
+declare module "*.jpeg";
+declare module "*.gif";
+declare module "*.webp";
+declare module "*.svg";
+declare module "*.avif";
+declare module "*.mp4";
+declare module "*.webm";
+declare module "*.mp3";
 
-
-declare module '*.png'
-declare module '*.jpg'
-declare module '*.jpeg'
-declare module '*.gif'
-declare module '*.webp'
-declare module '*.svg'
-declare module '*.avif'
-declare module '*.mp4'
-declare module '*.webm'
-declare module '*.mp3'
-
-declare module '*.css'
-declare module '*.scss'
-declare module '*.module.css'
-declare module '*.module.scss'
+declare module "*.css";
+declare module "*.scss";
+declare module "*.module.css";
+declare module "*.module.scss";
 
 interface ImportMetaEnv {
-	readonly VITE_API_BASE?: string
-	readonly VITE_ANIME_STORAGE_KEY?: string
-	
+  readonly VITE_API_BASE?: string;
+  readonly VITE_ANIME_STORAGE_KEY?: string;
 }
 
 interface ImportMeta {
-	readonly env: ImportMetaEnv
+  readonly env: ImportMetaEnv;
 }
-

@@ -34,7 +34,6 @@
     padding-left: 0;
   }
 
-  
   &[data-size="large"] {
     font-size: 0.9375rem;
     height: 2.375rem;
@@ -42,7 +41,6 @@
     padding: 0.625rem;
   }
 
-  
   &[data-size="small"] {
     font-size: 0.75rem;
     line-height: 1.2;
@@ -52,7 +50,6 @@
     border-radius: var(--tt-radius-md, 0.5rem);
   }
 
-  
   .tiptap-button-text {
     padding: 0 0.125rem;
     flex-grow: 1;
@@ -67,7 +64,6 @@
     }
   }
 
-  
   .tiptap-button-icon,
   .tiptap-button-icon-sub,
   .tiptap-button-dropdown-arrows,
@@ -75,7 +71,6 @@
     flex-shrink: 0;
   }
 
-  
   .tiptap-button-icon {
     width: 1rem;
     height: 1rem;
@@ -91,7 +86,6 @@
     height: 0.875rem;
   }
 
-  
   .tiptap-button-icon-sub {
     width: 1rem;
     height: 1rem;
@@ -107,7 +101,6 @@
     height: 0.875rem;
   }
 
-  
   .tiptap-button-dropdown-arrows {
     width: 0.75rem;
     height: 0.75rem;
@@ -123,7 +116,6 @@
     height: 0.625rem;
   }
 
-  
   .tiptap-button-dropdown-small {
     width: 0.625rem;
     height: 0.625rem;
@@ -139,7 +131,6 @@
     height: 0.5rem;
   }
 
-  
   &:has(> svg):not(:has(> :not(svg))) {
     gap: 0.125rem;
 
@@ -149,7 +140,6 @@
     }
   }
 
-  
   &:has(> svg:nth-of-type(2)):has(> .tiptap-button-dropdown-small):not(
       :has(> svg:nth-of-type(3))
     ):not(:has(> .tiptap-button-text)) {
@@ -165,7 +155,6 @@
     }
   }
 
-  
   .tiptap-button-emoji {
     width: 1rem;
     display: flex;
@@ -180,8 +169,6 @@
     width: 0.875rem;
   }
 }
-
-
 
 .tiptap-button {
   background-color: var(--tt-button-default-bg-color);
@@ -203,7 +190,6 @@
     color: var(--tt-button-default-dropdown-arrows-color);
   }
 
-  
   &:hover:not([data-active-item="true"]):not([disabled]),
   &[data-active-item="true"]:not([disabled]),
   &[data-highlighted]:not([disabled]):not([data-highlighted="false"]) {
@@ -224,7 +210,6 @@
     }
   }
 
-  
   &[data-active-state="on"]:not([disabled]),
   &[data-state="open"]:not([disabled]) {
     background-color: var(--tt-button-active-bg-color);
@@ -247,7 +232,6 @@
       background-color: var(--tt-button-active-hover-bg-color);
     }
 
-    
     &[data-appearance="emphasized"] {
       background-color: var(--tt-button-active-bg-color-emphasized);
       color: var(--tt-button-active-text-color-emphasized);
@@ -270,7 +254,6 @@
       }
     }
 
-    
     &[data-appearance="subdued"] {
       background-color: var(--tt-button-active-bg-color-subdued);
       color: var(--tt-button-active-text-color-subdued);

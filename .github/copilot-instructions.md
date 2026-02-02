@@ -30,7 +30,7 @@
 
 - Build frontend:
 
-  npm run build    # runs `tsc -b && vite build`
+  npm run build # runs `tsc -b && vite build`
 
 - Backend (dev):
 

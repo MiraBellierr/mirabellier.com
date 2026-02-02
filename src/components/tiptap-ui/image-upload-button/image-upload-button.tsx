@@ -1,32 +1,29 @@
-import * as React from "react"
-import { parseShortcutKeys } from "@/lib/tiptap-utils"
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-import type { UseImageUploadConfig } from "@/components/tiptap-ui/image-upload-button"
+import * as React from "react";
+import { parseShortcutKeys } from "@/lib/tiptap-utils";
+import { useTiptapEditor } from "@/hooks/use-tiptap-editor";
+import type { UseImageUploadConfig } from "@/components/tiptap-ui/image-upload-button";
 import {
   IMAGE_UPLOAD_SHORTCUT_KEY,
   useImageUpload,
-} from "@/components/tiptap-ui/image-upload-button"
-import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
-import { Button } from "@/components/tiptap-ui-primitive/button"
-import { Badge } from "@/components/tiptap-ui-primitive/badge"
+} from "@/components/tiptap-ui/image-upload-button";
+import type { ButtonProps } from "@/components/tiptap-ui-primitive/button";
+import { Button } from "@/components/tiptap-ui-primitive/button";
+import { Badge } from "@/components/tiptap-ui-primitive/badge";
 
 export interface ImageUploadButtonProps
-  extends Omit<ButtonProps, "type">,
-    UseImageUploadConfig {
-  
-  text?: string
-  
-  showShortcut?: boolean
+  extends Omit<ButtonProps, "type">, UseImageUploadConfig {
+  text?: string;
+
+  showShortcut?: boolean;
 }
 
 export function ImageShortcutBadge({
   shortcutKeys = IMAGE_UPLOAD_SHORTCUT_KEY,
 }: {
-  shortcutKeys?: string
+  shortcutKeys?: string;
 }) {
-  return <Badge>{parseShortcutKeys({ shortcutKeys })}</Badge>
+  return <Badge>{parseShortcutKeys({ shortcutKeys })}</Badge>;
 }
-
 
 export const ImageUploadButton = React.forwardRef<
   HTMLButtonElement,
@@ -43,9 +40,9 @@ export const ImageUploadButton = React.forwardRef<
       children,
       ...buttonProps
     },
-    ref
+    ref,
   ) => {
-    const { editor } = useTiptapEditor(providedEditor)
+    const { editor } = useTiptapEditor(providedEditor);
     const {
       isVisible,
       canInsert,
@@ -58,19 +55,19 @@ export const ImageUploadButton = React.forwardRef<
       editor,
       hideWhenUnavailable,
       onInserted,
-    })
+    });
 
     const handleClick = React.useCallback(
       (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) return
-        handleImage()
+        onClick?.(event);
+        if (event.defaultPrevented) return;
+        handleImage();
       },
-      [handleImage, onClick]
-    )
+      [handleImage, onClick],
+    );
 
     if (!isVisible) {
-      return null
+      return null;
     }
 
     return (
@@ -97,8 +94,8 @@ export const ImageUploadButton = React.forwardRef<
           </>
         )}
       </Button>
-    )
-  }
-)
+    );
+  },
+);
 
-ImageUploadButton.displayName = "ImageUploadButton"
+ImageUploadButton.displayName = "ImageUploadButton";

@@ -1,17 +1,20 @@
-import normalCursor from '/cursors/Normal.gif';
+import normalCursor from "/cursors/Normal.gif";
 
 type NormalCursorProps = {
   position: { x: number; y: number };
   isActive: boolean;
 };
 
-export default function NormalCursor({ position, isActive }: NormalCursorProps) {
+export default function NormalCursor({
+  position,
+  isActive,
+}: NormalCursorProps) {
   const config = {
     width: 32,
     height: 32,
     offsetX: 0,
     offsetY: 0,
-    image: normalCursor
+    image: normalCursor,
   };
 
   if (!isActive) return null;
@@ -19,17 +22,17 @@ export default function NormalCursor({ position, isActive }: NormalCursorProps) 
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         left: 0,
         top: 0,
         transform: `translate3d(${position.x + config.offsetX}px, ${position.y + config.offsetY}px, 0)`,
-        willChange: 'transform',
+        willChange: "transform",
         width: `${config.width}px`,
         height: `${config.height}px`,
         background: `url(${config.image}) no-repeat`,
-        backgroundSize: 'contain',
-        pointerEvents: 'none',
-        zIndex: 300000 
+        backgroundSize: "contain",
+        pointerEvents: "none",
+        zIndex: 300000,
       }}
     />
   );

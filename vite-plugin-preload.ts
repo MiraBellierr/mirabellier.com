@@ -1,4 +1,4 @@
-import type { Plugin } from 'vite'
+import type { Plugin } from "vite";
 
 /**
  * Vite plugin to automatically add modulepreload hints for critical chunks
@@ -6,55 +6,55 @@ import type { Plugin } from 'vite'
  */
 export function modulePreloadPlugin(): Plugin {
   return {
-    name: 'vite-plugin-modulepreload',
+    name: "vite-plugin-modulepreload",
     transformIndexHtml: {
-      order: 'post',
+      order: "post",
       handler(html, ctx) {
         // Only apply in production builds
-        if (!ctx.bundle) return html
+        if (!ctx.bundle) return html;
 
-        const preloadLinks: string[] = []
-        const bundle = ctx.bundle as Record<string, any>
-        
+        const preloadLinks: string[] = [];
+        const bundle = ctx.bundle as Record<string, any>;
+
         // Find the entry chunk and its imports
         const entryChunk = Object.values(bundle).find(
-          (chunk: any) => chunk.type === 'chunk' && chunk.isEntry
-        )
+          (chunk: any) => chunk.type === "chunk" && chunk.isEntry,
+        );
 
         if (entryChunk && entryChunk.imports) {
           // Add preload hints for immediate dependencies
           entryChunk.imports.slice(0, 3).forEach((importFile: string) => {
-            const chunk = bundle[importFile]
-            if (chunk && chunk.type === 'chunk') {
+            const chunk = bundle[importFile];
+            if (chunk && chunk.type === "chunk") {
               preloadLinks.push(
-                `<link rel="modulepreload" href="/${importFile}" crossorigin />`
-              )
+                `<link rel="modulepreload" href="/${importFile}" crossorigin />`,
+              );
             }
-          })
+          });
         }
 
         // Also preload React vendor chunk (most critical)
         const reactChunk = Object.values(bundle).find(
-          (chunk: any) => 
-            chunk.type === 'chunk' && 
-            chunk.name && 
-            chunk.name.includes('react-vendor')
-        )
-        
+          (chunk: any) =>
+            chunk.type === "chunk" &&
+            chunk.name &&
+            chunk.name.includes("react-vendor"),
+        );
+
         if (reactChunk && reactChunk.fileName) {
           preloadLinks.unshift(
-            `<link rel="modulepreload" href="/${reactChunk.fileName}" crossorigin />`
-          )
+            `<link rel="modulepreload" href="/${reactChunk.fileName}" crossorigin />`,
+          );
         }
 
         // Insert preload links at the end of <head>
         if (preloadLinks.length > 0) {
-          const preloadHtml = preloadLinks.join('\n    ')
-          html = html.replace('</head>', `    ${preloadHtml}\n  </head>`)
+          const preloadHtml = preloadLinks.join("\n    ");
+          html = html.replace("</head>", `    ${preloadHtml}\n  </head>`);
         }
 
-        return html
+        return html;
       },
     },
-  }
+  };
 }

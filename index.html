@@ -4,34 +4,53 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mirabellier ⭐ — Cute thoughts & cozy corners</title>
-    
+
     <!-- DNS prefetch and preconnect for faster API requests -->
     <link rel="dns-prefetch" href="https://mirabellier.com" />
     <link rel="preconnect" href="https://mirabellier.com" crossorigin />
-    
+
     <!-- Preload LCP background image in WebP format (smaller, faster) with JPEG fallback -->
-    <link rel="preload" as="image" href="/background.webp" type="image/webp" fetchpriority="high" />
-    
-      <!-- Preload theme-specific backgrounds so React inline styles don't delay discovery -->
-      <link rel="preload" as="image" href="/light.webp" type="image/webp" fetchpriority="high" />
-      <link rel="preload" as="image" href="/dark.webp" type="image/webp" fetchpriority="high" />
-    
-    
+    <link
+      rel="preload"
+      as="image"
+      href="/background.webp"
+      type="image/webp"
+      fetchpriority="high"
+    />
+
+    <!-- Preload theme-specific backgrounds so React inline styles don't delay discovery -->
+    <link
+      rel="preload"
+      as="image"
+      href="/light.webp"
+      type="image/webp"
+      fetchpriority="high"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="/dark.webp"
+      type="image/webp"
+      fetchpriority="high"
+    />
+
     <style>
       /* Inline critical CSS to prevent FOUC */
-      body { 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; 
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Helvetica Neue", Arial, sans-serif;
         margin: 0;
         padding: 0;
       }
-      #root { 
+      #root {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
       }
       /* Reserve space for content */
-      img { 
-        max-width: 100%; 
+      img {
+        max-width: 100%;
         height: auto;
       }
       /* Prevent CLS by reserving space for cards */
@@ -42,36 +61,42 @@
       }
       /* Make LCP background image discoverable immediately with high priority */
       div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-        background-image: url('/background.webp');
+        background-image: url("/background.webp");
         background-size: cover;
         background-position: center;
         background-attachment: scroll;
       }
       /* Fallback for browsers that don't support WebP */
-      @supports not (background-image: url('/background.webp')) {
+      @supports not (background-image: url("/background.webp")) {
         div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-          background-image: url('/background.jpg');
+          background-image: url("/background.jpg");
         }
       }
       @media (prefers-color-scheme: dark) {
         div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-          background-image: url('/background.webp');
+          background-image: url("/background.webp");
         }
       }
-      @media (prefers-color-scheme: dark) and (not (background-image: url('/background.webp'))) {
+      @media (prefers-color-scheme: dark) and (not (background-image: url("/background.webp"))) {
         div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-          background-image: url('/background.jpg');
+          background-image: url("/background.jpg");
         }
       }
     </style>
-    
+
     <link rel="icon" href="https://mirabellier.com/favicon.jpg" />
     <link rel="canonical" href="https://mirabellier.com/" />
-    <meta name="description" content="Mirabellier — a tiny, cozy blog where I share cute thoughts, fuzzy photos, and little projects. Come say hi and find something to smile about!" />
-    <meta name="keywords" content="mirabellier, blog, cute, kittens, art, videos, personal" />
+    <meta
+      name="description"
+      content="Mirabellier — a tiny, cozy blog where I share cute thoughts, fuzzy photos, and little projects. Come say hi and find something to smile about!"
+    />
+    <meta
+      name="keywords"
+      content="mirabellier, blog, cute, kittens, art, videos, personal"
+    />
     <meta name="author" content="Mirabellier" />
     <meta name="robots" content="index, follow" />
-    
+
     <!-- Resource hints for HTTP/2 preloading -->
     <link rel="preconnect" href="https://mirabellier.com" crossorigin />
     <link rel="dns-prefetch" href="https://mirabellier.com" />
@@ -79,39 +104,59 @@
     <link rel="dns-prefetch" href="https://media1.tenor.com" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Mirabellier ⭐ — Cute thoughts & cozy corners" />
-    <meta property="og:description" content="A tiny, cozy blog sharing small joys: photos, videos, and short posts." />
+    <meta
+      property="og:title"
+      content="Mirabellier ⭐ — Cute thoughts & cozy corners"
+    />
+    <meta
+      property="og:description"
+      content="A tiny, cozy blog sharing small joys: photos, videos, and short posts."
+    />
     <meta property="og:site_name" content="Mirabellier" />
     <meta property="og:url" content="https://mirabellier.com/" />
-    <meta property="og:image" content="https://mirabellier.com/background.jpg" />
+    <meta
+      property="og:image"
+      content="https://mirabellier.com/background.jpg"
+    />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@mirabellier" />
     <meta name="twitter:creator" content="@mirabellier" />
-    <meta name="twitter:title" content="Mirabellier ⭐ — Cute thoughts & cozy corners" />
-    <meta name="twitter:description" content="A tiny, cozy blog sharing small joys: photos, videos, and short posts." />
-    <meta name="twitter:image" content="https://mirabellier.com/background.jpg" />
+    <meta
+      name="twitter:title"
+      content="Mirabellier ⭐ — Cute thoughts & cozy corners"
+    />
+    <meta
+      name="twitter:description"
+      content="A tiny, cozy blog sharing small joys: photos, videos, and short posts."
+    />
+    <meta
+      name="twitter:image"
+      content="https://mirabellier.com/background.jpg"
+    />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    
+
     <!-- Register service worker for instant repeat visits -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
         });
       }
     </script>
-    
-    <script type="application/ld+json">{
-      "@context": "https://schema.org",
-      "@type": "Blog",
-      "name": "Mirabellier",
-      "url": "https://mirabellier.com",
-      "description": "A tiny, cozy blog sharing small joys: photos, videos, and short posts.",
-      "publisher": { "@type": "Person", "name": "Mirabellier" }
-    }</script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "Mirabellier",
+        "url": "https://mirabellier.com",
+        "description": "A tiny, cozy blog sharing small joys: photos, videos, and short posts.",
+        "publisher": { "@type": "Person", "name": "Mirabellier" }
+      }
+    </script>
   </body>
 </html>

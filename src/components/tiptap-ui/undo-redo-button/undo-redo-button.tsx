@@ -1,37 +1,34 @@
-import * as React from "react"
-import { parseShortcutKeys } from "@/lib/tiptap-utils"
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import * as React from "react";
+import { parseShortcutKeys } from "@/lib/tiptap-utils";
+import { useTiptapEditor } from "@/hooks/use-tiptap-editor";
 import type {
   UndoRedoAction,
   UseUndoRedoConfig,
-} from "@/components/tiptap-ui/undo-redo-button"
+} from "@/components/tiptap-ui/undo-redo-button";
 import {
   UNDO_REDO_SHORTCUT_KEYS,
   useUndoRedo,
-} from "@/components/tiptap-ui/undo-redo-button"
-import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
-import { Button } from "@/components/tiptap-ui-primitive/button"
-import { Badge } from "@/components/tiptap-ui-primitive/badge"
+} from "@/components/tiptap-ui/undo-redo-button";
+import type { ButtonProps } from "@/components/tiptap-ui-primitive/button";
+import { Button } from "@/components/tiptap-ui-primitive/button";
+import { Badge } from "@/components/tiptap-ui-primitive/badge";
 
 export interface UndoRedoButtonProps
-  extends Omit<ButtonProps, "type">,
-    UseUndoRedoConfig {
-  
-  text?: string
-  
-  showShortcut?: boolean
+  extends Omit<ButtonProps, "type">, UseUndoRedoConfig {
+  text?: string;
+
+  showShortcut?: boolean;
 }
 
 export function HistoryShortcutBadge({
   action,
   shortcutKeys = UNDO_REDO_SHORTCUT_KEYS[action],
 }: {
-  action: UndoRedoAction
-  shortcutKeys?: string
+  action: UndoRedoAction;
+  shortcutKeys?: string;
 }) {
-  return <Badge>{parseShortcutKeys({ shortcutKeys })}</Badge>
+  return <Badge>{parseShortcutKeys({ shortcutKeys })}</Badge>;
 }
-
 
 export const UndoRedoButton = React.forwardRef<
   HTMLButtonElement,
@@ -49,28 +46,28 @@ export const UndoRedoButton = React.forwardRef<
       children,
       ...buttonProps
     },
-    ref
+    ref,
   ) => {
-    const { editor } = useTiptapEditor(providedEditor)
+    const { editor } = useTiptapEditor(providedEditor);
     const { isVisible, handleAction, label, canExecute, Icon, shortcutKeys } =
       useUndoRedo({
         editor,
         action,
         hideWhenUnavailable,
         onExecuted,
-      })
+      });
 
     const handleClick = React.useCallback(
       (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) return
-        handleAction()
+        onClick?.(event);
+        if (event.defaultPrevented) return;
+        handleAction();
       },
-      [handleAction, onClick]
-    )
+      [handleAction, onClick],
+    );
 
     if (!isVisible) {
-      return null
+      return null;
     }
 
     return (
@@ -100,8 +97,8 @@ export const UndoRedoButton = React.forwardRef<
           </>
         )}
       </Button>
-    )
-  }
-)
+    );
+  },
+);
 
-UndoRedoButton.displayName = "UndoRedoButton"
+UndoRedoButton.displayName = "UndoRedoButton";

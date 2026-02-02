@@ -1,1 +1,1 @@
-export { default } from "./image-upload-node-extension"
+export { default } from "./image-upload-node-extension";

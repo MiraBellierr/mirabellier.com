@@ -22,43 +22,56 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 // Lazy load cursor manager - visual enhancement, not critical for content
 const CursorManager = lazy(() => import("./parts/CursorManager"));
 import { CursorProvider } from "./states/CursorContext";
-import { AuthProvider } from './states/AuthContext'
+import { AuthProvider } from "./states/AuthContext";
 
 function App() {
-
   return (
     <div>
       <CursorProvider>
         <AuthProvider>
-        <Suspense fallback={null}>
-          <CursorManager />
-        </Suspense>
-        
-        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', contain: 'layout style paint' }}>Loading...</div>}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/spill" element={<Home />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/pics" element={<Pics />} />
-            <Route path="/pics/edit" element={<PicsEdit />} />
-            <Route path="/blog/edit" element={<BlogEdit />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/videos/edit" element={<VideosEdit />} />
-            <Route path="/admin/anime" element={<AdminAnime />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/:username" element={<Profile />} />
-          </Routes>
-        </Suspense>
+          <Suspense fallback={null}>
+            <CursorManager />
+          </Suspense>
+
+          <Suspense
+            fallback={
+              <div
+                style={{
+                  minHeight: "100vh",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  contain: "layout style paint",
+                }}
+              >
+                Loading...
+              </div>
+            }
+          >
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/spill" element={<Home />} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/pics" element={<Pics />} />
+              <Route path="/pics/edit" element={<PicsEdit />} />
+              <Route path="/blog/edit" element={<BlogEdit />} />
+              <Route path="/videos" element={<Videos />} />
+              <Route path="/videos/edit" element={<VideosEdit />} />
+              <Route path="/admin/anime" element={<AdminAnime />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:username" element={<Profile />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </CursorProvider>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

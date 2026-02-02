@@ -10,7 +10,6 @@
   }
 }
 
-
 .tiptap-dropdown-menu {
   z-index: 50;
   outline: none;
@@ -21,7 +20,6 @@
     max-height: var(--radix-dropdown-menu-content-available-height);
   }
 
-  
   &[data-state="open"] {
     animation:
       fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -34,7 +32,6 @@
       zoomOut 150ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  
   &[data-side="top"],
   &[data-side="top-start"],
   &[data-side="top-end"] {

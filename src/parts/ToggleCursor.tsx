@@ -7,7 +7,7 @@ export default function ToggleCursor() {
     <button
       onClick={toggleCursor}
       className="text-sm text-center font-bold text-blue-500 hover:underline"
-      aria-label={`${isCustomCursor ? 'Disable' : 'Enable'} custom cursor`}
+      aria-label={`${isCustomCursor ? "Disable" : "Enable"} custom cursor`}
     >
       {isCustomCursor ? (
         <>

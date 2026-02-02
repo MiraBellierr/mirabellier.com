@@ -1,16 +1,15 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Register = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Redirect to login since we now use Discord OAuth
-    navigate('/login')
-  }, [navigate])
+    navigate("/login");
+  }, [navigate]);
 
-  return null
-}
+  return null;
+};
 
-export default Register
+export default Register;
