@@ -5,20 +5,37 @@ import Toast from "../parts/Toast";
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE } from "@/lib/config";
 import { useAuth } from "@/states/AuthContext";
+import { useVideoUpload } from "@/hooks/use-video-upload";
 
 const VideosEdit = () => {
+  const [uploadType, setUploadType] = useState<"upload" | "tiktok">("upload");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tiktokUrl, setTiktokUrl] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
   const navigate = useNavigate();
   const auth = useAuth();
+
+  const { isSubmitting, handleSubmit: handleVideoUpload } = useVideoUpload(
+    {
+      uploadType,
+      videoFile,
+      tiktokUrl,
+      title,
+      description,
+      userId: auth?.user?.id,
+      token: auth?.token ?? undefined,
+    },
+    (message) => {
+      setToastMessage(message);
+      setShowToast(true);
+    },
+  );
 
   useEffect(() => {
     // Update canonical URL to point to the VideosEdit page
@@ -68,6 +85,19 @@ const VideosEdit = () => {
     setDescription(e.target.value);
   };
 
+  const handleUploadTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value as "upload" | "tiktok";
+    setUploadType(newType);
+    // Reset fields when switching types
+    setVideoFile(null);
+    setVideoPreview(null);
+    setTiktokUrl("");
+  };
+
+  const handleTiktokUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTiktokUrl(e.target.value);
+  };
+
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setVideoFile(file || null);
@@ -80,58 +110,29 @@ const VideosEdit = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!videoFile) return;
 
-    setIsSubmitting(true);
+    const result = await handleVideoUpload();
 
-    const formData = new FormData();
-    formData.append("video", videoFile as Blob);
-    if (title) {
-      formData.append("customTitle", title);
-    }
-    if (description) {
-      formData.append("description", description);
-    }
-    if (auth?.user?.id) formData.append("userId", auth.user.id);
-
-    try {
-      const res = await fetch(`${API_BASE}/upload-video`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          ...(auth?.token ? { Authorization: `Bearer ${auth.token}` } : {}),
-        },
-      });
-      if (res.ok) {
-        setTitle("");
-        setVideoFile(null);
-        setVideoPreview(null);
-        setToastMessage("🎉 Video uploaded successfully!");
-        setShowToast(true);
-        setTimeout(() => {
-          setShowToast(false);
-          setToastMessage("");
-          navigate("/videos");
-        }, 3000);
-      } else {
-        const errorData = await res.json();
-        setToastMessage(`❌ ${errorData.error || "Video upload failed!"}`);
-        setShowToast(true);
-        setTimeout(() => {
-          setShowToast(false);
-          setToastMessage("");
-        }, 3000);
-      }
-    } catch (err) {
-      console.error(err);
-      setToastMessage("❌ Video upload failed!");
+    if (result.success) {
+      setTitle("");
+      setDescription("");
+      setVideoFile(null);
+      setVideoPreview(null);
+      setTiktokUrl("");
+      setToastMessage("🎉 Video uploaded successfully!");
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setToastMessage("");
+        navigate("/videos");
+      }, 3000);
+    } else {
+      setToastMessage(`❌ ${result.error}`);
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
         setToastMessage("");
       }, 3000);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -152,6 +153,22 @@ const VideosEdit = () => {
             <h2 className="font-bold text-2xl text-blue-600">Upload a video</h2>
 
             <form onSubmit={handleSubmit}>
+              <div className="flex flex-col p-2 space-y-2">
+                <label className="font-bold text-blue-600" htmlFor="uploadType">
+                  Upload Type
+                </label>
+                <select
+                  id="uploadType"
+                  name="uploadType"
+                  value={uploadType}
+                  onChange={handleUploadTypeChange}
+                  className="form-select border rounded-lg border-blue-300 p-2"
+                >
+                  <option value="upload">Upload Video File</option>
+                  <option value="tiktok">TikTok Video Link</option>
+                </select>
+              </div>
+
               <div className="flex flex-col p-2 space-y-2">
                 <label className="font-bold text-blue-600" htmlFor="title">
                   Title (optional)
@@ -185,29 +202,55 @@ const VideosEdit = () => {
                 />
               </div>
 
-              <div className="flex flex-col p-2 space-y-2">
-                <label className="font-bold text-blue-600" htmlFor="video">
-                  Upload Video
-                </label>
-                <input
-                  type="file"
-                  id="video"
-                  name="video"
-                  accept="video/mp4,video/webm,video/ogg"
-                  onChange={handleVideoChange}
-                  className="form-input border rounded-lg border-blue-300 p-2"
-                  required
-                />
-              </div>
+              {uploadType === "upload" ? (
+                <>
+                  <div className="flex flex-col p-2 space-y-2">
+                    <label className="font-bold text-blue-600" htmlFor="video">
+                      Upload Video
+                    </label>
+                    <input
+                      type="file"
+                      id="video"
+                      name="video"
+                      accept="video/mp4,video/webm,video/ogg"
+                      onChange={handleVideoChange}
+                      className="form-input border rounded-lg border-blue-300 p-2"
+                      required
+                    />
+                  </div>
 
-              {videoPreview && (
-                <div className="flex flex-col items-center p-2">
-                  <span className="text-blue-500 mb-2">Preview:</span>
-                  <video
-                    src={videoPreview}
-                    controls
-                    className="w-64 rounded-lg shadow-lg"
+                  {videoPreview && (
+                    <div className="flex flex-col items-center p-2">
+                      <span className="text-blue-500 mb-2">Preview:</span>
+                      <video
+                        src={videoPreview}
+                        controls
+                        className="w-64 rounded-lg shadow-lg"
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col p-2 space-y-2">
+                  <label
+                    className="font-bold text-blue-600"
+                    htmlFor="tiktokUrl"
+                  >
+                    TikTok Video URL
+                  </label>
+                  <input
+                    type="url"
+                    id="tiktokUrl"
+                    name="tiktokUrl"
+                    value={tiktokUrl}
+                    onChange={handleTiktokUrlChange}
+                    className="form-input border rounded-lg border-blue-300 p-2"
+                    placeholder="https://www.tiktok.com/@username/video/..."
+                    required
                   />
+                  <p className="text-sm text-blue-500">
+                    Enter the full TikTok video URL
+                  </p>
                 </div>
               )}
 
@@ -231,10 +274,13 @@ const VideosEdit = () => {
                 </h2>
                 <div className="border-t border-blue-300 pt-2">
                   <p className="text-blue-500">
-                    1. Bigger size files may take time to upload.
+                    1. Choose between uploading a file or adding a TikTok link.
                   </p>
                   <p className="text-blue-500">
-                    2. Add a title to make your video more discoverable.
+                    2. Bigger size files may take time to upload.
+                  </p>
+                  <p className="text-blue-500">
+                    3. Add a title to make your video more discoverable.
                   </p>
                 </div>
               </div>
