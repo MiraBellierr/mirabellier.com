@@ -9,7 +9,7 @@ import { CommentItem } from "@/components/VideoCommentItem";
 
 import { API_BASE } from "@/lib/config";
 import kobayashiMaidDragon from "@/assets/anime/kobayashi-maid-dragon.webp";
-import type { Video } from "@/lib/video-utils";
+import type { Video, VideoComment, CommentsMap } from "@/lib/video-utils";
 import { resolveAsset, shareVideo, isMobileDevice } from "@/lib/video-utils";
 import {
   toggleVideoLike,
@@ -31,7 +31,7 @@ const Videos = () => {
   const [likesMap, setLikesMap] = useState<
     Record<string, { count: number; liked: boolean }>
   >({});
-  const [commentsMap, setCommentsMap] = useState<Record<string, string[]>>({});
+  const [commentsMap, setCommentsMap] = useState<CommentsMap>({});
   const [showCommentsFor, setShowCommentsFor] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
@@ -154,7 +154,7 @@ const Videos = () => {
           });
 
           setCommentsMap((prev) => {
-            const initial: Record<string, string[]> = {};
+            const initial: CommentsMap = {};
             data.forEach((v: any) => {
               if (Array.isArray(v.comments)) {
                 initial[v.id] = v.comments;
@@ -836,7 +836,8 @@ const Videos = () => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {(commentsMap[showCommentsFor] || []).map((c: any) => (
+                        {(commentsMap[showCommentsFor] || []).map(
+                          (c: VideoComment) => (
                           <CommentItem
                             key={c.id}
                             comment={c}
@@ -846,7 +847,8 @@ const Videos = () => {
                             Icons={Icons}
                             onReplyClick={handleReplyClick}
                           />
-                        ))}
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
