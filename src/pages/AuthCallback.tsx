@@ -1,30 +1,14 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
+import { usePageSeo } from "@/lib/seo";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
 
-  useEffect(() => {
-    // Update canonical URL to point to the AuthCallback page
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/auth/callback";
-    }
-
-    return () => {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
-      }
-    };
-  }, []);
+  usePageSeo({ canonical: "https://mirabellier.com/auth/callback" });
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -36,8 +20,7 @@ const AuthCallback = () => {
         .then(() => {
           navigate("/");
         })
-        .catch((err) => {
-          console.error("Auth callback failed:", err);
+        .catch(() => {
           navigate("/login?error=callback_failed");
         });
     } else {

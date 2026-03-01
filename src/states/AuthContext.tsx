@@ -55,8 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!res.ok) throw new Error("Failed to fetch user");
       const data = await res.json();
       setUser(data);
-    } catch (err) {
-      console.error("Error fetching user:", err);
+    } catch {
       setUser(null);
       setToken(null);
       localStorage.removeItem("token");

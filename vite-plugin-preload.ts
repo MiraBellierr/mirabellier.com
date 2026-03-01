@@ -1,5 +1,17 @@
 import type { Plugin } from "vite";
 
+type BundleChunk = {
+  type: string;
+  isEntry?: boolean;
+  imports?: string[];
+  name?: string;
+  fileName?: string;
+};
+
+function isBundleChunk(value: unknown): value is BundleChunk {
+  return Boolean(value && typeof value === "object" && "type" in value);
+}
+
 /**
  * Vite plugin to automatically add modulepreload hints for critical chunks
  * This moves module dependencies out of the critical rendering path
@@ -14,11 +26,12 @@ export function modulePreloadPlugin(): Plugin {
         if (!ctx.bundle) return html;
 
         const preloadLinks: string[] = [];
-        const bundle = ctx.bundle as Record<string, any>;
+        const bundle = ctx.bundle as Record<string, BundleChunk>;
 
         // Find the entry chunk and its imports
         const entryChunk = Object.values(bundle).find(
-          (chunk: any) => chunk.type === "chunk" && chunk.isEntry,
+          (chunk) =>
+            isBundleChunk(chunk) && chunk.type === "chunk" && chunk.isEntry,
         );
 
         if (entryChunk && entryChunk.imports) {
@@ -35,7 +48,8 @@ export function modulePreloadPlugin(): Plugin {
 
         // Also preload React vendor chunk (most critical)
         const reactChunk = Object.values(bundle).find(
-          (chunk: any) =>
+          (chunk) =>
+            isBundleChunk(chunk) &&
             chunk.type === "chunk" &&
             chunk.name &&
             chunk.name.includes("react-vendor"),

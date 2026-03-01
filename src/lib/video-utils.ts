@@ -1,13 +1,27 @@
 import { API_BASE } from "@/lib/config";
 
+export interface VideoComment {
+  id: string;
+  text?: string;
+  parentId?: string | null;
+  userId?: string;
+  createdAt?: string;
+  children?: VideoComment[];
+  user?: {
+    id?: string;
+    username?: string;
+    avatar?: string | null;
+  } | null;
+}
+
 export interface Video {
   id: string;
   name: string;
   url: string;
   createdAt: string;
   description?: string;
-  likes?: number;
-  comments?: string[];
+  likes?: string[] | number;
+  comments?: VideoComment[];
   userId?: string;
   author?: string;
   authorAvatar?: string | null;
@@ -18,8 +32,16 @@ export interface LikeMap {
 }
 
 export interface CommentsMap {
-  [key: string]: string[];
+  [key: string]: VideoComment[];
 }
+
+type ShareCapableNavigator = Navigator & {
+  share?: (data: {
+    title?: string;
+    text?: string;
+    url?: string;
+  }) => Promise<void>;
+};
 
 export const resolveAsset = (asset?: string | null) => {
   if (!asset) return `${API_BASE}/images/default-avatar.png`;
@@ -29,41 +51,59 @@ export const resolveAsset = (asset?: string | null) => {
   return `${API_BASE}/images/${asset}`;
 };
 
-export const insertNestedComment = (arr: any[], comment: any) => {
-  if (!comment.parentId) return [...arr, comment];
-  const clone = arr.map((a) => ({
-    ...a,
-    children: a.children ? [...a.children] : [],
+function cloneCommentTree(comments: VideoComment[]): VideoComment[] {
+  return comments.map((comment) => ({
+    ...comment,
+    children: comment.children ? cloneCommentTree(comment.children) : [],
   }));
-  const walker = (nodes: any[]): boolean => {
-    for (const n of nodes) {
-      if (n.id === comment.parentId) {
-        n.children = n.children || [];
-        n.children.push(comment);
-        return true;
-      }
-      if (n.children && n.children.length) {
-        if (walker(n.children)) return true;
-      }
+}
+
+function insertCommentIntoTree(
+  nodes: VideoComment[],
+  comment: VideoComment,
+): boolean {
+  for (const node of nodes) {
+    if (node.id === comment.parentId) {
+      node.children = node.children || [];
+      node.children.push(comment);
+      return true;
     }
-    return false;
-  };
-  const found = walker(clone);
-  if (found) return clone;
-  return [...clone, comment];
+
+    if (node.children && node.children.length > 0) {
+      const inserted = insertCommentIntoTree(node.children, comment);
+      if (inserted) return true;
+    }
+  }
+  return false;
+}
+
+export const insertNestedComment = (
+  comments: VideoComment[],
+  comment: VideoComment,
+) => {
+  if (!comment.parentId) return [...comments, comment];
+
+  const cloned = cloneCommentTree(comments);
+  const inserted = insertCommentIntoTree(cloned, comment);
+  if (inserted) return cloned;
+
+  return [...cloned, comment];
 };
 
 export const shareVideo = async (video: Video) => {
-  const url = `${API_BASE}${video.url}`;
+  const shareUrl = `${API_BASE}${video.url}`;
+
   try {
-    if ((navigator as any).share) {
-      await (navigator as any).share({ title: video.name, url });
-    } else {
-      await navigator.clipboard.writeText(url);
-      alert("Video link copied to clipboard");
+    const shareNavigator = navigator as ShareCapableNavigator;
+    if (typeof shareNavigator.share === "function") {
+      await shareNavigator.share({ title: video.name, url: shareUrl });
+      return;
     }
-  } catch (e) {
-    console.warn("share failed", e);
+
+    await navigator.clipboard.writeText(shareUrl);
+    alert("Video link copied to clipboard");
+  } catch {
+    // Intentionally ignore share cancellation and clipboard failures.
   }
 };
 

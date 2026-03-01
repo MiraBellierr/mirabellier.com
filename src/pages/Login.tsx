@@ -42,7 +42,10 @@ const Login = () => {
 
   const handleDiscordLogin = () => {
     // Redirect to Discord OAuth
-    window.location.href = `${API_BASE}/auth/discord`;
+    const params = new URLSearchParams({
+      redirect_origin: window.location.origin,
+    });
+    window.location.href = `${API_BASE}/auth/discord?${params.toString()}`;
   };
 
   return (

@@ -202,7 +202,7 @@ export function SimpleEditor({
               default: null,
               parseHTML: (element) => element.getAttribute("data-align"),
               renderHTML: (
-                _attributes: Record<string, any>,
+                _attributes: Record<string, unknown>,
                 context?: { parent?: { attrs?: { textAlign?: string } } },
               ) => {
                 // Defensive: context or parent may be undefined
@@ -231,7 +231,9 @@ export function SimpleEditor({
         maxSize: MAX_FILE_SIZE,
         limit: 3,
         upload: handleImageUpload,
-        onError: (error) => console.error("Upload failed:", error),
+        onError: () => {
+          // Errors are surfaced by the uploader UI state.
+        },
       }),
     ],
     content: initialContent ?? content,
@@ -265,8 +267,8 @@ export function SimpleEditor({
       try {
         editor.commands.setContent(initialContent);
         lastLoadedContent.current = newContentString;
-      } catch (err) {
-        console.error("Failed to set editor content:", err);
+      } catch {
+        // Ignore invalid persisted draft content.
       }
     }
   }, [editor, initialContent]);

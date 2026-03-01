@@ -1,24 +1,94 @@
 import { API_BASE } from "@/lib/config";
-import type { LikeMap, CommentsMap } from "./video-utils";
-import { insertNestedComment } from "./video-utils";
+import type { LikeMap, CommentsMap, VideoComment } from "@/lib/video-utils";
+import { insertNestedComment } from "@/lib/video-utils";
+
+type UserSummary = {
+  id?: string;
+  username?: string;
+  avatar?: string | null;
+  [key: string]: unknown;
+};
+
+type UserCache = Record<string, UserSummary>;
+type SetUserCache = (fn: (prev: UserCache) => UserCache) => void;
+type SetLikesMap = (fn: (prev: LikeMap) => LikeMap) => void;
+type SetCommentsMap = (fn: (prev: CommentsMap) => CommentsMap) => void;
+
+type LikeAction = "like" | "unlike";
+
+type LikeApiResponse = {
+  likes?: string[];
+};
+
+type CommentApiResponse = VideoComment;
+
+function buildLikeState(likesCount: number, liked: boolean) {
+  return { count: likesCount, liked };
+}
+
+function invertLikeState(state: { count: number; liked: boolean }) {
+  return buildLikeState(
+    state.liked ? Math.max(0, state.count - 1) : state.count + 1,
+    !state.liked,
+  );
+}
+
+function getLikeState(likesMap: LikeMap, videoId: string) {
+  return likesMap[videoId] || buildLikeState(0, false);
+}
+
+function rollbackLike(videoId: string, setLikesMap: SetLikesMap) {
+  setLikesMap((prev) => {
+    const current = getLikeState(prev, videoId);
+    return { ...prev, [videoId]: invertLikeState(current) };
+  });
+}
+
+function getLikeAction(liked: boolean): LikeAction {
+  return liked ? "like" : "unlike";
+}
+
+async function readErrorText(response: Response) {
+  try {
+    return await response.text();
+  } catch {
+    return "";
+  }
+}
+
+function updateLikesFromServer(
+  videoId: string,
+  response: LikeApiResponse,
+  user: UserSummary | null | undefined,
+  optimisticLiked: boolean,
+  setLikesMap: SetLikesMap,
+) {
+  const likesArray = Array.isArray(response.likes) ? response.likes : [];
+  setLikesMap((prev) => ({
+    ...prev,
+    [videoId]: {
+      count: likesArray.length,
+      liked: user?.id ? likesArray.includes(user.id) : optimisticLiked,
+    },
+  }));
+}
 
 export const fetchAndCacheUser = async (
   id: string | null | undefined,
-  userCache: Record<string, any>,
-  setUserCache: (
-    fn: (prev: Record<string, any>) => Record<string, any>,
-  ) => void,
+  userCache: UserCache,
+  setUserCache: SetUserCache,
 ) => {
   if (!id) return null;
   if (userCache[id]) return userCache[id];
+
   try {
-    const res = await fetch(`${API_BASE}/user/${id}`);
-    if (!res.ok) return null;
-    const data = await res.json();
+    const response = await fetch(`${API_BASE}/user/${id}`);
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as UserSummary;
     setUserCache((prev) => ({ ...prev, [id]: data }));
     return data;
-  } catch (error) {
-    console.error(error);
+  } catch {
     return null;
   }
 };
@@ -30,62 +100,38 @@ export const useFetchAndCacheUser = () => {
 export const toggleVideoLike = async (
   id: string,
   token: string | null | undefined,
-  user: any,
-  setLikesMap: (fn: (prev: LikeMap) => LikeMap) => void,
+  user: UserSummary | null | undefined,
+  setLikesMap: SetLikesMap,
 ): Promise<void> => {
-  let nextLiked = false;
+  let optimisticLiked = false;
+
   setLikesMap((prev) => {
-    const cur = prev[id] || { count: 0, liked: false };
-    const next = {
-      count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1,
-      liked: !cur.liked,
-    };
-    nextLiked = next.liked;
+    const current = getLikeState(prev, id);
+    const next = invertLikeState(current);
+    optimisticLiked = next.liked;
     return { ...prev, [id]: next };
   });
 
   try {
-    const action = nextLiked ? "like" : "unlike";
-    const res = await fetch(`${API_BASE}/videos/${id}/like`, {
+    const response = await fetch(`${API_BASE}/videos/${id}/like`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action: getLikeAction(optimisticLiked) }),
     });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("like API error", res.status, text);
-      setLikesMap((prev) => {
-        const cur = prev[id] || { count: 0, liked: false };
-        const rollback = {
-          count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1,
-          liked: !cur.liked,
-        };
-        return { ...prev, [id]: rollback };
-      });
+
+    if (!response.ok) {
+      await readErrorText(response);
+      rollbackLike(id, setLikesMap);
       return;
     }
-    const data = await res.json();
-    const likesArr: string[] = Array.isArray(data.likes) ? data.likes : [];
-    setLikesMap((prev) => ({
-      ...prev,
-      [id]: {
-        count: likesArr.length,
-        liked: user ? likesArr.includes(user.id) : nextLiked,
-      },
-    }));
-  } catch (e) {
-    console.error("like request failed", e);
-    setLikesMap((prev) => {
-      const cur = prev[id] || { count: 0, liked: false };
-      const rollback = {
-        count: cur.liked ? Math.max(0, cur.count - 1) : cur.count + 1,
-        liked: !cur.liked,
-      };
-      return { ...prev, [id]: rollback };
-    });
+
+    const data = (await response.json()) as LikeApiResponse;
+    updateLikesFromServer(id, data, user, optimisticLiked, setLikesMap);
+  } catch {
+    rollbackLike(id, setLikesMap);
   }
 };
 
@@ -94,48 +140,45 @@ export const addComment = async (
   text: string,
   token: string | null | undefined,
   parentId: string | null | undefined,
-  setCommentsMap: (fn: (prev: CommentsMap) => CommentsMap) => void,
+  setCommentsMap: SetCommentsMap,
   onSuccess: () => void,
 ): Promise<void> => {
-  if (!text.trim()) return;
+  const normalizedText = text.trim();
+  if (!normalizedText) return;
+
   if (!token) {
     alert("Please log in to comment");
     return;
   }
 
   try {
-    const res = await fetch(`${API_BASE}/videos/${videoId}/comments`, {
+    const response = await fetch(`${API_BASE}/videos/${videoId}/comments`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ text, parentId }),
+      body: JSON.stringify({ text: normalizedText, parentId }),
     });
 
-    if (!res.ok) {
-      let details = "";
-      try {
-        details = await res.text();
-      } catch (error) {
-        details = String(error);
-      }
-      console.error("Failed to post comment", res.status, details);
-      alert(`Failed to post comment: ${res.status} ${details}`);
+    if (!response.ok) {
+      const details = await readErrorText(response);
+      alert(`Failed to post comment: ${response.status} ${details}`);
       return;
     }
 
-    const created = await res.json();
-
+    const created = (await response.json()) as CommentApiResponse;
     setCommentsMap((prev) => {
-      const cur = prev[videoId] ? [...prev[videoId]] : [];
-      const updated = insertNestedComment(cur, created);
-      return { ...prev, [videoId]: updated };
+      const currentComments = prev[videoId] ? [...prev[videoId]] : [];
+      return {
+        ...prev,
+        [videoId]: insertNestedComment(currentComments, created),
+      };
     });
 
     onSuccess();
-  } catch (e) {
-    console.error("post comment error", e);
-    alert("Failed to post comment: " + (e as any).message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    alert(`Failed to post comment: ${message}`);
   }
 };

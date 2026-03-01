@@ -4,41 +4,42 @@ import lightBg from "@/assets/light.webp";
 
 const STORAGE_KEY = "mirabellier-theme";
 
-const setDocumentDark = (isDark: boolean) => {
+const safely = (fn: () => void) => {
   try {
-    const el = document.documentElement;
-    if (isDark) el.classList.add("dark");
-    else el.classList.remove("dark");
-  } catch (err) {
-    console.error("DarkToggle setDocumentDark error", err);
+    fn();
+  } catch {
+    // Ignore storage/document access failures in restricted environments.
   }
+};
+
+const setDocumentDark = (isDark: boolean) => {
+  safely(() => {
+    const element = document.documentElement;
+    if (isDark) element.classList.add("dark");
+    else element.classList.remove("dark");
+  });
 };
 
 const DarkToggle: React.FC = () => {
   const [isDark, setIsDark] = useState<boolean>(() => {
-    try {
+    let storedValue: string | null = null;
+    safely(() => {
       const v = localStorage.getItem(STORAGE_KEY);
-      if (v) return v === "dark";
-    } catch (err) {
-      console.error("DarkToggle init localStorage error", err);
-    }
-
+      if (v) storedValue = v;
+    });
+    if (storedValue) return storedValue === "dark";
     return false;
   });
 
   useEffect(() => {
     setDocumentDark(isDark);
-    try {
+    safely(() => {
       localStorage.setItem(STORAGE_KEY, isDark ? "dark" : "light");
-    } catch (err) {
-      console.error("DarkToggle localStorage error", err);
-    }
-    try {
+    });
+    safely(() => {
       const val = isDark ? `url(${darkBg})` : `url(${lightBg})`;
       document.documentElement.style.setProperty("--page-bg", val);
-    } catch (err) {
-      console.error("DarkToggle setProperty error", err);
-    }
+    });
   }, [isDark]);
 
   return (

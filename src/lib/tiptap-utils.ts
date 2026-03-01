@@ -88,25 +88,15 @@ export function isExtensionAvailable(
     editor.extensionManager.extensions.some((ext) => ext.name === name),
   );
 
-  if (!found) {
-    console.warn(
-      `None of the extensions [${names.join(", ")}] were found in the editor schema. Ensure they are included in the editor configuration.`,
-    );
-  }
-
   return found;
 }
 
 export function findNodeAtPosition(editor: Editor, position: number) {
   try {
     const node = editor.state.doc.nodeAt(position);
-    if (!node) {
-      console.warn(`No node found at position ${position}`);
-      return null;
-    }
+    if (!node) return null;
     return node;
-  } catch (error) {
-    console.error(`Error getting node at position ${position}:`, error);
+  } catch {
     return null;
   }
 }
@@ -260,8 +250,11 @@ type ProtocolOptions = {
 
 type ProtocolConfig = Array<ProtocolOptions | string>;
 
-const ATTR_WHITESPACE =
-  /[\u0000-\u0020\u00A0\u1680\u180E\u2000-\u2029\u205F\u3000]/g;
+// eslint-disable-next-line no-control-regex
+const ATTR_WHITESPACE = new RegExp(
+  "[\\u0000-\\u0020\\u00A0\\u1680\\u180E\\u2000-\\u2029\\u205F\\u3000]",
+  "g",
+);
 
 export function isAllowedUri(
   uri: string | undefined,
@@ -297,7 +290,7 @@ export function isAllowedUri(
       .replace(ATTR_WHITESPACE, "")
       .match(
         new RegExp(
-          `^(?:(?:${allowedProtocols.join("|")}):|[^a-z]|[a-z0-9+.\-]+(?:[^a-z+.\-:]|$))`,
+          `^(?:(?:${allowedProtocols.join("|")}):|[^a-z]|[a-z0-9+.-]+(?:[^a-z+.:-]|$))`,
           "i",
         ),
       )
@@ -315,8 +308,8 @@ export function sanitizeUrl(
     if (isAllowedUri(url.href, protocols)) {
       return url.href;
     }
-  } catch (e) {
-    console.error("Failed to sanitize URL:", e);
+  } catch {
+    // Fall through to the safe fallback.
   }
   return "#";
 }

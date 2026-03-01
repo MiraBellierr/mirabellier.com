@@ -1,7 +1,22 @@
-import React from "react";
-import type { Video } from "@/lib/video-utils";
+import React, { type ComponentType } from "react";
+import type { Video, VideoComment } from "@/lib/video-utils";
 import { resolveAsset } from "@/lib/video-utils";
 import { API_BASE } from "@/lib/config";
+
+type UserSummary = {
+  id?: string;
+  username?: string;
+  avatar?: string | null;
+};
+
+type IconComponent = ComponentType<{ size?: number }>;
+type IconSet = {
+  Like?: IconComponent;
+  Comment?: IconComponent;
+  Share?: IconComponent;
+  Volume?: IconComponent;
+  VolumeOff?: IconComponent;
+};
 
 interface VideoPlayerProps {
   currentVideo: Video | undefined;
@@ -16,15 +31,15 @@ interface VideoPlayerProps {
   currentVideoIndex: number;
   totalVideos: number;
   expandedMap: Record<string, boolean>;
-  userCache: Record<string, any>;
+  userCache: Record<string, UserSummary>;
   onToggleExpand: (id: string) => void;
-  Icons: any;
+  Icons: IconSet | null;
   onRetry: () => void;
   onLike: (id: string) => void;
   onShowComments: (id: string) => void;
   onShare: (video: Video) => void;
   likesMap: Record<string, { count: number; liked: boolean }>;
-  commentsMap: Record<string, any[]>;
+  commentsMap: Record<string, VideoComment[]>;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -50,6 +65,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   likesMap,
   commentsMap,
 }) => {
+  const VolumeOffIcon = Icons?.VolumeOff;
+  const VolumeOnIcon = Icons?.Volume;
+  const LikeIcon = Icons?.Like;
+  const CommentIcon = Icons?.Comment;
+  const ShareIcon = Icons?.Share;
+
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative bg-black/50 p-4 rounded-xl overflow-hidden">
@@ -97,22 +118,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           className="absolute left-3 top-3 z-50 p-2 rounded-full bg-black/40 text-white hover:bg-black/60"
           aria-label={isMuted ? "Unmute" : "Mute"}
         >
-          {Icons && (isMuted ? Icons.VolumeOff : Icons.Volume) ? (
-            isMuted ? (
-              <Icons.VolumeOff size={18} />
+          {isMuted ? (
+            VolumeOffIcon ? (
+              <VolumeOffIcon size={18} />
             ) : (
-              <Icons.Volume size={18} />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M16.5 12c0-1.77-.77-3.29-1.98-4.32l1.42-1.42A8 8 0 0119.5 12a8 8 0 01-3.56 6.74l-1.42-1.42A5.99 5.99 0 0016.5 12zM5 9v6h4l5 5V4L9 9H5z" />
+              </svg>
             )
-          ) : isMuted ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M16.5 12c0-1.77-.77-3.29-1.98-4.32l1.42-1.42A8 8 0 0119.5 12a8 8 0 01-3.56 6.74l-1.42-1.42A5.99 5.99 0 0016.5 12zM5 9v6h4l5 5V4L9 9H5z" />
-            </svg>
+          ) : VolumeOnIcon ? (
+            <VolumeOnIcon size={18} />
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -208,8 +229,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div
               className={`p-3 rounded-full bg-white/10 hover:bg-white/20 ${likesMap[currentVideo?.id || ""]?.liked ? "text-pink-400" : "text-white"}`}
             >
-              {Icons && Icons.Like ? (
-                <Icons.Like size={24} />
+              {LikeIcon ? (
+                <LikeIcon size={24} />
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -232,8 +253,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             className="flex flex-col items-center text-white"
           >
             <div className="p-3 rounded-full bg-white/10 hover:bg-white/20">
-              {Icons && Icons.Comment ? (
-                <Icons.Comment size={22} />
+              {CommentIcon ? (
+                <CommentIcon size={22} />
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -256,8 +277,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             className="flex flex-col items-center text-white"
           >
             <div className="p-3 rounded-full bg-white/10 hover:bg-white/20">
-              {Icons && Icons.Share ? (
-                <Icons.Share size={20} />
+              {ShareIcon ? (
+                <ShareIcon size={20} />
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

@@ -1,12 +1,24 @@
-import React from "react";
+import React, { type ComponentType } from "react";
 import { API_BASE } from "@/lib/config";
+import type { VideoComment } from "@/lib/video-utils";
+
+type UserSummary = {
+  id?: string;
+  username?: string;
+  avatar?: string | null;
+};
+
+type IconComponent = ComponentType<{ size?: number }>;
+type IconSet = {
+  Like?: IconComponent;
+};
 
 interface CommentItemProps {
-  comment: any;
+  comment: VideoComment;
   videoId: string;
   depth: number;
-  userCache: Record<string, any>;
-  Icons: any;
+  userCache: Record<string, UserSummary>;
+  Icons: IconSet | null;
   onReplyClick: (commentId: string, username: string) => void;
 }
 
@@ -20,7 +32,7 @@ const resolveAsset = (asset?: string | null) => {
 
 export const CommentItem: React.FC<CommentItemProps> = ({
   comment,
-  videoId,
+  videoId: _videoId,
   depth,
   userCache,
   Icons,
@@ -54,7 +66,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 </div>
               </div>
               <div className="text-xs text-gray-400 mt-1">
-                {new Date(comment.createdAt).toLocaleString()}
+                {new Date(comment.createdAt || Date.now()).toLocaleString()}
               </div>
             </div>
           </div>
@@ -85,11 +97,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         comment.children.length > 0 &&
         depth < MAX_COMMENT_DEPTH && (
           <div className="mt-3 space-y-3">
-            {comment.children.map((ch: any) => (
+            {comment.children.map((ch) => (
               <CommentItem
                 key={ch.id}
                 comment={ch}
-                videoId={videoId}
+                videoId={_videoId}
                 depth={depth + 1}
                 userCache={userCache}
                 Icons={Icons}

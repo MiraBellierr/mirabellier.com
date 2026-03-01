@@ -139,6 +139,7 @@ export const resolveAsset = (val?: string | null) => {
 export type Post = {
   id: string | number;
   title: string;
+  userId?: string | null;
   author: string;
   authorAvatar?: string | null;
   createdAt: string;
