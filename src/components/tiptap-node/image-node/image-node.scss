@@ -1,20 +1,80 @@
 .tiptap.ProseMirror {
-  img {
-    max-width: 100%;
-    height: auto;
-    display: block;
+  --tt-image-caption-color: var(--tt-gray-light-a-600);
+  --tt-image-caption-placeholder: var(--tt-gray-light-a-400);
+
+  .dark & {
+    --tt-image-caption-color: var(--tt-gray-dark-a-600);
+    --tt-image-caption-placeholder: var(--tt-gray-dark-a-400);
   }
 
-  > img:not([data-type="emoji"] img) {
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .tiptap-image-node {
     margin: 2rem 0;
+  }
+
+  .tiptap-image-figure,
+  figure[data-type="captioned-image"] {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin: 0;
+  }
+
+  .tiptap-image-node[data-align="center"] .tiptap-image-figure,
+  figure[data-type="captioned-image"][data-align="center"] {
+    margin-inline: auto;
+  }
+
+  .tiptap-image-node[data-align="right"] .tiptap-image-figure,
+  figure[data-type="captioned-image"][data-align="right"] {
+    margin-left: auto;
+  }
+
+  .tiptap-image-element,
+  figure[data-type="captioned-image"] > img,
+  > img:not([data-type="emoji"] img) {
+    margin: 0;
     outline: 0.125rem solid transparent;
     border-radius: var(--tt-radius-xs, 0.25rem);
   }
 
+  .tiptap-image-node.is-selected .tiptap-image-element,
+  figure[data-type="captioned-image"] > img.ProseMirror-selectednode,
   img:not([data-type="emoji"] img).ProseMirror-selectednode {
     outline-color: var(--tt-brand-color-500);
   }
-  .tiptap-thread:has(> img) {
+
+  .tiptap-image-caption,
+  .tiptap-image-caption-input,
+  figure[data-type="captioned-image"] > figcaption {
+    width: 100%;
+    color: var(--tt-image-caption-color);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    text-align: center;
+  }
+
+  .tiptap-image-caption-input {
+    border: 0;
+    background: transparent;
+    padding: 0 0.35rem 0.15rem;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .tiptap-image-caption-input::placeholder {
+    color: var(--tt-image-caption-placeholder);
+  }
+
+  .tiptap-thread:has(> img),
+  .tiptap-thread:has(> figure[data-type="captioned-image"]) {
     margin: 2rem 0;
 
     img {

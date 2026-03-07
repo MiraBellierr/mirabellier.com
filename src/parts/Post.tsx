@@ -1,6 +1,5 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
-import { Image } from "@tiptap/extension-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Typography } from "@tiptap/extension-typography";
@@ -10,50 +9,8 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension";
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension";
 import { CodeBlockNodeExtension } from "@/components/tiptap-node/code-block-node/code-block-node-extension";
+import { CaptionedImageExtension } from "@/components/tiptap-node/image-node/image-node-extension";
 import { useMemo, memo } from "react";
-
-const CustomImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      loading: {
-        default: "lazy",
-        parseHTML: (element) => element.getAttribute("loading"),
-        renderHTML: (attributes) => ({ loading: attributes.loading }),
-      },
-      fetchpriority: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("fetchpriority"),
-        renderHTML: (attributes) => {
-          if (attributes.fetchpriority) {
-            return { fetchpriority: attributes.fetchpriority };
-          }
-          return {};
-        },
-      },
-      width: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("width"),
-        renderHTML: (attributes) => {
-          if (attributes.width) {
-            return { width: attributes.width };
-          }
-          return {};
-        },
-      },
-      height: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("height"),
-        renderHTML: (attributes) => {
-          if (attributes.height) {
-            return { height: attributes.height };
-          }
-          return {};
-        },
-      },
-    };
-  },
-});
 
 type PostContent = object | string | null | undefined;
 
@@ -80,7 +37,7 @@ const Post = ({ html }: { html: PostContent }) => {
       StarterKit.configure({ horizontalRule: false, codeBlock: false }),
       HorizontalRule,
       CodeBlockNodeExtension,
-      CustomImage.configure({ allowBase64: true }),
+      CaptionedImageExtension.configure({ allowBase64: true }),
       ImageUploadNode,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TaskList,

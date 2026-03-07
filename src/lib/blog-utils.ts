@@ -35,8 +35,9 @@ type ImageNode = {
   type: "image";
   attrs: {
     src: string;
-    alt: string;
-    title: string;
+    alt: string | null;
+    title: string | null;
+    caption?: string | null;
     width: number | null;
     height: number | null;
   };
@@ -100,6 +101,11 @@ export function extractTextFromContent(
           break;
 
         case "image":
+          if (node.attrs?.caption) {
+            result += `${node.attrs.caption} `;
+          }
+          break;
+
         case "hardBreak":
           break;
 

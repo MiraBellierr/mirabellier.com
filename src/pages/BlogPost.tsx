@@ -42,8 +42,9 @@ type ImageNode = {
   type: "image";
   attrs: {
     src: string;
-    alt: string;
-    title: string;
+    alt: string | null;
+    title: string | null;
+    caption?: string | null;
     width: number | null;
     height: number | null;
   };
