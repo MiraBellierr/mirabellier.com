@@ -17,8 +17,8 @@ import {
 } from "@/components/tiptap-ui-primitive/toolbar";
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension";
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension";
+import { CodeBlockNodeExtension } from "@/components/tiptap-node/code-block-node/code-block-node-extension";
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss";
-import "@/components/tiptap-node/code-block-node/code-block-node.scss";
 import "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.scss";
 import "@/components/tiptap-node/list-node/list-node.scss";
 import "@/components/tiptap-node/image-node/image-node.scss";
@@ -183,12 +183,14 @@ export function SimpleEditor({
     extensions: [
       StarterKit.configure({
         horizontalRule: false,
+        codeBlock: false,
         link: {
           openOnClick: false,
           enableClickSelection: true,
         },
       }),
       HorizontalRule,
+      CodeBlockNodeExtension,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TaskList,
       TaskItem.configure({ nested: true }),

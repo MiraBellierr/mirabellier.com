@@ -4,10 +4,10 @@ import { lazy, Suspense } from "react";
 // Eagerly load critical routes (Home, Blog) for faster initial load
 import Home from "./pages/Home";
 import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
 
 // Lazy load non-critical routes to reduce initial bundle size
 const About = lazy(() => import("./pages/About"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 const Pics = lazy(() => import("./pages/Pics"));
 const PicsEdit = lazy(() => import("./pages/PicsEdit"));
 const BlogEdit = lazy(() => import("./pages/BlogEdit"));

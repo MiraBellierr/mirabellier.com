@@ -9,6 +9,7 @@ import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension";
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension";
+import { CodeBlockNodeExtension } from "@/components/tiptap-node/code-block-node/code-block-node-extension";
 import { useMemo, memo } from "react";
 
 const CustomImage = Image.extend({
@@ -76,8 +77,9 @@ const Post = ({ html }: { html: PostContent }) => {
   // Memoize extensions to prevent re-creating them on every render
   const extensions = useMemo(
     () => [
-      StarterKit.configure({ horizontalRule: false }),
+      StarterKit.configure({ horizontalRule: false, codeBlock: false }),
       HorizontalRule,
+      CodeBlockNodeExtension,
       CustomImage.configure({ allowBase64: true }),
       ImageUploadNode,
       TextAlign.configure({ types: ["heading", "paragraph"] }),

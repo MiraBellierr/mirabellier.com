@@ -193,22 +193,23 @@ const BlogPost = () => {
             </div>
           </div>
 
-          <main className="w-full lg:flex-1 space-y-4 p-4">
-            {loading ? (
-              <div className="p-2 card-border text-center">
-                <p>Loading post...</p>
-              </div>
-            ) : error ? (
-              <div className="bg-red-100 border border-red-400 text-red-700 p-4 rounded-xl">
-                Error: {error}
-              </div>
-            ) : post ? (
-              <>
-                <div className="p-2 card-border">
-                  <h2 className="text-xl font-bold text-blue-700 mb-2">
+          <main className="w-full lg:flex-1 px-2 py-4 sm:px-4 lg:px-8 xl:px-12">
+            <div className="mx-auto w-full max-w-4xl space-y-4">
+              {loading ? (
+                <div className="card-border p-4 text-center sm:p-6">
+                  <p>Loading post...</p>
+                </div>
+              ) : error ? (
+                <div className="rounded-xl border border-red-400 bg-red-100 p-4 text-red-700 sm:p-6">
+                  Error: {error}
+                </div>
+              ) : post ? (
+                <>
+                <div className="card-border p-4 sm:p-6 lg:p-8">
+                  <h2 className="mb-2 text-xl font-bold text-blue-700 sm:text-2xl">
                     {post.title}
                   </h2>
-                  <p className="text-sm text-blue-500 mb-2 flex items-center gap-2">
+                  <p className="mb-4 flex flex-wrap items-center gap-2 text-sm text-blue-500">
                     {(post as any).userId ? (
                       <Link
                         to={`/profile/${post.author}`}
@@ -217,7 +218,7 @@ const BlogPost = () => {
                         {post.authorAvatar && (
                           <img
                             src={resolveAsset(post.authorAvatar) || undefined}
-                            className="w-6 h-6 rounded-full"
+                            className="h-6 w-6 rounded-full"
                             alt="author avatar"
                           />
                         )}
@@ -228,7 +229,7 @@ const BlogPost = () => {
                         {post.authorAvatar && (
                           <img
                             src={resolveAsset(post.authorAvatar) || undefined}
-                            className="w-6 h-6 rounded-full"
+                            className="h-6 w-6 rounded-full"
                             alt="author avatar"
                           />
                         )}
@@ -245,13 +246,14 @@ const BlogPost = () => {
                   </div>
                 </div>
               </>
-            ) : (
-              <div className="space-y-1 p-2 card-border">
-                <h2 className="text-xl font-bold text-blue-700 mb-2 text-center">
-                  Post not found
-                </h2>
-              </div>
-            )}
+              ) : (
+                <div className="card-border space-y-1 p-4 sm:p-6">
+                  <h2 className="mb-2 text-center text-xl font-bold text-blue-700">
+                    Post not found
+                  </h2>
+                </div>
+              )}
+            </div>
           </main>
         </div>
       </div>

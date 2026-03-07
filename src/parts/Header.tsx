@@ -55,7 +55,7 @@ const Header = () => {
   }, [open]);
 
   return (
-    <header className="bg-blue-50 border-b-2 border-blue-300 dark:bg-gradient-to-r dark:from-purple-900/40 dark:to-pink-900/30 dark:border-purple-500/30 p-4 text-4xl font-bold text-blue-600 dark:text-purple-200 shadow-sm flex items-center justify-center relative">
+    <header className="site-display bg-blue-50 border-b-2 border-blue-300 dark:bg-gradient-to-r dark:from-purple-900/40 dark:to-pink-900/30 dark:border-purple-500/30 p-4 text-4xl font-bold text-blue-600 dark:text-purple-200 shadow-sm flex items-center justify-center relative">
       <h1 className="tracking-widest text-center">Welcome to my website</h1>
 
       {/* Desktop menu */}

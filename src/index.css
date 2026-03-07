@@ -9,6 +9,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --font-body:
+    "Fredoka", "Quicksand", "Avenir Next Rounded", "Trebuchet MS", "Segoe UI",
+    sans-serif;
+  --font-display:
+    "Fredoka", "Quicksand", "Avenir Next Rounded", "Trebuchet MS", "Segoe UI",
+    sans-serif;
 
   /* Gray scale variables */
   --tt-gray-light-a-50: rgba(56, 56, 56, 0.04);
@@ -249,9 +255,11 @@
 /* Prevent CLS by isolating page root containers — they should not trigger sibling reflows */
 div[class*="min-h-screen"][class*="text-blue"][class*="font-"][class*="flex"][class*="flex-col"] {
   contain: layout style paint;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: var(--font-body);
+}
+
+[class*="font-[sans-serif]"] {
+  font-family: var(--font-body);
 }
 
 /* Force GPU compositing for animated elements */
@@ -356,11 +364,10 @@ div[class*="min-h-screen"][class*="text-blue"][class*="font-"][class*="flex"][cl
 }
 
 html {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.5;
+  font-optical-sizing: auto;
   /* Prevent font swap causing layout shift */
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -368,6 +375,7 @@ html {
 }
 
 body {
+  font-family: var(--font-body);
   background: var(--tt-bg-color);
   color: var(--tt-color-text-gray);
   transition:
@@ -375,6 +383,27 @@ body {
     color 200ms ease;
   margin: 0;
   padding: 0;
+}
+
+#root,
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+}
+
+.site-display {
+  font-family: var(--font-display);
 }
 
 [class*="border-"][class*="rounded"] {
