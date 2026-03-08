@@ -25,7 +25,7 @@ const BlogEdit = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const MAX_TAGS = 5;
+  const MAX_TAGS = 10;
   const [highlighted, setHighlighted] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, setSubmitSuccess] = useState(false);
@@ -141,7 +141,7 @@ const BlogEdit = () => {
       setTimeout(() => setShowToast(false), 2000);
       return;
     }
-    const val = raw.slice(0, 10);
+    const val = raw.slice(0, 20);
     if (tags.includes(val)) return;
     if (tags.length >= MAX_TAGS) {
       setToastMessage(`You can add up to ${MAX_TAGS} tags`);
@@ -408,7 +408,7 @@ const BlogEdit = () => {
                     disabled={isLoadingPost}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={onTagKeyDown}
-                    placeholder="Add a tag and press Enter or comma (e.g. cats)"
+                    placeholder="Add a tag and press Enter or comma (max 20 chars)"
                     className="form-input border rounded-lg border-blue-300 p-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:placeholder-gray-400"
                   />
 

@@ -48,7 +48,7 @@ export const validateTags = (tags: (string | unknown)[]) => {
       String(t || "")
         .trim()
         .replace(/[^A-Za-z0-9_-]/g, "")
-        .slice(0, 10),
+        .slice(0, 20),
     )
     .filter(Boolean);
 };
