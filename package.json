@@ -12,7 +12,8 @@
     "backend:dev": "node mirabellier-backend/app.js",
     "predeploy": "npm run generate:sitemap && npm run build",
     "deploy": "gh-pages -d dist",
-    "generate:sitemap": "node generate-sitemap.cjs"
+    "generate:sitemap": "node generate-sitemap.cjs",
+    "indexnow:submit-all": "node mirabellier-backend/scripts/submit-indexnow-all.js"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.13",
