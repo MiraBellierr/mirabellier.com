@@ -13,9 +13,15 @@ import {
   extractTextFromContent,
   slugify,
   resolveAsset,
+  countNestedComments,
   type Post as PostType,
 } from "@/lib/blog-utils";
 import { fetchPosts, deletePost } from "@/lib/blog-api";
+
+const POST_MENU_WIDTH = 144;
+const POST_MENU_HEIGHT = 88;
+const POST_MENU_GAP = 8;
+const POST_MENU_VIEWPORT_PADDING = 8;
 
 const Blog = () => {
   const [posts, setPosts] = useState<PostType[]>([]);
@@ -97,14 +103,20 @@ const Blog = () => {
       setOpenMenuId(null);
       setMenuPos(null);
     };
+    const onResize = () => {
+      setOpenMenuId(null);
+      setMenuPos(null);
+    };
 
     document.addEventListener("click", onDocClick);
     document.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("click", onDocClick);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
     };
   }, []);
 
@@ -118,8 +130,21 @@ const Blog = () => {
       if (next) {
         if (!target) return prev; // safety guard
         const rect = target.getBoundingClientRect();
-        const left = rect.right + window.scrollX - 144; // align with w-36 menu width
-        const top = rect.bottom + window.scrollY + 8; // small gap below button
+        const left = Math.min(
+          Math.max(
+            rect.right - POST_MENU_WIDTH,
+            POST_MENU_VIEWPORT_PADDING,
+          ),
+          window.innerWidth - POST_MENU_WIDTH - POST_MENU_VIEWPORT_PADDING,
+        );
+        const hasRoomBelow =
+          rect.bottom + POST_MENU_GAP + POST_MENU_HEIGHT <= window.innerHeight;
+        const top = hasRoomBelow
+          ? rect.bottom + POST_MENU_GAP
+          : Math.max(
+              rect.top - POST_MENU_HEIGHT - POST_MENU_GAP,
+              POST_MENU_VIEWPORT_PADDING,
+            );
         setMenuPos({ top, left });
       } else {
         setMenuPos(null);
@@ -335,6 +360,12 @@ const Blog = () => {
                               {post.shortDescription}
                             </p>
                           ) : null}
+                          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-medium text-blue-400">
+                            <span>{Array.isArray(post.likes) ? post.likes.length : 0} likes</span>
+                            <span>
+                              {countNestedComments(post.comments || [])} comments
+                            </span>
+                          </div>
                           {post.tags && post.tags.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
                               {post.tags.slice(0, 8).map((t) => {
