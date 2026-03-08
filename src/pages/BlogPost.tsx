@@ -8,12 +8,38 @@ import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import { BlogCommentItem } from "@/components/BlogCommentItem";
 import { addPostComment, fetchPost, togglePostLike } from "@/lib/blog-api";
 import {
+  extractTextFromContent,
   countNestedComments,
   insertNestedComment,
   resolveAsset,
   type Post as BlogPostRecord,
 } from "@/lib/blog-utils";
 import { useAuth } from "@/states/AuthContext";
+
+const DEFAULT_SEO = {
+  title: "Mirabellier | Cute thoughts & cozy corners",
+  description:
+    "Mirabellier - a tiny, cozy blog where I share cute thoughts, fuzzy photos, and little projects.",
+  url: "https://mirabellier.com/",
+  image: "https://mirabellier.com/background.jpg",
+};
+
+function setMetaContent(selector: string, content: string) {
+  const element = document.querySelector(selector) as HTMLMetaElement | null;
+  if (element) {
+    element.content = content;
+  }
+}
+
+function getBlogSeoDescription(post: BlogPostRecord) {
+  const summary = (post.shortDescription || "").trim();
+  if (summary) return summary;
+
+  const extracted = extractTextFromContent(post.content).trim();
+  if (extracted) return extracted.slice(0, 160);
+
+  return post.title;
+}
 
 function HeartIcon({ filled }: { filled: boolean }) {
   return (
@@ -95,6 +121,28 @@ const BlogPost = () => {
 
   useEffect(() => {
     if (post && slug) {
+      const postUrl = `https://mirabellier.com/blog/${slug}`;
+      const description = getBlogSeoDescription(post);
+      const imageUrl = resolveAsset(post.thumbnail) || DEFAULT_SEO.image;
+      const authorProfileUrl = post.userId
+        ? `https://mirabellier.com/profile/${encodeURIComponent(post.author)}`
+        : undefined;
+
+      document.title = post.title;
+      setMetaContent('meta[name="description"]', description);
+      setMetaContent(
+        'meta[name="robots"]',
+        "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
+      );
+      setMetaContent('meta[property="og:type"]', "article");
+      setMetaContent('meta[property="og:title"]', post.title);
+      setMetaContent('meta[property="og:description"]', description);
+      setMetaContent('meta[property="og:url"]', postUrl);
+      setMetaContent('meta[property="og:image"]', imageUrl);
+      setMetaContent('meta[name="twitter:title"]', post.title);
+      setMetaContent('meta[name="twitter:description"]', description);
+      setMetaContent('meta[name="twitter:image"]', imageUrl);
+
       const script = document.createElement("script");
       script.type = "application/ld+json";
       script.id = "blogpost-structured-data";
@@ -102,23 +150,50 @@ const BlogPost = () => {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
         headline: post.title,
-        url: `https://mirabellier.com/blog/${slug}`,
+        url: postUrl,
+        mainEntityOfPage: postUrl,
         datePublished: post.createdAt,
+        dateModified: post.updatedAt || post.createdAt,
         author: {
           "@type": "Person",
           name: post.author,
+          ...(authorProfileUrl ? { url: authorProfileUrl } : {}),
         },
         publisher: {
           "@type": "Person",
           name: "Mirabellier",
         },
-        description: post.shortDescription || post.title,
+        description,
+        ...(imageUrl ? { image: [imageUrl] } : {}),
+        ...(post.tags && post.tags.length
+          ? { keywords: post.tags.join(", ") }
+          : {}),
       });
       document.head.appendChild(script);
 
       return () => {
         const oldScript = document.getElementById("blogpost-structured-data");
         if (oldScript) oldScript.remove();
+        document.title = DEFAULT_SEO.title;
+        setMetaContent('meta[name="description"]', DEFAULT_SEO.description);
+        setMetaContent(
+          'meta[name="robots"]',
+          "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
+        );
+        setMetaContent('meta[property="og:type"]', "website");
+        setMetaContent('meta[property="og:title"]', DEFAULT_SEO.title);
+        setMetaContent(
+          'meta[property="og:description"]',
+          "A tiny, cozy blog sharing small joys: photos, videos, and short posts.",
+        );
+        setMetaContent('meta[property="og:url"]', DEFAULT_SEO.url);
+        setMetaContent('meta[property="og:image"]', DEFAULT_SEO.image);
+        setMetaContent('meta[name="twitter:title"]', DEFAULT_SEO.title);
+        setMetaContent(
+          'meta[name="twitter:description"]',
+          "A tiny, cozy blog sharing small joys: photos, videos, and short posts.",
+        );
+        setMetaContent('meta[name="twitter:image"]', DEFAULT_SEO.image);
       };
     }
   }, [post, slug]);

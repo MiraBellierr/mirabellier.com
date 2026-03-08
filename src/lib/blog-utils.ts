@@ -165,6 +165,7 @@ export type Post = {
   author: string;
   authorAvatar?: string | null;
   createdAt: string;
+  updatedAt?: string | null;
   content: DocumentNode | ContentNode[] | null;
   shortDescription?: string | null;
   thumbnail?: string | null;
@@ -263,6 +264,8 @@ export function normalizePost(value: unknown): Post {
       typeof source.createdAt === "string"
         ? source.createdAt
         : new Date().toISOString(),
+    updatedAt:
+      typeof source.updatedAt === "string" ? source.updatedAt : null,
     content:
       typeof source.content === "string"
         ? parseJsonSafely(source.content, null)

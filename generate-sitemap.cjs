@@ -162,10 +162,15 @@ function getPostUrl(post) {
       .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
-    return `${WEBSITE_BASE}/blog/${slug}`;
+    return `${WEBSITE_BASE}/blog/${slug ? `${slug}-${post.id}` : post.id}`;
   }
   // Fallback to ID
   return `${WEBSITE_BASE}/blog/${post.id}`;
+}
+
+function getPostLastmod(post) {
+  const source = post.updatedAt || post.createdAt;
+  return source ? new Date(source).toISOString().split("T")[0] : undefined;
 }
 
 /**
@@ -196,9 +201,7 @@ async function main() {
         posts.forEach((post) => {
           entries.push({
             url: getPostUrl(post),
-            lastmod: post.createdAt
-              ? new Date(post.createdAt).toISOString().split("T")[0]
-              : undefined,
+            lastmod: getPostLastmod(post),
             priority: "0.7",
             changefreq: "monthly",
           });

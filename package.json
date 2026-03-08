@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "backend:dev": "node mirabellier-backend/app.js",
-    "predeploy": "npm run build",
+    "predeploy": "npm run generate:sitemap && npm run build",
     "deploy": "gh-pages -d dist",
     "generate:sitemap": "node generate-sitemap.cjs"
   },
