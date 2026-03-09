@@ -2,11 +2,11 @@
 
 - **Repo layout:** frontend (root) — Vite + React (TypeScript); backend — minimal Express app in `mirabellier-backend/`.
 - **Frontend entry:** [src/main.tsx](src/main.tsx) (uses `HashRouter`) and [src/App.tsx](src/App.tsx).
-- **Backend entry:** [mirabellier-backend/app.js](mirabellier-backend/app.js) (registers `routes/`, serves `/images` and `/videos`, uses `lib/` helpers).
+- **Backend entry:** [mirabellier-backend/app.js](mirabellier-backend/app.js) (registers `routes/`, serves `/images`, uses `lib/` helpers).
 
 ## Key components & where to look
 
-- **Pages / UI:** `src/pages/` — e.g. `Blog.tsx`, `BlogEdit.tsx`, `Videos.tsx`, `Cats.tsx`.
+- **Pages / UI:** `src/pages/` — e.g. `Home.tsx`, `Blog.tsx`, `BlogEdit.tsx`, `Profile.tsx`.
 - **Editor / uploads:** `src/lib/tiptap-utils.ts` (upload helpers, `MAX_FILE_SIZE`, URL building) and `src/components/tiptap-templates/` (editor templates).
 - **Config + aliases:** `vite.config.ts` maps `@` → `./src` and creates a manual tiptap chunk — avoid changes that bloat the editor chunk.
 - **Backend routes & helpers:** `mirabellier-backend/routes/` (routes) and `mirabellier-backend/lib/` (`db.js`, `uploads.js`, `users.js`).
@@ -14,8 +14,8 @@
 ## Runtime facts & API surface
 
 - **Dev backend port:** 3000 (see [mirabellier-backend/app.js](mirabellier-backend/app.js)).
-- **Common endpoints:** `GET /posts`, `POST /posts`, `PUT /posts/:id`, `/auth` routes, `/images` and `/videos` upload routes.
-- **Static/media storage:** [mirabellier-backend/images/](mirabellier-backend/images) and [mirabellier-backend/videos/](mirabellier-backend/videos) (created at runtime by uploads helper).
+- **Common endpoints:** `GET /posts`, `POST /posts`, `PUT /posts/:id`, `/auth` routes, and `/images` uploads.
+- **Static/media storage:** [mirabellier-backend/images/](mirabellier-backend/images) (created at runtime by uploads helper).
 - **DB file:** [mirabellier-backend/database.sqlite3](mirabellier-backend/database.sqlite3); schema managed in [mirabellier-backend/lib/db.js](mirabellier-backend/lib/db.js).
 
 ## Developer workflows & commands
@@ -44,8 +44,8 @@
 
 - **API base handling:** The codebase uses an `API_BASE` constant in several places. Prefer `VITE_API_BASE` (frontend env) and construct `const API_BASE = import.meta.env.VITE_API_BASE || 'https://mirabellier.my.id/api'` in `src/lib/config.ts` or callers. Targeted replacements are safer than global find/replace.
 - **Editor chunking:** `vite.config.ts` intentionally isolates `tiptap` into its own chunk — keep editor-related imports and size-conscious changes around `src/components/tiptap-*` and `src/lib/tiptap-utils.ts`.
-- **Uploads:** Frontend uploads hit endpoints like `${API_BASE}/posts-img` (see `handleImageUpload` in `src/lib/tiptap-utils.ts`). Backend upload logic lives in `mirabellier-backend/lib/uploads.js` and routes in `mirabellier-backend/routes/images.js` and `routes/videos.js`.
-- **Do not commit runtime artifacts:** `mirabellier-backend/database.sqlite3`, `mirabellier-backend/images/*`, `mirabellier-backend/videos/*` should be considered transient.
+- **Uploads:** Frontend uploads hit endpoints like `${API_BASE}/posts-img` (see `handleImageUpload` in `src/lib/tiptap-utils.ts`). Backend upload logic lives in `mirabellier-backend/lib/uploads.js` and routes in `mirabellier-backend/routes/images.js`.
+- **Do not commit runtime artifacts:** `mirabellier-backend/database.sqlite3` and `mirabellier-backend/images/*` should be considered transient.
 
 ## Actionable first actions for an AI coding agent
 

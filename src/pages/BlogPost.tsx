@@ -184,14 +184,14 @@ const BlogPost = () => {
         setMetaContent('meta[property="og:title"]', DEFAULT_SEO.title);
         setMetaContent(
           'meta[property="og:description"]',
-          "A tiny, cozy blog sharing small joys: photos, videos, and short posts.",
+          "A tiny, cozy blog sharing small joys, photos, and short posts.",
         );
         setMetaContent('meta[property="og:url"]', DEFAULT_SEO.url);
         setMetaContent('meta[property="og:image"]', DEFAULT_SEO.image);
         setMetaContent('meta[name="twitter:title"]', DEFAULT_SEO.title);
         setMetaContent(
           'meta[name="twitter:description"]',
-          "A tiny, cozy blog sharing small joys: photos, videos, and short posts.",
+          "A tiny, cozy blog sharing small joys, photos, and short posts.",
         );
         setMetaContent('meta[name="twitter:image"]', DEFAULT_SEO.image);
       };

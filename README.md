@@ -5,7 +5,7 @@
 ## 🚀 Features
 
 - **Blog System** - Create, edit, and publish blog posts with a rich WYSIWYG editor
-- **Media Management** - Upload and manage images, videos, and GIFs
+- **Media Management** - Upload and manage images for blog posts
 - **Anime Database** - Browse and manage anime information
 - **User Authentication** - Discord OAuth integration for user login
 - **Dark Mode** - System-aware dark mode with manual toggle
@@ -17,7 +17,7 @@
 
 ```
 src/
-├── pages/          # Route pages (Home, Blog, Videos, Pics, etc.)
+├── pages/          # Route pages (Home, Blog, About, Profile, etc.)
 ├── components/     # Reusable UI components
 │   ├── tiptap-*   # Tiptap editor components
 │   └── DarkToggle.tsx
@@ -141,8 +141,7 @@ The app uses HashRouter for GitHub Pages compatibility. Main routes:
 - `/blog` - Blog listing
 - `/blog/:slug` - Individual blog post
 - `/blog/edit` - Blog editor (admin)
-- `/pics` - Image gallery
-- `/videos` - Video gallery
+- `/quotes` - Daily quotes page
 - `/about` - About page
 - `/login` - Authentication
 - `/profile/:username` - User profile
@@ -187,8 +186,6 @@ Key API endpoints:
 - `POST /posts` - Create new post
 - `PUT /posts/:id` - Update post
 - `POST /posts-img` - Upload image for editor
-- `GET /videos` - Fetch videos
-- `GET /pics` - Fetch pictures
 - `POST /auth/login` - User login
 - `GET /auth/user` - Get current user
 

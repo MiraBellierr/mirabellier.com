@@ -8,11 +8,8 @@ import Blog from "./pages/Blog";
 // Lazy load non-critical routes to reduce initial bundle size
 const About = lazy(() => import("./pages/About"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
-const Pics = lazy(() => import("./pages/Pics"));
-const PicsEdit = lazy(() => import("./pages/PicsEdit"));
 const BlogEdit = lazy(() => import("./pages/BlogEdit"));
-const Videos = lazy(() => import("./pages/Videos"));
-const VideosEdit = lazy(() => import("./pages/VideosEdit"));
+const Quotes = lazy(() => import("./pages/Quotes"));
 const AdminAnime = lazy(() => import("./pages/AdminAnime"));
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -53,13 +50,10 @@ function App() {
               <Route path="/spill" element={<Home />} />
               <Route path="/home" element={<Home />} />
               <Route path="/about" element={<About />} />
+              <Route path="/quotes" element={<Quotes />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/pics" element={<Pics />} />
-              <Route path="/pics/edit" element={<PicsEdit />} />
               <Route path="/blog/edit" element={<BlogEdit />} />
-              <Route path="/videos" element={<Videos />} />
-              <Route path="/videos/edit" element={<VideosEdit />} />
               <Route path="/admin/anime" element={<AdminAnime />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />

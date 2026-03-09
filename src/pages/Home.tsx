@@ -58,7 +58,7 @@ const Home = () => {
       "@type": "WebSite",
       name: "Mirabellier",
       description:
-        "A tiny, cozy blog sharing small joys: photos, videos, and short posts",
+        "A tiny, cozy blog sharing small joys, photos, and short posts",
       url: "https://mirabellier.com/",
       potentialAction: {
         "@type": "SearchAction",
@@ -187,7 +187,6 @@ const Home = () => {
               </p>
               <p className="">• ✏️ My blog</p>
               <p className="">• 🎨 Art or doodles</p>
-              <p className="">• 🎥 Short videos</p>
               <p className="">• 💾 Programming experiments</p>
             </div>
           </main>
