@@ -1,234 +1,115 @@
 # Mirabellier.com Frontend
 
-![mirabellier.com](https://socialify.git.ci/MiraBellierr/mirabellier.com/image?custom_language=React&description=1&font=Inter&forks=1&issues=1&language=1&logo=https%3A%2F%2Fmirabellier.com%2Fbackground.jpg&name=1&owner=1&pattern=Solid&pulls=1&stargazers=1&theme=Auto)
+This is the frontend for my little corner of the web.
 
-## 🚀 Features
+It is a cute React + TypeScript site where I share blog posts, daily quotes, profile pages, anime updates, and other cozy internet things. The goal is simple: make the site feel soft and personal without turning the code into a mess.
 
-- **Blog System** - Create, edit, and publish blog posts with a rich WYSIWYG editor
-- **Media Management** - Upload and manage images for blog posts
-- **Anime Database** - Browse and manage anime information
-- **User Authentication** - Discord OAuth integration for user login
-- **Dark Mode** - System-aware dark mode with manual toggle
-- **Custom Cursor** - Interactive custom cursor system
-- **Performance Optimized** - Code splitting, lazy loading, and asset optimization
-- **Responsive Design** - Mobile-first design with Tailwind CSS
+## Hiya!!
 
-## 📁 Project Structure
+If you are reading this repo, welcome. This part of the project is the part people actually see. It handles the pages, the styling, the blog UI, the editor screen, the profile pages, the little decorative details, and all the cute presentation stuff that makes the site feel like mine.
 
+## What lives here
+
+- A home page and about page with a personal, handmade feel
+- A blog list and blog post pages
+- A Tiptap editor UI for writing posts
+- Login, settings, and profile screens
+- A daily quotes page
+- An anime list and admin page
+- Shared layout pieces like the header, footer, navigation, and cards
+
+## Tiny project tour
+
+```text
+.
+|- src/
+|  |- pages/         Route pages like Home, About, Blog, Quotes
+|  |- parts/         Shared layout pieces like Header and Footer
+|  |- components/    Reusable UI and Tiptap pieces
+|  |- hooks/         React hooks
+|  |- lib/           Utilities and API helpers
+|  `- states/        React context providers
+|- public/           Static public files
+|- index.html        Vite entry HTML
+`- package.json      Frontend scripts
 ```
-src/
-├── pages/          # Route pages (Home, Blog, About, Profile, etc.)
-├── components/     # Reusable UI components
-│   ├── tiptap-*   # Tiptap editor components
-│   └── DarkToggle.tsx
-├── parts/          # Layout components (Header, Footer, Navigation)
-├── lib/            # Utility functions and config
-│   ├── config.ts       # API base configuration
-│   ├── tiptap-utils.ts # Editor upload handlers
-│   └── tag-utils.ts    # Tag processing utilities
-├── hooks/          # Custom React hooks
-├── states/         # React context providers
-│   ├── AuthContext.tsx
-│   └── CursorContext.tsx
-├── assets/         # Static assets (icons, anime data)
-└── styles/         # Global styles
 
-```
+## The stack
 
-## 🛠️ Tech Stack
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- `react-router-dom`
+- Tiptap
 
-- **Framework:** React 19 + TypeScript
-- **Build Tool:** Vite
-- **Styling:** Tailwind CSS 4
-- **Router:** React Router v6 (HashRouter)
-- **Rich Text Editor:** Tiptap
-- **UI Components:** Radix UI
-- **Icons:** React Icons
+## Running it locally
 
-## 📦 Installation
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-## 🔧 Environment Variables
+### 2. Create `.env`
 
-Create a `.env` file in the root directory:
+Use `.env.example` as your starting point.
 
 ```env
-# API Base URL (defaults to production if not set)
 VITE_API_BASE=http://localhost:3000
+WEBSITE_BASE=http://localhost:5173
 ```
 
-## 🚦 Development
-
-Start the development server:
+### 3. Start the frontend
 
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`
+The app will open at `http://localhost:5173`.
 
-### Running with Backend
+This frontend expects an API at `VITE_API_BASE`. If you want to run the matching backend from this repo too, it has its own guide in [mirabellier-backend/README.md](./mirabellier-backend/README.md).
 
-To run the full stack locally:
+## Useful scripts
 
-1. Start the backend server (in a separate terminal):
+- `npm run dev` - start the frontend dev server
+- `npm run build` - type-check and build the app
+- `npm run preview` - preview the production build
+- `npm run lint` - run ESLint
+- `npm run predeploy` - generate sitemap data and build
+- `npm run deploy` - deploy the built frontend
 
-   ```bash
-   npm run backend:dev
-   ```
+## A few nice details
 
-2. Start the frontend:
-   ```bash
-   npm run dev
-   ```
+- Non-critical pages are lazy-loaded to keep the first load lighter
+- Background images are preloaded for a nicer first paint
+- The site supports dark mode
+- There is a custom cursor system
+- The blog editor uses Tiptap instead of a plain textarea
+- The overall UI is meant to feel more like a personal homepage than a generic product site
 
-Make sure `VITE_API_BASE=http://localhost:3000` is set in your `.env` file.
+## Main pages
 
-## 🏗️ Build
+- `/` - home page
+- `/about` - about page
+- `/blog` - blog listing
+- `/blog/:slug` - single blog post
+- `/blog/edit` - editor page
+- `/quotes` - daily quotes page
+- `/login` - login page
+- `/settings` - account settings
+- `/profile/:username` - public profile page
+- `/admin/anime` - anime admin page
 
-Build for production:
+## If something feels broken
 
-```bash
-npm run build
-```
+- Make sure `VITE_API_BASE` points at a running API
+- If blog data or quotes are missing, the frontend is probably not reaching the backend
+- If login does not work, check the backend auth setup before changing frontend code
+- If styling looks odd, make sure the Vite dev server actually finished rebuilding
 
-Preview the production build:
+## Why this repo exists
 
-```bash
-npm run preview
-```
+This frontend is where I try to make code feel warm. I wanted pages that feel cute, but still have enough structure to grow properly as the site gets bigger.
 
-## 📝 Available Scripts
-
-| Command               | Description              |
-| --------------------- | ------------------------ |
-| `npm run dev`         | Start development server |
-| `npm run build`       | Build for production     |
-| `npm run preview`     | Preview production build |
-| `npm run lint`        | Run ESLint               |
-| `npm run backend:dev` | Start backend server     |
-| `npm run deploy`      | Deploy to GitHub Pages   |
-
-## 🎨 Key Features
-
-### Tiptap Rich Text Editor
-
-The blog editor uses Tiptap with custom extensions:
-
-- Text formatting (bold, italic, code, etc.)
-- Headings, lists, blockquotes
-- Image uploads with drag & drop
-- Text alignment
-- Syntax highlighting for code blocks
-- Typography enhancements (smart quotes, em-dashes)
-
-### Performance Optimizations
-
-- **Code Splitting:** React vendor, Tiptap core, and extensions are split into separate chunks
-- **Lazy Loading:** Non-critical routes load on demand
-- **Image Optimization:** WebP support with preloading for backgrounds
-- **CSS Lazy Loading:** Styles load after first paint to improve initial rendering
-- **Asset Caching:** Long-term cache headers for static assets
-
-### Routing
-
-The app uses HashRouter for GitHub Pages compatibility. Main routes:
-
-- `/` - Home page
-- `/blog` - Blog listing
-- `/blog/:slug` - Individual blog post
-- `/blog/edit` - Blog editor (admin)
-- `/quotes` - Daily quotes page
-- `/about` - About page
-- `/login` - Authentication
-- `/profile/:username` - User profile
-
-## 🔐 Authentication
-
-Authentication is handled via Discord OAuth:
-
-1. User clicks "Login with Discord"
-2. Redirected to Discord OAuth flow
-3. Callback returns to `/auth/callback`
-4. Token stored in localStorage
-5. Auth context provides user state throughout app
-
-## 📱 Responsive Design
-
-The UI adapts to different screen sizes:
-
-- Mobile-first approach
-- Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
-- Touch-friendly interfaces on mobile
-
-## 🎯 Path Aliases
-
-The project uses `@` as an alias for the `src/` directory:
-
-```typescript
-import { API_BASE } from "@/lib/config";
-import Header from "@/parts/Header";
-```
-
-## 🔄 API Integration
-
-API calls are made to the backend server. Base URL is configured via:
-
-- Environment variable: `VITE_API_BASE`
-- Defaults to: `https://mirabellier.my.id/api`
-
-Key API endpoints:
-
-- `GET /posts` - Fetch blog posts
-- `POST /posts` - Create new post
-- `PUT /posts/:id` - Update post
-- `POST /posts-img` - Upload image for editor
-- `POST /auth/login` - User login
-- `GET /auth/user` - Get current user
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
-## 📄 License
-
-This project is private and proprietary.
-
-## 🐛 Known Issues & Limitations
-
-- The app uses HashRouter for GitHub Pages, which creates URLs like `/#/blog`
-- Maximum file upload size is 50MB (configurable in backend)
-- Discord OAuth requires proper callback URL configuration
-
-## 🔍 Troubleshooting
-
-### Images not loading
-
-- Check that `VITE_API_BASE` points to your backend server
-- Verify the backend is running and serving static files
-- Check browser console for CORS errors
-
-### Editor not working
-
-- Tiptap requires modern browsers (Chrome 90+, Firefox 88+, Safari 14+)
-- Check that all tiptap packages are installed
-
-### Build errors
-
-- Run `npm install` to ensure all dependencies are installed
-- Check Node.js version (requires Node 18+)
-- Clear node_modules and reinstall if issues persist
-
-## 📚 Additional Resources
-
-- [React Documentation](https://react.dev)
-- [Vite Documentation](https://vitejs.dev)
-- [Tiptap Documentation](https://tiptap.dev)
-- [Tailwind CSS Documentation](https://tailwindcss.com)
+If you are reading through the code, that is the main idea behind it: playful on the surface, practical underneath.
