@@ -143,7 +143,7 @@ const Profile = () => {
       <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
         <Header />
         <div
-          className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll"
+          className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
           style={{ backgroundImage: "var(--page-bg)" }}
         >
           <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
@@ -183,7 +183,7 @@ const Profile = () => {
       <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
         <Header />
         <div
-          className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll"
+          className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
           style={{ backgroundImage: "var(--page-bg)" }}
         >
           <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
@@ -210,7 +210,7 @@ const Profile = () => {
       <Header />
 
       <div
-        className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">

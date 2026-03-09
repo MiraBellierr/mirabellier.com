@@ -44,16 +44,26 @@ export const fetchPost = async (id: string | number): Promise<Post> => {
 
 export const togglePostLike = async (
   id: string | number,
-  token: string,
-  action: LikeAction,
+  options: {
+    action: LikeAction;
+    token?: string;
+    clientId?: string | null;
+    anonymousId?: string | null;
+  },
 ) => {
   const response = await fetch(`${API_BASE}/posts/${id}/like`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+      ...(options.clientId
+        ? { "X-Like-Client-Id": options.clientId }
+        : {}),
+      ...(options.anonymousId
+        ? { "X-Like-Anonymous-Id": options.anonymousId }
+        : {}),
     },
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ action: options.action }),
   });
 
   if (!response.ok) {

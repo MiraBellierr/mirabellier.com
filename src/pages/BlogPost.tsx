@@ -14,6 +14,10 @@ import {
   resolveAsset,
   type Post as BlogPostRecord,
 } from "@/lib/blog-utils";
+import {
+  ensureAnonymousLikeId,
+  readAnonymousLikeId,
+} from "@/lib/post-like-session";
 import { useAuth } from "@/states/AuthContext";
 
 const DEFAULT_SEO = {
@@ -225,17 +229,14 @@ const BlogPost = () => {
   const likes = Array.isArray(post?.likes) ? post.likes : [];
   const comments = Array.isArray(post?.comments) ? post.comments : [];
   const commentCount = countNestedComments(comments);
-  const liked =
-    !!auth.user?.id && Array.isArray(post?.likes)
-      ? post.likes.includes(auth.user.id)
-      : false;
+  const storedAnonymousLikeId = readAnonymousLikeId();
+  const viewerLikeId = auth.user?.id
+    ? String(auth.user.id)
+    : storedAnonymousLikeId;
+  const liked = !!viewerLikeId && likes.includes(viewerLikeId);
 
   const handleLike = async () => {
     if (!post) return;
-    if (!auth.token) {
-      setInteractionError("Log in to like or comment on this post.");
-      return;
-    }
 
     setInteractionError(null);
     setIsLiking(true);
@@ -243,8 +244,12 @@ const BlogPost = () => {
     try {
       const response = await togglePostLike(
         post.id,
-        auth.token,
-        liked ? "unlike" : "like",
+        {
+          action: liked ? "unlike" : "like",
+          token: auth.token || undefined,
+          clientId: auth.token ? null : ensureAnonymousLikeId(),
+          anonymousId: auth.token ? storedAnonymousLikeId : null,
+        },
       );
 
       if (Array.isArray(response.likes)) {
@@ -280,7 +285,7 @@ const BlogPost = () => {
     if (!normalizedText) return;
 
     if (!auth.token) {
-      setInteractionError("Log in to like or comment on this post.");
+      setInteractionError("Log in to comment on this post.");
       return;
     }
 
@@ -319,7 +324,7 @@ const BlogPost = () => {
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
       <div
-        className="min-h-screen flex flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
@@ -418,10 +423,11 @@ const BlogPost = () => {
 
                     {!auth.token ? (
                       <p className="mt-4 text-sm text-blue-500">
+                        Likes work without logging in.{" "}
                         <Link to="/login" className="font-semibold hover:underline">
                           Log in
                         </Link>{" "}
-                        to like and comment on this post.
+                        to comment on this post.
                       </p>
                     ) : null}
 
