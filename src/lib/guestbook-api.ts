@@ -23,6 +23,33 @@ export type GuestbookEntry = {
   } | null;
 };
 
+function normalizeWebsite(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const candidate = trimmed.startsWith("//") ? `https:${trimmed}` : trimmed;
+
+  try {
+    const url = /^[a-z][a-z0-9+.-]*:/i.test(candidate)
+      ? new URL(candidate)
+      : new URL(`https://${candidate}`);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeMood(value: unknown): GuestbookMood {
   switch (String(value || "").toLowerCase()) {
     case "cozy":
@@ -50,7 +77,7 @@ function normalizeEntry(value: unknown): GuestbookEntry {
     id: source.id ? String(source.id) : "",
     author: typeof source.author === "string" ? source.author : "Anonymous",
     message: typeof source.message === "string" ? source.message : "",
-    website: typeof source.website === "string" ? source.website : null,
+    website: normalizeWebsite(source.website),
     mood: normalizeMood(source.mood),
     x: Number.isFinite(Number(source.x)) ? Number(source.x) : 0,
     y: Number.isFinite(Number(source.y)) ? Number(source.y) : 0,
@@ -113,7 +140,7 @@ export async function createGuestbookEntry(input: {
     },
     body: JSON.stringify({
       name: input.name,
-      website: input.website,
+      website: normalizeWebsite(input.website),
       message: input.message,
       mood: input.mood,
       x: input.x,

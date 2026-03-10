@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 
 // Eagerly load critical routes (Home, Blog) for faster initial load
 import Home from "./pages/Home";
@@ -22,9 +22,70 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const CursorManager = lazy(() => import("./parts/CursorManager"));
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
-import { ConfirmProvider } from "./states/ConfirmContext";
+import { ConfirmProvider, useConfirm } from "./states/ConfirmContext";
 import { ToastProvider } from "./states/ToastContext";
 import GuestbookReminder from "./parts/GuestbookReminder";
+
+function ExternalLinkWarning() {
+  const { confirm } = useConfirm();
+  const isPromptOpenRef = useRef(false);
+
+  useEffect(() => {
+    const handleClick = async (event: MouseEvent) => {
+      if (event.defaultPrevented || isPromptOpenRef.current) return;
+      if (!(event.target instanceof Element)) return;
+      if (event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      const anchor = event.target.closest("a[href]");
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      if (anchor.hasAttribute("download")) return;
+
+      const url = new URL(anchor.href, window.location.href);
+      const isHttpLink = url.protocol === "http:" || url.protocol === "https:";
+
+      if (!isHttpLink || url.origin === window.location.origin) {
+        return;
+      }
+
+      event.preventDefault();
+      isPromptOpenRef.current = true;
+
+      try {
+        const shouldContinue = await confirm({
+          title: "External Link Warning",
+          message: `You are leaving mirabellier.com and opening ${url.hostname}. External websites can be malicious, misleading, or unsafe. Continue only if you trust this destination.`,
+          confirmLabel: "Take a risk",
+          cancelLabel: "Cancel",
+        });
+
+        if (!shouldContinue) {
+          return;
+        }
+
+        const target = anchor.target === "_blank" ? "_blank" : "_self";
+        if (target === "_blank") {
+          window.open(url.href, "_blank", "noopener,noreferrer");
+          return;
+        }
+
+        window.location.assign(url.href);
+      } finally {
+        isPromptOpenRef.current = false;
+      }
+    };
+
+    document.addEventListener("click", handleClick, true);
+
+    return () => {
+      document.removeEventListener("click", handleClick, true);
+    };
+  }, [confirm]);
+
+  return null;
+}
 
 function App() {
   return (
@@ -33,6 +94,7 @@ function App() {
         <AuthProvider>
           <ConfirmProvider>
             <ToastProvider>
+              <ExternalLinkWarning />
               <GuestbookReminder />
 
               <Suspense fallback={null}>
