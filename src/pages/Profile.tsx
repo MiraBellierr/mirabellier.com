@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/states/AuthContext";
+import { useToast } from "@/states/ToastContext";
 import { API_BASE } from "@/lib/config";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
@@ -26,6 +27,7 @@ interface UserData {
 
 const Profile = () => {
   const auth = useAuth();
+  const { showToast } = useToast();
   const { username } = useParams<{ username: string }>();
   const [profileUser, setProfileUser] = useState<UserData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -136,6 +138,15 @@ const Profile = () => {
     if (val.startsWith("/")) return `${API_BASE}${val}`;
     if (val.includes("/")) return `${API_BASE}/${val}`;
     return `${API_BASE}/images/${val}`;
+  };
+
+  const copyProfileLink = async (shareUrl: string) => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast("Profile link copied to clipboard!");
+    } catch {
+      showToast("Failed to copy profile link");
+    }
   };
 
   if (!user && !loading) {
@@ -334,8 +345,7 @@ const Profile = () => {
                                   })
                                   .catch(() => {});
                               } else {
-                                navigator.clipboard.writeText(shareUrl);
-                                alert("Profile link copied to clipboard!");
+                                void copyProfileLink(shareUrl);
                               }
                             }}
                             className="inline-flex items-center gap-2 bg-blue-400 dark:bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 dark:hover:bg-blue-700 transition-colors font-medium"
@@ -360,8 +370,7 @@ const Profile = () => {
                                 })
                                 .catch(() => {});
                             } else {
-                              navigator.clipboard.writeText(shareUrl);
-                              alert("Profile link copied to clipboard!");
+                              void copyProfileLink(shareUrl);
                             }
                           }}
                           className="inline-flex items-center gap-2 bg-blue-400 dark:bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 dark:hover:bg-blue-700 transition-colors font-medium"

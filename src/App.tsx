@@ -22,50 +22,59 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const CursorManager = lazy(() => import("./parts/CursorManager"));
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
+import { ConfirmProvider } from "./states/ConfirmContext";
+import { ToastProvider } from "./states/ToastContext";
+import GuestbookReminder from "./parts/GuestbookReminder";
 
 function App() {
   return (
     <div>
       <CursorProvider>
         <AuthProvider>
-          <Suspense fallback={null}>
-            <CursorManager />
-          </Suspense>
+          <ConfirmProvider>
+            <ToastProvider>
+              <GuestbookReminder />
 
-          <Suspense
-            fallback={
-              <div
-                style={{
-                  minHeight: "100vh",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  contain: "layout style paint",
-                }}
+              <Suspense fallback={null}>
+                <CursorManager />
+              </Suspense>
+
+              <Suspense
+                fallback={
+                  <div
+                    style={{
+                      minHeight: "100vh",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      contain: "layout style paint",
+                    }}
+                  >
+                    Loading...
+                  </div>
+                }
               >
-                Loading...
-              </div>
-            }
-          >
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/spill" element={<Home />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/quotes" element={<Quotes />} />
-              <Route path="/guestbook" element={<Guestbook />} />
-              <Route path="/guestbook/sign" element={<GuestbookSign />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/blog/edit" element={<BlogEdit />} />
-              <Route path="/admin/anime" element={<AdminAnime />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/:username" element={<Profile />} />
-            </Routes>
-          </Suspense>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/spill" element={<Home />} />
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/quotes" element={<Quotes />} />
+                  <Route path="/guestbook" element={<Guestbook />} />
+                  <Route path="/guestbook/sign" element={<GuestbookSign />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogPost />} />
+                  <Route path="/blog/edit" element={<BlogEdit />} />
+                  <Route path="/admin/anime" element={<AdminAnime />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/profile/:username" element={<Profile />} />
+                </Routes>
+              </Suspense>
+            </ToastProvider>
+          </ConfirmProvider>
         </AuthProvider>
       </CursorProvider>
     </div>

@@ -94,6 +94,8 @@ const GuestbookSign = () => {
         message: form.message,
         mood: form.mood,
         token: auth?.token ?? null,
+        x: 0,
+        y: 0,
       });
 
       navigate("/guestbook");

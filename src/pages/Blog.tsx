@@ -5,6 +5,8 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
+import { useConfirm } from "@/states/ConfirmContext";
+import { useToast } from "@/states/ToastContext";
 import { useDebounce } from "@/hooks/use-debounce";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
@@ -38,6 +40,8 @@ const Blog = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const auth = useAuth();
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(
     null,
@@ -190,7 +194,13 @@ const Blog = () => {
   }, []);
 
   const handleDelete = async (id: string | number) => {
-    if (!confirm("Delete this post? This cannot be undone.")) return;
+    const shouldDelete = await confirm({
+      title: "Delete blog post?",
+      message: "Delete this post? This cannot be undone.",
+      confirmLabel: "Delete post",
+      cancelLabel: "Keep post",
+    });
+    if (!shouldDelete) return;
 
     try {
       await deletePost(id, auth?.token || undefined);
@@ -198,7 +208,7 @@ const Blog = () => {
       setPosts((prev) => prev.filter((p) => p.id !== id));
       setFilteredPosts((prev) => prev.filter((p) => p.id !== id));
     } catch {
-      alert("Failed to delete post");
+      showToast("Failed to delete post");
     }
   };
 

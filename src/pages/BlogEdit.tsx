@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
+import { useToast } from "@/states/ToastContext";
 import missKobayashi from "@/assets/anime/miss-kobayashi.webp";
 import {
   fetchTagSuggestions,
@@ -18,6 +19,7 @@ import {
 
 const BlogEdit = () => {
   const auth = useAuth();
+  const { showToast: showGlobalToast } = useToast();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<object | null>(null);
   const [shortDescription, setShortDescription] = useState("");
@@ -232,21 +234,10 @@ const BlogEdit = () => {
       setShortDescription("");
       setThumbnail("");
       setTags([]);
-
-      setToastMessage("🎉 Post published successfully!");
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-        setToastMessage("");
-        navigate("/blog");
-      }, 3000);
+      showGlobalToast("🎉 Post published successfully!", { durationMs: 3000 });
+      navigate("/blog");
     } catch {
-      setToastMessage("❌ Failed to publish post");
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-        setToastMessage("");
-      }, 3000);
+      showGlobalToast("Failed to publish post", { durationMs: 3000 });
     } finally {
       setIsSubmitting(false);
     }

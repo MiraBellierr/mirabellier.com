@@ -6,6 +6,7 @@ import Navigation from "../parts/Navigation";
 import kannaShy from "@/assets/anime/kanna-shy.webp";
 import { resolveAsset } from "@/lib/blog-utils";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useConfirm } from "@/states/ConfirmContext";
 import {
   deleteGuestbookEntry,
   fetchGuestbookEntries,
@@ -40,6 +41,7 @@ function getNoteRotation(id: string, index: number) {
 
 const Guestbook = () => {
   const auth = useOptionalAuth();
+  const { confirm } = useConfirm();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -359,7 +361,13 @@ const Guestbook = () => {
       return;
     }
 
-    if (!window.confirm("Delete this guestbook note?")) return;
+    const shouldDelete = await confirm({
+      title: "Delete guestbook note?",
+      message: "Delete this guestbook note?",
+      confirmLabel: "Delete note",
+      cancelLabel: "Keep note",
+    });
+    if (!shouldDelete) return;
 
     setError(null);
     setDeletingNoteId(entryId);

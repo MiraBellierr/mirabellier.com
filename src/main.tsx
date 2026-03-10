@@ -4,16 +4,16 @@ import App from "./App.tsx";
 
 const loadCss = () => import("./index.css");
 
-// Preload WebP background images for faster LCP
+// Preload theme background images for faster LCP
 const preloadBackgrounds = () => {
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const bgPath = isDark ? "/dark.webp" : "/light.webp";
+  const bgPath = isDark ? "/dark.jpg" : "/light.jpg";
 
   const link = document.createElement("link");
   link.rel = "preload";
   link.as = "image";
   link.href = bgPath;
-  link.type = "image/webp";
+  link.type = "image/jpeg";
   link.fetchPriority = "high";
   document.head.appendChild(link);
 };

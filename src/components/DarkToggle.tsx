@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import darkBg from "@/assets/dark.webp";
-import lightBg from "@/assets/light.webp";
 
 const STORAGE_KEY = "mirabellier-theme";
 
@@ -37,8 +35,9 @@ const DarkToggle: React.FC = () => {
       localStorage.setItem(STORAGE_KEY, isDark ? "dark" : "light");
     });
     safely(() => {
-      const val = isDark ? `url(${darkBg})` : `url(${lightBg})`;
-      document.documentElement.style.setProperty("--page-bg", val);
+      // Clear any stale inline theme background so CSS variables from the
+      // current stylesheet control the page background.
+      document.documentElement.style.removeProperty("--page-bg");
     });
   }, [isDark]);
 
