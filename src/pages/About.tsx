@@ -23,6 +23,10 @@ const graphColors = [
   { fill: "#cffafe", stroke: "#06b6d4" },
 ];
 
+const chartHeight = 132;
+const chartBottomY = 194;
+const maxYAxisTicks = 10;
+
 type NoteGraphStat = {
   dateKey: string;
   label: string;
@@ -54,6 +58,44 @@ function createFallbackDateKeys(count: number) {
     date.setDate(date.getDate() - (count - 1 - index));
     return date.toISOString().slice(0, 10);
   });
+}
+
+function getNiceTickStep(maxValue: number) {
+  if (maxValue <= maxYAxisTicks) {
+    return 1;
+  }
+
+  const rawStep = Math.ceil(maxValue / maxYAxisTicks);
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const normalizedStep = rawStep / magnitude;
+
+  if (normalizedStep <= 1) {
+    return magnitude;
+  }
+
+  if (normalizedStep <= 2) {
+    return magnitude * 2;
+  }
+
+  if (normalizedStep <= 5) {
+    return magnitude * 5;
+  }
+
+  return magnitude * 10;
+}
+
+function buildYAxis(maxValue: number) {
+  const step = getNiceTickStep(maxValue);
+  const chartMaxValue = Math.max(step, Math.ceil(maxValue / step) * step);
+  const ticks = Array.from(
+    { length: Math.ceil(chartMaxValue / step) },
+    (_, index) => (index + 1) * step,
+  );
+
+  return {
+    chartMaxValue,
+    ticks,
+  };
 }
 
 const About = () => {
@@ -176,6 +218,7 @@ const About = () => {
     ...dateGraphStats.map((section) => section.value),
     1,
   );
+  const { chartMaxValue, ticks: yAxisTicks } = buildYAxis(maxDateValue);
 
   const latestNoteDate =
     sortedDateCounts.length > 0
@@ -278,9 +321,9 @@ const About = () => {
                       strokeLinecap="round"
                     />
 
-                    {Array.from({ length: maxDateValue }, (_, index) => {
-                      const stepValue = index + 1;
-                      const y = 194 - (stepValue / maxDateValue) * 132;
+                    {yAxisTicks.map((stepValue) => {
+                      const y =
+                        chartBottomY - (stepValue / chartMaxValue) * chartHeight;
 
                       return (
                         <g key={stepValue}>
@@ -293,10 +336,12 @@ const About = () => {
                             strokeLinecap="round"
                           />
                           <text
-                            x="18"
-                            y={y + 4}
+                            x="28"
+                            y={y}
                             fill="#60a5fa"
-                            fontSize="13"
+                            fontSize="12"
+                            textAnchor="end"
+                            dominantBaseline="middle"
                             style={handwrittenStyle}
                           >
                             {stepValue}
@@ -307,7 +352,7 @@ const About = () => {
 
                     {dateGraphStats.map((section, index) => {
                       const barHeight =
-                        (section.value / maxDateValue) * 132 || 0;
+                        (section.value / chartMaxValue) * chartHeight || 0;
                       const visibleHeight = guestbookLoading
                         ? 18
                         : Math.max(barHeight, section.value > 0 ? 24 : 10);
@@ -317,7 +362,7 @@ const About = () => {
                           (dateGraphStats.length > 1
                             ? 280 / (dateGraphStats.length - 1)
                             : 0);
-                      const y = 194 - visibleHeight;
+                      const y = chartBottomY - visibleHeight;
                       const rotate = index % 2 === 0 ? -1.4 : 1.4;
 
                       return (
