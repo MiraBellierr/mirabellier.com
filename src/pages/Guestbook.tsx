@@ -612,7 +612,7 @@ const Guestbook = () => {
                 <p>Scroll both directions inside the board area.</p>
                 <p>Use middle mouse to move around faster.</p>
                 <p>Drag any pinned note to a new spot on the board.</p>
-                <p>Hold Ctrl and scroll to zoom the board without zooming the page.</p>
+                <p>Hold Ctrl and scroll to zoom the board.</p>
               </div>
             </div>
           </aside>

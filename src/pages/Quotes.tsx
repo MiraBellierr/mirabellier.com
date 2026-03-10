@@ -35,6 +35,16 @@ type QuotePayload = {
 const DEFAULT_DESCRIPTION =
   "Daily quotes across love, art, nature, humor, and more.";
 
+function getCurrentUtcRecordedDate(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getDelayUntilNextUtcMidnight(now = new Date()) {
+  const next = new Date(now);
+  next.setUTCHours(24, 0, 0, 0);
+  return Math.max(next.getTime() - now.getTime(), 1000);
+}
+
 const Quotes = () => {
   const [data, setData] = useState<QuotePayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,8 +91,12 @@ const Quotes = () => {
     };
   }, []);
 
-  const loadQuotes = async (signal?: AbortSignal) => {
-    const response = await fetch(joinApi("/quote-of-the-day"), { signal });
+  const loadQuotes = async (recordedDate: string, signal?: AbortSignal) => {
+    const searchParams = new URLSearchParams({ date: recordedDate });
+    const response = await fetch(
+      joinApi(`/quote-of-the-day?${searchParams.toString()}`),
+      { signal },
+    );
     if (!response.ok) {
       throw new Error(`Failed to load quotes (${response.status})`);
     }
@@ -91,26 +105,56 @@ const Quotes = () => {
   };
 
   useEffect(() => {
-    const controller = new AbortController();
+    const initialController = new AbortController();
+    let scheduledController: AbortController | null = null;
+    let refreshTimer: number | null = null;
+    let disposed = false;
 
-    const run = async () => {
+    const run = async (signal: AbortSignal, showLoading = false) => {
+      if (showLoading) {
+        setLoading(true);
+      }
+
       try {
-        const payload = await loadQuotes(controller.signal);
-        setData(payload);
+        const payload = await loadQuotes(getCurrentUtcRecordedDate(), signal);
+        if (!signal.aborted && !disposed) {
+          setError(null);
+          setData(payload);
+        }
       } catch (err) {
-        if (controller.signal.aborted) {
+        if (signal.aborted || disposed) {
           return;
         }
         setError(err instanceof Error ? err.message : "Failed to load quotes");
       } finally {
-        if (!controller.signal.aborted) {
+        if (showLoading && !signal.aborted && !disposed) {
           setLoading(false);
         }
       }
     };
 
-    run();
-    return () => controller.abort();
+    const scheduleRefresh = () => {
+      refreshTimer = window.setTimeout(async () => {
+        scheduledController?.abort();
+        scheduledController = new AbortController();
+        await run(scheduledController.signal);
+        if (!disposed) {
+          scheduleRefresh();
+        }
+      }, getDelayUntilNextUtcMidnight());
+    };
+
+    run(initialController.signal, true);
+    scheduleRefresh();
+
+    return () => {
+      disposed = true;
+      initialController.abort();
+      scheduledController?.abort();
+      if (refreshTimer !== null) {
+        window.clearTimeout(refreshTimer);
+      }
+    };
   }, []);
 
   return (
@@ -141,13 +185,23 @@ const Quotes = () => {
               <div className="card-border p-4 text-blue-600">
                 Loading quotes...
               </div>
-            ) : error ? (
+            ) : error && !data ? (
               <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
                 {error}
               </div>
+            ) : !data ? (
+              <div className="card-border p-4 text-blue-600">
+                Loading quotes...
+              </div>
             ) : (
               <div className="space-y-3">
-                  <div className="relative space-y-2">
+                {error ? (
+                  <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-yellow-800">
+                    Failed to refresh quotes at the UTC rollover. Showing the
+                    last loaded snapshot.
+                  </div>
+                ) : null}
+                <div className="relative space-y-2">
                     <img
                       className="pointer-events-none absolute h-14 w-14 object-contain"
                       src="/flower.png"
@@ -164,10 +218,10 @@ const Quotes = () => {
 
                     <section className="card-border space-y-3 p-4 bg-white/55">
                       <h2 className="mb-2 text-xl font-bold text-blue-700">
-                        ⸜(｡˃ ᵕ ˂ )⸝♡ <span className="underline">Quote</span> of the day <span className="text-sm font-normal">({new Date(data!.fetchedAt).toLocaleString()})</span>
+                        ⸜(｡˃ ᵕ ˂ )⸝♡ <span className="underline">Quote</span> of the day <span className="text-sm font-normal">({new Date(data.fetchedAt).toLocaleString()})</span>
                       </h2>
                       <div className="space-y-4">
-                        {data?.quotes.map((entry, index) => (
+                        {data.quotes.map((entry, index) => (
                           <div
                             key={entry.key}
                             className="space-y-1"
@@ -184,7 +238,7 @@ const Quotes = () => {
                         ))}
                       </div>
                     </section>
-                  </div>
+                </div>
               </div>
             )}
             <Divider />
