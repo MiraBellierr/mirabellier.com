@@ -1,5 +1,5 @@
 // Service Worker for instant repeat visits and offline support
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const CACHE_NAME = `mirabellier-${CACHE_VERSION}`;
 const EXTERNAL_CACHE_NAME = `mirabellier-external-${CACHE_VERSION}`;
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days for external resources
@@ -19,6 +19,45 @@ const EXTERNAL_CACHEABLE_DOMAINS = [
   "i.pinimg.com",
   "get.pxhere.com",
 ];
+
+function hasNoStoreDirective(value) {
+  return /\bno-store\b/i.test(String(value || ""));
+}
+
+function isRealtimePageRequest(request, url) {
+  if (request.mode !== "navigate") {
+    return false;
+  }
+
+  return /^\/(?:blog(?:\/|$)|quotes(?:\/|$))/.test(url.pathname);
+}
+
+function isRealtimeDataRequest(url) {
+  return /^\/(?:api\/)?(?:posts(?:\/|$)|quote-of-the-day(?:\/|$))/.test(
+    url.pathname,
+  );
+}
+
+function shouldBypassCache(request, url) {
+  return (
+    request.cache === "no-store" ||
+    hasNoStoreDirective(request.headers.get("Cache-Control")) ||
+    isRealtimePageRequest(request, url) ||
+    isRealtimeDataRequest(url)
+  );
+}
+
+function shouldCacheResponse(response) {
+  if (!response || response.status !== 200) {
+    return false;
+  }
+
+  return !hasNoStoreDirective(response.headers.get("Cache-Control"));
+}
+
+function fetchFresh(request) {
+  return fetch(new Request(request, { cache: "no-store" }));
+}
 
 // Install event - cache critical assets
 self.addEventListener("install", (event) => {
@@ -60,8 +99,10 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
   if (request.method !== "GET") return;
 
-  // Skip API calls (always fresh)
-  if (request.url.includes("/api/")) return;
+  if (shouldBypassCache(request, url)) {
+    event.respondWith(fetchFresh(request));
+    return;
+  }
 
   // Handle external images with long cache lifetime
   const isExternalImage =
@@ -109,7 +150,7 @@ self.addEventListener("fetch", (event) => {
           // Fetch from network with custom cache header
           return fetch(request)
             .then((response) => {
-              if (response.ok) {
+              if (response.ok && shouldCacheResponse(response)) {
                 const headers = new Headers(response.headers);
                 headers.set("sw-cached-date", new Date().toISOString());
 
@@ -140,7 +181,7 @@ self.addEventListener("fetch", (event) => {
         // Update cache in background
         event.waitUntil(
           fetch(request).then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
+            if (shouldCacheResponse(networkResponse)) {
               caches.open(CACHE_NAME).then((cache) => {
                 cache.put(request, networkResponse.clone());
               });
@@ -152,7 +193,7 @@ self.addEventListener("fetch", (event) => {
 
       // Fetch from network and cache
       return fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
+        if (shouldCacheResponse(networkResponse)) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseToCache);

@@ -92,10 +92,16 @@ const Quotes = () => {
   }, []);
 
   const loadQuotes = async (recordedDate: string, signal?: AbortSignal) => {
-    const searchParams = new URLSearchParams({ date: recordedDate });
+    const searchParams = new URLSearchParams({
+      date: recordedDate,
+      _rt: Date.now().toString(),
+    });
     const response = await fetch(
       joinApi(`/quote-of-the-day?${searchParams.toString()}`),
-      { signal },
+      {
+        signal,
+        cache: "no-store",
+      },
     );
     if (!response.ok) {
       throw new Error(`Failed to load quotes (${response.status})`);
