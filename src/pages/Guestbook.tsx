@@ -19,7 +19,7 @@ import {
   GUESTBOOK_NOTE_SIZE,
 } from "@/lib/guestbook-ui";
 
-const BOARD_INITIAL_SCROLL = { left: 120, top: 80 };
+const BOARD_INITIAL_SCROLL = { left: 0, top: 0 };
 const OWNER_DISCORD_ID = "548050617889980426";
 const BOARD_ZOOM_MIN = 0.7;
 const BOARD_ZOOM_MAX = 1.8;
@@ -48,12 +48,12 @@ const Guestbook = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isExpandedFallback, setIsExpandedFallback] = useState(false);
-  const [boardZoom, setBoardZoom] = useState(1);
+  const [boardZoom, setBoardZoom] = useState(BOARD_ZOOM_MIN);
 
   const boardShellRef = useRef<HTMLDivElement | null>(null);
   const boardViewportRef = useRef<HTMLDivElement | null>(null);
   const boardCanvasRef = useRef<HTMLDivElement | null>(null);
-  const boardZoomRef = useRef(1);
+  const boardZoomRef = useRef(BOARD_ZOOM_MIN);
   const didSetInitialScroll = useRef(false);
   const dragRef = useRef<{
     id: string;
