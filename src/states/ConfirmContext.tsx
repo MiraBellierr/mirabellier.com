@@ -3,7 +3,7 @@ import ConfirmDialog from "@/parts/ConfirmDialog";
 
 type ConfirmOptions = {
   title?: string;
-  message: string;
+  message: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
 };
@@ -14,7 +14,7 @@ type ConfirmContextType = {
 
 type PendingConfirm = {
   title: string;
-  message: string;
+  message: React.ReactNode;
   confirmLabel: string;
   cancelLabel: string;
 };

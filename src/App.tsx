@@ -56,7 +56,14 @@ function ExternalLinkWarning() {
       try {
         const shouldContinue = await confirm({
           title: "External Link Warning",
-          message: `You are leaving mirabellier.com and opening ${url.hostname}. External websites can be malicious, misleading, or unsafe. Continue only if you trust this destination.`,
+          message: (
+            <>
+              You are leaving mirabellier.com and opening{" "}
+              <strong>{url.hostname}</strong>. External websites can be
+              malicious, misleading, or unsafe. Continue only if you trust
+              this destination.
+            </>
+          ),
           confirmLabel: "Take a risk",
           cancelLabel: "Cancel",
         });
