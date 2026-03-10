@@ -2,6 +2,7 @@ import home from "../assets/icons/img1-24.webp";
 import about from "../assets/icons/img2-24.webp";
 import blog from "../assets/icons/img3-24.webp";
 import art from "../assets/icons/art-20.webp";
+import guestbook from "../assets/icons/cats-24.webp";
 import cursor from "../assets/icons/cursor-24.webp";
 
 import { useLocation, Link } from "react-router-dom";
@@ -11,6 +12,7 @@ import { useCursor } from "../states/CursorContext";
 const Navigation = () => {
   const location = useLocation();
   const { isCustomCursor } = useCursor();
+  const isGuestbookPage = location.pathname.startsWith("/guestbook");
 
   return (
     <aside className="site-display mb-auto w-full bg-blue-100 border border-blue-300 rounded-xl shadow-md opacity-90">
@@ -75,8 +77,22 @@ const Navigation = () => {
               </div>
             </Link>
           </div>
-          <div className="text-sm text-center font-bold text-blue-500">
-            another page (maybe)
+          <div className="flex justify-center">
+            <img className="h-4 w-4" src={guestbook} alt="guestbook icon" />
+            <Link
+              className="hover:animate-wiggle hover:underline"
+              to="/guestbook"
+            >
+              <div
+                className={
+                  isGuestbookPage
+                    ? "text-blue-700 pl-1 text-sm text-center font-bold"
+                    : "text-blue-500 pl-1 text-sm text-center font-bold"
+                }
+              >
+                guestbook
+              </div>
+            </Link>
           </div>
           <div className="flex justify-center items-center space-x-1">
             <img

@@ -3,7 +3,7 @@
 
 This is the frontend for my little corner of the web.
 
-It is a cute React + TypeScript site where I share blog posts, daily quotes, profile pages, anime updates, and other cozy internet things. The goal is simple: make the site feel soft and personal without turning the code into a mess.
+It is a cute React + TypeScript site where I share blog posts, daily quotes, profile pages, anime updates, a draggable guestbook board, and other cozy internet things. The goal is simple: make the site feel soft and personal without turning the code into a mess.
 
 ## Hiya!!
 
@@ -13,6 +13,7 @@ If you are reading this repo, welcome. This part of the project is the part peop
 
 - A home page and about page with a personal, handmade feel
 - A blog list and blog post pages
+- A guestbook board and a guestbook signing page
 - A Tiptap editor UI for writing posts
 - Login, settings, and profile screens
 - A daily quotes page
@@ -24,7 +25,7 @@ If you are reading this repo, welcome. This part of the project is the part peop
 ```text
 .
 |- src/
-|  |- pages/         Route pages like Home, About, Blog, Quotes
+|  |- pages/         Route pages like Home, Blog, Guestbook, Quotes
 |  |- parts/         Shared layout pieces like Header and Footer
 |  |- components/    Reusable UI and Tiptap pieces
 |  |- hooks/         React hooks
@@ -69,7 +70,7 @@ npm run dev
 
 The app will open at `http://localhost:5173`.
 
-This frontend expects an API at `VITE_API_BASE`. If you want to run the matching backend from this repo too, it has its own guide in [mirabellier-backend/README.md](./mirabellier-backend/README.md).
+This frontend expects an API at `VITE_API_BASE`. If your backend uses a different local port, change that value to match. The matching API has its own guide in [mirabellier-backend/README.md](./mirabellier-backend/README.md).
 
 ## Useful scripts
 
@@ -77,6 +78,7 @@ This frontend expects an API at `VITE_API_BASE`. If you want to run the matching
 - `npm run build` - type-check and build the app
 - `npm run preview` - preview the production build
 - `npm run lint` - run ESLint
+- `npm run generate:sitemap` - regenerate sitemap data from the current content
 - `npm run predeploy` - generate sitemap data and build
 - `npm run deploy` - deploy the built frontend
 
@@ -87,27 +89,34 @@ This frontend expects an API at `VITE_API_BASE`. If you want to run the matching
 - The site supports dark mode
 - There is a custom cursor system
 - The blog editor uses Tiptap instead of a plain textarea
+- Blog post likes work even if the visitor is not logged in
+- The guestbook board supports dragging, board-only zoom, and synced note positions
 - The overall UI is meant to feel more like a personal homepage than a generic product site
 
 ## Main pages
 
 - `/` - home page
 - `/about` - about page
+- `/guestbook` - draggable guestbook board
+- `/guestbook/sign` - guestbook signing page
 - `/blog` - blog listing
 - `/blog/:slug` - single blog post
 - `/blog/edit` - editor page
 - `/quotes` - daily quotes page
 - `/login` - login page
+- `/auth/callback` - Discord login callback page
 - `/settings` - account settings
+- `/profile` - your own profile page when logged in
 - `/profile/:username` - public profile page
 - `/admin/anime` - anime admin page
 
 ## If something feels broken
 
 - Make sure `VITE_API_BASE` points at a running API
-- If blog data or quotes are missing, the frontend is probably not reaching the backend
+- If blog data, guestbook notes, or quotes are missing, the frontend is probably not reaching the backend
 - If login does not work, check the backend auth setup before changing frontend code
 - If styling looks odd, make sure the Vite dev server actually finished rebuilding
+- If the guestbook board feels strange after a layout change, check the board CSS and the API response shape together
 
 ## Why this repo exists
 

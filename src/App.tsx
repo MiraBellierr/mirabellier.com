@@ -10,6 +10,8 @@ const About = lazy(() => import("./pages/About"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const BlogEdit = lazy(() => import("./pages/BlogEdit"));
 const Quotes = lazy(() => import("./pages/Quotes"));
+const Guestbook = lazy(() => import("./pages/Guestbook"));
+const GuestbookSign = lazy(() => import("./pages/GuestbookSign"));
 const AdminAnime = lazy(() => import("./pages/AdminAnime"));
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -51,6 +53,8 @@ function App() {
               <Route path="/home" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/quotes" element={<Quotes />} />
+              <Route path="/guestbook" element={<Guestbook />} />
+              <Route path="/guestbook/sign" element={<GuestbookSign />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/blog/edit" element={<BlogEdit />} />
