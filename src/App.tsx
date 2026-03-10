@@ -7,6 +7,7 @@ import Blog from "./pages/Blog";
 
 // Lazy load non-critical routes to reduce initial bundle size
 const About = lazy(() => import("./pages/About"));
+const Projects = lazy(() => import("./pages/Projects"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const BlogEdit = lazy(() => import("./pages/BlogEdit"));
 const Quotes = lazy(() => import("./pages/Quotes"));
@@ -128,6 +129,7 @@ function App() {
                   <Route path="/spill" element={<Home />} />
                   <Route path="/home" element={<Home />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/projects" element={<Projects />} />
                   <Route path="/quotes" element={<Quotes />} />
                   <Route path="/guestbook" element={<Guestbook />} />
                   <Route path="/guestbook/sign" element={<GuestbookSign />} />

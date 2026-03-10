@@ -1,25 +1,76 @@
-import { useEffect } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
-
 import github from "../assets/github.webp";
 import patreon from "../assets/patreon.webp";
 import kofi from "../assets/kofi.webp";
 import Divider from "../parts/Divider";
 import kannaWink from "@/assets/anime/kanna-wink.webp";
+import { fetchGuestbookEntries, type GuestbookEntry } from "@/lib/guestbook-api";
+
+const handwrittenStyle: CSSProperties = {
+  fontFamily: '"Comic Sans MS", "Segoe Print", "Bradley Hand", cursive',
+};
+
+const graphColors = [
+  { fill: "#dbeafe", stroke: "#60a5fa" },
+  { fill: "#fce7f3", stroke: "#f472b6" },
+  { fill: "#dcfce7", stroke: "#34d399" },
+  { fill: "#fef3c7", stroke: "#f59e0b" },
+  { fill: "#ede9fe", stroke: "#8b5cf6" },
+  { fill: "#cffafe", stroke: "#06b6d4" },
+];
+
+type NoteGraphStat = {
+  dateKey: string;
+  label: string;
+  value: number;
+  fill: string;
+  stroke: string;
+};
+
+function getDateKey(createdAt: string) {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDateLabel(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function createFallbackDateKeys(count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (count - 1 - index));
+    return date.toISOString().slice(0, 10);
+  });
+}
 
 const About = () => {
+  const [guestbookEntries, setGuestbookEntries] = useState<GuestbookEntry[]>(
+    [],
+  );
+  const [guestbookLoading, setGuestbookLoading] = useState(true);
+
   useEffect(() => {
-    // Update canonical URL to point to the About page
     const canonicalLink = document.querySelector(
       'link[rel="canonical"]',
-    ) as HTMLLinkElement;
+    ) as HTMLLinkElement | null;
+
     if (canonicalLink) {
       canonicalLink.href = "https://mirabellier.com/about";
     }
 
-    // Add structured data for rich results
     const script = document.createElement("script");
     script.type = "application/ld+json";
     script.id = "about-structured-data";
@@ -51,18 +102,85 @@ const About = () => {
     });
     document.head.appendChild(script);
 
-    // Cleanup: restore homepage canonical when unmounting
     return () => {
-      const canonicalLink = document.querySelector(
+      const nextCanonicalLink = document.querySelector(
         'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
+      ) as HTMLLinkElement | null;
+
+      if (nextCanonicalLink) {
+        nextCanonicalLink.href = "https://mirabellier.com/";
       }
-      const oldScript = document.getElementById("about-structured-data");
-      if (oldScript) oldScript.remove();
+
+      document.getElementById("about-structured-data")?.remove();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGuestbookStats = async () => {
+      try {
+        const entries = await fetchGuestbookEntries();
+        if (!cancelled) {
+          setGuestbookEntries(entries);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load guestbook entries:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setGuestbookLoading(false);
+        }
+      }
+    };
+
+    void loadGuestbookStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const noteCountsByDate = guestbookEntries.reduce((map, entry) => {
+    const key = getDateKey(entry.createdAt);
+    if (!key) {
+      return map;
+    }
+
+    map.set(key, (map.get(key) || 0) + 1);
+    return map;
+  }, new Map<string, number>());
+
+  const sortedDateCounts = Array.from(noteCountsByDate.entries()).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
+
+  const dateBuckets =
+    sortedDateCounts.length > 0
+      ? sortedDateCounts.slice(-6)
+      : createFallbackDateKeys(6).map(
+          (dateKey) => [dateKey, 0] as [string, number],
+        );
+
+  const dateGraphStats: NoteGraphStat[] = dateBuckets.map(
+    ([dateKey, value], index) => ({
+      dateKey,
+      label: formatDateLabel(dateKey),
+      value,
+      ...graphColors[index % graphColors.length],
+    }),
+  );
+
+  const maxDateValue = Math.max(
+    ...dateGraphStats.map((section) => section.value),
+    1,
+  );
+
+  const latestNoteDate =
+    sortedDateCounts.length > 0
+      ? formatDateLabel(sortedDateCounts[sortedDateCounts.length - 1][0])
+      : "--";
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
@@ -75,9 +193,9 @@ const About = () => {
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
           <div className="flex-grow flex-col">
             <Navigation />
-            <div className="flex border shadow-md mt-3 rounded-lg overflow-hidden justify-center">
+            <div className="mt-3 flex justify-center overflow-hidden rounded-lg border shadow-md">
               <iframe
-                className="lg:w-[339px] h-[575px] rounded-lg hidden md:block"
+                className="hidden h-[575px] rounded-lg md:block lg:w-[339px]"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 src="https://ko-fi.com/mirabellier/?hidefeed=true&widget=true&embed=true&preview=true"
               ></iframe>
@@ -86,233 +204,200 @@ const About = () => {
 
           <main className="w-full lg:w-3/5 space-y-2 p-4">
             <div className="space-y-1 p-2 card-border">
-              <h2 className="text-xl font-bold text-blue-700 mb-2">
-                ___🖊️Introduction
+              <h2 className="mb-2 text-xl font-bold text-blue-700">
+                ___🖊️ Introduction
               </h2>
               <div className="space-y-2">
                 <p>
-                  I'm a Full Stack Developer with just 3 years of experience.
-                  I'm good in web development using React and NodeJS.
+                  I&apos;m a Full Stack Developer with 3 years of experience in
+                  web development using React and NodeJS.
                 </p>
                 <p>
-                  I also have worked on many projects, web apps, React Native
-                  mobile apps, and APIs. My skills have moved me forward. I want
-                  to learn more and keep up with the technologies so i can
-                  improve my skills.
+                  I have worked on websites, APIs, bots, and mobile apps. My
+                  goal is to keep improving, stay current with the stack, and
+                  keep shipping things that are useful.
                 </p>
                 <p>
-                  Plus, I able to help if you guys are having problems with
-                  React or NodeJS. I hope my skills are useful to you guys.
+                  I can also help when people get stuck with React or NodeJS.
+                  I want the skills I have picked up to be practical for other
+                  people too.
                 </p>
                 <p>
-                  Next step, I hope i can use my skills to find a <del>job</del>
-                  .
+                  Next step, I want to keep turning that work into bigger and
+                  better opportunities.
                 </p>
               </div>
             </div>
 
             <Divider />
 
-            <div className="space-y-2 p-2 card-border">
-              <h2 className="text-xl font-bold text-blue-700 mb-2">
-                📂 Projects
-              </h2>
-
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  1. Jasmine (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/jasmine"
+            <section className="card-border p-3">
+              <div>
+                <div className="space-y-2">
+                  <p
+                    className="mb-2 text-xl font-bold text-blue-700"
                   >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A Discord bot I casually developed to keep me learning NodeJS
-                  and the fundamentals of REST APIs. The algorithms and the
-                  fundamentals of RPG games in turn-based games, the item
-                  system, economy system, critical attacks, and luck-based games
-                  are strongly used in this project.
-                </p>
-              </div>
+                    📊 Visitor Graph (˶ᵔ ᵕ ᵔ˶)
+                  </p>
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  2. Mirabellier.com (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/mirabellier.com"
+                  <p
+                    className="max-w-2xl text-[15px] leading-7 text-slate-700"
+                    style={handwrittenStyle}
                   >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A cute, performant React + TypeScript blog and media platform
-                  with a rich text editor powered by Tiptap. This is my personal
-                  website where I share my thoughts and projects.
-                </p>
-              </div>
+                    If you sign your attendance in the guestbook, the visitor graph will change! ^-^
+                  </p>
+                </div>
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  3. Mirabellier Backend (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/mirabellier-backend"
+                <div className="mt-6 rounded-[1.5rem] border-2 border-dashed border-blue-200 bg-white/75 p-4 shadow-sm">
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-2 text-sm font-bold text-blue-600"
+                    style={handwrittenStyle}
                   >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  Express.js REST API server providing authentication, blog
-                  management, and media upload services for the Mirabellier.com
-                  platform. Built with NodeJS and features secure JWT
-                  authentication.
-                </p>
-              </div>
+                    <span>graph: visitors by date</span>
+                    <span>last visitor on: {guestbookLoading ? "..." : latestNoteDate}</span>
+                  </div>
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  4. Sakura Backend (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/sakura-backend"
+                  <svg
+                    viewBox="0 0 420 250"
+                    className="mt-3 w-full"
+                    role="img"
+                    aria-label="Hand-drawn style bar graph of guestbook notes by date"
                   >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A Node.js-based RESTful API designed for complaint and
-                  feedback management for SAKURA college. Built with Express.js
-                  and TypeScript, it supports role-based access and integrates
-                  seamlessly with MongoDB for data storage.
-                </p>
-              </div>
+                    <path
+                      d="M42 24 Q34 116 44 202"
+                      fill="none"
+                      stroke="#3b82f6"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M36 196 Q214 206 394 190"
+                      fill="none"
+                      stroke="#3b82f6"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  5. Sakura Frontend (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/sakura_frontend"
-                  >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A mobile application built with Flutter and Dart for the
-                  SAKURA college complaint and feedback management system.
-                  Features a clean UI and seamless integration with the Sakura
-                  Backend API.
-                </p>
-              </div>
+                    {Array.from({ length: maxDateValue }, (_, index) => {
+                      const stepValue = index + 1;
+                      const y = 194 - (stepValue / maxDateValue) * 132;
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  6. MAP - AI Discord Bot (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/map"
-                  >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A fully-featured Discord bot powered by Ollama local AI
-                  models. This bot supports real-time chat interactions, image
-                  analysis, and persistent memory management using JavaScript
-                  and Discord.js.
-                </p>
-              </div>
+                      return (
+                        <g key={stepValue}>
+                          <path
+                            d={`M42 ${y} Q212 ${y + 5} 388 ${y - 1}`}
+                            fill="none"
+                            stroke="#bfdbfe"
+                            strokeWidth="2"
+                            strokeDasharray="5 8"
+                            strokeLinecap="round"
+                          />
+                          <text
+                            x="18"
+                            y={y + 4}
+                            fill="#60a5fa"
+                            fontSize="13"
+                            style={handwrittenStyle}
+                          >
+                            {stepValue}
+                          </text>
+                        </g>
+                      );
+                    })}
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  7. Cocoa (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/Cocoa"
-                  >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A Discord bot written in Node.js using Discord.js v13 wrapper
-                  with slash commands. Features button pagination and a
-                  comprehensive command handler system.
-                </p>
-              </div>
+                    {dateGraphStats.map((section, index) => {
+                      const barHeight =
+                        (section.value / maxDateValue) * 132 || 0;
+                      const visibleHeight = guestbookLoading
+                        ? 18
+                        : Math.max(barHeight, section.value > 0 ? 24 : 10);
+                      const x =
+                        64 +
+                        index *
+                          (dateGraphStats.length > 1
+                            ? 280 / (dateGraphStats.length - 1)
+                            : 0);
+                      const y = 194 - visibleHeight;
+                      const rotate = index % 2 === 0 ? -1.4 : 1.4;
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  8. Adenia - Appointment Mobile Application (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/adenia"
-                  >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A mobile application for my Final Year Project. The
-                  development includes using NodeJS, Appwrite, and React Native.
-                  The features include a login and sign-up system, notification
-                  system, and calendar system.
-                </p>
-              </div>
+                      return (
+                        <g key={section.dateKey}>
+                          <rect
+                            x={x}
+                            y={y}
+                            width="34"
+                            height={visibleHeight}
+                            rx="14"
+                            fill={section.fill}
+                            stroke={section.stroke}
+                            strokeWidth="3"
+                            transform={`rotate(${rotate} ${x + 17} ${y + visibleHeight / 2})`}
+                          />
+                          <path
+                            d={`M${x + 4} ${y + 12} Q${x + 16} ${y + 2} ${x + 30} ${y + 10}`}
+                            fill="none"
+                            stroke={section.stroke}
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                          />
+                          <text
+                            x={x + 10}
+                            y={y - 8}
+                            fill={section.stroke}
+                            fontSize="15"
+                            fontWeight="700"
+                            style={handwrittenStyle}
+                          >
+                            {guestbookLoading ? "?" : section.value}
+                          </text>
+                          <text
+                            x={x - 10}
+                            y="224"
+                            fill="#2563eb"
+                            fontSize="12"
+                            style={handwrittenStyle}
+                          >
+                            {section.label}
+                          </text>
+                        </g>
+                      );
+                    })}
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  9. Conference - Attendance Based Mobile Application (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/conference"
-                  >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  This is a client project. It's a mobile application developed
-                  using React Native and Firebase. The features include an
-                  import system from spreadsheet, QR scanning for attendance,
-                  and the announcement system.
-                </p>
-              </div>
+                    <text
+                      x="12"
+                      y="18"
+                      fill="#2563eb"
+                      fontSize="14"
+                      style={handwrittenStyle}
+                    >
+                      notes
+                    </text>
+                    <text
+                      x="344"
+                      y="245"
+                      fill="#2563eb"
+                      fontSize="14"
+                      style={handwrittenStyle}
+                    >
+                      dates
+                    </text>
+                  </svg>
 
-              <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-blue-300">
-                  10. OwO Bot Farm Selfbot (
-                  <a
-                    className="underline hover:animate-wiggle"
-                    href="https://github.com/MiraBellierr/owo-bot-farm-selfbot"
+                  <div
+                    className="mt-4 flex flex-wrap gap-2 text-sm text-blue-600"
+                    style={handwrittenStyle}
                   >
-                    Github
-                  </a>
-                  )
-                </h3>
-                <p className="text-sm">
-                  A friendly OwObot farming script written in Javascript using
-                  NodeJS and discord.js. Features automated farming and
-                  user-friendly commands.
-                </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </section>
           </main>
 
           <div className="flex-col space-y-4">
             <aside className="w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
               <div className="space-y-2 text-sm text-center font-bold">
                 <h2 className="text-blue-600 font-bold text-lg">Skills</h2>
-                <p className="text-blue-500">1. Javascript</p>
+                <p className="text-blue-500">1. JavaScript</p>
                 <p className="text-blue-500">2. NodeJS</p>
                 <p className="text-blue-500">3. TypeScript</p>
                 <p className="text-blue-500">4. React</p>
@@ -320,7 +405,7 @@ const About = () => {
               </div>
             </aside>
 
-            <div className=" mt-3 mb-auto lg:w-[200px] flex justify-center">
+            <div className="mt-3 mb-auto flex justify-center lg:w-[200px]">
               <img
                 className="h-101 rounded-2xl"
                 src={kannaWink}
@@ -339,7 +424,7 @@ const About = () => {
                   href="https://github.com/MiraBellierr"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-row space-x-1 justify-center hover:animate-wiggle"
+                  className="flex flex-row justify-center space-x-1 hover:animate-wiggle"
                 >
                   <img
                     src={github}
@@ -352,11 +437,11 @@ const About = () => {
                   href="https://www.patreon.com/c/jasminebot/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-row space-x-1 justify-center hover:animate-wiggle"
+                  className="flex flex-row justify-center space-x-1 hover:animate-wiggle"
                 >
                   <img
                     src={patreon}
-                    alt="GitHub"
+                    alt="Patreon"
                     className="h-4 w-4 rounded-full"
                   />
                   <p className="text-blue-500">Patreon</p>
@@ -365,11 +450,11 @@ const About = () => {
                   href="https://ko-fi.com/mirabellier"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-row space-x-1 justify-center hover:animate-wiggle"
+                  className="flex flex-row justify-center space-x-1 hover:animate-wiggle"
                 >
                   <img
                     src={kofi}
-                    alt="GitHub"
+                    alt="Ko-fi"
                     className="h-4 w-4 rounded-full"
                   />
                   <p className="text-blue-500">Ko-fi</p>
