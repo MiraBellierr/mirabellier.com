@@ -34,6 +34,7 @@ type QuotePayload = {
 
 const DEFAULT_DESCRIPTION =
   "Daily quotes across love, art, nature, humor, and more.";
+const STALE_QUOTE_RETRY_MS = 60 * 1000;
 
 function getCurrentUtcRecordedDate(date = new Date()) {
   return date.toISOString().slice(0, 10);
@@ -43,6 +44,13 @@ function getDelayUntilNextUtcMidnight(now = new Date()) {
   const next = new Date(now);
   next.setUTCHours(24, 0, 0, 0);
   return Math.max(next.getTime() - now.getTime(), 1000);
+}
+
+function isCurrentUtcQuotePayload(
+  payload: QuotePayload | null,
+  recordedDate: string,
+) {
+  return !!payload && payload.recordedDate === recordedDate && !payload.stale;
 }
 
 const Quotes = () => {
@@ -113,8 +121,29 @@ const Quotes = () => {
   useEffect(() => {
     const initialController = new AbortController();
     let scheduledController: AbortController | null = null;
-    let refreshTimer: number | null = null;
+    let midnightRefreshTimer: number | null = null;
+    let staleRetryTimer: number | null = null;
     let disposed = false;
+
+    const clearStaleRetry = () => {
+      if (staleRetryTimer !== null) {
+        window.clearTimeout(staleRetryTimer);
+        staleRetryTimer = null;
+      }
+    };
+
+    const scheduleStaleRetry = () => {
+      if (disposed || staleRetryTimer !== null) {
+        return;
+      }
+
+      staleRetryTimer = window.setTimeout(async () => {
+        staleRetryTimer = null;
+        scheduledController?.abort();
+        scheduledController = new AbortController();
+        await run(scheduledController.signal);
+      }, STALE_QUOTE_RETRY_MS);
+    };
 
     const run = async (signal: AbortSignal, showLoading = false) => {
       if (showLoading) {
@@ -122,16 +151,23 @@ const Quotes = () => {
       }
 
       try {
-        const payload = await loadQuotes(getCurrentUtcRecordedDate(), signal);
+        const currentRecordedDate = getCurrentUtcRecordedDate();
+        const payload = await loadQuotes(currentRecordedDate, signal);
         if (!signal.aborted && !disposed) {
           setError(null);
           setData(payload);
+          if (isCurrentUtcQuotePayload(payload, currentRecordedDate)) {
+            clearStaleRetry();
+          } else {
+            scheduleStaleRetry();
+          }
         }
       } catch (err) {
         if (signal.aborted || disposed) {
           return;
         }
         setError(err instanceof Error ? err.message : "Failed to load quotes");
+        scheduleStaleRetry();
       } finally {
         if (showLoading && !signal.aborted && !disposed) {
           setLoading(false);
@@ -140,7 +176,7 @@ const Quotes = () => {
     };
 
     const scheduleRefresh = () => {
-      refreshTimer = window.setTimeout(async () => {
+      midnightRefreshTimer = window.setTimeout(async () => {
         scheduledController?.abort();
         scheduledController = new AbortController();
         await run(scheduledController.signal);
@@ -157,11 +193,16 @@ const Quotes = () => {
       disposed = true;
       initialController.abort();
       scheduledController?.abort();
-      if (refreshTimer !== null) {
-        window.clearTimeout(refreshTimer);
+      clearStaleRetry();
+      if (midnightRefreshTimer !== null) {
+        window.clearTimeout(midnightRefreshTimer);
       }
     };
   }, []);
+
+  const currentUtcRecordedDate = getCurrentUtcRecordedDate();
+  const waitingForLatestUtcQuote =
+    !!data && !isCurrentUtcQuotePayload(data, currentUtcRecordedDate);
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
@@ -201,6 +242,12 @@ const Quotes = () => {
               </div>
             ) : (
               <div className="space-y-3">
+                {waitingForLatestUtcQuote ? (
+                  <div className="rounded-xl border border-blue-300 bg-blue-50 p-4 text-blue-700">
+                    Waiting for the latest UTC quote snapshot. Refreshing
+                    automatically...
+                  </div>
+                ) : null}
                 {error ? (
                   <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-yellow-800">
                     Failed to refresh quotes at the UTC rollover. Showing the
