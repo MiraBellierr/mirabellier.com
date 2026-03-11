@@ -1,5 +1,5 @@
 // Service Worker for instant repeat visits and offline support
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 const CACHE_NAME = `mirabellier-${CACHE_VERSION}`;
 const EXTERNAL_CACHE_NAME = `mirabellier-external-${CACHE_VERSION}`;
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days for external resources
@@ -46,6 +46,10 @@ function shouldCacheResponse(response) {
 
 function fetchFresh(request) {
   return fetch(new Request(request, { cache: "no-store" }));
+}
+
+function offlineResponse() {
+  return new Response("", { status: 503, statusText: "Offline" });
 }
 
 function cacheNavigationShell(response) {
@@ -115,7 +119,8 @@ self.addEventListener("fetch", (event) => {
           return (
             (await cache.match(request)) ||
             (await cache.match("/")) ||
-            (await cache.match("/index.html"))
+            (await cache.match("/index.html")) ||
+            offlineResponse()
           );
         }),
     );
@@ -123,7 +128,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (shouldBypassCache(request, url)) {
-    event.respondWith(fetchFresh(request));
+    event.respondWith(
+      fetchFresh(request).catch(async () => {
+        const cachedResponse = await caches.match(request);
+        return cachedResponse || offlineResponse();
+      }),
+    );
     return;
   }
 
@@ -203,27 +213,34 @@ self.addEventListener("fetch", (event) => {
       if (cachedResponse) {
         // Update cache in background
         event.waitUntil(
-          fetch(request).then((networkResponse) => {
-            if (shouldCacheResponse(networkResponse)) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, networkResponse.clone());
-              });
-            }
-          }),
+          fetch(request)
+            .then((networkResponse) => {
+              if (shouldCacheResponse(networkResponse)) {
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(request, networkResponse.clone());
+                });
+              }
+            })
+            .catch(() => {}),
         );
         return cachedResponse;
       }
 
       // Fetch from network and cache
-      return fetch(request).then((networkResponse) => {
-        if (shouldCacheResponse(networkResponse)) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        }
-        return networkResponse;
-      });
+      return fetch(request)
+        .then((networkResponse) => {
+          if (shouldCacheResponse(networkResponse)) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const fallback = await caches.match(request);
+          return fallback || offlineResponse();
+        });
     }),
   );
 });
