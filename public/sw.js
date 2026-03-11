@@ -1,5 +1,5 @@
 // Service Worker for instant repeat visits and offline support
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const CACHE_NAME = `mirabellier-${CACHE_VERSION}`;
 const EXTERNAL_CACHE_NAME = `mirabellier-external-${CACHE_VERSION}`;
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days for external resources
@@ -24,14 +24,6 @@ function hasNoStoreDirective(value) {
   return /\bno-store\b/i.test(String(value || ""));
 }
 
-function isRealtimePageRequest(request, url) {
-  if (request.mode !== "navigate") {
-    return false;
-  }
-
-  return /^\/(?:blog(?:\/|$)|quotes(?:\/|$))/.test(url.pathname);
-}
-
 function isRealtimeDataRequest(url) {
   return /^\/(?:api\/)?(?:posts(?:\/|$)|quote-of-the-day(?:\/|$))/.test(
     url.pathname,
@@ -42,7 +34,6 @@ function shouldBypassCache(request, url) {
   return (
     request.cache === "no-store" ||
     hasNoStoreDirective(request.headers.get("Cache-Control")) ||
-    isRealtimePageRequest(request, url) ||
     isRealtimeDataRequest(url)
   );
 }
@@ -57,6 +48,19 @@ function shouldCacheResponse(response) {
 
 function fetchFresh(request) {
   return fetch(new Request(request, { cache: "no-store" }));
+}
+
+function cacheNavigationShell(response) {
+  if (!shouldCacheResponse(response)) {
+    return Promise.resolve();
+  }
+
+  return caches.open(CACHE_NAME).then((cache) =>
+    Promise.all([
+      cache.put("/", response.clone()),
+      cache.put("/index.html", response.clone()),
+    ]),
+  );
 }
 
 // Install event - cache critical assets
@@ -98,6 +102,27 @@ self.addEventListener("fetch", (event) => {
 
   // Skip non-GET requests
   if (request.method !== "GET") return;
+
+  // Always try to fetch navigations from the network first so route/layout
+  // changes do not get masked by a stale cached app shell.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetchFresh(request)
+        .then((networkResponse) => {
+          event.waitUntil(cacheNavigationShell(networkResponse.clone()));
+          return networkResponse;
+        })
+        .catch(async () => {
+          const cache = await caches.open(CACHE_NAME);
+          return (
+            (await cache.match(request)) ||
+            (await cache.match("/")) ||
+            (await cache.match("/index.html"))
+          );
+        }),
+    );
+    return;
+  }
 
   if (shouldBypassCache(request, url)) {
     event.respondWith(fetchFresh(request));
