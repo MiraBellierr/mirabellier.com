@@ -1,13 +1,11 @@
 // Service Worker for instant repeat visits and offline support
-const CACHE_VERSION = "v5";
+const CACHE_VERSION = "v6";
 const CACHE_NAME = `mirabellier-${CACHE_VERSION}`;
 const EXTERNAL_CACHE_NAME = `mirabellier-external-${CACHE_VERSION}`;
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days for external resources
 
 // Critical assets to cache immediately
 const PRECACHE_ASSETS = [
-  "/",
-  "/index.html",
   "/light.jpg",
   "/dark.jpg",
 ];

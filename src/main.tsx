@@ -3,6 +3,43 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 
 const loadCss = () => import("./index.css");
+const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
+
+function reloadForUpdatedBuild() {
+  if (sessionStorage.getItem(CHUNK_RELOAD_GUARD) === "1") {
+    return;
+  }
+
+  sessionStorage.setItem(CHUNK_RELOAD_GUARD, "1");
+  window.location.reload();
+}
+
+window.addEventListener("pageshow", () => {
+  sessionStorage.removeItem(CHUNK_RELOAD_GUARD);
+});
+
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault();
+  reloadForUpdatedBuild();
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  const reason =
+    typeof event.reason === "string"
+      ? event.reason
+      : event.reason instanceof Error
+        ? event.reason.message
+        : "";
+
+  if (
+    reason.includes("Failed to fetch dynamically imported module") ||
+    reason.includes("Importing a module script failed") ||
+    reason.includes("ChunkLoadError")
+  ) {
+    event.preventDefault();
+    reloadForUpdatedBuild();
+  }
+});
 
 // Preload theme background images for faster LCP
 const preloadBackgrounds = () => {
