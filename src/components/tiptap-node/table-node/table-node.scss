@@ -1,0 +1,81 @@
+.tiptap.ProseMirror {
+  .tableWrapper {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  table.blog-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3);
+  }
+
+  th,
+  td {
+    min-width: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 0.75rem 0.875rem;
+    vertical-align: top;
+    position: relative;
+  }
+
+  th {
+    background: rgba(219, 234, 254, 0.65);
+    color: #1d4ed8;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  th[data-vertical-align="top"],
+  td[data-vertical-align="top"] {
+    vertical-align: top;
+  }
+
+  th[data-vertical-align="middle"],
+  td[data-vertical-align="middle"] {
+    vertical-align: middle;
+  }
+
+  th[data-vertical-align="bottom"],
+  td[data-vertical-align="bottom"] {
+    vertical-align: bottom;
+  }
+
+  td > *,
+  th > * {
+    margin-bottom: 0;
+  }
+
+  .selectedCell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(59, 130, 246, 0.12);
+    pointer-events: none;
+  }
+}
+
+.dark .tiptap.ProseMirror {
+  table.blog-table {
+    background: rgba(15, 23, 42, 0.92);
+    box-shadow: 0 0 0 1px rgba(71, 85, 105, 0.7);
+  }
+
+  th,
+  td {
+    border-color: rgba(100, 116, 139, 0.7);
+  }
+
+  th {
+    background: rgba(30, 41, 59, 0.92);
+    color: #bfdbfe;
+  }
+
+  .selectedCell::after {
+    background: rgba(96, 165, 250, 0.18);
+  }
+}

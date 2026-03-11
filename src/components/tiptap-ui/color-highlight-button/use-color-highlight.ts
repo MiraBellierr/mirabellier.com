@@ -90,7 +90,7 @@ export function canColorHighlight(editor: Editor | null): boolean {
   )
     return false;
 
-  return editor.can().setMark("highlight");
+  return editor.can().setHighlight();
 }
 
 export function isColorHighlightActive(
@@ -107,7 +107,7 @@ export function removeHighlight(editor: Editor | null): boolean {
   if (!editor || !editor.isEditable) return false;
   if (!canColorHighlight(editor)) return false;
 
-  return editor.chain().focus().unsetMark("highlight").run();
+  return editor.chain().focus().unsetHighlight().run();
 }
 
 export function shouldShowButton(props: {
@@ -164,7 +164,7 @@ export function useColorHighlight(config: UseColorHighlightConfig) {
     const success = editor
       .chain()
       .focus()
-      .toggleMark("highlight", { color: highlightColor })
+      .toggleHighlight({ color: highlightColor })
       .run();
     if (success) {
       onApplied?.({ color: highlightColor, label });

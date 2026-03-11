@@ -10,6 +10,13 @@ import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/ho
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension";
 import { CodeBlockNodeExtension } from "@/components/tiptap-node/code-block-node/code-block-node-extension";
 import { CaptionedImageExtension } from "@/components/tiptap-node/image-node/image-node-extension";
+import {
+  BlogTable,
+  BlogTableCell,
+  BlogTableHeader,
+  BlogTableRow,
+} from "@/components/tiptap-node/table-node/table-node-extension";
+import "@/components/tiptap-node/table-node/table-node.scss";
 import { useMemo, memo } from "react";
 
 type PostContent = object | string | null | undefined;
@@ -42,6 +49,10 @@ const Post = ({ html }: { html: PostContent }) => {
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      BlogTable,
+      BlogTableRow,
+      BlogTableCell,
+      BlogTableHeader,
       Highlight.configure({ multicolor: true }),
       Typography,
       Superscript,

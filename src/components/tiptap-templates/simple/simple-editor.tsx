@@ -18,14 +18,22 @@ import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/imag
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension";
 import { CodeBlockNodeExtension } from "@/components/tiptap-node/code-block-node/code-block-node-extension";
 import { CaptionedImageExtension } from "@/components/tiptap-node/image-node/image-node-extension";
+import {
+  BlogTable,
+  BlogTableCell,
+  BlogTableHeader,
+  BlogTableRow,
+} from "@/components/tiptap-node/table-node/table-node-extension";
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss";
 import "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.scss";
 import "@/components/tiptap-node/list-node/list-node.scss";
 import "@/components/tiptap-node/heading-node/heading-node.scss";
 import "@/components/tiptap-node/paragraph-node/paragraph-node.scss";
+import "@/components/tiptap-node/table-node/table-node.scss";
 import { HeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu";
 import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button";
 import { ListDropdownMenu } from "@/components/tiptap-ui/list-dropdown-menu";
+import { TableDropdownMenu } from "@/components/tiptap-ui/table-dropdown-menu";
 import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button";
 import { CodeBlockButton } from "@/components/tiptap-ui/code-block-button";
 import {
@@ -61,7 +69,7 @@ const MainToolbarContent = ({
 }) => {
   return (
     <>
-      <Spacer />
+      {!isMobile && <Spacer />}
 
       <ToolbarGroup>
         <UndoRedoButton action="undo" />
@@ -78,6 +86,7 @@ const MainToolbarContent = ({
         />
         <BlockquoteButton />
         <CodeBlockButton />
+        <TableDropdownMenu portal={isMobile} />
       </ToolbarGroup>
 
       <ToolbarSeparator />
@@ -118,7 +127,7 @@ const MainToolbarContent = ({
         <ImageUploadButton text="Add" />
       </ToolbarGroup>
 
-      <Spacer />
+      {!isMobile && <Spacer />}
 
       {isMobile && <ToolbarSeparator />}
     </>
@@ -193,6 +202,10 @@ export function SimpleEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      BlogTable,
+      BlogTableRow,
+      BlogTableCell,
+      BlogTableHeader,
       Highlight.configure({ multicolor: true }),
       CaptionedImageExtension.configure({ allowBase64: true }),
       Typography,

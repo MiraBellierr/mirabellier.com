@@ -71,7 +71,19 @@ body,
 }
 
 @media screen and (max-width: 480px) {
+  .simple-editor-wrapper {
+    min-height: clamp(28rem, 68svh, 40rem);
+  }
+
+  .simple-editor-content {
+    min-height: clamp(24rem, 58svh, 34rem);
+  }
+
   .simple-editor-content .tiptap.ProseMirror.simple-editor {
     padding: 1rem 1.5rem;
+    min-height: clamp(24rem, 58svh, 34rem);
+    padding-bottom: calc(
+      1.5rem + var(--tt-toolbar-height) + var(--tt-safe-area-bottom)
+    );
   }
 }

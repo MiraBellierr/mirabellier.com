@@ -31,6 +31,21 @@ type ListItemNode = {
   content: ContentNode[];
 };
 
+type TableNode = {
+  type: "table";
+  content: TableRowNode[];
+};
+
+type TableRowNode = {
+  type: "tableRow";
+  content: TableCellNode[];
+};
+
+type TableCellNode = {
+  type: "tableCell" | "tableHeader";
+  content: ContentNode[];
+};
+
 type ImageNode = {
   type: "image";
   attrs: {
@@ -58,6 +73,9 @@ type ContentNode =
   | HeadingNode
   | ListNode
   | ListItemNode
+  | TableNode
+  | TableRowNode
+  | TableCellNode
   | ImageNode
   | HardBreakNode;
 
@@ -97,6 +115,15 @@ export function extractTextFromContent(
             node.content.forEach((item) => {
               result += extractTextFromContent(item.content);
             });
+          }
+          break;
+
+        case "table":
+        case "tableRow":
+        case "tableCell":
+        case "tableHeader":
+          if (node.content) {
+            result += `${extractTextFromContent(node.content)} `;
           }
           break;
 

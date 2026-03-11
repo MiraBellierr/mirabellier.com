@@ -65,8 +65,19 @@
       padding: 0 0.5rem var(--tt-safe-area-bottom);
       flex-wrap: nowrap;
       justify-content: flex-start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      scroll-behavior: smooth;
+      white-space: nowrap;
 
       .tiptap-toolbar-group {
+        flex: 0 0 auto;
+      }
+
+      > * {
         flex: 0 0 auto;
       }
     }

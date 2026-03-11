@@ -111,6 +111,7 @@
 
   /* Theme colors */
   --tt-bg-color: var(--white);
+  --tt-bg-color-contrast: var(--tt-gray-light-a-300);
   --tt-border-color: var(--tt-gray-light-a-200);
   --tt-border-color-tint: var(--tt-gray-light-a-100);
   --tt-sidebar-bg-color: var(--tt-gray-light-100);
@@ -119,6 +120,24 @@
   --tt-selection-color: rgba(157, 138, 255, 0.2);
   --tt-card-bg-color: var(--white);
   --tt-card-border-color: var(--tt-gray-light-a-100);
+  --tt-color-highlight-gray: #e5e7eb;
+  --tt-color-highlight-gray-contrast: #9ca3af;
+  --tt-color-highlight-brown: #ead7c0;
+  --tt-color-highlight-brown-contrast: #b08968;
+  --tt-color-highlight-orange: #fed7aa;
+  --tt-color-highlight-orange-contrast: #fb923c;
+  --tt-color-highlight-yellow: #fef08a;
+  --tt-color-highlight-yellow-contrast: #facc15;
+  --tt-color-highlight-green: #bbf7d0;
+  --tt-color-highlight-green-contrast: #4ade80;
+  --tt-color-highlight-blue: #bfdbfe;
+  --tt-color-highlight-blue-contrast: #60a5fa;
+  --tt-color-highlight-purple: #e9d5ff;
+  --tt-color-highlight-purple-contrast: #c084fc;
+  --tt-color-highlight-pink: #fbcfe8;
+  --tt-color-highlight-pink-contrast: #f472b6;
+  --tt-color-highlight-red: #fecaca;
+  --tt-color-highlight-red-contrast: #f87171;
 
   /* Page backgrounds (fallback gradient until swapped) */
   --page-bg: radial-gradient(
@@ -131,6 +150,7 @@
 
 .dark {
   --tt-bg-color: rgb(25, 20, 35);
+  --tt-bg-color-contrast: rgba(255, 255, 255, 0.26);
   --tt-border-color: rgba(200, 180, 255, 0.12);
   --tt-border-color-tint: rgba(200, 180, 255, 0.08);
   --tt-sidebar-bg-color: rgb(30, 25, 40);
@@ -139,6 +159,24 @@
   --tt-selection-color: rgba(200, 140, 255, 0.25);
   --tt-card-bg-color: rgba(40, 35, 55, 0.85);
   --tt-card-border-color: rgba(200, 180, 255, 0.15);
+  --tt-color-highlight-gray: rgba(148, 163, 184, 0.35);
+  --tt-color-highlight-gray-contrast: rgba(226, 232, 240, 0.7);
+  --tt-color-highlight-brown: rgba(180, 134, 93, 0.4);
+  --tt-color-highlight-brown-contrast: rgba(237, 201, 175, 0.78);
+  --tt-color-highlight-orange: rgba(251, 146, 60, 0.34);
+  --tt-color-highlight-orange-contrast: rgba(253, 186, 116, 0.82);
+  --tt-color-highlight-yellow: rgba(250, 204, 21, 0.34);
+  --tt-color-highlight-yellow-contrast: rgba(254, 240, 138, 0.84);
+  --tt-color-highlight-green: rgba(74, 222, 128, 0.3);
+  --tt-color-highlight-green-contrast: rgba(187, 247, 208, 0.82);
+  --tt-color-highlight-blue: rgba(96, 165, 250, 0.3);
+  --tt-color-highlight-blue-contrast: rgba(191, 219, 254, 0.82);
+  --tt-color-highlight-purple: rgba(192, 132, 252, 0.32);
+  --tt-color-highlight-purple-contrast: rgba(233, 213, 255, 0.84);
+  --tt-color-highlight-pink: rgba(244, 114, 182, 0.3);
+  --tt-color-highlight-pink-contrast: rgba(251, 207, 232, 0.82);
+  --tt-color-highlight-red: rgba(248, 113, 113, 0.3);
+  --tt-color-highlight-red-contrast: rgba(254, 202, 202, 0.82);
   --tt-shadow-elevated-md:
     0px 16px 48px 0px rgba(0, 0, 0, 0.5), 0px 12px 24px 0px rgba(0, 0, 0, 0.24),
     0px 6px 8px 0px rgba(0, 0, 0, 0.22), 0px 2px 3px 0px rgba(0, 0, 0, 0.12);

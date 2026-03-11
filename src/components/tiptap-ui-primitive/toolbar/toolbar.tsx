@@ -155,6 +155,190 @@ const useToolbarKeyboardNav = (
   }, [toolbarRef]);
 };
 
+const useToolbarSwipeScroll = (
+  toolbarRef: React.RefObject<HTMLDivElement | null>,
+): {
+  onTouchStartCapture: React.TouchEventHandler<HTMLDivElement>;
+  onTouchMoveCapture: React.TouchEventHandler<HTMLDivElement>;
+  onTouchEndCapture: React.TouchEventHandler<HTMLDivElement>;
+  onTouchCancelCapture: React.TouchEventHandler<HTMLDivElement>;
+  onClickCapture: React.MouseEventHandler<HTMLDivElement>;
+} => {
+  const dragStateRef = React.useRef<{
+    touchId: number | null;
+    startX: number;
+    startScrollLeft: number;
+    isDragging: boolean;
+  }>({
+    touchId: null,
+    startX: 0,
+    startScrollLeft: 0,
+    isDragging: false,
+  });
+  const suppressClickRef = React.useRef(false);
+  const clearSuppressClickTimeoutRef = React.useRef<number | null>(null);
+
+  const clearSuppressClickTimeout = React.useCallback(() => {
+    if (clearSuppressClickTimeoutRef.current !== null) {
+      window.clearTimeout(clearSuppressClickTimeoutRef.current);
+      clearSuppressClickTimeoutRef.current = null;
+    }
+  }, []);
+
+  React.useEffect(
+    () => () => {
+      clearSuppressClickTimeout();
+    },
+    [clearSuppressClickTimeout],
+  );
+
+  const stopDragging = React.useCallback(
+    (touchId: number) => {
+      const dragState = dragStateRef.current;
+
+      if (dragState.touchId !== touchId) {
+        return;
+      }
+
+      if (dragState.isDragging) {
+        suppressClickRef.current = true;
+        clearSuppressClickTimeout();
+        clearSuppressClickTimeoutRef.current = window.setTimeout(() => {
+          suppressClickRef.current = false;
+          clearSuppressClickTimeoutRef.current = null;
+        }, 0);
+      }
+
+      dragStateRef.current = {
+        touchId: null,
+        startX: 0,
+        startScrollLeft: 0,
+        isDragging: false,
+      };
+    },
+    [clearSuppressClickTimeout, toolbarRef],
+  );
+
+  const onTouchStartCapture = React.useCallback<
+    React.TouchEventHandler<HTMLDivElement>
+  >(
+    (event) => {
+      if (event.touches.length !== 1) {
+        return;
+      }
+
+      const toolbar = toolbarRef.current;
+      if (!toolbar || toolbar.scrollWidth <= toolbar.clientWidth) {
+        return;
+      }
+
+      const touch = event.touches[0];
+      dragStateRef.current = {
+        touchId: touch.identifier,
+        startX: touch.clientX,
+        startScrollLeft: toolbar.scrollLeft,
+        isDragging: false,
+      };
+    },
+    [toolbarRef],
+  );
+
+  const onTouchMoveCapture = React.useCallback<
+    React.TouchEventHandler<HTMLDivElement>
+  >(
+    (event) => {
+      const toolbar = toolbarRef.current;
+      const dragState = dragStateRef.current;
+
+      if (!toolbar || dragState.touchId === null) {
+        return;
+      }
+
+      const touch = Array.from(event.touches).find(
+        (entry) => entry.identifier === dragState.touchId,
+      );
+
+      if (!touch) {
+        return;
+      }
+
+      const deltaX = touch.clientX - dragState.startX;
+      if (!dragState.isDragging && Math.abs(deltaX) > 6) {
+        dragState.isDragging = true;
+      }
+
+      if (!dragState.isDragging) {
+        return;
+      }
+
+      toolbar.scrollLeft = dragState.startScrollLeft - deltaX;
+      event.preventDefault();
+    },
+    [toolbarRef],
+  );
+
+  const onTouchEndCapture = React.useCallback<
+    React.TouchEventHandler<HTMLDivElement>
+  >(
+    (event) => {
+      const dragState = dragStateRef.current;
+      if (dragState.touchId === null) {
+        return;
+      }
+
+      const touch = Array.from(event.changedTouches).find(
+        (entry) => entry.identifier === dragState.touchId,
+      );
+
+      if (touch) {
+        stopDragging(touch.identifier);
+      }
+    },
+    [stopDragging],
+  );
+
+  const onTouchCancelCapture = React.useCallback<
+    React.TouchEventHandler<HTMLDivElement>
+  >(
+    (event) => {
+      const dragState = dragStateRef.current;
+      if (dragState.touchId === null) {
+        return;
+      }
+
+      const touch = Array.from(event.changedTouches).find(
+        (entry) => entry.identifier === dragState.touchId,
+      );
+
+      if (touch) {
+        stopDragging(touch.identifier);
+      }
+    },
+    [stopDragging],
+  );
+
+  const onClickCapture = React.useCallback<
+    React.MouseEventHandler<HTMLDivElement>
+  >((event) => {
+    if (!suppressClickRef.current) {
+      return;
+    }
+
+    suppressClickRef.current = false;
+    clearSuppressClickTimeout();
+    event.preventDefault();
+    event.stopPropagation();
+  }, [clearSuppressClickTimeout]);
+
+  return {
+    onTouchStartCapture,
+    onTouchMoveCapture,
+    onTouchEndCapture,
+    onTouchCancelCapture,
+    onClickCapture,
+  };
+};
+
 const useToolbarVisibility = (
   ref: React.RefObject<HTMLDivElement | null>,
 ): boolean => {
@@ -264,6 +448,7 @@ export const Toolbar = React.forwardRef<HTMLDivElement, ToolbarProps>(
   ({ children, className, variant = "fixed", ...props }, ref) => {
     const toolbarRef = React.useRef<HTMLDivElement>(null);
     const isVisible = useToolbarVisibility(toolbarRef);
+    const swipeHandlers = useToolbarSwipeScroll(toolbarRef);
 
     useToolbarKeyboardNav(toolbarRef);
 
@@ -276,6 +461,7 @@ export const Toolbar = React.forwardRef<HTMLDivElement, ToolbarProps>(
         aria-label="toolbar"
         data-variant={variant}
         className={cn("tiptap-toolbar", className)}
+        {...swipeHandlers}
         {...props}
       >
         {children}
