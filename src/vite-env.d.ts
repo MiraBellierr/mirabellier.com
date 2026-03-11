@@ -19,6 +19,9 @@ declare module "*.module.css";
 declare module "*.module.scss";
 
 interface ImportMetaEnv {
+  readonly BASE_URL: string;
+  readonly DEV: boolean;
+  readonly PROD: boolean;
   readonly VITE_API_BASE?: string;
   readonly VITE_ANIME_STORAGE_KEY?: string;
 }

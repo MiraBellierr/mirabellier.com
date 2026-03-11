@@ -1,4 +1,23 @@
-// Cleanup worker used to remove previously installed mirabellier service workers.
+const STATIC_CHUNK_CACHE = "mirabellier-static-chunks-v1";
+
+function isCacheableStaticChunk(request) {
+  if (request.method !== "GET") {
+    return false;
+  }
+
+  const url = new URL(request.url);
+
+  if (url.origin !== self.location.origin) {
+    return false;
+  }
+
+  if (!url.pathname.startsWith("/assets/")) {
+    return false;
+  }
+
+  return request.destination === "script" || request.destination === "style";
+}
+
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
@@ -10,18 +29,50 @@ self.addEventListener("activate", (event) => {
 
       await Promise.all(
         cacheNames
-          .filter((cacheName) => cacheName.startsWith("mirabellier-"))
+          .filter(
+            (cacheName) =>
+              cacheName.startsWith("mirabellier-") &&
+              cacheName !== STATIC_CHUNK_CACHE,
+          )
           .map((cacheName) => caches.delete(cacheName)),
       );
 
-      await self.registration.unregister();
+      await self.clients.claim();
+    })(),
+  );
+});
 
-      const clients = await self.clients.matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      });
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
 
-      await Promise.all(clients.map((client) => client.navigate(client.url)));
+  if (!isCacheableStaticChunk(request)) {
+    return;
+  }
+
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(STATIC_CHUNK_CACHE);
+      const cachedResponse = await cache.match(request);
+
+      if (cachedResponse) {
+        void fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse.ok) {
+              return cache.put(request, networkResponse.clone());
+            }
+          })
+          .catch(() => {});
+
+        return cachedResponse;
+      }
+
+      const networkResponse = await fetch(request);
+
+      if (networkResponse.ok) {
+        await cache.put(request, networkResponse.clone());
+      }
+
+      return networkResponse;
     })(),
   );
 });

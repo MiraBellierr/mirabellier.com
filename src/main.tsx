@@ -5,8 +5,6 @@ import { API_BASE } from "./lib/config";
 
 const loadCss = () => import("./index.css");
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
-const SERVICE_WORKER_CLEANUP_RELOAD_GUARD =
-  "mirabellier-service-worker-cleanup-reload";
 
 function preconnectOrigin(url: string) {
   if (typeof document === "undefined") {
@@ -75,49 +73,32 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-async function cleanupServiceWorkers() {
-  if (!("serviceWorker" in navigator)) {
+async function requestPersistentStorage() {
+  if (!("storage" in navigator) || !navigator.storage.persist) {
     return;
   }
 
-  let hadRegistration = false;
-
   try {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    hadRegistration = registrations.length > 0;
+    const alreadyPersisted = navigator.storage.persisted
+      ? await navigator.storage.persisted()
+      : false;
 
-    await Promise.all(
-      registrations.map((registration) => registration.unregister()),
-    );
-  } catch {
-    // Ignore service worker cleanup failures and keep loading the app.
-  }
-
-  if ("caches" in window) {
-    try {
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames
-          .filter((cacheName) => cacheName.startsWith("mirabellier-"))
-          .map((cacheName) => caches.delete(cacheName)),
-      );
-    } catch {
-      // Ignore cache cleanup failures and keep loading the app.
+    if (!alreadyPersisted) {
+      await navigator.storage.persist();
     }
-  }
-
-  if (
-    hadRegistration &&
-    sessionStorage.getItem(SERVICE_WORKER_CLEANUP_RELOAD_GUARD) !== "1"
-  ) {
-    sessionStorage.setItem(SERVICE_WORKER_CLEANUP_RELOAD_GUARD, "1");
-    window.location.reload();
+  } catch {
+    // Ignore storage persistence failures and keep loading the app.
   }
 }
 
-if ("serviceWorker" in navigator) {
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    void cleanupServiceWorkers();
+    void navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => requestPersistentStorage())
+      .catch(() => {
+        // Ignore registration failures and keep loading the app.
+      });
   });
 }
 
