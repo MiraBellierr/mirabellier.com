@@ -2,13 +2,15 @@ import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
+import DeferredAnimatedImage from "@/components/DeferredAnimatedImage";
 
 import { useEffect, useState } from "react";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 
 import { Link } from "react-router-dom";
 import { API_BASE } from "@/lib/config";
-import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
+import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
+import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 
 type AnimeItem = { id: string; title: string; url: string; img: string };
 const STORAGE_KEY = "mirabellier-anime-list";
@@ -75,32 +77,120 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    const load = async () => {
+    let idleCallbackId: number | null = null;
+    let lcpSettledTimeout: ReturnType<typeof setTimeout> | null = null;
+    let fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
+    let observer: PerformanceObserver | null = null;
+    let hasQueuedRefresh = false;
+
+    const hydrateFromCache = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          setAnimeList(JSON.parse(raw));
+        }
+      } catch {
+        // Fall back to bundled defaults if cache parsing fails.
+      }
+    };
+
+    const refreshAnimeList = async () => {
       try {
         const res = await fetch(`${API_BASE}/anime`);
         if (res.ok) {
           const data = await res.json();
           setAnimeList(data);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           return;
         }
       } catch (err) {
         console.error("Failed fetching anime from server", err);
       }
+    };
 
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) setAnimeList(JSON.parse(raw));
-      } catch {
-        // Already using defaultAnime as initial state
+    const queueRefresh = () => {
+      if (hasQueuedRefresh) {
+        return;
+      }
+
+      hasQueuedRefresh = true;
+
+      if ("requestIdleCallback" in window) {
+        idleCallbackId = requestIdleCallback(() => {
+          void refreshAnimeList();
+        }, { timeout: 4000 });
+      } else {
+        fallbackTimeout = setTimeout(() => {
+          void refreshAnimeList();
+        }, 0);
       }
     };
 
-    // Defer anime fetch until browser is idle to avoid blocking critical path
-    if ("requestIdleCallback" in window) {
-      requestIdleCallback(() => load(), { timeout: 2000 });
+    const scheduleAfterSettledLcp = () => {
+      if (lcpSettledTimeout !== null) {
+        clearTimeout(lcpSettledTimeout);
+      }
+
+      lcpSettledTimeout = setTimeout(queueRefresh, 1200);
+    };
+
+    const scheduleAfterLoad = () => {
+      if (
+        "PerformanceObserver" in window &&
+        PerformanceObserver.supportedEntryTypes?.includes(
+          "largest-contentful-paint",
+        )
+      ) {
+        try {
+          observer = new PerformanceObserver((entryList) => {
+            if (entryList.getEntries().length > 0) {
+              scheduleAfterSettledLcp();
+            }
+          });
+
+          observer.observe({
+            type: "largest-contentful-paint",
+            buffered: true,
+          });
+
+          // If the browser never reports an LCP candidate, still refresh later.
+          fallbackTimeout = setTimeout(queueRefresh, 5000);
+          return;
+        } catch {
+          observer = null;
+        }
+      }
+
+      fallbackTimeout = setTimeout(queueRefresh, 3500);
+    };
+
+    hydrateFromCache();
+
+    // Keep the above-the-fold render independent from the anime API and wait
+    // until LCP has settled before refreshing sidebar content.
+    if (document.readyState === "complete") {
+      scheduleAfterLoad();
     } else {
-      setTimeout(load, 100);
+      window.addEventListener("load", scheduleAfterLoad, { once: true });
     }
+
+    return () => {
+      observer?.disconnect();
+
+      if (idleCallbackId !== null && "cancelIdleCallback" in window) {
+        cancelIdleCallback(idleCallbackId);
+      }
+
+      if (lcpSettledTimeout !== null) {
+        clearTimeout(lcpSettledTimeout);
+      }
+
+      if (fallbackTimeout !== null) {
+        clearTimeout(fallbackTimeout);
+      }
+
+      window.removeEventListener("load", scheduleAfterLoad);
+    };
   }, []);
 
   return (
@@ -116,14 +206,16 @@ const Home = () => {
             <Navigation />
 
             <div className=" mt-3 mb-auto justify-center items-center flex">
-              <img
+              <DeferredAnimatedImage
                 className="h-101 border border-blue-700 shadow-md rounded-2xl"
-                src={kannaKobayashi}
+                posterSrc={kannaKobayashiPoster}
+                animatedSrc={kannaKobayashi}
                 width="300"
                 height="404"
                 alt="anime gif"
                 loading="eager"
                 fetchPriority="high"
+                decoding="async"
               />
             </div>
           </div>

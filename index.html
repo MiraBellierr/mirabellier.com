@@ -5,15 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mirabellier ⭐ — Cute thoughts & cozy corners</title>
 
-    <!-- DNS prefetch and preconnect for faster API requests -->
-    <link rel="dns-prefetch" href="https://mirabellier.com" />
-    <link rel="preconnect" href="https://mirabellier.com" crossorigin />
+    <!-- Keep preconnects limited to the font origins used during initial render -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Quicksand:wght@400;500;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Quicksand:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
 
     <!-- Preload LCP background image in WebP format (smaller, faster) with JPEG fallback -->
     <link
@@ -96,7 +102,7 @@
       }
     </style>
 
-    <link rel="icon" href="https://mirabellier.com/favicon.jpg" />
+    <link rel="icon" href="/favicon.jpg" />
     <link rel="canonical" href="https://mirabellier.com/" />
     <meta
       name="description"
@@ -111,12 +117,6 @@
       name="robots"
       content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
     />
-
-    <!-- Resource hints for HTTP/2 preloading -->
-    <link rel="preconnect" href="https://mirabellier.com" crossorigin />
-    <link rel="dns-prefetch" href="https://mirabellier.com" />
-    <link rel="preconnect" href="https://media1.tenor.com" crossorigin />
-    <link rel="dns-prefetch" href="https://media1.tenor.com" />
 
     <meta property="og:type" content="website" />
     <meta

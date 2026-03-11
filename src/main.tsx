@@ -1,11 +1,43 @@
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
+import { API_BASE } from "./lib/config";
 
 const loadCss = () => import("./index.css");
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
 const SERVICE_WORKER_CLEANUP_RELOAD_GUARD =
   "mirabellier-service-worker-cleanup-reload";
+
+function preconnectOrigin(url: string) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  try {
+    const origin = new URL(url, window.location.origin).origin;
+
+    if (origin === window.location.origin) {
+      return;
+    }
+
+    if (!document.head.querySelector(`link[rel="preconnect"][href="${origin}"]`)) {
+      const preconnect = document.createElement("link");
+      preconnect.rel = "preconnect";
+      preconnect.href = origin;
+      preconnect.crossOrigin = "";
+      document.head.appendChild(preconnect);
+    }
+
+    if (!document.head.querySelector(`link[rel="dns-prefetch"][href="${origin}"]`)) {
+      const dnsPrefetch = document.createElement("link");
+      dnsPrefetch.rel = "dns-prefetch";
+      dnsPrefetch.href = origin;
+      document.head.appendChild(dnsPrefetch);
+    }
+  } catch {
+    // Ignore malformed API URLs and keep app boot resilient.
+  }
+}
 
 function reloadForUpdatedBuild() {
   if (sessionStorage.getItem(CHUNK_RELOAD_GUARD) === "1") {
@@ -106,11 +138,13 @@ const preloadBackgrounds = () => {
 // Kick CSS loading as soon as the first frame can be scheduled to avoid idle delays.
 if (typeof requestAnimationFrame === "function") {
   requestAnimationFrame(() => {
+    preconnectOrigin(API_BASE);
     loadCss();
     preloadBackgrounds();
   });
 } else {
   setTimeout(() => {
+    preconnectOrigin(API_BASE);
     loadCss();
     preloadBackgrounds();
   }, 0);

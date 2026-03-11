@@ -8,6 +8,10 @@ declare module "*.avif";
 declare module "*.mp4";
 declare module "*.webm";
 declare module "*.mp3";
+declare module "*?inline" {
+  const src: string;
+  export default src;
+}
 
 declare module "*.css";
 declare module "*.scss";
