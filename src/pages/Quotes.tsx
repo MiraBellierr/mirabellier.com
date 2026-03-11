@@ -225,8 +225,49 @@ const Quotes = () => {
 
           <main className="w-full lg:w-3/5 space-y-2 p-4">
             {loading ? (
-              <div className="card-border p-4 text-blue-600">
-                Loading quotes...
+              <div className="space-y-3">
+                <div className="relative space-y-2">
+                  <img
+                    className="pointer-events-none absolute h-14 w-14 object-contain"
+                    src="/flower.png"
+                    width="56"
+                    height="56"
+                    alt=""
+                    aria-hidden="true"
+                    style={{
+                      top: "-18px",
+                      right: "-10px",
+                      zIndex: 2,
+                    }}
+                  />
+
+                  <section className="card-border space-y-3 p-4 bg-white/55">
+                    <h2 className="mb-2 text-xl font-bold text-blue-700">
+                      Loading quotes…↻
+                      <pre className="whitespace-pre-wrap font-mono text-sm">
+                        {`
+                                                        
+                            ╲⠀╲⠀╲             ╲
+
+                            ⠀ ╲⠀╲⠀❀ ⠀          ╲ ⠀⠀⠀⠀⠀
+                            
+                            ⠀⠀⠀❀⠀ ╲⠀⠀⠀⠀⠀⠀⠀   ✿
+                            
+                            ⠀⠀⠀ ⠀⠀⠀⠀✿
+                            
+                            ╲⠀╲⠀╲             ╲
+                            
+                            ⠀⠀╲⠀╲⠀☆ ⠀          ╲ ⠀⠀⠀⠀⠀
+                            
+                                 ⠀☆⠀ ╲⠀⠀⠀⠀⠀⠀⠀   ★
+                            
+                                 ⠀⠀⠀ ⠀⠀★
+                            
+                        `}
+                      </pre>
+                    </h2>
+                  </section>
+                </div>
               </div>
             ) : error && !data ? (
               <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
