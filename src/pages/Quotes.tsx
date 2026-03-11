@@ -200,10 +200,6 @@ const Quotes = () => {
     };
   }, []);
 
-  const currentUtcRecordedDate = getCurrentUtcRecordedDate();
-  const waitingForLatestUtcQuote =
-    !!data && !isCurrentUtcQuotePayload(data, currentUtcRecordedDate);
-
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
@@ -242,18 +238,7 @@ const Quotes = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {waitingForLatestUtcQuote ? (
-                  <div className="rounded-xl border border-blue-300 bg-blue-50 p-4 text-blue-700">
-                    Waiting for the latest UTC quote snapshot. Refreshing
-                    automatically...
-                  </div>
-                ) : null}
-                {error ? (
-                  <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-yellow-800">
-                    Failed to refresh quotes at the UTC rollover. Showing the
-                    last loaded snapshot.
-                  </div>
-                ) : null}
+        
                 <div className="relative space-y-2">
                     <img
                       className="pointer-events-none absolute h-14 w-14 object-contain"
