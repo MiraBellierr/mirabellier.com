@@ -2,11 +2,10 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 
-declare const __SW_VERSION__: string;
-
 const loadCss = () => import("./index.css");
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
-const serviceWorkerUrl = `/sw.js?v=${encodeURIComponent(__SW_VERSION__)}`;
+const SERVICE_WORKER_CLEANUP_RELOAD_GUARD =
+  "mirabellier-service-worker-cleanup-reload";
 
 function reloadForUpdatedBuild() {
   if (sessionStorage.getItem(CHUNK_RELOAD_GUARD) === "1") {
@@ -44,35 +43,49 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-if ("serviceWorker" in navigator) {
-  let isRefreshing = false;
+async function cleanupServiceWorkers() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
 
-  const refreshWorker = () =>
-    navigator.serviceWorker.getRegistration().then((registration) => {
-      return registration?.update();
-    });
+  let hadRegistration = false;
 
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (isRefreshing) return;
-    isRefreshing = true;
-    window.location.reload();
-  });
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    hadRegistration = registrations.length > 0;
 
-  window.addEventListener("pageshow", () => {
-    refreshWorker().catch(() => {});
-  });
+    await Promise.all(
+      registrations.map((registration) => registration.unregister()),
+    );
+  } catch {
+    // Ignore service worker cleanup failures and keep loading the app.
+  }
 
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      refreshWorker().catch(() => {});
+  if ("caches" in window) {
+    try {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter((cacheName) => cacheName.startsWith("mirabellier-"))
+          .map((cacheName) => caches.delete(cacheName)),
+      );
+    } catch {
+      // Ignore cache cleanup failures and keep loading the app.
     }
-  });
+  }
 
+  if (
+    hadRegistration &&
+    sessionStorage.getItem(SERVICE_WORKER_CLEANUP_RELOAD_GUARD) !== "1"
+  ) {
+    sessionStorage.setItem(SERVICE_WORKER_CLEANUP_RELOAD_GUARD, "1");
+    window.location.reload();
+  }
+}
+
+if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register(serviceWorkerUrl, { updateViaCache: "none" })
-      .then((registration) => registration.update())
-      .catch(() => {});
+    void cleanupServiceWorkers();
   });
 }
 
