@@ -3,7 +3,12 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { modulePreloadPlugin } from "./vite-plugin-preload";
 
+const swVersion = process.env.GITHUB_SHA || new Date().toISOString();
+
 export default defineConfig({
+  define: {
+    __SW_VERSION__: JSON.stringify(swVersion),
+  },
   plugins: [react(), modulePreloadPlugin()],
   base: "/",
   optimizeDeps: {

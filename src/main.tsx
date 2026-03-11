@@ -2,8 +2,11 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 
+declare const __SW_VERSION__: string;
+
 const loadCss = () => import("./index.css");
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
+const serviceWorkerUrl = `/sw.js?v=${encodeURIComponent(__SW_VERSION__)}`;
 
 function reloadForUpdatedBuild() {
   if (sessionStorage.getItem(CHUNK_RELOAD_GUARD) === "1") {
@@ -40,6 +43,38 @@ window.addEventListener("unhandledrejection", (event) => {
     reloadForUpdatedBuild();
   }
 });
+
+if ("serviceWorker" in navigator) {
+  let isRefreshing = false;
+
+  const refreshWorker = () =>
+    navigator.serviceWorker.getRegistration().then((registration) => {
+      return registration?.update();
+    });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    window.location.reload();
+  });
+
+  window.addEventListener("pageshow", () => {
+    refreshWorker().catch(() => {});
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshWorker().catch(() => {});
+    }
+  });
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register(serviceWorkerUrl, { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch(() => {});
+  });
+}
 
 // Preload theme background images for faster LCP
 const preloadBackgrounds = () => {

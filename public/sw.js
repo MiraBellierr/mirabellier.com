@@ -1,5 +1,5 @@
 // Service Worker for instant repeat visits and offline support
-const CACHE_VERSION = "v7";
+const CACHE_VERSION = "v8";
 const CACHE_NAME = `mirabellier-${CACHE_VERSION}`;
 const EXTERNAL_CACHE_NAME = `mirabellier-external-${CACHE_VERSION}`;
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days for external resources

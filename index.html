@@ -154,40 +154,6 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Register service worker for instant repeat visits -->
-    <script>
-      if ("serviceWorker" in navigator) {
-        let isRefreshing = false;
-        const refreshWorker = () =>
-          navigator.serviceWorker.getRegistration().then((registration) => {
-            return registration?.update();
-          });
-
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          if (isRefreshing) return;
-          isRefreshing = true;
-          window.location.reload();
-        });
-
-        window.addEventListener("pageshow", () => {
-          refreshWorker().catch(() => {});
-        });
-
-        document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") {
-            refreshWorker().catch(() => {});
-          }
-        });
-
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/sw.js", { updateViaCache: "none" })
-            .then((registration) => registration.update())
-            .catch(() => {});
-        });
-      }
-    </script>
-
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
