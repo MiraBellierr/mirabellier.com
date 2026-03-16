@@ -692,6 +692,37 @@ h6 {
   transform: scale(1.03);
 }
 
+.dark .blog-page,
+.dark .blog-post-page {
+  --blog-heading-1: #f5e8ff;
+  --blog-heading-2: #e9d5ff;
+  --blog-heading-3: #d8b4fe;
+  --blog-heading-4: #c4b5fd;
+  --blog-heading-shadow: 0 2px 14px rgba(160, 120, 255, 0.22);
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h1,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h1 {
+  color: var(--blog-heading-1) !important;
+  text-shadow: var(--blog-heading-shadow);
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h2,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h2 {
+  color: var(--blog-heading-2) !important;
+  text-shadow: var(--blog-heading-shadow);
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h3,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h3 {
+  color: var(--blog-heading-3) !important;
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h4,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h4 {
+  color: var(--blog-heading-4) !important;
+}
+
 .blog-card-link {
   display: block;
   min-width: 0;

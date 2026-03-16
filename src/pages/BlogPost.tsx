@@ -324,7 +324,7 @@ const BlogPost = () => {
   };
 
   return (
-    <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
+    <div className="blog-post-page min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
       <div
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
