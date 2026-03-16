@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const STORAGE_KEY = "mirabellier-theme";
+const THEME_STORAGE_KEY = "mirabellier-theme";
 
 const safely = (fn: () => void) => {
   try {
@@ -20,19 +20,31 @@ const setDocumentDark = (isDark: boolean) => {
 
 const DarkToggle: React.FC = () => {
   const [isDark, setIsDark] = useState<boolean>(() => {
-    let storedValue: string | null = null;
+    let storedTheme: string | null = null;
+
     safely(() => {
-      const v = localStorage.getItem(STORAGE_KEY);
-      if (v) storedValue = v;
+      storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
     });
-    if (storedValue) return storedValue === "dark";
-    return false;
+
+    if (storedTheme === "dark") {
+      return true;
+    }
+
+    if (storedTheme === "light") {
+      return false;
+    }
+
+    if (typeof document === "undefined") {
+      return false;
+    }
+
+    return document.documentElement.classList.contains("dark");
   });
 
   useEffect(() => {
     setDocumentDark(isDark);
     safely(() => {
-      localStorage.setItem(STORAGE_KEY, isDark ? "dark" : "light");
+      window.localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
     });
     safely(() => {
       // Clear any stale inline theme background so CSS variables from the

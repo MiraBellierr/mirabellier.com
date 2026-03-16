@@ -73,38 +73,30 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-async function requestPersistentStorage() {
-  if (!("storage" in navigator) || !navigator.storage.persist) {
-    return;
-  }
-
-  try {
-    const alreadyPersisted = navigator.storage.persisted
-      ? await navigator.storage.persisted()
-      : false;
-
-    if (!alreadyPersisted) {
-      await navigator.storage.persist();
-    }
-  } catch {
-    // Ignore storage persistence failures and keep loading the app.
-  }
-}
-
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    void navigator.serviceWorker
-      .register("/sw.js")
-      .then(() => requestPersistentStorage())
-      .catch(() => {
-        // Ignore registration failures and keep loading the app.
-      });
+    void navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Ignore registration failures and keep loading the app.
+    });
   });
 }
 
 // Preload theme background images for faster LCP
 const preloadBackgrounds = () => {
-  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  let storedTheme: string | null = null;
+
+  try {
+    storedTheme = window.localStorage.getItem("mirabellier-theme");
+  } catch {
+    // Ignore storage access failures and fall back to system preference.
+  }
+
+  const isDark =
+    storedTheme === "dark"
+      ? true
+      : storedTheme === "light"
+        ? false
+        : window.matchMedia("(prefers-color-scheme: dark)").matches;
   const bgPath = isDark ? "/dark.jpg" : "/light.jpg";
 
   const link = document.createElement("link");

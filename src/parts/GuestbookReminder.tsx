@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "mirabellier-guestbook-reminder-shown";
 const SHOW_DELAY_MS = 2000;
 const DISPLAY_DURATION_MS = 4000;
 const EXIT_DURATION_MS = 760;
@@ -10,16 +9,6 @@ type ReminderState = "hidden" | "pending" | "entering" | "visible" | "leaving";
 function getInitialState(): ReminderState {
   if (typeof window === "undefined") {
     return "hidden";
-  }
-
-  try {
-    if (window.sessionStorage.getItem(STORAGE_KEY) === "1") {
-      return "hidden";
-    }
-
-    window.sessionStorage.setItem(STORAGE_KEY, "1");
-  } catch {
-    // Ignore storage failures and still show the reminder once.
   }
 
   return "pending";
@@ -95,9 +84,7 @@ const GuestbookReminder = () => {
       aria-live="polite"
     >
       <div className="site-entry-toast">
-        <p className="site-entry-toast__message">
-          {"Before you leave\nPlease sign your attendance in the guestbook!\n♡⸜(˶˃ ᵕ ˂˶)⸝♡"}
-        </p>
+        <p className="site-entry-toast__message">Sign the guestbook before you go. {"<3"}</p>
       </div>
     </div>
   );

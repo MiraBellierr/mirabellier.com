@@ -1,11 +1,40 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
+const CURSOR_STORAGE_KEY = "mirabellier-cursor-enabled";
+
 type CursorContextType = {
   isCustomCursor: boolean;
   toggleCursor: () => void;
 };
 
+function getStoredCursorEnabled() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(CURSOR_STORAGE_KEY);
+
+    if (storedValue === "true") {
+      return true;
+    }
+
+    if (storedValue === "false") {
+      return false;
+    }
+  } catch {
+    // Ignore storage failures and fall back to device defaults.
+  }
+
+  return null;
+}
+
 function getDefaultCursorEnabled() {
+  const storedValue = getStoredCursorEnabled();
+  if (storedValue !== null) {
+    return storedValue;
+  }
+
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return true;
   }
@@ -22,6 +51,18 @@ const CursorContext = createContext<CursorContextType>({
 
 export function CursorProvider({ children }: { children: React.ReactNode }) {
   const [isCustomCursor, setIsCustomCursor] = useState(getDefaultCursorEnabled);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        CURSOR_STORAGE_KEY,
+        isCustomCursor ? "true" : "false",
+      );
+    } catch {
+      // Ignore storage failures and keep the setting working for this session.
+    }
+  }, [isCustomCursor]);
+
   useEffect(() => {
     if (!isCustomCursor) {
       document.body.style.cursor = "default";

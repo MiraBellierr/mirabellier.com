@@ -13,7 +13,6 @@ import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 
 type AnimeItem = { id: string; title: string; url: string; img: string };
-const STORAGE_KEY = "mirabellier-anime-list";
 
 const defaultAnime: AnimeItem[] = [
   {
@@ -83,24 +82,12 @@ const Home = () => {
     let observer: PerformanceObserver | null = null;
     let hasQueuedRefresh = false;
 
-    const hydrateFromCache = () => {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          setAnimeList(JSON.parse(raw));
-        }
-      } catch {
-        // Fall back to bundled defaults if cache parsing fails.
-      }
-    };
-
     const refreshAnimeList = async () => {
       try {
         const res = await fetch(`${API_BASE}/anime`);
         if (res.ok) {
           const data = await res.json();
           setAnimeList(data);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           return;
         }
       } catch (err) {
@@ -163,8 +150,6 @@ const Home = () => {
 
       fallbackTimeout = setTimeout(queueRefresh, 3500);
     };
-
-    hydrateFromCache();
 
     // Keep the above-the-fold render independent from the anime API and wait
     // until LCP has settled before refreshing sidebar content.

@@ -102,6 +102,22 @@
       }
     </style>
 
+    <script>
+      (function () {
+        try {
+          var storedTheme = window.localStorage.getItem("mirabellier-theme");
+
+          if (storedTheme === "dark") {
+            document.documentElement.classList.add("dark");
+          } else if (storedTheme === "light") {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch {
+          // Ignore storage access failures and fall back to the default theme.
+        }
+      })();
+    </script>
+
     <link rel="icon" href="/favicon.jpg" />
     <link rel="canonical" href="https://mirabellier.com/" />
     <meta
