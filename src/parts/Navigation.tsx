@@ -8,6 +8,7 @@ import about from "../assets/icons/img2-24.webp";
 import blog from "../assets/icons/img3-24.webp";
 import projects from "../assets/icons/img4-24.webp";
 import art from "../assets/icons/art-20.webp";
+import shrine from "../assets/icons/about-20.webp";
 import guestbook from "../assets/icons/cats-24.webp";
 import cursor from "../assets/icons/cursor-24.webp";
 import DarkToggle from "../components/DarkToggle";
@@ -63,6 +64,13 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) => pathname === "/quotes",
       },
       {
+        label: "shrine",
+        to: "/shrine",
+        icon: shrine,
+        isActive: (pathname) =>
+          pathname === "/shrine" || pathname.startsWith("/shrine/"),
+      },
+      {
         label: "guestbook",
         to: "/guestbook",
         icon: guestbook,
@@ -98,16 +106,52 @@ const Navigation = () => {
   const navigate = useNavigate();
   const { isCustomCursor } = useCursor();
   const avatarSrc = getAvatarSrc(auth?.user?.avatar);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const activeNavItem = navSections
+    .flatMap((section) => section.items)
+    .find((item) => item.isActive(location.pathname));
 
   useEffect(() => {
+    setMobileNavOpen(false);
     setAccountMenuOpen(false);
   }, [location.pathname]);
 
   return (
-    <aside className="site-display nav-shell mb-auto w-full rounded-xl border border-blue-300 bg-blue-100 shadow-md opacity-90">
-      <nav className="mb-4 space-y-4 p-4">
-        <h2 className="text-center text-lg font-bold text-blue-600">
+    <aside className="site-display nav-shell mb-auto w-full overflow-hidden rounded-xl border border-blue-300 bg-blue-100 shadow-md opacity-90">
+      <div className="border-b border-blue-200/80 p-3 lg:hidden dark:border-purple-300/20">
+        <button
+          aria-controls="site-navigation-panel"
+          aria-expanded={mobileNavOpen}
+          aria-label={mobileNavOpen ? "Collapse navigation" : "Expand navigation"}
+          className="flex w-full items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 text-left shadow-sm transition hover:bg-white/90 dark:bg-purple-900/40 dark:hover:bg-purple-900/60"
+          onClick={() => setMobileNavOpen((open) => !open)}
+          type="button"
+        >
+          <span className="min-w-0">
+            <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-blue-500 dark:text-purple-200">
+              site navigation
+            </span>
+            <span className="block truncate text-sm font-bold text-blue-700 dark:text-purple-50">
+              {activeNavItem ? activeNavItem.label : "menu"}
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className="inline-flex h-5 w-6 flex-shrink-0 flex-col justify-center gap-1"
+          >
+            <span className="block h-0.5 w-full rounded-full bg-blue-500 dark:bg-purple-200" />
+            <span className="block h-0.5 w-full rounded-full bg-blue-500 dark:bg-purple-200" />
+            <span className="block h-0.5 w-full rounded-full bg-blue-500 dark:bg-purple-200" />
+          </span>
+        </button>
+      </div>
+
+      <nav
+        id="site-navigation-panel"
+        className={`${mobileNavOpen ? "block" : "hidden"} mb-4 space-y-4 p-4 lg:block`}
+      >
+        <h2 className="hidden text-center text-lg font-bold text-blue-600 lg:block">
           site navigation
         </h2>
 

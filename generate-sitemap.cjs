@@ -23,6 +23,9 @@ const STATIC_ROUTES = [
   { path: "/home", priority: "0.8", changefreq: "weekly" },
   { path: "/about", priority: "0.8", changefreq: "monthly" },
   { path: "/projects", priority: "0.8", changefreq: "monthly" },
+  { path: "/shrine", priority: "0.8", changefreq: "monthly" },
+  { path: "/shrine/kanna", priority: "0.7", changefreq: "monthly" },
+  { path: "/shrine/rossina", priority: "0.7", changefreq: "monthly" },
   { path: "/quotes", priority: "0.8", changefreq: "daily" },
   { path: "/blog", priority: "0.9", changefreq: "daily" },
 ];
@@ -156,6 +159,34 @@ function getPostLastmod(post) {
   return source ? new Date(source).toISOString().split("T")[0] : undefined;
 }
 
+function readExistingBlogEntries() {
+  if (!fs.existsSync(OUTPUT_PATH)) {
+    return [];
+  }
+
+  const xml = fs.readFileSync(OUTPUT_PATH, "utf-8");
+  const matches = xml.matchAll(/<url>([\s\S]*?)<\/url>/g);
+  const entries = [];
+
+  for (const match of matches) {
+    const block = match[1];
+    const loc = block.match(/<loc>(.*?)<\/loc>/)?.[1];
+
+    if (!loc || !loc.startsWith(`${WEBSITE_BASE}/blog/`)) {
+      continue;
+    }
+
+    entries.push({
+      url: loc,
+      lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1],
+      changefreq: block.match(/<changefreq>(.*?)<\/changefreq>/)?.[1] || "monthly",
+      priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || "0.7",
+    });
+  }
+
+  return entries;
+}
+
 async function main() {
   try {
     console.log("Generating sitemap.xml...");
@@ -187,8 +218,10 @@ async function main() {
         console.log(`  Added ${posts.length} blog posts`);
       }
     } catch (error) {
+      const existingBlogEntries = readExistingBlogEntries();
+      existingBlogEntries.forEach((entry) => entries.push(entry));
       console.warn(
-        `  Could not fetch blog posts: ${error.message}. Continuing with static routes...`,
+        `  Could not fetch blog posts: ${error.message}. Continuing with ${existingBlogEntries.length} preserved blog URLs...`,
       );
     }
 

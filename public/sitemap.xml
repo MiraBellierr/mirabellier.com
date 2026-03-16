@@ -21,6 +21,30 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://mirabellier.com/projects</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mirabellier.com/shrine</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mirabellier.com/shrine/kanna</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mirabellier.com/shrine/rossina</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://mirabellier.com/quotes</loc>
     <lastmod>2026-03-16</lastmod>
     <changefreq>daily</changefreq>
