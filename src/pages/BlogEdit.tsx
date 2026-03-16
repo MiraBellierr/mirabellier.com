@@ -253,7 +253,7 @@ const BlogEdit = () => {
           style={{ backgroundImage: "var(--page-bg)" }}
         >
           <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
-            <div className="flex-col space-y-4 lg:sticky lg:top-4 lg:self-start lg:w-[250px]">
+            <div className="left-side-rail flex-col space-y-4 lg:w-[250px]">
               <Navigation />
               <div className=" mt-3 mb-auto justify-center items-center flex">
                 <img
@@ -267,7 +267,7 @@ const BlogEdit = () => {
             </div>
 
             <main className="w-full lg:flex-1 space-y-2 p-4 relative">
-              <h2 className="font-bold text-2xl text-blue-600">
+              <h2 className="font-bold text-2xl text-blue-600 dark:text-purple-200">
                 {postId ? "Edit Post" : "Create a new Post"}
               </h2>
 
@@ -289,7 +289,10 @@ const BlogEdit = () => {
                 {}
 
                 <div className="flex flex-col p-2 space-y-2">
-                  <label className="font-bold text-blue-600" htmlFor="title">
+                  <label
+                    className="font-bold text-blue-600 dark:text-purple-200"
+                    htmlFor="title"
+                  >
                     Title
                   </label>
                   <input
@@ -307,7 +310,7 @@ const BlogEdit = () => {
 
                 <div className="flex flex-col p-2 space-y-2">
                   <label
-                    className="font-bold text-blue-600"
+                    className="font-bold text-blue-600 dark:text-purple-200"
                     htmlFor="shortDescription"
                   >
                     Short description
@@ -326,7 +329,7 @@ const BlogEdit = () => {
 
                 <div className="flex flex-col p-2 space-y-2">
                   <label
-                    className="font-bold text-blue-600"
+                    className="font-bold text-blue-600 dark:text-purple-200"
                     htmlFor="thumbnail"
                   >
                     Thumbnail URL
@@ -344,7 +347,10 @@ const BlogEdit = () => {
                 </div>
 
                 <div className="flex flex-col p-2 space-y-2">
-                  <label className="font-bold text-blue-600" htmlFor="tags">
+                  <label
+                    className="font-bold text-blue-600 dark:text-purple-200"
+                    htmlFor="tags"
+                  >
                     Tags
                   </label>
 
@@ -432,7 +438,7 @@ const BlogEdit = () => {
                 <div className="flex flex-col p-2 space-y-2">
                   <div className="block 2xl:block">
                     <label
-                      className="font-bold text-blue-600"
+                      className="font-bold text-blue-600 dark:text-purple-200"
                       htmlFor="content"
                     >
                       Content
@@ -450,21 +456,23 @@ const BlogEdit = () => {
                     )}
                   </div>
                 </div>
-
-                <div className="flex p-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || isLoadingPost}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg hover:animate-wiggle disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoadingPost
-                      ? "Loading..."
-                      : isSubmitting
-                        ? "Publishing..."
-                        : "Publish Post"}
-                  </button>
-                </div>
               </form>
+
+              <div className="sticky bottom-4 z-30 flex justify-end pt-4">
+                <button
+                  type="submit"
+                  form="blog-form"
+                  disabled={isSubmitting || isLoadingPost}
+                  aria-label="Publish Post"
+                  className="inline-flex shrink-0 items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:animate-wiggle hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoadingPost
+                    ? "Loading..."
+                    : isSubmitting
+                      ? "Publishing..."
+                      : "Publish Post"}
+                </button>
+              </div>
             </main>
           </div>
         </div>
@@ -482,22 +490,6 @@ const BlogEdit = () => {
 
         <Footer />
       </div>
-
-      {/* Sticky publish button - outside main container for proper fixed positioning */}
-      <button
-        type="submit"
-        form="blog-form"
-        disabled={isSubmitting || isLoadingPost}
-        aria-label="Publish Post"
-        className={`fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-2xl transition-all duration-200 hover:scale-110 hover:shadow-blue-500/50 ${isSubmitting || isLoadingPost ? "opacity-70 cursor-not-allowed scale-95" : ""}`}
-        style={{ transform: "translateZ(0)" }}
-      >
-        {isLoadingPost
-          ? "⏳ Loading..."
-          : isSubmitting
-            ? "📤 Publishing..."
-            : "✨ Publish"}
-      </button>
     </>
   );
 };

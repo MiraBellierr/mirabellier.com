@@ -328,7 +328,7 @@ const BlogPost = () => {
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
-          <div className="flex-col space-y-4 lg:sticky lg:top-4 lg:self-start lg:w-[250px]">
+          <div className="left-side-rail flex-col space-y-4 lg:w-[250px]">
             <Navigation />
             <div className="mt-3 mb-auto justify-center items-center flex">
               <img

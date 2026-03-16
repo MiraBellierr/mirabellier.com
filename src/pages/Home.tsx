@@ -202,7 +202,7 @@ const Home = () => {
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-          <div className="flex-grow flex-col">
+          <div className="left-side-rail flex-grow flex-col">
             <Navigation />
 
             <div className=" mt-3 mb-auto justify-center items-center flex">
@@ -283,12 +283,14 @@ const Home = () => {
             </div>
           </main>
 
-          <aside className="w-full lg:w-1/5 mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+          <aside className="right-side-panel w-full lg:w-1/5 mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
             <div className="space-y-2 text-sm">
-              <h2 className="text-blue-600 font-bold text-lg text-center">
+              <h2 className="text-blue-500 dark:text-purple-200 font-bold text-lg text-center">
                 anime updatess!!
               </h2>
-              <p>updates of my currently watching anime displayed here</p>
+              <p className="text-blue-500 dark:text-purple-200">
+                updates of my currently watching anime displayed here
+              </p>
               <div className="flex flex-col mt-3">
                 <div className="max-h-[60vh] overflow-y-auto overflow-x-hidden pr-2">
                   {(showAllAnime
@@ -302,7 +304,7 @@ const Home = () => {
                       rel="noopener noreferrer"
                     >
                       <div className="hover:animate-zoom-out-once card-border rounded-lg p-2 mb-4">
-                        <h3 className="font-bold text-blue-700">
+                        <h3 className="font-bold text-blue-500 dark:text-purple-200">
                           {idx + 1}. {a.title}
                         </h3>
                         {a.img && (

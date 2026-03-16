@@ -105,7 +105,7 @@ const Navigation = () => {
   }, [location.pathname]);
 
   return (
-    <aside className="site-display mb-auto w-full rounded-xl border border-blue-300 bg-blue-100 shadow-md opacity-90">
+    <aside className="site-display nav-shell mb-auto w-full rounded-xl border border-blue-300 bg-blue-100 shadow-md opacity-90">
       <nav className="mb-4 space-y-4 p-4">
         <h2 className="text-center text-lg font-bold text-blue-600">
           site navigation

@@ -263,7 +263,7 @@ const Blog = () => {
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-          <div className="flex-grow flex-col space-y-4">
+          <div className="left-side-rail flex-grow flex-col space-y-4">
             <Navigation />
             <div className="h-101 border rounded-lg p-4 bg-blue-100 border-blue-300 shadow-md opacity-90">
               <h3 className="font-bold text-blue-600 mb-2">
@@ -487,7 +487,7 @@ const Blog = () => {
 
           <div className="flex-col">
             <div className="mt-3 mb-auto lg:w-[200px] space-y-4">
-              <aside className="w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4">
+              <aside className="right-side-panel w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4">
                 <div className="space-y-2 text-sm text-center font-bold">
                   <h2 className="text-blue-600 font-bold text-lg pb-2">
                     Create 📒
@@ -499,7 +499,7 @@ const Blog = () => {
                   </Link>
                 </div>
               </aside>
-              <aside className="w-full lg:w-[200px] mb-auto bg-blue-50 border border-blue-200 rounded-xl shadow-md p-4 hidden lg:block">
+              <aside className="right-side-panel w-full lg:w-[200px] mb-auto bg-blue-50 border border-blue-200 rounded-xl shadow-md p-4 hidden lg:block">
                 <h3 className="text-blue-700 font-bold text-lg text-center mb-2">
                   Blog Tips
                 </h3>

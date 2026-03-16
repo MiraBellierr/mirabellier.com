@@ -45,7 +45,7 @@ const DarkToggle: React.FC = () => {
     <button
       aria-label="Toggle dark mode"
       onClick={() => setIsDark((s) => !s)}
-      className="inline-flex items-center justify-center gap-1 text-sm text-center font-bold text-blue-500 hover:underline"
+      className="inline-flex items-center justify-center gap-1 text-center text-sm font-bold text-blue-500 hover:underline dark:text-purple-200"
       type="button"
     >
       <img

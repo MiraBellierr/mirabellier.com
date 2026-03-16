@@ -158,7 +158,7 @@ const Profile = () => {
           style={{ backgroundImage: "var(--page-bg)" }}
         >
           <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-            <div className="flex-grow flex-col">
+            <div className="left-side-rail flex-grow flex-col">
               <Navigation />
             </div>
             <main className="w-full lg:w-3/5 flex items-center justify-center p-4">
@@ -198,7 +198,7 @@ const Profile = () => {
           style={{ backgroundImage: "var(--page-bg)" }}
         >
           <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-            <div className="flex-grow flex-col">
+            <div className="left-side-rail flex-grow flex-col">
               <Navigation />
             </div>
             <main className="w-full lg:w-3/5 flex items-center justify-center p-4">
@@ -225,7 +225,7 @@ const Profile = () => {
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-          <div className="flex-grow flex-col">
+          <div className="left-side-rail flex-grow flex-col">
             <Navigation />
 
             <div className="mt-3 mb-auto justify-center items-center flex lg:w-[339px]">
@@ -451,7 +451,7 @@ const Profile = () => {
             </div>
           </main>
 
-          <aside className="w-full lg:w-1/5 mb-auto bg-blue-50 dark:bg-purple-950/30 border border-blue-200 dark:border-purple-500/30 rounded-xl shadow-sm p-4 hidden lg:block">
+          <aside className="right-side-panel w-full lg:w-1/5 mb-auto bg-blue-50 dark:bg-purple-950/30 border border-blue-200 dark:border-purple-500/30 rounded-xl shadow-sm p-4 hidden lg:block">
             <h3 className="text-blue-700 dark:text-purple-200 font-bold text-lg text-center mb-2">
               Profile Info
             </h3>

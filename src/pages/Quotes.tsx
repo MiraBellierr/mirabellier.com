@@ -209,7 +209,7 @@ const Quotes = () => {
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
-          <div className="flex-grow flex-col">
+          <div className="left-side-rail flex-grow flex-col">
             <Navigation />
 
             <div className="mt-3 mb-auto justify-center items-center hidden lg:flex">
@@ -323,7 +323,7 @@ const Quotes = () => {
             <Divider />
           </main>
 
-          <aside className="w-full lg:w-1/5 mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+          <aside className="right-side-panel w-full lg:w-1/5 mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
             <div className="space-y-3 text-sm text-blue-600">
               <h2 className="text-blue-700 font-bold text-lg text-center">
                 tiny quote corner

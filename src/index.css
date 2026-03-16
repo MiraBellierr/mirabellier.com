@@ -444,10 +444,35 @@ h6 {
   font-family: var(--font-display);
 }
 
+.nav-shell {
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+
+.left-side-rail {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .left-side-rail {
+    position: sticky;
+    top: 1rem;
+    align-self: flex-start;
+  }
+}
+
+.dark .right-side-panel :is(h2, h3, p, li, span, strong, div) {
+  color: rgb(233, 213, 255) !important;
+}
+
 [class*="border-"][class*="rounded"] {
   background: var(--tt-card-bg-color) !important;
   border-color: var(--tt-card-border-color) !important;
   color: var(--tt-color-text-gray) !important;
+}
+
+.dark .nav-shell {
+  background: var(--tt-card-bg-color) !important;
 }
 
 .dark body::before {
@@ -635,7 +660,7 @@ h6 {
   position: absolute;
   inset: 0px;
   border-radius: calc(0.75rem - 10px);
-  background: var(--tt-card-bg-color);
+  background: rgba(255, 255, 255, 0.94);
   z-index: 0;
   pointer-events: none;
 }
@@ -668,21 +693,19 @@ h6 {
 }
 
 .dark .card-border {
-  border-image-source: none !important;
-  border-image: none !important;
-  border-width: 1px !important;
+  border-image-source: url("/border-dark.png") !important;
+  border-image-slice: 10 !important;
+  border-image-repeat: round !important;
+  border-image-outset: 0 !important;
+  border-image-width: 10px !important;
+  border-width: 10px !important;
   border-style: solid !important;
-  border-color: rgba(200, 180, 255, 0.2) !important;
-  box-shadow:
-    0 4px 20px rgba(150, 100, 200, 0.2),
-    0 0 40px rgba(200, 140, 255, 0.05);
-  background: var(--tt-card-bg-color);
-  color: var(--white) !important;
+  border-color: transparent !important;
+  background: transparent;
 }
 
 .dark .card-border::before {
-  /* solid card fill in dark mode (no glass blur / no transparency) */
-  background: var(--tt-card-bg-color);
+  background: rgba(40, 35, 55, 0.94);
 }
 
 .dark .card-border h2 {

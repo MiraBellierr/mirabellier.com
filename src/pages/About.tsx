@@ -234,7 +234,7 @@ const About = () => {
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-          <div className="flex-grow flex-col">
+          <div className="left-side-rail flex-grow flex-col">
             <Navigation />
             <div className="mt-3 flex justify-center overflow-hidden rounded-lg border shadow-md">
               <iframe
@@ -439,7 +439,7 @@ const About = () => {
           </main>
 
           <div className="flex-col space-y-4">
-            <aside className="w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+            <aside className="right-side-panel w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
               <div className="space-y-2 text-sm text-center font-bold">
                 <h2 className="text-blue-600 font-bold text-lg">Skills</h2>
                 <p className="text-blue-500">1. JavaScript</p>
@@ -460,7 +460,7 @@ const About = () => {
               />
             </div>
 
-            <aside className="w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+            <aside className="right-side-panel w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
               <div className="space-y-2 text-sm text-center font-bold">
                 <h2 className="text-blue-600 font-bold text-lg">
                   Support me!!
