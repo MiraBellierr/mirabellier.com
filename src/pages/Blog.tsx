@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { BlogTagList } from "@/components/BlogTagList";
 import { useAuth } from "@/states/AuthContext";
 import { useConfirm } from "@/states/ConfirmContext";
 import { useToast } from "@/states/ToastContext";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
@@ -238,21 +240,7 @@ const Blog = () => {
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
-  const [isDark, setIsDark] = useState<boolean>(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark"),
-  );
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const el = document.documentElement;
-    const obs = new MutationObserver(() => {
-      setIsDark(el.classList.contains("dark"));
-    });
-    obs.observe(el, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
+  const isDark = useIsDarkMode();
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col blog-page">
@@ -320,167 +308,165 @@ const Blog = () => {
               </div>
             ) : (
               <>
-                {currentPosts.map((post, index) => (
-                  <div
-                    key={post.id}
-                    className="relative z-[1]"
-                    style={{
-                      zIndex: openMenuId === post.id ? 13000 : undefined,
-                    }}
-                  >
-                    <div className="p-2 card-border flex gap-4 items-start">
-                      <Link
-                        to={`/blog/${slugify(post.title)}-${post.id}`}
-                        className="flex-1 flex gap-4 items-start no-underline"
-                      >
-                        {post.thumbnail ? (
-                          <img
-                            src={resolveAsset(post.thumbnail) ?? undefined}
-                            alt={post.title || "thumbnail"}
-                            className="w-28 h-20 object-cover rounded-md"
-                            loading={index < 2 ? "eager" : "lazy"}
-                            fetchPriority={index === 0 ? "high" : undefined}
-                            width="112"
-                            height="80"
-                          />
-                        ) : (
-                          <div className="w-28 h-20 bg-blue-50 rounded-md" />
-                        )}
+                {currentPosts.map((post, index) => {
+                  const previewText = (
+                    post.shortDescription || extractTextFromContent(post.content)
+                  ).trim();
 
-                        <div>
-                          <h2 className="text-lg font-bold text-blue-700 mb-1">
-                            {post.title}
-                          </h2>
-                          <p className="text-sm text-blue-500 mb-2">
-                            By{" "}
-                            {(post as any).userId ? (
-                              <Link
-                                to={`/profile/${post.author}`}
-                                className="hover:underline font-medium"
-                              >
-                                {post.author}
-                              </Link>
-                            ) : (
-                              <span>{post.author}</span>
-                            )}{" "}
-                            • {new Date(post.createdAt).toLocaleDateString()}
-                          </p>
-                          {post.shortDescription ? (
-                            <p className="text-sm text-blue-600">
-                              {post.shortDescription}
-                            </p>
-                          ) : null}
-                          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-medium text-blue-400">
-                            <span>{Array.isArray(post.likes) ? post.likes.length : 0} likes</span>
-                            <span>
-                              {countNestedComments(post.comments || [])} comments
-                            </span>
-                          </div>
-                          {post.tags && post.tags.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {post.tags.slice(0, 8).map((t) => {
-                                const lower = String(t || "").toLowerCase();
-                                const isRainbow = [
-                                  "cat",
-                                  "cats",
-                                  "kitten",
-                                  "kittens",
-                                ].includes(lower);
-                                const rainbowStyle:
-                                  | Record<string, string>
-                                  | undefined = isRainbow
-                                  ? {
-                                      background:
-                                        "linear-gradient(90deg, #ff4d4d, #ffb84d, #fff14d, #4dff88, #4da6ff, #b84dff)",
-                                      color: "#ffffff",
-                                      border: "none",
-                                      backgroundSize: "300% 100%",
-                                    }
-                                  : undefined;
-                                const baseClass = `inline-flex items-center text-xs px-2 py-1 rounded-md font-medium border transform transition duration-150 ease-in-out hover:shadow-sm hover:scale-105 ${isDark ? "bg-gray-800 text-white border-gray-700" : "bg-gray-200 text-gray-800 border-gray-300"}`;
-                                const rainbowClass = isRainbow
-                                  ? "rainbow-tag"
-                                  : "";
-                                return (
-                                  <span
-                                    key={t}
-                                    className={`${baseClass} ${rainbowClass}`}
-                                    style={rainbowStyle}
-                                  >
-                                    {t}
-                                  </span>
-                                );
-                              })}
-                              {post.tags.length > 8 && (
-                                <span className="text-xs text-blue-400">
-                                  +{post.tags.length - 8} more
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-
-                      {auth?.user?.id &&
-                      String(auth.user.id) === String((post as any).userId) ? (
-                        <div className="relative ml-2">
-                          <button
-                            onClick={(e) => toggleMenu(post.id, e)}
-                            className={`p-1 rounded ${isDark ? "hover:bg-gray-700" : "hover:bg-blue-100"}`}
-                            aria-haspopup="menu"
-                            aria-expanded={openMenuId === post.id}
-                            data-post-menu-button
+                  return (
+                    <div
+                      key={post.id}
+                      className="relative z-[1]"
+                      style={{
+                        zIndex: openMenuId === post.id ? 13000 : undefined,
+                      }}
+                    >
+                      <div className="card-border p-2">
+                        <div className="flex items-start gap-4">
+                          <Link
+                            to={`/blog/${slugify(post.title)}-${post.id}`}
+                            className="blog-card-link flex-1 no-underline"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className={`h-5 w-5 ${isDark ? "text-blue-300" : "text-blue-600"}`}
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </button>
+                            <div className="blog-card-layout">
+                              <div className="blog-card-media">
+                                {post.thumbnail ? (
+                                  <img
+                                    src={resolveAsset(post.thumbnail) ?? undefined}
+                                    alt={post.title || "thumbnail"}
+                                    className="h-full w-full object-cover"
+                                    loading={index < 2 ? "eager" : "lazy"}
+                                    fetchPriority={
+                                      index === 0 ? "high" : undefined
+                                    }
+                                    width="144"
+                                    height="112"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full rounded-md bg-blue-50" />
+                                )}
+                              </div>
 
-                          {openMenuId === post.id &&
-                            menuPos &&
-                            createPortal(
-                              <div
-                                data-post-menu
-                                className={`fixed w-36 rounded z-[200000] text-sm ${isDark ? "bg-gray-800 border border-gray-700 text-white shadow-lg" : "bg-white border shadow"} transition-opacity duration-150 ease-in-out transform`}
-                                style={{
-                                  top: menuPos.top,
-                                  left: menuPos.left,
-                                  pointerEvents: "auto",
-                                }}
+                              <div className="blog-card-content">
+                                <div className="blog-card-copy">
+                                  <h2 className="blog-card-title text-lg font-bold text-blue-700">
+                                    {post.title}
+                                  </h2>
+                                  <p className="blog-card-meta text-sm text-blue-500">
+                                    By{" "}
+                                    {(post as any).userId ? (
+                                      <Link
+                                        to={`/profile/${post.author}`}
+                                        className="hover:underline font-medium"
+                                      >
+                                        {post.author}
+                                      </Link>
+                                    ) : (
+                                      <span>{post.author}</span>
+                                    )}{" "}
+                                    •{" "}
+                                    {new Date(post.createdAt).toLocaleDateString()}
+                                  </p>
+                                  {previewText ? (
+                                    <p className="blog-card-summary text-sm text-blue-600">
+                                      {previewText}
+                                    </p>
+                                  ) : (
+                                    <div
+                                      className="blog-card-summary"
+                                      aria-hidden="true"
+                                    />
+                                  )}
+                                </div>
+
+                                <div className="blog-card-footer">
+                                  <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-blue-400">
+                                    <span>
+                                      {Array.isArray(post.likes)
+                                        ? post.likes.length
+                                        : 0}{" "}
+                                      likes
+                                    </span>
+                                    <span>
+                                      {countNestedComments(post.comments || [])}{" "}
+                                      comments
+                                    </span>
+                                  </div>
+
+                                  {post.tags && post.tags.length > 0 ? (
+                                    <BlogTagList
+                                      tags={post.tags}
+                                      isDark={isDark}
+                                      limit={8}
+                                      className="blog-card-tags"
+                                    />
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+
+                          {auth?.user?.id &&
+                          String(auth.user.id) === String((post as any).userId) ? (
+                            <div className="relative ml-2">
+                              <button
+                                onClick={(e) => toggleMenu(post.id, e)}
+                                className={`p-1 rounded ${isDark ? "hover:bg-gray-700" : "hover:bg-blue-100"}`}
+                                aria-haspopup="menu"
+                                aria-expanded={openMenuId === post.id}
+                                data-post-menu-button
                               >
-                                <Link
-                                  to={`/blog/edit?id=${post.id}`}
-                                  className={`block px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? "hover:bg-gray-700" : "hover:bg-blue-50"}`}
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className={`h-5 w-5 ${isDark ? "text-blue-300" : "text-blue-600"}`}
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
                                 >
-                                  Edit
-                                </Link>
-                                <button
-                                  onClick={() => {
-                                    setOpenMenuId(null);
-                                    setMenuPos(null);
-                                    handleDelete(post.id);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? "hover:bg-red-700 text-red-200" : "hover:bg-red-50 text-red-700"}`}
-                                >
-                                  Delete
-                                </button>
-                              </div>,
-                              document.body,
-                            )}
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+
+                              {openMenuId === post.id &&
+                                menuPos &&
+                                createPortal(
+                                  <div
+                                    data-post-menu
+                                    className={`fixed w-36 rounded z-[200000] text-sm ${isDark ? "bg-gray-800 border border-gray-700 text-white shadow-lg" : "bg-white border shadow"} transition-opacity duration-150 ease-in-out transform`}
+                                    style={{
+                                      top: menuPos.top,
+                                      left: menuPos.left,
+                                      pointerEvents: "auto",
+                                    }}
+                                  >
+                                    <Link
+                                      to={`/blog/edit?id=${post.id}`}
+                                      className={`block px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? "hover:bg-gray-700" : "hover:bg-blue-50"}`}
+                                    >
+                                      Edit
+                                    </Link>
+                                    <button
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        setMenuPos(null);
+                                        handleDelete(post.id);
+                                      }}
+                                      className={`w-full text-left px-3 py-2 transition-colors duration-150 ease-in-out ${isDark ? "hover:bg-red-700 text-red-200" : "hover:bg-red-50 text-red-700"}`}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>,
+                                  document.body,
+                                )}
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </>
             )}
           </main>

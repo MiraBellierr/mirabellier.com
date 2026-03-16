@@ -5,7 +5,9 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Post from "../parts/Post";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
+import { BlogTagList } from "@/components/BlogTagList";
 import { BlogCommentItem } from "@/components/BlogCommentItem";
+import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { addPostComment, fetchPost, togglePostLike } from "@/lib/blog-api";
 import {
   extractTextFromContent,
@@ -78,6 +80,7 @@ function CommentIcon() {
 const BlogPost = () => {
   const { slug } = useParams();
   const auth = useAuth();
+  const isDark = useIsDarkMode();
   const commentInputRef = useRef<HTMLTextAreaElement | null>(null);
   const id = (() => {
     if (!slug) return undefined;
@@ -390,6 +393,14 @@ const BlogPost = () => {
                         • {new Date(post.createdAt).toLocaleDateString()}
                       </span>
                     </p>
+
+                    {post.tags && post.tags.length > 0 ? (
+                      <BlogTagList
+                        tags={post.tags}
+                        isDark={isDark}
+                        className="mb-4"
+                      />
+                    ) : null}
 
                     <div>
                       <Post html={post.content} />

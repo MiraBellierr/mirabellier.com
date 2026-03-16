@@ -5,6 +5,7 @@ import Toast from "../parts/Toast";
 
 import React, { useEffect, useState } from "react";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
@@ -17,8 +18,11 @@ import {
   normalizeTags,
 } from "@/lib/blog-edit-api";
 
+const RAINBOW_TAGS = new Set(["cat", "cats", "kitten", "kittens"]);
+
 const BlogEdit = () => {
   const auth = useAuth();
+  const isDark = useIsDarkMode();
   const { showToast: showGlobalToast } = useToast();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<object | null>(null);
@@ -356,33 +360,17 @@ const BlogEdit = () => {
 
                   <div className="flex flex-wrap gap-2">
                     {tags.map((t) => {
-                      const lower = String(t || "").toLowerCase();
-                      const isRainbow = [
-                        "cat",
-                        "cats",
-                        "kitten",
-                        "kittens",
-                      ].includes(lower);
-                      const rainbowStyle: Record<string, string> | undefined =
-                        isRainbow
-                          ? {
-                              background:
-                                "linear-gradient(90deg, #ff4d4d, #ffb84d, #fff14d, #4dff88, #4da6ff, #b84dff)",
-                              color: "#ffffff",
-                              border: "none",
-                              backgroundSize: "300% 100%",
-                            }
-                          : undefined;
-                      const themeDark =
-                        typeof document !== "undefined" &&
-                        document.documentElement.classList.contains("dark");
-                      const baseClass = `inline-flex items-center gap-2 text-xs px-2 py-1 rounded-md font-medium border transform transition duration-150 ease-in-out hover:shadow-sm hover:scale-105 ${themeDark ? "bg-gray-800 text-white border-gray-700" : "bg-gray-200 text-gray-800 border-gray-300"}`;
-                      const rainbowClass = isRainbow ? "rainbow-tag" : "";
+                      const isRainbow = RAINBOW_TAGS.has(
+                        String(t || "").toLowerCase(),
+                      );
+                      const baseClass = `blog-tag gap-2 ${isDark ? "blog-tag--dark" : "blog-tag--light"}`;
+                      const rainbowClass = isRainbow
+                        ? "blog-tag--rainbow rainbow-tag"
+                        : "";
                       return (
                         <span
                           key={t}
                           className={`${baseClass} ${rainbowClass}`}
-                          style={rainbowStyle}
                         >
                           <span>{t}</span>
                           <button
