@@ -24,6 +24,14 @@ export default {
           "0%, 100%": { transform: "rotate(-3deg) translateZ(0)" },
           "50%": { transform: "rotate(3deg) translateZ(0)" },
         },
+        "profile-hover": {
+          "0%, 100%": {
+            transform: "scale(1.01) rotate(-3deg) translateZ(0)",
+          },
+          "50%": {
+            transform: "scale(1.01) rotate(3deg) translateZ(0)",
+          },
+        },
         "zoom-out": {
           "0%": { transform: "scale(1.2) translateZ(0)" },
           "100%": { transform: "scale(1) translateZ(0)" },
@@ -35,6 +43,7 @@ export default {
       },
       animation: {
         wiggle: "wiggle 0.5s ease-in-out infinite",
+        "profile-hover": "profile-hover 0.5s ease-in-out infinite",
         "zoom-out-once": "zoom-out 0.4s ease-out forwards",
         "fade-in": "fadeIn 0.3s ease-out",
       },

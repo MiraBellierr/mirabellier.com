@@ -45,19 +45,25 @@ const DarkToggle: React.FC = () => {
     <button
       aria-label="Toggle dark mode"
       onClick={() => setIsDark((s) => !s)}
-      className="flex items-center space-x-2 bg-white/80 dark:bg-purple-900/70 backdrop-blur rounded-full p-1.5 shadow-md border border-blue-200 dark:border-purple-400/30"
+      className="inline-flex items-center justify-center gap-1 text-sm text-center font-bold text-blue-500 hover:underline"
+      type="button"
     >
-      <div className="relative w-12 h-6 flex items-center rounded-full transition-colors duration-300">
-        <div
-          className={`absolute left-0 top-0 w-full h-full rounded-full ${isDark ? "bg-gradient-to-r from-purple-700 to-blue-600" : "bg-gradient-to-r from-blue-200 to-cyan-100"}`}
-        />
-        <div
-          className={`relative z-10 h-5 w-5 rounded-full bg-white dark:bg-purple-950 transform transition-transform duration-300 ${isDark ? "translate-x-6 rotate-12" : "translate-x-0 -rotate-6"}`}
-        />
-      </div>
-      <div className="text-sm hidden sm:block select-none">
-        {isDark ? "Night 🌙" : "Day ✨"}
-      </div>
+      <img
+        className="h-4 w-4"
+        src={isDark ? "/moon.png" : "/sun.png"}
+        width="16"
+        height="16"
+        alt={isDark ? "moon icon" : "sun icon"}
+      />
+      {isDark ? (
+        <>
+          <span className="hidden sm:inline">dark theme</span> on
+        </>
+      ) : (
+        <>
+          <span className="hidden sm:inline">dark theme</span> off
+        </>
+      )}
     </button>
   );
 };

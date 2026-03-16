@@ -5,13 +5,23 @@ type CursorContextType = {
   toggleCursor: () => void;
 };
 
+function getDefaultCursorEnabled() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return true;
+  }
+
+  // Touch-first devices do not benefit much from the custom cursor, so keep
+  // it off unless the user explicitly turns it on.
+  return !window.matchMedia("(hover: none), (pointer: coarse)").matches;
+}
+
 const CursorContext = createContext<CursorContextType>({
   isCustomCursor: true,
   toggleCursor: () => {},
 });
 
 export function CursorProvider({ children }: { children: React.ReactNode }) {
-  const [isCustomCursor, setIsCustomCursor] = useState(true);
+  const [isCustomCursor, setIsCustomCursor] = useState(getDefaultCursorEnabled);
   useEffect(() => {
     if (!isCustomCursor) {
       document.body.style.cursor = "default";
