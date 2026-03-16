@@ -8,6 +8,8 @@ type ShrineOffering = {
   title: string;
   description: string;
   detail: string;
+  imageSrc?: string;
+  imageAlt?: string;
 };
 
 type ShrineCard = {
@@ -54,6 +56,8 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "A neat strip of red meant for clan loyalty, family weight, and vows said without shaking.",
     detail: "tied carefully and never left crooked",
+    imageSrc: "/ribbon.jpg",
+    imageAlt: "red ribbon offering",
   },
   {
     code: "02",
@@ -61,6 +65,8 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "For plans, grudges, route sketches, and every small detail worth keeping sharp.",
     detail: "no sloppy handwriting permitted",
+    imageSrc: "/notebook.jpg",
+    imageAlt: "field report notebook offering",
   },
   {
     code: "03",
@@ -68,6 +74,8 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "An offering for long nights, colder streets, and the kind of patience that still feels armed.",
     detail: "best served hot and carried without complaint",
+    imageSrc: "/thermos.jpg",
+    imageAlt: "midnight watch thermos offering",
   },
   {
     code: "04",
@@ -75,6 +83,8 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "A tiny ritual object for that unmistakable red-silhouette energy and everything it implies.",
     detail: "buffed until it catches low light properly",
+    imageSrc: "/redhood.jpg",
+    imageAlt: "red hood clasp offering",
   },
 ];
 
@@ -352,12 +362,33 @@ const Rossina = () => {
                     <h4 className="mt-2 text-lg font-bold text-blue-700">
                       {offering.title}
                     </h4>
-                    <p className="mt-2 text-sm leading-7 text-slate-700">
-                      {offering.description}{" "}
-                      <span className="font-semibold text-blue-500">
-                        {offering.detail}.
-                      </span>
-                    </p>
+                    {offering.imageSrc ? (
+                      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm leading-7 text-slate-700">
+                            {offering.description}{" "}
+                            <span className="font-semibold text-blue-500">
+                              {offering.detail}.
+                            </span>
+                          </p>
+                        </div>
+                        <img
+                          className="h-28 w-full rounded-xl object-cover shadow-sm sm:w-32"
+                          src={offering.imageSrc}
+                          width="128"
+                          height="112"
+                          alt={offering.imageAlt || offering.title}
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm leading-7 text-slate-700">
+                        {offering.description}{" "}
+                        <span className="font-semibold text-blue-500">
+                          {offering.detail}.
+                        </span>
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
