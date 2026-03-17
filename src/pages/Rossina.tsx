@@ -56,7 +56,7 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "A neat strip of red meant for clan loyalty, family weight, and vows said without shaking.",
     detail: "tied carefully and never left crooked",
-    imageSrc: "/ribbon.jpg",
+    imageSrc: "/ribbon.png",
     imageAlt: "red ribbon offering",
   },
   {
@@ -65,7 +65,7 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "For plans, grudges, route sketches, and every small detail worth keeping sharp.",
     detail: "no sloppy handwriting permitted",
-    imageSrc: "/notebook.jpg",
+    imageSrc: "/notebook.png",
     imageAlt: "field report notebook offering",
   },
   {
@@ -74,7 +74,7 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "An offering for long nights, colder streets, and the kind of patience that still feels armed.",
     detail: "best served hot and carried without complaint",
-    imageSrc: "/thermos.jpg",
+    imageSrc: "/thermos.png",
     imageAlt: "midnight watch thermos offering",
   },
   {
@@ -83,7 +83,7 @@ const altarOfferings: ShrineOffering[] = [
     description:
       "A tiny ritual object for that unmistakable red-silhouette energy and everything it implies.",
     detail: "buffed until it catches low light properly",
-    imageSrc: "/redhood.jpg",
+    imageSrc: "/redhood.png",
     imageAlt: "red hood clasp offering",
   },
 ];
