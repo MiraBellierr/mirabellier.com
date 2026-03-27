@@ -83,9 +83,6 @@ const Shrine = () => {
 
                 <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                   <div className="relative z-10 space-y-4 p-5 lg:p-6">
-                    <div className="inline-flex rounded-full border border-white/60 bg-white/70 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-blue-600 shadow-sm">
-                      ⭐ most beloved character
-                    </div>
 
                     <div className="space-y-3">
                       <h2 className="text-3xl font-bold text-blue-700 lg:text-4xl">
@@ -131,9 +128,6 @@ const Shrine = () => {
 
                 <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                   <div className="relative z-10 space-y-4 p-5 lg:p-6">
-                    <div className="inline-flex rounded-full border border-white/60 bg-white/70 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-blue-600 shadow-sm">
-                      ⭐ Most liked character
-                    </div>
 
                     <div className="space-y-3">
                       <h2 className="text-3xl font-bold text-blue-700 lg:text-4xl">
