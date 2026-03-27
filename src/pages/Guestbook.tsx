@@ -396,7 +396,7 @@ const Guestbook = () => {
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
 
-            <div className="mt-3 mb-auto justify-center items-center hidden lg:flex">
+            <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
               <img
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
                 src={kannaShy}

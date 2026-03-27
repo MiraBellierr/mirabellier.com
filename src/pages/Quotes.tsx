@@ -211,16 +211,6 @@ const Quotes = () => {
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-
-            <div className="mt-3 mb-auto justify-center items-center hidden lg:flex">
-              <img
-                className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaSmile}
-                width="320"
-                height="427"
-                alt="kanna smiling"
-              />
-            </div>
           </div>
 
           <main className="w-full lg:w-3/5 space-y-2 p-4">
@@ -323,20 +313,32 @@ const Quotes = () => {
             <Divider />
           </main>
 
-          <aside className="right-side-panel w-full lg:w-1/5 mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
-            <div className="space-y-3 text-sm text-blue-600">
-              <h2 className="text-blue-700 font-bold text-lg text-center">
-                tiny quote corner
-              </h2>
-              <p>
-                This page gathers the daily quotes from brainyquote.com
-              </p>
-              <p>
-                You get the main quote plus the love, art, nature, and funny
-                picks.
-              </p>
+          <div className="w-full lg:w-1/5 mb-auto space-y-4">
+            <aside className="right-side-panel bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+              <div className="space-y-3 text-sm text-blue-600">
+                <h2 className="text-blue-700 font-bold text-lg text-center">
+                  tiny quote corner
+                </h2>
+                <p>
+                  This page gathers the daily quotes from brainyquote.com
+                </p>
+                <p>
+                  You get the main quote plus the love, art, nature, and funny
+                  picks.
+                </p>
+              </div>
+            </aside>
+
+            <div className="hidden justify-center lg:flex">
+              <img
+                className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
+                src={kannaSmile}
+                width="320"
+                height="427"
+                alt="kanna smiling"
+              />
             </div>
-          </aside>
+          </div>
         </div>
       </div>
 

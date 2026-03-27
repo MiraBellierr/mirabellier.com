@@ -6,6 +6,7 @@ import Navigation from "../parts/Navigation";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
+import kannaWink from "@/assets/anime/kanna-wink.webp";
 import { projectCount, projectSections } from "@/lib/projects";
 
 const allProjects = projectSections.flatMap((section) => section.projects);
@@ -69,9 +70,9 @@ const Projects = () => {
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
 
-            <div className="mt-3 mb-auto justify-center items-center flex">
+            <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
               <img
-                className="h-101 border border-blue-700 shadow-md rounded-2xl"
+                className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
                 src={kannaSmile}
                 width="300"
                 height="404"
@@ -104,8 +105,8 @@ const Projects = () => {
             <Divider />
           </main>
 
-          <div className="flex-col space-y-4">
-            <aside className="right-side-panel w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+          <div className="w-full lg:w-[200px] space-y-4">
+            <aside className="right-side-panel w-full mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
               <div className="space-y-2 text-sm text-center font-bold">
                 <h2 className="text-blue-600 font-bold text-lg">snapshot</h2>
                 <p className="text-blue-500">{projectCount} public projects</p>
@@ -117,6 +118,18 @@ const Projects = () => {
                 </p>
               </div>
             </aside>
+
+            <div className="hidden justify-center lg:flex">
+              <img
+                className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
+                src={kannaWink}
+                width="300"
+                height="404"
+                alt="project mascot winking"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
+import DeferredAnimatedImage from "@/components/DeferredAnimatedImage";
 import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
+import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
+import kannaRight from "@/assets/anime/kanna-right.webp";
 
 const Shrine = () => {
   useEffect(() => {
@@ -53,20 +56,19 @@ const Shrine = () => {
             <Navigation />
 
             <div className="mt-3 hidden justify-center lg:flex">
-              <div className="shrine-side-card w-full max-w-[320px] rounded-[1.4rem] p-3">
-                <div className="shrine-frame">
-                  <img
-                    className="h-[420px] w-full rounded-[1.15rem] object-cover"
-                    src={kannaKobayashiPoster}
+              <div className="  w-full rounded-[1.4rem] p-3">
+                <div className="">
+                  <DeferredAnimatedImage
+                    className="h-[420px] w-full rounded-[1.15rem] object-cover object-top"
+                    posterSrc={kannaKobayashiPoster}
+                    animatedSrc={kannaKobayashi}
                     width="320"
                     height="420"
-                    alt="Character shrine hall preview"
+                    alt="Kanna gif preview"
                     loading="lazy"
+                    decoding="async"
                   />
                 </div>
-                <p className="mt-3 text-center text-sm font-bold text-blue-600">
-                  shrine hallway preview
-                </p>
               </div>
             </div>
           </div>
@@ -174,6 +176,16 @@ const Shrine = () => {
                 <li>Reserved for any new tiny legend.</li>
               </ul>
             </section>
+
+                <img
+                  className="aspect-video w-full rounded-[1.15rem] object-cover object-center"
+                  src={kannaRight}
+                  width="498"
+                  height="280"
+                  alt="Kanna gif preview"
+                  loading="lazy"
+                  decoding="async"
+                />
           </aside>
         </div>
       </div>
