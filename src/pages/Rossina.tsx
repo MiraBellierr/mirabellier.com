@@ -209,7 +209,7 @@ const Rossina = () => {
   }, []);
 
   return (
-    <div className="rossina-page shrine-page min-h-screen flex flex-col font-[sans-serif] text-blue-900">
+    <div className="shrine-page min-h-screen flex flex-col font-[sans-serif] text-blue-900">
       <Header />
 
       <div
@@ -246,10 +246,6 @@ const Rossina = () => {
 
               <div className="grid gap-4 lg:grid-cols-[1.12fr_0.88fr]">
                 <div className="relative z-10 space-y-4 p-5 lg:p-6">
-                  <div className="inline-flex rounded-full border border-white/60 bg-white/70 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-blue-600 shadow-sm">
-                    wolfpack devotion page
-                  </div>
-
                   <div className="space-y-3">
                     <h2 className="text-3xl font-bold text-blue-700 lg:text-4xl">
                       Rossina Wulfperl Luppino Shrine

@@ -124,7 +124,7 @@ const Shrine = () => {
               className="shrine-directory-link block"
               to="/shrine/rossina"
             >
-              <section className="card-border shrine-directory-card shrine-hero shrine-hero--rossina">
+              <section className="card-border shrine-directory-card shrine-hero">
                 <div className="shrine-glow shrine-glow--one" aria-hidden="true" />
                 <div className="shrine-glow shrine-glow--two" aria-hidden="true" />
 
