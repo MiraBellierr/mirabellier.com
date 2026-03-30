@@ -13,8 +13,6 @@ import guestbook from "../assets/icons/cats-24.webp";
 import cursor from "../assets/icons/cursor-24.webp";
 import DarkToggle from "../components/DarkToggle";
 import { useCursor } from "../states/CursorContext";
-import SectionLabel from "./SectionLabel";
-import ToggleCursor from "./ToggleCursor";
 
 type NavItem = {
   label: string;
@@ -100,11 +98,17 @@ const accountLinkClass = (active: boolean) =>
       : "text-blue-500 dark:text-purple-200"
   }`;
 
+const SectionLabelText = ({ label }: { label: string }) => (
+  <div className="text-center font-mono text-[11px] uppercase tracking-[0.24em] text-blue-400 dark:text-purple-300/80">
+    -- <span className="font-bold">{label}</span> --
+  </div>
+);
+
 const Navigation = () => {
   const auth = useOptionalAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isCustomCursor } = useCursor();
+  const { isCustomCursor, toggleCursor } = useCursor();
   const avatarSrc = getAvatarSrc(auth?.user?.avatar);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -158,7 +162,7 @@ const Navigation = () => {
         <div className="space-y-4">
           {navSections.map((section) => (
             <div key={section.label} className="space-y-2">
-              <SectionLabel label={section.label} />
+              <SectionLabelText label={section.label} />
 
               <div className="space-y-1">
                 {section.items.map((item) => {
@@ -198,7 +202,7 @@ const Navigation = () => {
           ))}
 
           <div className="space-y-2">
-            <SectionLabel label="settings" />
+            <SectionLabelText label="settings" />
 
             <div className="flex justify-center">
               <DarkToggle />
@@ -212,7 +216,22 @@ const Navigation = () => {
                 height="16"
                 alt="cursor icon"
               />
-              <ToggleCursor />
+              <button
+                onClick={toggleCursor}
+                className="text-center text-sm font-bold text-blue-500 hover:underline dark:text-purple-200"
+                aria-label={`${isCustomCursor ? "Disable" : "Enable"} custom cursor`}
+                type="button"
+              >
+                {isCustomCursor ? (
+                  <>
+                    <span className="hidden sm:inline">anya cursor</span> on
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">anya cursor</span> off
+                  </>
+                )}
+              </button>
               {!isCustomCursor && (
                 <span className="ml-2 animate-pulse text-xs font-semibold text-blue-600 dark:text-purple-200">
                   click here
@@ -222,7 +241,7 @@ const Navigation = () => {
           </div>
 
           <div className="space-y-2">
-            <SectionLabel label="account" />
+            <SectionLabelText label="account" />
 
             {auth?.user ? (
               <>

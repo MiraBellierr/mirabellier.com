@@ -10,9 +10,9 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { Link } from "react-router-dom";
 import { API_BASE } from "@/lib/config";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
-import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 
 type AnimeItem = { id: string; title: string; url: string; img: string };
+const HOME_HERO_POSTER_SRC = "/kanna-kobayashi-poster.webp";
 
 const defaultAnime: AnimeItem[] = [
   {
@@ -39,6 +39,7 @@ const Home = () => {
   const auth = useOptionalAuth();
   const [animeList, setAnimeList] = useState<AnimeItem[]>(defaultAnime); // Start with default data
   const [showAllAnime, setShowAllAnime] = useState(false);
+  const [showAnimeImages, setShowAnimeImages] = useState(false);
   const ANIME_PREVIEW_LIMIT = 10;
 
   useEffect(() => {
@@ -101,6 +102,7 @@ const Home = () => {
       }
 
       hasQueuedRefresh = true;
+      setShowAnimeImages(true);
 
       if ("requestIdleCallback" in window) {
         idleCallbackId = requestIdleCallback(() => {
@@ -193,7 +195,7 @@ const Home = () => {
             <div className=" mt-3 mb-auto justify-center items-center flex">
               <DeferredAnimatedImage
                 className="h-101 border border-blue-700 shadow-md rounded-2xl"
-                posterSrc={kannaKobayashiPoster}
+                posterSrc={HOME_HERO_POSTER_SRC}
                 animatedSrc={kannaKobayashi}
                 width="300"
                 height="404"
@@ -201,6 +203,7 @@ const Home = () => {
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
+                waitForLcp
               />
             </div>
           </div>
@@ -293,12 +296,25 @@ const Home = () => {
                           {idx + 1}. {a.title}
                         </h3>
                         {a.img && (
-                          <img
-                            className="rounded w-full object-cover"
-                            src={a.img}
-                            alt={a.title}
-                            loading={idx < 3 ? "eager" : "lazy"}
-                          />
+                          showAnimeImages ? (
+                            <img
+                              className="rounded w-full object-cover"
+                              src={a.img}
+                              alt={a.title}
+                              loading="lazy"
+                              decoding="async"
+                              fetchPriority="low"
+                              width="736"
+                              height="1104"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div
+                              className="mt-2 w-full rounded bg-blue-50/80"
+                              style={{ aspectRatio: "2 / 3" }}
+                              aria-hidden="true"
+                            />
+                          )
                         )}
                       </div>
                     </a>

@@ -923,19 +923,17 @@ h6 {
 }
 
 :root {
-  --page-bg: url("/light.jpg");
+  --page-bg: url("/light.webp");
 }
 .dark {
-  --page-bg: url("/dark.jpg");
+  --page-bg: url("/dark.webp");
 }
 
-/* Pin the page background so it doesn't move while scrolling */
+/* Keep the page background cheap to paint while preserving cover behavior. */
 [style*="var(--page-bg)"] {
-  background-attachment: fixed !important;
+  background-attachment: scroll !important;
   background-position: center center !important;
   background-size: cover !important;
-  /* Hint to browser that this is critical for LCP */
-  content-visibility: auto;
 }
 
 .site-entry-toast-shell {

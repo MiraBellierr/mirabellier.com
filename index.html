@@ -14,37 +14,19 @@
       href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Quicksand:wght@400;500;600;700&display=swap"
       onload="this.onload=null;this.rel='stylesheet'"
     />
+    <link
+      rel="preload"
+      as="image"
+      href="/kanna-kobayashi-poster.webp"
+      type="image/webp"
+      fetchpriority="high"
+    />
     <noscript>
       <link
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Quicksand:wght@400;500;600;700&display=swap"
       />
     </noscript>
-
-    <!-- Preload LCP background image in WebP format (smaller, faster) with JPEG fallback -->
-    <link
-      rel="preload"
-      as="image"
-      href="/background.webp"
-      type="image/webp"
-      fetchpriority="high"
-    />
-
-    <!-- Preload theme-specific backgrounds so React inline styles don't delay discovery -->
-    <link
-      rel="preload"
-      as="image"
-      href="/light.webp"
-      type="image/webp"
-      fetchpriority="high"
-    />
-    <link
-      rel="preload"
-      as="image"
-      href="/dark.webp"
-      type="image/webp"
-      fetchpriority="high"
-    />
 
     <style>
       /* Inline critical CSS to prevent FOUC */
@@ -77,28 +59,15 @@
         border-radius: 0.75rem;
         position: relative;
       }
-      /* Make LCP background image discoverable immediately with high priority */
+      /* Keep the theme background discoverable before the app hydrates. */
       div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-        background-image: url("/background.webp");
+        background-image: url("/light.webp");
         background-size: cover;
         background-position: center;
         background-attachment: scroll;
       }
-      /* Fallback for browsers that don't support WebP */
-      @supports not (background-image: url("/background.webp")) {
-        div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-          background-image: url("/background.jpg");
-        }
-      }
-      @media (prefers-color-scheme: dark) {
-        div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-          background-image: url("/background.webp");
-        }
-      }
-      @media (prefers-color-scheme: dark) and (not (background-image: url("/background.webp"))) {
-        div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-          background-image: url("/background.jpg");
-        }
+      html.dark div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
+        background-image: url("/dark.webp");
       }
     </style>
 
@@ -111,6 +80,11 @@
             document.documentElement.classList.add("dark");
           } else if (storedTheme === "light") {
             document.documentElement.classList.remove("dark");
+          } else if (
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+          ) {
+            document.documentElement.classList.add("dark");
           }
         } catch {
           // Ignore storage access failures and fall back to the default theme.

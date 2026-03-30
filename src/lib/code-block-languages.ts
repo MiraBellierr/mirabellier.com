@@ -1,12 +1,20 @@
-import { all, createLowlight } from "lowlight";
+import { common, createLowlight } from "lowlight";
 
-export const lowlight = createLowlight(all);
+export const lowlight = createLowlight(common);
+
+lowlight.registerAlias({
+  javascript: ["js", "jsx"],
+  typescript: ["ts", "tsx"],
+  xml: ["html"],
+  bash: ["sh", "shell"],
+  yaml: ["yml"],
+  markdown: ["md"],
+});
 
 const LANGUAGE_ALIASES: Record<string, string> = {
   js: "javascript",
-  jsx: "jsx",
   ts: "typescript",
-  tsx: "tsx",
+  tsx: "typescript",
   py: "python",
   rb: "ruby",
   rs: "rust",
@@ -14,14 +22,15 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   shell: "bash",
   yml: "yaml",
   md: "markdown",
-  docker: "dockerfile",
+  html: "xml",
+  jsx: "javascript",
   cs: "csharp",
 };
 
 const PREFERRED_LANGUAGES = [
   "javascript",
-  "typescript",
   "jsx",
+  "typescript",
   "tsx",
   "python",
   "bash",
@@ -42,10 +51,10 @@ const PREFERRED_LANGUAGES = [
   "c",
   "cpp",
   "csharp",
-  "dockerfile",
+  "xml",
 ];
 
-const allLanguages = lowlight.listLanguages().sort((left, right) =>
+const registeredLanguages = lowlight.listLanguages().sort((left, right) =>
   left.localeCompare(right),
 );
 
@@ -53,7 +62,7 @@ const seenLanguages = new Set<string>();
 
 export const CODE_BLOCK_LANGUAGES = [
   ...PREFERRED_LANGUAGES,
-  ...allLanguages,
+  ...registeredLanguages,
 ].filter((language) => {
   if (seenLanguages.has(language)) {
     return false;

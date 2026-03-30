@@ -3,11 +3,15 @@ import { useEffect, useState, type ImgHTMLAttributes } from "react";
 type DeferredAnimatedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   posterSrc: string;
   animatedSrc: string;
+  waitForLcp?: boolean;
+  lcpSettledDelayMs?: number;
 };
 
 const DeferredAnimatedImage = ({
   posterSrc,
   animatedSrc,
+  waitForLcp = false,
+  lcpSettledDelayMs = 1200,
   ...imgProps
 }: DeferredAnimatedImageProps) => {
   const [currentSrc, setCurrentSrc] = useState(posterSrc);
@@ -19,7 +23,10 @@ const DeferredAnimatedImage = ({
   useEffect(() => {
     let isCancelled = false;
     let idleCallbackId: number | null = null;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let upgradeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let lcpFallbackTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let lcpSettledTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let observer: PerformanceObserver | null = null;
 
     const preloadAnimatedImage = () => {
       const image = new Image();
@@ -39,15 +46,54 @@ const DeferredAnimatedImage = ({
           timeout: 2500,
         });
       } else {
-        timeoutId = setTimeout(preloadAnimatedImage, 1200);
+        upgradeTimeoutId = setTimeout(preloadAnimatedImage, 1200);
       }
     };
 
-    if (document.readyState === "complete") {
-      scheduleUpgrade();
-    } else {
-      window.addEventListener("load", scheduleUpgrade, { once: true });
-    }
+    const scheduleAfterSettledLcp = () => {
+      if (lcpSettledTimeoutId !== null) {
+        clearTimeout(lcpSettledTimeoutId);
+      }
+
+      lcpSettledTimeoutId = setTimeout(scheduleUpgrade, lcpSettledDelayMs);
+    };
+
+    const scheduleWithLcpGuard = () => {
+      if (
+        waitForLcp &&
+        "PerformanceObserver" in window &&
+        PerformanceObserver.supportedEntryTypes?.includes(
+          "largest-contentful-paint",
+        )
+      ) {
+        try {
+          observer = new PerformanceObserver((entryList) => {
+            if (entryList.getEntries().length > 0) {
+              scheduleAfterSettledLcp();
+            }
+          });
+
+          observer.observe({
+            type: "largest-contentful-paint",
+            buffered: true,
+          });
+
+          // If the browser never reports LCP entries, still upgrade eventually.
+          lcpFallbackTimeoutId = setTimeout(scheduleUpgrade, 5000);
+          return;
+        } catch {
+          observer = null;
+        }
+      }
+
+      if (document.readyState === "complete") {
+        scheduleUpgrade();
+      } else {
+        window.addEventListener("load", scheduleUpgrade, { once: true });
+      }
+    };
+
+    scheduleWithLcpGuard();
 
     return () => {
       isCancelled = true;
@@ -56,13 +102,23 @@ const DeferredAnimatedImage = ({
         cancelIdleCallback(idleCallbackId);
       }
 
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
+      observer?.disconnect();
+
+      if (upgradeTimeoutId !== null) {
+        clearTimeout(upgradeTimeoutId);
+      }
+
+      if (lcpFallbackTimeoutId !== null) {
+        clearTimeout(lcpFallbackTimeoutId);
+      }
+
+      if (lcpSettledTimeoutId !== null) {
+        clearTimeout(lcpSettledTimeoutId);
       }
 
       window.removeEventListener("load", scheduleUpgrade);
     };
-  }, [animatedSrc]);
+  }, [animatedSrc, lcpSettledDelayMs, waitForLcp]);
 
   return <img {...imgProps} src={currentSrc} />;
 };

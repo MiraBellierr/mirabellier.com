@@ -1,11 +1,11 @@
 import { Routes, Route } from "react-router-dom";
 import { lazy, Suspense, useEffect, useRef } from "react";
 
-// Eagerly load critical routes (Home, Blog) for faster initial load
+// Eagerly load the homepage only; other routes stay off the critical path.
 import Home from "./pages/Home";
-import Blog from "./pages/Blog";
 
 // Lazy load non-critical routes to reduce initial bundle size
+const Blog = lazy(() => import("./pages/Blog"));
 const About = lazy(() => import("./pages/About"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Shrine = lazy(() => import("./pages/Shrine"));

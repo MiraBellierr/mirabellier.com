@@ -1,10 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { modulePreloadPlugin } from "./vite-plugin-preload";
 
 export default defineConfig({
-  plugins: [react(), modulePreloadPlugin()],
+  plugins: [react()],
   base: "/",
   optimizeDeps: {
     // Force pre-bundling to dedupe React instances
@@ -20,25 +19,13 @@ export default defineConfig({
         // Optimize chunk splitting
         manualChunks: {
           // React core - frequently used
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
-          // Tiptap editor - lazy loaded, separate from core
-          "tiptap-core": ["@tiptap/react", "@tiptap/starter-kit"],
-          // Tiptap extensions - further split for granular loading
-          "tiptap-extensions": [
-            "@tiptap/extension-placeholder",
-            "@tiptap/extension-text-style",
-            "@tiptap/extension-image",
-            "@tiptap/extension-text-align",
-            "@tiptap/extension-highlight",
-            "@tiptap/extension-typography",
-            "@tiptap/extension-subscript",
-            "@tiptap/extension-superscript",
-          ],
-          // UI libraries - split from main bundle
-          "ui-vendor": [
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-popover",
-            "@floating-ui/react",
+          "react-vendor": [
+            "react",
+            "react-dom",
+            "react/jsx-runtime",
+            "react/jsx-dev-runtime",
+            "react-router-dom",
+            "scheduler",
           ],
         },
         // Optimize asset naming for better caching

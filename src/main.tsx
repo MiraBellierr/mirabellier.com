@@ -2,8 +2,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { API_BASE } from "./lib/config";
-
-const loadCss = () => import("./index.css");
+import "./index.css";
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
 
 function preconnectOrigin(url: string) {
@@ -81,47 +80,7 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   });
 }
 
-// Preload theme background images for faster LCP
-const preloadBackgrounds = () => {
-  let storedTheme: string | null = null;
-
-  try {
-    storedTheme = window.localStorage.getItem("mirabellier-theme");
-  } catch {
-    // Ignore storage access failures and fall back to system preference.
-  }
-
-  const isDark =
-    storedTheme === "dark"
-      ? true
-      : storedTheme === "light"
-        ? false
-        : window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const bgPath = isDark ? "/dark.jpg" : "/light.jpg";
-
-  const link = document.createElement("link");
-  link.rel = "preload";
-  link.as = "image";
-  link.href = bgPath;
-  link.type = "image/jpeg";
-  link.fetchPriority = "high";
-  document.head.appendChild(link);
-};
-
-// Kick CSS loading as soon as the first frame can be scheduled to avoid idle delays.
-if (typeof requestAnimationFrame === "function") {
-  requestAnimationFrame(() => {
-    preconnectOrigin(API_BASE);
-    loadCss();
-    preloadBackgrounds();
-  });
-} else {
-  setTimeout(() => {
-    preconnectOrigin(API_BASE);
-    loadCss();
-    preloadBackgrounds();
-  }, 0);
-}
+preconnectOrigin(API_BASE);
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
