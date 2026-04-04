@@ -36,6 +36,11 @@ function getDelayUntilNextUtcMidnight(now = new Date()) {
   return Math.max(next.getTime() - now.getTime(), 1000);
 }
 
+function getQuestionAnswerTimestamp(value: string) {
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 const QuestionOfTheDay = () => {
   const auth = useOptionalAuth();
   const { confirm } = useConfirm();
@@ -127,6 +132,11 @@ const QuestionOfTheDay = () => {
   const isCarriedOverQuestion = Boolean(
     currentData?.question &&
       currentData.question.recordedDate !== currentData.currentRecordedDate,
+  );
+  const sortedAnswers = [...(currentData?.answers ?? [])].sort(
+    (left, right) =>
+      getQuestionAnswerTimestamp(right.createdAt) -
+      getQuestionAnswerTimestamp(left.createdAt),
   );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -367,9 +377,9 @@ const QuestionOfTheDay = () => {
                 </h3>
               </div>
 
-              {currentData?.answers.length ? (
+              {sortedAnswers.length ? (
                 <div className="space-y-4">
-                  {currentData.answers.map((entry, index) => {
+                  {sortedAnswers.map((entry, index) => {
                     const avatar = resolveAsset(entry.user?.avatar);
                     const displayName = getQuestionAnswerDisplayName(entry);
 
