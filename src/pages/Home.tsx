@@ -9,7 +9,7 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 
 import { Link } from "react-router-dom";
 import { API_BASE } from "@/lib/config";
-import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
+import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
 
 type AnimeItem = { id: string; title: string; url: string; img: string };
 const HOME_HERO_POSTER_SRC = "/kanna-kobayashi-poster.webp";
@@ -335,10 +335,10 @@ const Home = () => {
                   (auth.user as any).discordId === "548050617889980426" && (
                     <div className="mt-2 text-center">
                       <Link
-                        to="/admin/anime"
+                        to="/admin"
                         className="text-sm text-pink-500 underline"
                       >
-                        Edit anime list
+                        Open admin
                       </Link>
                     </div>
                   )}

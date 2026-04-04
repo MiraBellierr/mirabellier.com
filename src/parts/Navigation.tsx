@@ -56,6 +56,12 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) => pathname.startsWith("/blog"),
       },
       {
+        label: "question",
+        to: "/question-of-the-day",
+        icon: art,
+        isActive: (pathname) => pathname.startsWith("/question-of-the-day"),
+      },
+      {
         label: "quotes",
         to: "/quotes",
         icon: art,

@@ -17,6 +17,7 @@ const https = require("https");
 const API_BASE = process.env.VITE_API_BASE || "https://mirabellier.com/api";
 const WEBSITE_BASE = process.env.WEBSITE_BASE || "https://mirabellier.com";
 const OUTPUT_PATH = path.join(__dirname, "public", "sitemap.xml");
+const BACKEND_DIR = path.join(__dirname, "mirabellier-backend");
 
 const STATIC_ROUTES = [
   { path: "/", priority: "1.0", changefreq: "weekly" },
@@ -26,6 +27,12 @@ const STATIC_ROUTES = [
   { path: "/shrine", priority: "0.8", changefreq: "monthly" },
   { path: "/shrine/kanna", priority: "0.7", changefreq: "monthly" },
   { path: "/shrine/rossina", priority: "0.7", changefreq: "monthly" },
+  { path: "/question-of-the-day", priority: "0.8", changefreq: "daily" },
+  {
+    path: "/question-of-the-day/archive",
+    priority: "0.7",
+    changefreq: "daily",
+  },
   { path: "/quotes", priority: "0.8", changefreq: "daily" },
   { path: "/blog", priority: "0.9", changefreq: "daily" },
 ];
@@ -159,6 +166,15 @@ function getPostLastmod(post) {
   return source ? new Date(source).toISOString().split("T")[0] : undefined;
 }
 
+function getQuestionArchiveUrl(entry) {
+  return `${WEBSITE_BASE}/question-of-the-day/archive/${entry.recordedDate}`;
+}
+
+function getQuestionArchiveLastmod(entry) {
+  const source = entry.updatedAt || entry.createdAt;
+  return source ? new Date(source).toISOString().split("T")[0] : undefined;
+}
+
 function readExistingBlogEntries() {
   if (!fs.existsSync(OUTPUT_PATH)) {
     return [];
@@ -187,42 +203,142 @@ function readExistingBlogEntries() {
   return entries;
 }
 
+function readExistingQuestionArchiveEntries() {
+  if (!fs.existsSync(OUTPUT_PATH)) {
+    return [];
+  }
+
+  const xml = fs.readFileSync(OUTPUT_PATH, "utf-8");
+  const matches = xml.matchAll(/<url>([\s\S]*?)<\/url>/g);
+  const entries = [];
+
+  for (const match of matches) {
+    const block = match[1];
+    const loc = block.match(/<loc>(.*?)<\/loc>/)?.[1];
+
+    if (!loc || !loc.startsWith(`${WEBSITE_BASE}/question-of-the-day/archive/`)) {
+      continue;
+    }
+
+    const recordedDate = loc
+      .replace(`${WEBSITE_BASE}/question-of-the-day/archive/`, "")
+      .trim();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(recordedDate)) {
+      continue;
+    }
+
+    entries.push({
+      url: loc,
+      lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1],
+      changefreq: block.match(/<changefreq>(.*?)<\/changefreq>/)?.[1] || "monthly",
+      priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || "0.6",
+    });
+  }
+
+  return entries;
+}
+
+function loadEntriesFromLocalBackend() {
+  const backendSitemapPath = path.join(BACKEND_DIR, "lib", "sitemap.js");
+  const backendDbPath = path.join(BACKEND_DIR, "lib", "db.js");
+  const backendDotenvPath = path.join(BACKEND_DIR, "node_modules", "dotenv");
+  const backendEnvPath = path.join(BACKEND_DIR, ".env");
+
+  if (!fs.existsSync(backendSitemapPath) || !fs.existsSync(backendDbPath)) {
+    return null;
+  }
+
+  try {
+    if (fs.existsSync(backendDotenvPath)) {
+      require(backendDotenvPath).config({ path: backendEnvPath });
+    }
+
+    const { db } = require(backendDbPath);
+    const { collectSitemapEntries } = require(backendSitemapPath);
+    const entries = collectSitemapEntries(db);
+
+    return Array.isArray(entries) ? entries : null;
+  } catch (error) {
+    console.warn(
+      `  Could not read sitemap entries from local backend: ${error.message}`,
+    );
+    return null;
+  }
+}
+
 async function main() {
   try {
     console.log("Generating sitemap.xml...");
     console.log(`  API Base: ${API_BASE}`);
     console.log(`  Website: ${WEBSITE_BASE}`);
 
+    const localBackendEntries = loadEntriesFromLocalBackend();
     const entries = [];
 
-    for (const route of STATIC_ROUTES) {
-      entries.push({
-        url: `${WEBSITE_BASE}${route.path}`,
-        priority: route.priority,
-        changefreq: route.changefreq,
-      });
-    }
-
-    try {
-      console.log("Fetching blog posts...");
-      const posts = await fetchFromAPI("/posts");
-      if (Array.isArray(posts)) {
-        posts.forEach((post) => {
-          entries.push({
-            url: getPostUrl(post),
-            lastmod: getPostLastmod(post),
-            priority: "0.7",
-            changefreq: "monthly",
-          });
-        });
-        console.log(`  Added ${posts.length} blog posts`);
-      }
-    } catch (error) {
-      const existingBlogEntries = readExistingBlogEntries();
-      existingBlogEntries.forEach((entry) => entries.push(entry));
-      console.warn(
-        `  Could not fetch blog posts: ${error.message}. Continuing with ${existingBlogEntries.length} preserved blog URLs...`,
+    if (localBackendEntries?.length) {
+      entries.push(...localBackendEntries);
+      console.log(
+        `Loaded ${localBackendEntries.length} sitemap entries from local backend data.`,
       );
+    } else {
+      console.log("Local backend sitemap data unavailable; falling back to API fetches.");
+
+      for (const route of STATIC_ROUTES) {
+        entries.push({
+          url: `${WEBSITE_BASE}${route.path}`,
+          priority: route.priority,
+          changefreq: route.changefreq,
+        });
+      }
+
+      try {
+        console.log("Fetching blog posts...");
+        const posts = await fetchFromAPI("/posts");
+        if (Array.isArray(posts)) {
+          posts.forEach((post) => {
+            entries.push({
+              url: getPostUrl(post),
+              lastmod: getPostLastmod(post),
+              priority: "0.7",
+              changefreq: "monthly",
+            });
+          });
+          console.log(`  Added ${posts.length} blog posts`);
+        }
+      } catch (error) {
+        const existingBlogEntries = readExistingBlogEntries();
+        existingBlogEntries.forEach((entry) => entries.push(entry));
+        console.warn(
+          `  Could not fetch blog posts: ${error.message}. Continuing with ${existingBlogEntries.length} preserved blog URLs...`,
+        );
+      }
+
+      try {
+        console.log("Fetching question archive...");
+        const archiveEntries = await fetchFromAPI("/question-of-the-day/archive");
+        if (Array.isArray(archiveEntries)) {
+          archiveEntries.forEach((entry) => {
+            if (!entry?.recordedDate) {
+              return;
+            }
+
+            entries.push({
+              url: getQuestionArchiveUrl(entry),
+              lastmod: getQuestionArchiveLastmod(entry),
+              priority: "0.6",
+              changefreq: "monthly",
+            });
+          });
+          console.log(`  Added ${archiveEntries.length} archived question days`);
+        }
+      } catch (error) {
+        const existingArchiveEntries = readExistingQuestionArchiveEntries();
+        existingArchiveEntries.forEach((entry) => entries.push(entry));
+        console.warn(
+          `  Could not fetch question archive: ${error.message}. Continuing with ${existingArchiveEntries.length} preserved archive URLs...`,
+        );
+      }
     }
 
     const sitemap = generateSiteMap(entries);

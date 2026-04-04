@@ -16,7 +16,14 @@ const BlogEdit = lazy(() => import("./pages/BlogEdit"));
 const Quotes = lazy(() => import("./pages/Quotes"));
 const Guestbook = lazy(() => import("./pages/Guestbook"));
 const GuestbookSign = lazy(() => import("./pages/GuestbookSign"));
+const QuestionOfTheDay = lazy(() => import("./pages/QuestionOfTheDay"));
+const QuestionArchive = lazy(() => import("./pages/QuestionArchive"));
+const QuestionArchiveDay = lazy(() => import("./pages/QuestionArchiveDay"));
+const AdminHome = lazy(() => import("./pages/AdminHome"));
 const AdminAnime = lazy(() => import("./pages/AdminAnime"));
+const AdminQuestionOfTheDay = lazy(
+  () => import("./pages/AdminQuestionOfTheDay"),
+);
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -137,12 +144,29 @@ function App() {
                   <Route path="/shrine/kanna" element={<Kanna />} />
                   <Route path="/shrine/rossina" element={<Rossina />} />
                   <Route path="/quotes" element={<Quotes />} />
+                  <Route
+                    path="/question-of-the-day"
+                    element={<QuestionOfTheDay />}
+                  />
+                  <Route
+                    path="/question-of-the-day/archive"
+                    element={<QuestionArchive />}
+                  />
+                  <Route
+                    path="/question-of-the-day/archive/:recordedDate"
+                    element={<QuestionArchiveDay />}
+                  />
                   <Route path="/guestbook" element={<Guestbook />} />
                   <Route path="/guestbook/sign" element={<GuestbookSign />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogPost />} />
                   <Route path="/blog/edit" element={<BlogEdit />} />
+                  <Route path="/admin" element={<AdminHome />} />
                   <Route path="/admin/anime" element={<AdminAnime />} />
+                  <Route
+                    path="/admin/question-of-the-day"
+                    element={<AdminQuestionOfTheDay />}
+                  />
                   <Route path="/login" element={<Login />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/settings" element={<Settings />} />
