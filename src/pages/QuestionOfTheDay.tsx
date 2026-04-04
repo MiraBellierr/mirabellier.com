@@ -274,9 +274,6 @@ const QuestionOfTheDay = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <p className="text-sm font-bold text-blue-700">
-                          Answer:
-                        </p>
                         <p className="text-sm text-blue-500">
                           {auth?.user
                             ? `Signed in as ${auth.user.username}.`
