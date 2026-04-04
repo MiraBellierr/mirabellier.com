@@ -232,10 +232,6 @@ const QuestionArchiveDay = () => {
                                       {displayName}
                                     </span>
                                   )}
-
-                                  <span className="text-[11px] uppercase tracking-[0.18em] text-blue-400">
-                                    {entry.user ? "profile" : "guest"}
-                                  </span>
                                 </div>
 
                                 <p className="mt-1 text-xs text-blue-400">
