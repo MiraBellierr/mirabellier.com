@@ -55,11 +55,22 @@ export type QuestionOfTheDayAdminQuestion = QuestionOfTheDayQuestion & {
 
 export type QuestionOfTheDayAdminQueuePayload = {
   currentRecordedDate: string;
+  page: number;
+  pageSize: number;
+  totalQuestions: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
   questions: QuestionOfTheDayAdminQuestion[];
 };
 
 function readString(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
+}
+
+function readNumber(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function normalizeUser(value: unknown): QuestionOfTheDayUser {
@@ -265,13 +276,34 @@ export async function fetchQuestionOfTheDayArchiveDay(recordedDate: string) {
   } as QuestionOfTheDayArchiveDayPayload;
 }
 
-export async function fetchQuestionOfTheDayAdminQueue(token: string) {
-  const response = await fetch(joinApi("/question-of-the-day/admin/questions"), {
-    cache: "no-store",
-    headers: {
-      Authorization: `Bearer ${token}`,
+export async function fetchQuestionOfTheDayAdminQueue(
+  token: string,
+  input?: {
+    page?: number;
+    pageSize?: number;
+  },
+) {
+  const searchParams = new URLSearchParams();
+
+  if (Number.isFinite(input?.page) && Number(input?.page) > 0) {
+    searchParams.set("page", String(Math.trunc(Number(input?.page))));
+  }
+
+  if (Number.isFinite(input?.pageSize) && Number(input?.pageSize) > 0) {
+    searchParams.set("pageSize", String(Math.trunc(Number(input?.pageSize))));
+  }
+
+  const response = await fetch(
+    joinApi(
+      `/question-of-the-day/admin/questions${searchParams.size ? `?${searchParams.toString()}` : ""}`,
+    ),
+    {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     const message = await readErrorText(response);
@@ -282,6 +314,12 @@ export async function fetchQuestionOfTheDayAdminQueue(token: string) {
 
   return {
     currentRecordedDate: readString(data.currentRecordedDate),
+    page: readNumber(data.page, 1),
+    pageSize: readNumber(data.pageSize, 5),
+    totalQuestions: readNumber(data.totalQuestions, 0),
+    totalPages: readNumber(data.totalPages, 0),
+    hasPreviousPage: Boolean(data.hasPreviousPage),
+    hasNextPage: Boolean(data.hasNextPage),
     questions: Array.isArray(data.questions)
       ? data.questions.map(normalizeAdminQuestion)
       : [],

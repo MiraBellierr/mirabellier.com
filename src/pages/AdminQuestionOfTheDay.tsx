@@ -79,6 +79,8 @@ function parseQueuedPrompts(value: string) {
     .filter(Boolean);
 }
 
+const SCHEDULED_QUESTIONS_PAGE_SIZE = 5;
+
 const AdminQuestionOfTheDay = () => {
   const auth = useAuth();
   const { confirm } = useConfirm();
@@ -91,13 +93,16 @@ const AdminQuestionOfTheDay = () => {
   >([]);
   const [queueDraft, setQueueDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [queueLoading, setQueueLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [forcingArchive, setForcingArchive] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  const [queuePage, setQueuePage] = useState(1);
 
   const isOwner = auth.user?.discordId === QUESTION_OWNER_DISCORD_ID;
 
@@ -118,25 +123,25 @@ const AdminQuestionOfTheDay = () => {
 
     if (!isOwner || !token) {
       setLoading(false);
+      setCurrentData(null);
+      setArchiveEntries([]);
       return;
     }
 
     let cancelled = false;
 
-    const loadAdminData = async () => {
+    const loadAdminPageData = async () => {
       setLoading(true);
 
       try {
-        const [current, queue, archive] = await Promise.all([
+        const [current, archive] = await Promise.all([
           fetchCurrentQuestionOfTheDay({ token }),
-          fetchQuestionOfTheDayAdminQueue(token),
           fetchQuestionOfTheDayArchive(),
         ]);
 
         if (cancelled) return;
 
         setCurrentData(current);
-        setQueueData(queue);
         setArchiveEntries(archive.slice(0, 8));
         setError(null);
       } catch (err) {
@@ -151,12 +156,59 @@ const AdminQuestionOfTheDay = () => {
       }
     };
 
-    void loadAdminData();
+    void loadAdminPageData();
 
     return () => {
       cancelled = true;
     };
   }, [auth.token, isOwner, reloadTick]);
+
+  useEffect(() => {
+    const token = auth.token;
+
+    if (!isOwner || !token) {
+      setQueueLoading(false);
+      setQueueData(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadQueueData = async () => {
+      setQueueLoading(true);
+
+      try {
+        const queue = await fetchQuestionOfTheDayAdminQueue(token, {
+          page: queuePage,
+          pageSize: SCHEDULED_QUESTIONS_PAGE_SIZE,
+        });
+
+        if (cancelled) return;
+
+        setQueueData(queue);
+        setQueueError(null);
+
+        if (queue.page !== queuePage) {
+          setQueuePage(queue.page);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setQueueError(
+          err instanceof Error ? err.message : "Failed to load scheduled questions",
+        );
+      } finally {
+        if (!cancelled) {
+          setQueueLoading(false);
+        }
+      }
+    };
+
+    void loadQueueData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.token, isOwner, queuePage, reloadTick]);
 
   if (!auth.user) {
     return (
@@ -188,6 +240,14 @@ const AdminQuestionOfTheDay = () => {
       ? "current UTC day"
       : "carried forward until answered";
   const queuedPromptCount = parseQueuedPrompts(queueDraft).length;
+  const queueStart =
+    queueData && queueData.questions.length
+      ? (queueData.page - 1) * queueData.pageSize + 1
+      : 0;
+  const queueEnd =
+    queueData && queueData.questions.length
+      ? queueStart + queueData.questions.length - 1
+      : 0;
 
   const handleQueueSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -460,11 +520,21 @@ const AdminQuestionOfTheDay = () => {
                   scheduled questions
                 </h3>
                 <p className="text-sm text-blue-500">
-                  The live question plus everything still queued behind it.
+                  The live question plus everything still queued behind it, 5 at a time.
                 </p>
               </div>
 
-              {queueData?.questions.length ? (
+              {queueError ? (
+                <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+                  {queueError}
+                </div>
+              ) : null}
+
+              {queueLoading ? (
+                <p className="text-sm text-blue-500">
+                  Loading scheduled questions...
+                </p>
+              ) : queueData?.questions.length ? (
                 <div className="space-y-4">
                   {queueData.questions.map((entry, index) => (
                     <article
@@ -499,6 +569,41 @@ const AdminQuestionOfTheDay = () => {
                       </p>
                     </article>
                   ))}
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-blue-100 pt-4">
+                    <p className="text-xs text-blue-400">
+                      Showing {queueStart}-{queueEnd} of {queueData.totalQuestions}{" "}
+                      scheduled question
+                      {queueData.totalQuestions === 1 ? "" : "s"}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQueuePage((value) => Math.max(1, value - 1))
+                        }
+                        disabled={!queueData.hasPreviousPage || queueLoading}
+                        className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Previous
+                      </button>
+
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">
+                        Page {queueData.page} of{" "}
+                        {Math.max(queueData.totalPages, 1)}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => setQueuePage((value) => value + 1)}
+                        disabled={!queueData.hasNextPage || queueLoading}
+                        className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-blue-500">
