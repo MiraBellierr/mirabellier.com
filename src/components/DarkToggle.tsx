@@ -47,8 +47,6 @@ const DarkToggle: React.FC = () => {
       window.localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
     });
     safely(() => {
-      // Clear any stale inline theme background so CSS variables from the
-      // current stylesheet control the page background.
       document.documentElement.style.removeProperty("--page-bg");
     });
   }, [isDark]);

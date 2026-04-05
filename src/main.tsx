@@ -72,15 +72,21 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
+const initializeNonCriticalBoot = () => {
+  preconnectOrigin(API_BASE);
+
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
     void navigator.serviceWorker.register("/sw.js").catch(() => {
       // Ignore registration failures and keep loading the app.
     });
-  });
-}
+  }
+};
 
-preconnectOrigin(API_BASE);
+if (document.readyState === "complete") {
+  initializeNonCriticalBoot();
+} else {
+  window.addEventListener("load", initializeNonCriticalBoot, { once: true });
+}
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>

@@ -64,12 +64,6 @@ const adminTools = [
     to: "/admin/question-of-the-day",
     action: "Open question admin",
   },
-  {
-    title: "Anime List",
-    description: "Manage the anime sidebar list that appears on the homepage.",
-    to: "/admin/anime",
-    action: "Open anime admin",
-  },
 ];
 
 const AdminHome = () => {

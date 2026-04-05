@@ -44,6 +44,19 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         icon: projects,
         isActive: (pathname) => pathname === "/projects",
       },
+      {
+        label: "anime",
+        to: "/anime",
+        icon: art,
+        isActive: (pathname) => pathname === "/anime",
+      },
+      {
+        label: "shrine",
+        to: "/shrine",
+        icon: shrine,
+        isActive: (pathname) =>
+          pathname === "/shrine" || pathname.startsWith("/shrine/"),
+      },
     ],
   },
   {
@@ -66,13 +79,6 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         to: "/quotes",
         icon: art,
         isActive: (pathname) => pathname === "/quotes",
-      },
-      {
-        label: "shrine",
-        to: "/shrine",
-        icon: shrine,
-        isActive: (pathname) =>
-          pathname === "/shrine" || pathname.startsWith("/shrine/"),
       },
       {
         label: "guestbook",

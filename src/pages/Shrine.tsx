@@ -2,12 +2,36 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import DeferredAnimatedImage from "@/components/DeferredAnimatedImage";
+import Divider from "../parts/Divider";
 import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 import kannaRight from "@/assets/anime/kanna-right.webp";
+
+const shrineEntries = [
+  {
+    title: "Kamui Kanna",
+    path: "/shrine/kanna",
+    imageSrc: "/kanna1.jpg",
+    imageAlt: "Kanna shrine hallway preview",
+    summary:
+      "Kanna Kamui is a tiny dragon with sleepy eyes, soft cloud energy, and the kind of quiet presence that makes every scene feel warmer.",
+    details:
+      "Calm, cute, snack-motivated, and a little chaotic in the best way.",
+  },
+  {
+    title: "Rossina Wulfperl Luppino",
+    path: "/shrine/rossina",
+    imageSrc: "/rossi1.jpg",
+    imageAlt: "Rossina shrine hallway preview",
+    summary:
+      "Rossina carries a sharper kind of charm: pack loyalty, red-hood gravity, and the cool control of someone already walking toward command.",
+    details:
+      "Disciplined, dangerous, and deliberate with poised wolfpack devotion.",
+  },
+] as const;
 
 const Shrine = () => {
   useEffect(() => {
@@ -73,96 +97,55 @@ const Shrine = () => {
             </div>
           </div>
 
-          <main className="w-full space-y-4 p-4 lg:w-3/5">
-            <Link
-              aria-label="Open Kanna shrine"
-              className="shrine-directory-link block"
-              to="/shrine/kanna"
-            >
-              <section className="card-border shrine-directory-card shrine-hero">
-                <div className="shrine-glow shrine-glow--one" aria-hidden="true" />
-                <div className="shrine-glow shrine-glow--two" aria-hidden="true" />
+          <main className="w-full space-y-2 p-4 lg:w-3/5">
+            <section className="card-border space-y-4 bg-white/55 p-4">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-blue-700">
+                  my shrine directory <span className="font-normal">₍₍⚞(˶{">"}ᗜ{"<"}˶)⚟⁾⁾</span>
+                </h2>
+                <p className="text-sm text-blue-500">
+                  little rooms for characters I really love
+                </p>
+              </div>
 
-                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                  <div className="relative z-10 space-y-4 p-5 lg:p-6">
-
-                    <div className="space-y-3">
-                      <h2 className="text-3xl font-bold text-blue-700 lg:text-4xl">
-                        Kamui Kanna
-                      </h2>
-                      <p className="max-w-2xl text-[15px] leading-7 text-slate-700">
-                        Kanna Kamui is a tiny dragon with sleepy eyes, soft cloud
-                        energy, and the kind of quiet presence that makes every
-                        scene feel instantly warmer.
-                      </p>
-                      <p className="max-w-2xl text-sm leading-7 text-slate-700">
-                        She is calm, cute, a little chaotic, very snack-motivated,
-                        and basically perfect shrine material if you love comfort
-                        characters with hidden thunder inside them.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 p-5 lg:p-6">
-                    <div className="shrine-frame h-full">
+              <ol className="space-y-1">
+                {shrineEntries.map((entry, index) => (
+                  <li
+                    key={entry.path}
+                    className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
+                  >
+                    <article className="flex items-start gap-3">
                       <img
-                        className="h-full min-h-[260px] w-full rounded-[1.15rem] object-cover object-top"
-                        src="/kanna1.jpg"
-                        width="420"
-                        height="320"
-                        alt="Kanna shrine hallway preview"
-                        loading="eager"
+                        src={entry.imageSrc}
+                        alt={entry.imageAlt}
+                        className="h-20 w-14 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                        loading={index === 0 ? "eager" : "lazy"}
                       />
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </Link>
 
-            <Link
-              aria-label="Open Rossina shrine"
-              className="shrine-directory-link block"
-              to="/shrine/rossina"
-            >
-              <section className="card-border shrine-directory-card shrine-hero">
-                <div className="shrine-glow shrine-glow--one" aria-hidden="true" />
-                <div className="shrine-glow shrine-glow--two" aria-hidden="true" />
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words font-bold text-blue-700">
+                          {index + 1}. {entry.title}{" "}
+                          <Link
+                            to={entry.path}
+                            className="break-all text-sm font-normal text-blue-600 underline hover:text-blue-800"
+                          >
+                            (Open shrine)
+                          </Link>
+                        </p>
+                        <p className="text-sm text-slate-700">
+                          {entry.summary}
+                        </p>
+                        <p className="text-sm text-blue-500">
+                          {entry.details}
+                        </p>
+                      </div>
+                    </article>
+                  </li>
+                ))}
+              </ol>
+            </section>
 
-                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                  <div className="relative z-10 space-y-4 p-5 lg:p-6">
-
-                    <div className="space-y-3">
-                      <h2 className="text-3xl font-bold text-blue-700 lg:text-4xl">
-                        Rossina Wulfperl Luppino
-                      </h2>
-                      <p className="max-w-2xl text-[15px] leading-7 text-slate-700">
-                        Rossina Wulfperl Luppino, or Rossi, carries a sharper kind
-                        of charm: Pack loyalty, red-hood gravity, and the cool
-                        control of someone already walking toward command.
-                      </p>
-                      <p className="max-w-2xl text-sm leading-7 text-slate-700">
-                        She feels disciplined, dangerous, and completely
-                        deliberate, which makes her shrine energy less cloud-soft
-                        comfort and more poised wolfpack devotion.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 p-5 lg:p-6">
-                    <div className="shrine-frame h-full">
-                      <img
-                        className="h-full min-h-[260px] w-full rounded-[1.15rem] object-cover object-top"
-                        src="/rossi1.jpg"
-                        width="420"
-                        height="320"
-                        alt="Rossina shrine hallway preview"
-                        loading="eager"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </Link>
+            <Divider />
           </main>
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">

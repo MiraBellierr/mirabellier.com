@@ -24,6 +24,7 @@ const STATIC_ROUTES = [
   { path: "/home", priority: "0.8", changefreq: "weekly" },
   { path: "/about", priority: "0.8", changefreq: "monthly" },
   { path: "/projects", priority: "0.8", changefreq: "monthly" },
+  { path: "/anime", priority: "0.8", changefreq: "daily" },
   { path: "/shrine", priority: "0.8", changefreq: "monthly" },
   { path: "/shrine/kanna", priority: "0.7", changefreq: "monthly" },
   { path: "/shrine/rossina", priority: "0.7", changefreq: "monthly" },

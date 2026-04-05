@@ -108,7 +108,6 @@ This frontend expects an API at `VITE_API_BASE`. If your backend uses a differen
 - `/settings` - account settings
 - `/profile` - your own profile page when logged in
 - `/profile/:username` - public profile page
-- `/admin/anime` - anime admin page
 
 ## If something feels broken
 

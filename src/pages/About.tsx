@@ -272,16 +272,14 @@ const About = () => {
               </div>
             </div>
 
-            <Divider />
+            <Divider variant="image" />
 
             <section className="card-border p-3">
               <div>
                 <div className="space-y-2">
-                  <p
-                    className="mb-2 text-xl font-bold text-blue-700"
-                  >
+                  <h2 className="mb-2 text-xl font-bold text-blue-700">
                     📊 Visitor Graph (˶ᵔ ᵕ ᵔ˶)
-                  </p>
+                  </h2>
 
                   <p
                     className="max-w-2xl text-[15px] leading-7 text-slate-700"

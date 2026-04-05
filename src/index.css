@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/fredoka-latin-variable.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Quicksand";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/quicksand-latin-variable.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* Critical CSS variables inlined to eliminate request chain */
 :root {
   overflow-wrap: break-word;
@@ -9,6 +33,8 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --site-scale: 1;
+  --site-min-screen-height: 100vh;
   --font-body:
     "Fredoka", "Quicksand", "Avenir Next Rounded", "Trebuchet MS", "Segoe UI",
     sans-serif;
@@ -281,67 +307,28 @@
   }
 }
 
-/* Global box-sizing and transition */
-:root *,
-:root ::before,
-:root ::after {
+/* Global box-sizing */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  transition: none var(--tt-transition-duration-default)
-    var(--tt-transition-easing-default);
 }
 
-/* Prevent CLS by isolating page root containers — they should not trigger sibling reflows */
-div[class*="min-h-screen"][class*="text-blue"][class*="font-"][class*="flex"][class*="flex-col"] {
-  contain: layout style paint;
+#root {
+  font-family: var(--font-body);
+  min-height: var(--site-min-screen-height);
+}
+
+.font-\[sans-serif\] {
   font-family: var(--font-body);
 }
 
-[class*="font-[sans-serif]"] {
-  font-family: var(--font-body);
-}
-
-/* Force GPU compositing for animated elements */
-[class*="animate-"],
-.blog-page .card-border,
-.blog-page .card-border img,
-.rainbow-tag {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  -webkit-perspective: 1000;
-  perspective: 1000;
-}
-
-/* Optimize hover scale animations */
-[class*="hover:scale-"] {
-  will-change: transform;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-}
-
-/* Optimize opacity transitions */
-[class*="hover:opacity-"],
-[class*="transition-opacity"] {
-  will-change: opacity;
-  backface-visibility: hidden;
-}
-
-/* Optimize color transitions - these are paint operations but acceptable */
-[class*="hover:bg-"],
-[class*="transition-colors"] {
-  will-change: background-color;
-}
-
-/* Prevent layout shifts */
 @layer base {
-  /* Reserve space for all images */
   img {
     max-width: 100%;
     height: auto;
-    /* Prevent image flickering */
-    image-rendering: -webkit-optimize-contrast;
   }
 
-  /* Aspect ratio containers prevent layout shift */
   .aspect-ratio-box {
     position: relative;
     width: 100%;
@@ -361,44 +348,6 @@ div[class*="min-h-screen"][class*="text-blue"][class*="font-"][class*="flex"][cl
     height: 100%;
     object-fit: cover;
   }
-
-  /* Contain layout for better performance - reduces style recalculation scope */
-  main,
-  article,
-  section {
-    contain: layout style;
-  }
-
-  /* Isolate card components to prevent style propagation */
-  .card-border {
-    contain: content;
-  }
-
-  /* Optimize list rendering */
-  [class*="space-y-"],
-  [class*="space-x-"] {
-    contain: layout;
-  }
-
-  /* Prevent dynamic content shifts */
-  [class*="border-"][class*="rounded"] {
-    will-change: auto;
-    contain: layout;
-  }
-
-  /* Reserve space for Header/Footer/Navigation to prevent reflow */
-  header,
-  footer,
-  nav {
-    contain: layout style;
-    width: 100%;
-  }
-
-  /* Prevent Suspense fallback and lazy component shifts */
-  [class*="Suspense"],
-  [class*="fallback"] {
-    contain: layout style paint;
-  }
 }
 
 html {
@@ -410,6 +359,26 @@ html {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: calc(16px * var(--site-scale));
+  }
+
+  @supports (zoom: 1) {
+    :root {
+      --site-min-screen-height: calc(100vh / var(--site-scale));
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      zoom: var(--site-scale);
+    }
+  }
 }
 
 body {
@@ -463,6 +432,16 @@ h6 {
 
 .dark .right-side-panel :is(h2, h3, p, li, span, strong, div) {
   color: rgb(233, 213, 255) !important;
+}
+
+.home-clock-greeting {
+  background: rgba(252, 231, 243, 0.82);
+  color: rgb(219, 39, 119);
+}
+
+.dark .right-side-panel .home-clock-greeting {
+  background: rgba(88, 28, 135, 0.72) !important;
+  color: rgb(253, 242, 248) !important;
 }
 
 [class*="border-"][class*="rounded"] {

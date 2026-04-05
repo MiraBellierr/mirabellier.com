@@ -1,4 +1,24 @@
-const Divider = () => {
+import dividerImageInline from "@/assets/divider-15x-inline.webp";
+
+type DividerProps = {
+  variant?: "default" | "image";
+};
+
+const Divider = ({ variant = "default" }: DividerProps) => {
+  if (variant === "image") {
+    return (
+      <div className="py-2" aria-hidden="true">
+        <div
+          className="h-5 w-full bg-repeat-x bg-center"
+          style={{
+            backgroundImage: `url(${dividerImageInline})`,
+            backgroundSize: "auto 100%",
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="hidden items-center gap-3 py-1 text-blue-300 md:flex dark:text-purple-300/70"

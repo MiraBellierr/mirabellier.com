@@ -2,48 +2,84 @@ import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
-import DeferredAnimatedImage from "@/components/DeferredAnimatedImage";
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 
 import { Link } from "react-router-dom";
-import { API_BASE } from "@/lib/config";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
 
-type AnimeItem = { id: string; title: string; url: string; img: string };
+const DeferredAnimatedImage = lazy(
+  () => import("@/components/DeferredAnimatedImage"),
+);
 const HOME_HERO_POSTER_SRC = "/kanna-kobayashi-poster.webp";
+const MALAYSIA_TIMEZONE = "Asia/Kuala_Lumpur";
+const HOME_HERO_ANIMATION_MEDIA_QUERY = "(min-width: 1024px)";
 
-const defaultAnime: AnimeItem[] = [
-  {
-    id: "1",
-    title: "The Fragrant Flower Blooms with Dignity",
-    url: "https://myanimelist.net/anime/59845/Kaoru_Hana_wa_Rin_to_Saku",
-    img: "https://i.pinimg.com/736x/a2/f6/94/a2f694c10cc0294b62d136e1c54a7731.jpg",
-  },
-  {
-    id: "2",
-    title: "Dan Da Dan Season 2",
-    url: "https://myanimelist.net/anime/60543/Dandadan_2nd_Season",
-    img: "https://i.pinimg.com/736x/23/e7/f5/23e7f559ae81d246abb9ba9e456f9075.jpg",
-  },
-  {
-    id: "3",
-    title: "One Piece",
-    url: "https://myanimelist.net/anime/21/One_Piece",
-    img: "https://i.pinimg.com/736x/eb/ad/26/ebad2683b9ce3d2eb0fdd23f4e3f8eda.jpg",
-  },
-];
+function getHomeClockParts(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-MY", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: MALAYSIA_TIMEZONE,
+  }).formatToParts(value);
+
+  return {
+    hour: parts.find((part) => part.type === "hour")?.value || "12",
+    minute: parts.find((part) => part.type === "minute")?.value || "00",
+    dayPeriod:
+      parts.find((part) => part.type === "dayPeriod")?.value?.toUpperCase() ||
+      "",
+  };
+}
+
+function formatHomeDate(value: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: MALAYSIA_TIMEZONE,
+  }).format(value);
+}
+
+function getMalaysiaHour(value: Date) {
+  const formatted = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    hour12: false,
+    timeZone: MALAYSIA_TIMEZONE,
+  }).format(value);
+  const parsed = Number(formatted);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getHomeGreeting(value: Date) {
+  const hour = getMalaysiaHour(value);
+
+  if (hour < 12) {
+    return "soft morning ₊˚☀︎⋆ೃ*:･🌻･";
+  }
+
+  if (hour < 18) {
+    return "sunny afternoon ོ₊⁺☀︎₊⁺⋆.˚";
+  }
+
+  return "cozy night ⋆.˚ ☾⭒.˚";
+}
 
 const Home = () => {
   const auth = useOptionalAuth();
-  const [animeList, setAnimeList] = useState<AnimeItem[]>(defaultAnime); // Start with default data
-  const [showAllAnime, setShowAllAnime] = useState(false);
-  const [showAnimeImages, setShowAnimeImages] = useState(false);
-  const ANIME_PREVIEW_LIMIT = 10;
+  const [now, setNow] = useState(() => new Date());
+  const [showAnimatedHero, setShowAnimatedHero] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia(HOME_HERO_ANIMATION_MEDIA_QUERY).matches;
+  });
+  const clockParts = getHomeClockParts(now);
+  const showClockSeparator = now.getSeconds() % 2 === 0;
 
   useEffect(() => {
-    // Update canonical URL to point to homepage
     const canonicalLink = document.querySelector(
       'link[rel="canonical"]',
     ) as HTMLLinkElement;
@@ -51,7 +87,6 @@ const Home = () => {
       canonicalLink.href = "https://mirabellier.com/";
     }
 
-    // Add structured data for rich results
     const script = document.createElement("script");
     script.type = "application/ld+json";
     script.id = "home-structured-data";
@@ -77,150 +112,102 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    let idleCallbackId: number | null = null;
-    let lcpSettledTimeout: ReturnType<typeof setTimeout> | null = null;
-    let fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
-    let observer: PerformanceObserver | null = null;
-    let hasQueuedRefresh = false;
-
-    const refreshAnimeList = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/anime`);
-        if (res.ok) {
-          const data = await res.json();
-          setAnimeList(data);
-          return;
-        }
-      } catch (err) {
-        console.error("Failed fetching anime from server", err);
-      }
-    };
-
-    const queueRefresh = () => {
-      if (hasQueuedRefresh) {
-        return;
-      }
-
-      hasQueuedRefresh = true;
-      setShowAnimeImages(true);
-
-      if ("requestIdleCallback" in window) {
-        idleCallbackId = requestIdleCallback(() => {
-          void refreshAnimeList();
-        }, { timeout: 4000 });
-      } else {
-        fallbackTimeout = setTimeout(() => {
-          void refreshAnimeList();
-        }, 0);
-      }
-    };
-
-    const scheduleAfterSettledLcp = () => {
-      if (lcpSettledTimeout !== null) {
-        clearTimeout(lcpSettledTimeout);
-      }
-
-      lcpSettledTimeout = setTimeout(queueRefresh, 1200);
-    };
-
-    const scheduleAfterLoad = () => {
-      if (
-        "PerformanceObserver" in window &&
-        PerformanceObserver.supportedEntryTypes?.includes(
-          "largest-contentful-paint",
-        )
-      ) {
-        try {
-          observer = new PerformanceObserver((entryList) => {
-            if (entryList.getEntries().length > 0) {
-              scheduleAfterSettledLcp();
-            }
-          });
-
-          observer.observe({
-            type: "largest-contentful-paint",
-            buffered: true,
-          });
-
-          // If the browser never reports an LCP candidate, still refresh later.
-          fallbackTimeout = setTimeout(queueRefresh, 5000);
-          return;
-        } catch {
-          observer = null;
-        }
-      }
-
-      fallbackTimeout = setTimeout(queueRefresh, 3500);
-    };
-
-    // Keep the above-the-fold render independent from the anime API and wait
-    // until LCP has settled before refreshing sidebar content.
-    if (document.readyState === "complete") {
-      scheduleAfterLoad();
-    } else {
-      window.addEventListener("load", scheduleAfterLoad, { once: true });
-    }
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
 
     return () => {
-      observer?.disconnect();
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
-      if (idleCallbackId !== null && "cancelIdleCallback" in window) {
-        cancelIdleCallback(idleCallbackId);
-      }
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
-      if (lcpSettledTimeout !== null) {
-        clearTimeout(lcpSettledTimeout);
-      }
+    const mediaQuery = window.matchMedia(HOME_HERO_ANIMATION_MEDIA_QUERY);
+    const updateAnimatedHero = () => {
+      setShowAnimatedHero(mediaQuery.matches);
+    };
 
-      if (fallbackTimeout !== null) {
-        clearTimeout(fallbackTimeout);
-      }
+    updateAnimatedHero();
+    mediaQuery.addEventListener("change", updateAnimatedHero);
 
-      window.removeEventListener("load", scheduleAfterLoad);
+    return () => {
+      mediaQuery.removeEventListener("change", updateAnimatedHero);
     };
   }, []);
 
   return (
-    <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
+    <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
       <Header />
 
       <div
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
-        <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
+        <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col p-4 lg:flex-row">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
 
-            <div className=" mt-3 mb-auto justify-center items-center flex">
-              <DeferredAnimatedImage
-                className="h-101 border border-blue-700 shadow-md rounded-2xl"
-                posterSrc={HOME_HERO_POSTER_SRC}
-                animatedSrc={kannaKobayashi}
-                width="300"
-                height="404"
-                alt="anime gif"
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-                waitForLcp
-              />
+            <div className="mt-3 mb-auto flex items-center justify-center">
+              {showAnimatedHero ? (
+                <Suspense
+                  fallback={
+                    <img
+                      className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-[300px]"
+                      src={HOME_HERO_POSTER_SRC}
+                      width="300"
+                      height="404"
+                      alt="anime poster"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
+                  }
+                >
+                  <DeferredAnimatedImage
+                    className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-[300px]"
+                    posterSrc={HOME_HERO_POSTER_SRC}
+                    animatedSrc={kannaKobayashi}
+                    width="300"
+                    height="404"
+                    alt="anime gif"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    waitForLcp
+                  />
+                </Suspense>
+              ) : (
+                <img
+                  className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-[300px]"
+                  src={HOME_HERO_POSTER_SRC}
+                  width="300"
+                  height="404"
+                  alt="anime poster"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              )}
             </div>
           </div>
 
-          <main className="w-full lg:w-3/5 space-y-2 p-4">
-            <div className="space-y-1 p-2 card-border">
-              <h2 className="text-xl font-bold text-blue-700 mb-2">
+          <main className="w-full space-y-2 p-4 lg:w-3/5">
+            <div className="card-border space-y-1 p-4">
+              <h2 className="mb-2 text-xl font-bold text-blue-700">
                 🌸 About Me 🌸
               </h2>
-              <p>Hiya!! I'm Mirabellier! 💙</p>
+              <p>Hiya!! I&apos;m Mirabellier! 💙</p>
               <p>
-                I'm just a{" "}
+                I&apos;m just a{" "}
                 <span className="font-bold text-blue-600">
                   chill internet spirit
                 </span>{" "}
                 who loves{" "}
-                <span className="underline font-bold text-blue-600">cute</span>{" "}
+                <span className="font-bold text-blue-600 underline">cute</span>{" "}
                 things, and making friends!
               </p>
               <p>
@@ -228,115 +215,91 @@ const Home = () => {
                 cat. (I love cats!! 😸)
               </p>
               <div className="mt-2 text-sm text-blue-500">
-                <p>If you see this, you're cute!!</p>
+                <p>If you see this, you&apos;re cute!!</p>
               </div>
               <div className="mt-2 border-t border-blue-200 pt-2 text-[14px]">
                 <p className="pr-2">channeling my phychic power. ⚡</p>
               </div>
             </div>
 
-            <Divider />
+            <Divider variant="image" />
 
-            <div className="space-y-1 p-2 card-border">
-              <h2 className="text-xl font-bold text-blue-700 mb-2">
+            <div className="card-border space-y-1 p-4">
+              <h2 className="mb-2 text-xl font-bold text-blue-700">
                 🧠 Random Facts!
               </h2>
-              <p className="">
+              <p>
                 • My favorite color is{" "}
                 <span className="font-bold text-blue-300">pastel blue</span> 💙
               </p>
-              <p className="">• I love collecting plushies and stickers</p>
-              <p className="">
-                • Sometimes I stay up too late making silly stuff like this
-              </p>
-              <p className="">
-                • I think you're awesome just for being here ^-^
-              </p>
+              <p>• I love collecting plushies and stickers</p>
+              <p>• Sometimes I stay up too late making silly stuff like this</p>
+              <p>• I think you&apos;re awesome just for being here ^-^</p>
             </div>
 
-            <Divider />
+            <Divider variant="image" />
 
-            <div className="space-y-1 p-2 card-border">
-              <h2 className="text-xl font-bold text-blue-700 mb-2">
-                💬 What You’ll Find Here
+            <div className="card-border space-y-1 p-4">
+              <h2 className="mb-2 text-xl font-bold text-blue-700">
+                💬 What You&apos;ll Find Here
               </h2>
-              <p className="">
+              <p>
                 This site is just my little corner of the web where I share my
-                thoughts, memories, and maybe some projects I’m working on! I
+                thoughts, memories, and maybe some projects I&apos;m working on! I
                 might add more pages soon, like:
               </p>
-              <p className="">• ✏️ My blog</p>
-              <p className="">• 🎨 Art or doodles</p>
-              <p className="">• 💾 Programming experiments</p>
+              <p>• ✏️ My blog</p>
+              <p>• 🎨 Art or doodles</p>
+              <p>• 💾 Programming experiments</p>
             </div>
           </main>
 
-          <aside className="right-side-panel w-full lg:w-1/5 mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
-            <div className="space-y-2 text-sm">
-              <h2 className="text-blue-500 dark:text-purple-200 font-bold text-lg text-center">
-                anime updatess!!
-              </h2>
-              <p className="text-blue-500 dark:text-purple-200">
-                updates of my currently watching anime displayed here
-              </p>
-              <div className="flex flex-col mt-3">
-                <div className="max-h-[60vh] overflow-y-auto overflow-x-hidden pr-2">
-                  {(showAllAnime
-                    ? animeList
-                    : animeList.slice(0, ANIME_PREVIEW_LIMIT)
-                  ).map((a, idx) => (
-                    <a
-                      key={a.id}
-                      href={a.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <div className="hover:animate-zoom-out-once card-border rounded-lg p-2 mb-4">
-                        <h3 className="font-bold text-blue-500 dark:text-purple-200">
-                          {idx + 1}. {a.title}
-                        </h3>
-                        {a.img && (
-                          showAnimeImages ? (
-                            <img
-                              className="rounded w-full object-cover"
-                              src={a.img}
-                              alt={a.title}
-                              loading="lazy"
-                              decoding="async"
-                              fetchPriority="low"
-                              width="736"
-                              height="1104"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <div
-                              className="mt-2 w-full rounded bg-blue-50/80"
-                              style={{ aspectRatio: "2 / 3" }}
-                              aria-hidden="true"
-                            />
-                          )
-                        )}
-                      </div>
-                    </a>
-                  ))}
+          <aside className="mb-auto w-full space-y-4 lg:w-1/5">
+            <div className="right-side-panel relative overflow-hidden rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b"
+              />
+
+              <div className="relative space-y-4 text-sm">
+                <div className="p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-400">
+                    my time
+                  </p>
+                  <div className="mt-2 flex items-end gap-2 text-blue-700">
+                    <p className="text-3xl font-bold tabular-nums">
+                      <span>{clockParts.hour}</span>
+                      <span
+                        aria-hidden="true"
+                        className={`inline-block w-[0.55ch] text-center transition-opacity duration-150 ${
+                          showClockSeparator ? "opacity-100" : "opacity-0"
+                        }`}
+                      >
+                        :
+                      </span>
+                      <span>{clockParts.minute}</span>
+                    </p>
+                    {clockParts.dayPeriod ? (
+                      <span className="pb-1 text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
+                        {clockParts.dayPeriod}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-sm font-semibold text-blue-500">
+                    {formatHomeDate(now)}
+                  </p>
+                  <p className="home-clock-greeting mt-3 rounded-full bg-pink-100/70 px-3 py-1 text-center text-xs font-bold tracking-[0.16em] text-pink-600">
+                    {getHomeGreeting(now)}
+                  </p>
                 </div>
-                {animeList.length > ANIME_PREVIEW_LIMIT && (
-                  <button
-                    onClick={() => setShowAllAnime(!showAllAnime)}
-                    className="mt-2 text-sm text-blue-600 underline hover:text-blue-700"
-                  >
-                    {showAllAnime
-                      ? "Show less"
-                      : `Show all ${animeList.length} anime`}
-                  </button>
-                )}
+
                 {auth &&
                   auth.user &&
                   (auth.user as any).discordId === "548050617889980426" && (
-                    <div className="mt-2 text-center">
+                    <div className="text-center">
                       <Link
                         to="/admin"
-                        className="text-sm text-pink-500 underline"
+                        className="inline-flex rounded-full border border-pink-200 bg-white/80 px-4 py-2 text-sm font-semibold text-pink-500 transition hover:bg-pink-50"
                       >
                         Open admin
                       </Link>
