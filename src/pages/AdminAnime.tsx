@@ -230,27 +230,27 @@ const AdminAnime = () => {
               {list.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="p-2 card-border rounded-lg flex items-center justify-between"
+                  className="p-2 card-border rounded-lg flex items-start justify-between gap-3"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
                     {item.img ? (
                       <img
                         src={item.img}
-                        className="w-12 h-12 rounded object-cover"
+                        className="w-12 h-12 rounded object-cover shrink-0"
                         width="48"
                         height="48"
                         alt={item.title}
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded bg-blue-50" />
+                      <div className="w-12 h-12 rounded bg-blue-50 shrink-0" />
                     )}
-                    <div>
-                      <div className="font-bold text-blue-700">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-blue-700 break-words">
                         {idx + 1}. {item.title}
                       </div>
                       <a
                         href={item.url}
-                        className="text-sm text-blue-600"
+                        className="text-sm text-blue-600 break-all"
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -258,7 +258,7 @@ const AdminAnime = () => {
                       </a>
                     </div>
                   </div>
-                  <div>
+                  <div className="shrink-0 self-start">
                     <button
                       onClick={() => remove(item.id)}
                       className="px-3 py-1 rounded-full bg-red-500 text-white"
