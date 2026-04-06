@@ -1,548 +1,354 @@
-import { useEffect } from "react";
+import CharacterShrinePage, {
+  type CharacterShrineData,
+} from "@/components/CharacterShrinePage";
 
-import Footer from "../parts/Footer";
-import Header from "../parts/Header";
-import Navigation from "../parts/Navigation";
-import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
-import kannaShy from "@/assets/anime/kanna-shy.webp";
-
-type ShrineOffering = {
-  code: string;
-  title: string;
-  description: string;
-  detail: string;
-  imageSrc?: string;
-  imageAlt?: string;
-};
-
-type ShrineCard = {
-  eyebrow: string;
-  title: string;
-  body: string;
-};
-
-type ShrineMeter = {
-  label: string;
-  value: string;
-  width: string;
-};
-
-const shrineTags = [
-  "dragon daughter",
-  "tiny chaos angel",
-  "soft cloud energy",
-  "mandatory snack break",
-];
-
-const devotionStats: ShrineMeter[] = [
-  {
-    label: "comfort aura",
-    value: "99%",
-    width: "99%",
-  },
-  {
-    label: "snack devotion",
-    value: "maximum",
-    width: "100%",
-  },
-  {
-    label: "tiny thunder",
-    value: "charged",
-    width: "88%",
-  },
-];
-
-const altarOfferings: ShrineOffering[] = [
-  {
-    code: "01",
-    title: "pancake tower",
+const shrine: CharacterShrineData = {
+  canonical: "https://mirabellier.com/shrine/kanna",
+  structuredDataId: "kanna-structured-data",
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "Kanna Kamui Shrine",
     description:
-      "A respectful stack of syrup-soft pancakes for post-adventure recovery.",
-    detail: "best served with a quiet room and zero interruptions",
-    imageSrc: "/pancake.jpg",
-    imageAlt: "stack of pancakes",
+      "A long-form Kanna Kamui shrine with profile notes, lore, favorite line memories, and a personal gallery.",
+    url: "https://mirabellier.com/shrine/kanna",
+    about: {
+      "@type": "Thing",
+      name: "Kanna Kamui",
+      alternateName: "Kobayashi Kanna",
+    },
   },
-  {
-    code: "02",
-    title: "blanket fort permit",
-    description:
-      "Official permission to vanish into the coziest possible blanket pile.",
-    detail: "valid during rain, naps, and emotional battery recharge hours",
-    imageSrc: "/blanket.jpg",
-    imageAlt: "cozy blanket fort",
+  hero: {
+    name: "Kanna Kamui",
+    subtitle: "My Eternal Shrine to Kanna Kamui",
+    intro:
+      "Small, sleepy, electric, and impossible not to adore, Kanna brings the exact kind of quiet warmth that can make even the softest scene feel unforgettable.",
+    badges: [
+      "quiet thunder",
+      "dragon daughter comfort",
+      "third-grade icon",
+      "pancake-certified",
+    ],
+    heroImage: {
+      src: "/kanna-kobayashi-poster.webp",
+      alt: "Kanna Kamui key visual art",
+      caption: "The soft, serious little face that started all of this.",
+    },
+    supportingImages: [
+      {
+        src: "/kanna1.jpg",
+        alt: "Kanna Kamui smiling in a soft shrine image",
+        caption: "",
+      },
+      {
+        src: "/kanna2.jpg",
+        alt: "Kanna Kamui portrait with cool tones",
+        caption: "The tiny-dragon stare that can win any room instantly.",
+      },
+    ],
   },
-  {
-    code: "03",
-    title: "headpat voucher",
-    description:
-      "A ceremonial reminder that tiny dragons deserve patient kindness.",
-    detail: "redeemable whenever the day feels too loud",
-    imageSrc: "/pat.gif",
-    imageAlt: "headpat gif",
+  welcome: [
+    "Ever since Kanna padded into Kobayashi's apartment with that unreadable little face, she has felt like the embodiment of comfort. She is funny without trying, powerful without posturing, and tender in a way that sneaks up on you after the joke lands.",
+    "This shrine is my way of holding onto the scenes where she softens the whole world just by existing inside it: the sleepy glances, the blunt honesty, the moments where a child starving for love slowly learns what home, praise, and safety can feel like.",
+  ],
+  profile: [
+    {
+      label: "Full Name",
+      value: "Kanna Kamui / Kobayashi Kanna at school",
+    },
+    {
+      label: "Age / Apparent Age",
+      value: "Ancient dragon, appears about elementary-school age in human form",
+    },
+    {
+      label: "Birthday",
+      value: "December 12 in profile listings",
+    },
+    {
+      label: "Height / Weight",
+      value: "120 cm in human-form profile listings / weight not publicly listed",
+    },
+    {
+      label: "Species / Race",
+      value: "Dragon",
+    },
+    {
+      label: "Origin",
+      value: "Miss Kobayashi's Dragon Maid (manga, anime, film)",
+    },
+    {
+      label: "Voice Actor",
+      value: "Maria Naganawa (JP), Jad Saxton (EN)",
+    },
+    {
+      label: "First Appearance",
+      value: "Manga chapter \"Tohru and Shopping\" / anime episode 1",
+    },
+    {
+      label: "Affiliation / Occupation",
+      value: "Kobayashi household, Oborozuka Elementary student",
+    },
+  ],
+  appearance: [
+    {
+      title: "Silhouette and design language",
+      text: "Kanna's design works because it is instantly readable: short stature, rounded shapes, tiny horns, oversized sleeves, and that feather-soft capelet shape that makes her look both mythical and huggable at once.",
+    },
+    {
+      title: "Color symbolism",
+      text: "The white, lavender, navy, and soft gold palette makes her feel like winter light and storm clouds at the same time. Even before she uses electricity, the look already whispers thunder without making her harsh.",
+    },
+    {
+      title: "Clothing and cultural texture",
+      text: "Her outfit borrows from Ainu-inspired visual cues, which gives the costume more identity than a generic cute fantasy dress. It helps her feel rooted in folklore, not just moe design.",
+    },
+    {
+      title: "How the design evolves",
+      text: "The manga keeps her sharp and quietly funny, the anime smooths her into a softer emotional shape, and the 2025 film gives her expressions even more weight when the story turns toward loneliness, family, and wanting to be praised.",
+    },
+  ],
+  appearanceImages: [
+    {
+      src: "/kanna3.jpg",
+      alt: "Kanna Kamui standing in a soft blue-toned image",
+      caption: "Classic Kanna calm: small frame, huge presence.",
+    },
+    {
+      src: "/kanna2.jpg",
+      alt: "Kanna Kamui portrait showing her gentle expression",
+      caption: "The sleepy gaze that makes the whole design work.",
+    },
+    {
+      src: "/kanna1.jpg",
+      alt: "Kanna Kamui image with brighter expression",
+      caption: "A brighter look that still keeps her reserved aura.",
+    },
+  ],
+  personality: [
+    {
+      title: "Core traits",
+      text: "Kanna is observant, deadpan, curious, and quietly affectionate. She rarely performs her feelings loudly, which makes the moments where she reaches out or lights up feel twice as precious.",
+    },
+    {
+      title: "Strengths and flaws",
+      text: "Her biggest strengths are steadiness, loyalty, and emotional intuition. Her sharpest flaws come from insecurity: she can get jealous, test boundaries, or retreat behind pranks when she is scared of being unwanted.",
+    },
+    {
+      title: "Growth through the story",
+      text: "Early Kanna feels exiled and emotionally underfed. School, friendship, and life with Kobayashi gradually teach her that she is allowed to want comfort instead of merely enduring life.",
+    },
+    {
+      title: "Little habits and quirks",
+      text: "The tail-plug charging gag, the tiny \"Ohh\" moments, the pancake devotion, the way she evaluates chaos with one flat sentence, and the total ease with which she naps anywhere all make her feel lived-in instead of manufactured cute.",
+    },
+  ],
+  lore: {
+    spoilerFree: [
+      "Kanna arrives in the human world after being pushed away from home, then slowly finds a new family inside Kobayashi's ordinary apartment life.",
+      "Her story balances comedy and melancholy: one minute she is a tiny chaos gremlin, the next she is the quietest portrait of loneliness in the cast.",
+      "School becomes a major part of her healing because it lets her experience childhood as something playful instead of political or performative.",
+    ],
+    spoilers: [
+      "The deeper her bond with Kobayashi and Tohru grows, the clearer it becomes that home is not simply where she was born but where she is cherished without conditions.",
+      "The 2025 film pushes directly into her relationship with Kimun Kamui, showing how badly she wants parental recognition and how painful that ache still is under her usual composure.",
+      "Kanna's powers also mature alongside her heart: curiosity, science lessons, and human-world experiences all reshape how she understands and uses her draconic strength.",
+    ],
+    hidden: [
+      "Her name and look pull from Ainu mythology and design references, which gives her thunder motif a folklore backbone rather than a random element pick.",
+      "A lot of her acting happens in tiny facial changes. Kanna works because the animators trust stillness instead of forcing constant exaggeration.",
+      "She is one of the clearest examples in the series that tenderness is not weakness. The softer her life becomes, the more fully herself she can be.",
+    ],
   },
-  {
-    code: "04",
-    title: "cloud-shaped candy",
-    description:
-      "Sweet enough to match the whole page and shaped for atmospheric harmony.",
-    detail: "may improve mood by at least one level immediately",
-    imageSrc: "/cloud-shaped-candy.jpg",
-    imageAlt: "cloud-shaped candy",
+  abilities: {
+    overview:
+      "Kanna is strongest when the story lets sleepy cuteness flip, without warning, into genuine dragon force.",
+    items: [
+      {
+        title: "Electricity absorption and discharge",
+        text: "She can recharge herself with electricity and convert that energy into devastating blasts, making her powers feel playful in concept and frightening in practice.",
+      },
+      {
+        title: "Dragon form and flight",
+        text: "Even though her human form is tiny, her dragon form and aerial mobility remind you immediately that she belongs to an overwhelmingly powerful species.",
+      },
+      {
+        title: "Thunder-based offense",
+        text: "Kanna's lightning attacks are iconic because they arrive with almost no wasted motion. Her combat style feels efficient, direct, and very unlike flashy shonen posing.",
+      },
+      {
+        title: "Protective instinct",
+        text: "Her most satisfying power moments are usually tied to care. When she steps in to protect someone she loves, the contrast between her soft demeanor and raw force hits perfectly.",
+      },
+    ],
   },
-];
-
-const devotionCards: ShrineCard[] = [
-  {
-    eyebrow: "reason one",
-    title: "peak comfort character design",
-    body: "The tiny horns, oversized sleeves, sleepy stare, and impossible amount of softness make every scene feel warmer.",
-  },
-  {
-    eyebrow: "reason two",
-    title: "quiet chaos done perfectly",
-    body: "Kanna can be adorable, strange, hilarious, and powerful in the same breath without ever feeling forced.",
-  },
-  {
-    eyebrow: "reason three",
-    title: "the mood this site already loves",
-    body: "The whole website leans cute, dreamy, and a little whimsical, so a Kanna shrine felt like the most natural new room to add.",
-  },
-];
-
-const ritualLoop: ShrineCard[] = [
-  {
-    eyebrow: "step 01",
-    title: "enter softly",
-    body: "Let the page settle in, admire the clouds, and pretend the candles were lit for you specifically.",
-  },
-  {
-    eyebrow: "step 02",
-    title: "offer one good thought",
-    body: "This can be a compliment, a favorite scene, or simply a commitment to be gentler with yourself today.",
-  },
-  {
-    eyebrow: "step 03",
-    title: "leave with better energy",
-    body: "A shrine is doing its job when you close the tab feeling a little lighter than when you arrived.",
-  },
-];
-
-const memoryWall: ShrineCard[] = [
-  {
-    eyebrow: "memory shard",
-    title: "sleepy cloud patrol",
-    body: "The ideal emotional weather for this shrine is bright skies, low stress, and a nap waiting somewhere nearby.",
-  },
-  {
-    eyebrow: "memory shard",
-    title: "tiny but unstoppable",
-    body: "Part of the fun is how Kanna can radiate total calm while still feeling like a tiny storm is hiding underneath.",
-  },
-  {
-    eyebrow: "memory shard",
-    title: "snacks as philosophy",
-    body: "A truly complete shrine should remind people that food, rest, and softness are serious business.",
-  },
-];
-
-const shrineMeters: ShrineMeter[] = [
-  {
-    label: "cozy saturation",
-    value: "96%",
-    width: "96%",
-  },
-  {
-    label: "candle glow",
-    value: "84%",
-    width: "84%",
-  },
-  {
-    label: "snack readiness",
-    value: "100%",
-    width: "100%",
-  },
-];
-
-const shrineEtiquette = [
-  "Compliment the tiny dragon respectfully.",
-  "Bring snacks, never stress.",
-  "Leave the page calmer than you found it.",
-];
-
-const Kanna = () => {
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement | null;
-
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/shrine/kanna";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "kanna-structured-data";
-    script.text = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      name: "Kanna Shrine",
-      description:
-        "A cozy Kanna shrine page with favorite details, offerings, and a tiny ritual loop.",
-      url: "https://mirabellier.com/shrine/kanna",
-      about: [
-        "Kanna Kamui",
-        "Miss Kobayashi's Dragon Maid",
-        "anime shrine page",
+  relationships: [
+    {
+      title: "Kobayashi",
+      text: "The emotional center of Kanna's life. Kobayashi gives her food, routine, patience, and the everyday kind of love that slowly teaches Kanna she does not have to earn her place first.",
+    },
+    {
+      title: "Tohru",
+      text: "Tohru brings her into the human world, fusses over her like an older sister, and helps create the family structure Kanna never fully had before.",
+    },
+    {
+      title: "Riko Saikawa",
+      text: "One of the funniest and sweetest school dynamics in the series. Kanna treats Saikawa's dramatic devotion with dry honesty, but there is real affection underneath the deadpan humor.",
+    },
+    {
+      title: "Kimun Kamui and the dragon world",
+      text: "Her father and old world represent the wound at the center of her story: the longing to be seen, praised, and chosen by the people who should have loved her first.",
+    },
+  ],
+  quotes: [
+    {
+      theme: "soft little line memories",
+      items: [
+        {
+          line: "\"I'm home, Kobayashi.\"",
+          context: "The kind of line that turns an apartment into a real family space.",
+        },
+        {
+          line: "\"I like it here.\"",
+          context: "Simple, quiet, and devastating because it means she finally feels safe.",
+        },
+        {
+          line: "\"Food tastes better together.\"",
+          context: "Kanna is at her cutest when meals become a love language.",
+        },
       ],
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const restoredCanonical = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement | null;
-
-      if (restoredCanonical) {
-        restoredCanonical.href = "https://mirabellier.com/";
-      }
-
-      document.getElementById("kanna-structured-data")?.remove();
-    };
-  }, []);
-
-  return (
-    <div className="shrine-page min-h-screen font-[sans-serif] text-blue-900 flex flex-col">
-      <Header />
-
-      <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
-        style={{ backgroundImage: "var(--page-bg)" }}
-      >
-        <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">
-          <div className="left-side-rail flex-grow flex-col">
-            <Navigation />
-
-            <div className="mt-3 hidden justify-center lg:flex">
-              <div className="shrine-side-card w-full max-w-[320px] rounded-[1.4rem] p-3">
-                <div className="shrine-frame">
-                  <img
-                    className="h-[420px] w-full rounded-[1.15rem] object-cover"
-                    src={kannaShy}
-                    width="320"
-                    height="420"
-                    alt="Kanna looking shy"
-                    loading="lazy"
-                  />
-                </div>
-                <p className="mt-3 text-center text-sm font-bold text-blue-600">
-                  quiet guardian of the shrine
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <main className="w-full space-y-4 p-4 lg:w-3/5">
-            <section className="card-border shrine-hero">
-              <div className="shrine-glow shrine-glow--one" aria-hidden="true" />
-              <div className="shrine-glow shrine-glow--two" aria-hidden="true" />
-
-              <div className="grid gap-4 lg:grid-cols-[1.12fr_0.88fr]">
-                <div className="relative z-10 space-y-4 p-5 lg:p-6">
-                  <div className="space-y-3">
-                    <h2 className="text-3xl font-bold text-blue-700 lg:text-4xl">
-                      Kanna Shrine
-                    </h2>
-                    <p className="max-w-2xl text-[15px] leading-7 text-slate-700">
-                      A small room built for soft clouds, dragon daughter
-                      appreciation, and the kind of calm that feels like a warm
-                      blanket after a long day.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {shrineTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-blue-200 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-blue-600"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="space-y-3">
-                    {devotionStats.map((stat) => (
-                      <div key={stat.label} className="space-y-2">
-                        <div className="min-w-0 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-blue-500">
-                          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-blue-400">
-                            {stat.label}
-                          </span>
-                          <span className="flex-shrink-0 whitespace-nowrap text-blue-700">
-                            {stat.value}
-                          </span>
-                        </div>
-                        <div className="shrine-meter">
-                          <span style={{ width: stat.width }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="relative z-10 grid gap-3 p-5 sm:grid-cols-2 lg:p-6">
-                  <div>
-                    <img
-                      className="block h-52 w-full rounded-[1.35rem] object-cover object-top"
-                      src="/kanna3.jpg"
-                      width="320"
-                      height="208"
-                      alt="Kanna shrine image 3"
-                      loading="eager"
-                      style={{
-                        boxShadow: "var(--tt-shadow-elevated-md)",
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <img
-                      className="block h-52 w-full rounded-[1.35rem] object-cover object-top"
-                      src="/kanna2.jpg"
-                      width="320"
-                      height="208"
-                      alt="Kanna shrine image 2"
-                      loading="lazy"
-                      style={{
-                        boxShadow: "var(--tt-shadow-elevated-md)",
-                      }}
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <img
-                      className="block h-56 w-full rounded-[1.35rem] object-cover object-top"
-                      src="/kanna1.jpg"
-                      width="640"
-                      height="224"
-                      alt="Kanna shrine image"
-                      loading="lazy"
-                      style={{
-                        boxShadow: "var(--tt-shadow-elevated-md)",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="card-border shrine-panel p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-blue-700">
-                    (づ ᴗ _ᴗ)づ♡ offerings on the altar
-                  </h3>
-                  <p className="text-sm leading-6 text-slate-700">
-                    Four humble items currently sustaining the emotional
-                    ecosystem of this page.
-                  </p>
-                </div>  
-              </div>
-
-              <div className="shrine-copy-list">
-                {altarOfferings.map((offering) => (
-                  <div key={offering.code} className="shrine-copy-entry">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                      {offering.code} . offering
-                    </p>
-                    <h4 className="mt-2 text-lg font-bold text-blue-700">
-                      {offering.title}
-                    </h4>
-                    {offering.imageSrc ? (
-                      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm leading-7 text-slate-700">
-                            {offering.description}{" "}
-                            <span className="font-semibold text-blue-500">
-                              {offering.detail}.
-                            </span>
-                          </p>
-                        </div>
-                        <img
-                          className="h-28 w-full rounded-xl object-cover shadow-sm sm:w-32"
-                          src={offering.imageSrc}
-                          width="128"
-                          height="112"
-                          alt={offering.imageAlt || offering.title}
-                          loading="lazy"
-                        />
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-sm leading-7 text-slate-700">
-                        {offering.description}{" "}
-                        <span className="font-semibold text-blue-500">
-                          {offering.detail}.
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <div className="card-border shrine-panel p-4">
-                <div className="mb-4">
-                  <h3 className="text-2xl font-bold text-blue-700">
-                    ( ╹ -╹)? why the shrine exists
-                  </h3>
-                  <p className="text-sm leading-6 text-slate-700">
-                    A small record of the exact energy this page is trying to
-                    protect.
-                  </p>
-                </div>
-
-                <div className="shrine-copy-list">
-                  {devotionCards.map((card) => (
-                    <div key={card.title} className="shrine-copy-entry">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                        {card.eyebrow}
-                      </p>
-                      <h4 className="mt-2 text-lg font-bold text-blue-700">
-                        {card.title}
-                      </h4>
-                      <p className="mt-2 text-sm leading-7 text-slate-700">
-                        {card.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="card-border shrine-panel p-4">
-                <div className="mb-4">
-                  <h3 className="text-2xl font-bold text-blue-700">
-                    (´˘ -˘ 人) ritual loop
-                  </h3>
-                  <p className="text-sm leading-6 text-slate-700">
-                    The intended way to move through the page and leave with a
-                    better mood.
-                  </p>
-                </div>
-
-                <div className="shrine-copy-list">
-                  {ritualLoop.map((step) => (
-                    <div key={step.title} className="shrine-copy-entry">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                        {step.eyebrow}
-                      </p>
-                      <h4 className="mt-2 text-lg font-bold text-blue-700">
-                        {step.title}
-                      </h4>
-                      <p className="mt-2 text-sm leading-7 text-slate-700">
-                        {step.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <section className="card-border shrine-panel p-4">
-              <div className="mb-4">
-                <h3 className="text-2xl font-bold text-blue-700">
-                  ⸜(｡˃ ᵕ ˂ )⸝♡ memory wall
-                </h3>
-                <p className="text-sm leading-6 text-slate-700">
-                  Three little fragments that explain the shrine mood at a
-                  glance.
-                </p>
-              </div>
-
-              <div className="shrine-copy-list">
-                {memoryWall.map((card) => (
-                  <div key={card.title} className="shrine-copy-entry">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                      {card.eyebrow}
-                    </p>
-                    <h4 className="mt-2 text-lg font-bold text-blue-700">
-                      {card.title}
-                    </h4>
-                    <p className="mt-2 text-sm leading-7 text-slate-700">
-                      {card.body}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </main>
-
-          <aside className="mb-auto w-full space-y-4 lg:w-1/5">
-            <section className="right-side-panel shrine-sidebar rounded-xl border border-blue-300 p-4 shadow-md opacity-90">
-              <h2 className="text-center text-lg font-bold text-blue-700">
-                shrine status
-              </h2>
-              <p className="mt-2 text-center text-sm text-blue-500">
-                currently glowing at a very responsible level
-              </p>
-
-              <div className="shrine-candle-row" aria-hidden="true">
-                <span className="shrine-candle" />
-                <span className="shrine-candle" />
-                <span className="shrine-candle" />
-              </div>
-
-              <div className="space-y-3">
-                {shrineMeters.map((meter) => (
-                  <div key={meter.label} className="space-y-1">
-                    <div className="min-w-0 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.1em] text-blue-500">
-                      <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                        {meter.label}
-                      </span>
-                      <span className="flex-shrink-0 whitespace-nowrap">
-                        {meter.value}
-                      </span>
-                    </div>
-                    <div className="shrine-meter">
-                      <span style={{ width: meter.width }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="right-side-panel shrine-side-card rounded-[1.4rem] p-3 shadow-md">
-              <div className="shrine-frame">
-                <img
-                  className="w-full rounded-[1.15rem] object-cover"
-                  src={kannaKobayashiPoster}
-                  width="320"
-                  height="430"
-                  alt="Kanna poster art"
-                  loading="lazy"
-                />
-              </div>
-              <p className="mt-3 text-center text-sm font-bold text-blue-600">
-                official blessing image
-              </p>
-            </section>
-
-            <section className="right-side-panel shrine-sidebar rounded-xl border border-blue-300 p-4 shadow-md opacity-90">
-              <h2 className="text-center text-lg font-bold text-blue-700">
-                visitor etiquette
-              </h2>
-              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-blue-400">
-                {shrineEtiquette.map((rule) => (
-                  <li key={rule}>{rule}</li>
-                ))}
-              </ul>
-            </section>
-          </aside>
-        </div>
-      </div>
-
-      <Footer />
-    </div>
-  );
+    },
+    {
+      theme: "funny deadpan hits",
+      items: [
+        {
+          line: "\"Saikawa is weird.\"",
+          context: "Possibly the cleanest summary of that entire school dynamic.",
+        },
+        {
+          line: "\"I'm full.\"",
+          context: "Usually delivered after impossible levels of pancake destruction.",
+        },
+        {
+          line: "\"Ohh.\"",
+          context: "Peak Kanna communication: one tiny syllable, maximum emotional value.",
+        },
+      ],
+    },
+    {
+      theme: "protective and honest",
+      items: [
+        {
+          line: "\"Stop fighting.\"",
+          context: "Her calm voice lands hardest when everyone else has already escalated.",
+        },
+        {
+          line: "\"I'll do it.\"",
+          context: "The moment sleepy softness turns into dragon resolve.",
+        },
+        {
+          line: "\"I want to stay.\"",
+          context: "The line memory underneath almost every part of her arc.",
+        },
+      ],
+    },
+  ],
+  gallery: [
+    {
+      title: "Official art",
+      note: "Key visuals and polished promo-style pieces that let the costume and palette breathe.",
+      items: [
+        {
+          src: "/kanna-oa1.jpg",
+          alt: "Kanna Kamui poster art",
+          caption: "Poster-style art with the full soft-thunder vibe intact.",
+        },
+        {
+          src: "/kanna-oa2.jpg",
+          alt: "Kanna Kamui key art style image",
+          caption: "A bright character image that feels instantly shrine-worthy.",
+        },
+      ],
+    },
+    {
+      title: "Anime stills and close-ups",
+      note: "The sleepy eyes, tiny smiles, and little changes in posture are where so much of her charm actually lives.",
+      items: [
+        {
+          src: "/kanna-cu1.jpg",
+          alt: "Kanna Kamui close-up still",
+          caption: "Reserved, observant, and cute enough to stop time.",
+        },
+        {
+          src: "/kanna-cu2.jpg",
+          alt: "Kanna Kamui still image with softer blue lighting",
+          caption: "The quiet, clouded mood that fits her perfectly.",
+        },
+      ],
+    },
+    {
+      title: "Fanart credit queue",
+      note: "A growing collection of fanart that captures the spirit of Kanna's design and personality.",
+      items: [
+        {
+          src: "/kanna-fa1.jpg",
+          alt: "Kanna Kamui close-up still",
+          caption: "Reserved, observant, and cute enough to stop time.",
+        },
+        {
+          src: "/kanna-fa2.jpg",
+          alt: "Kanna Kamui still image with softer blue lighting",
+          caption: "The quiet, clouded mood that fits her perfectly.",
+        },
+      ],
+    },
+  ],
+  personal: [
+    "Kanna means a lot to me because she captures a kind of softness that never feels flimsy. She can be quiet, hungry, stubborn, funny, and deeply wounded all at once, and somehow the story never lets those qualities cancel each other out.",
+    "The scenes that live rent-free in my head are always the little ones: her first days at school, the way she sinks into everyday routines like she is trying not to ask for too much, the deadpan one-liners that somehow hit harder than speeches, and the moments where a tiny smile feels like a miracle.",
+    "What she teaches me, over and over, is that gentleness is not a lesser form of strength. Wanting warmth, praise, and a place to belong does not make someone weak. It just makes them alive.",
+  ],
+  extras: [
+    {
+      title: "playlist",
+      items: [
+        "\"Aozora no Rhapsody\" for the house-full-of-chaos joy.",
+        "\"Ishukan Communication\" for the sweet, silly found-family energy.",
+        "\"Namida no Parade\" for the gentler movie-era ache around Kanna.",
+      ],
+    },
+    {
+      title: "moodboard",
+      items: [
+        "winter classroom sunlight",
+        "wall outlets and static sparks",
+        "lavender sleeves, syrup shine, soft clouds",
+      ],
+    },
+    {
+      title: "updates log",
+      items: [
+        "April 2026 - rebuilt this page into a full projects-style shrine layout.",
+        "Next wish - add a properly credited fanart wall and more film-era notes.",
+      ],
+    },
+  ],
+  snapshot: [
+    "Origin: Miss Kobayashi's Dragon Maid",
+    "Best mood: quiet thunder with pancakes nearby",
+    "Home base: Kobayashi's apartment and school life",
+  ],
+  railImage: {
+    src: "/kanna3.jpg",
+    alt: "Kanna Kamui side rail art",
+    caption: "quiet guardian of the left rail",
+  },
+  sideImage: {
+    src: "/kanna-kobayashi-poster.webp",
+    alt: "Kanna Kamui poster art for sidebar",
+    caption: "the blessing image that absolutely had to stay",
+  },
 };
+
+const Kanna = () => <CharacterShrinePage shrine={shrine} />;
 
 export default Kanna;

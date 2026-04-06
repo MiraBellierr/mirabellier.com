@@ -1,548 +1,370 @@
-import { useEffect } from "react";
-import Footer from "../parts/Footer";
-import Header from "../parts/Header";
-import Navigation from "../parts/Navigation";
+import CharacterShrinePage, {
+  type CharacterShrineData,
+} from "@/components/CharacterShrinePage";
 
-type ShrineOffering = {
-  code: string;
-  title: string;
-  description: string;
-  detail: string;
-  imageSrc?: string;
-  imageAlt?: string;
-};
-
-type ShrineCard = {
-  eyebrow: string;
-  title: string;
-  body: string;
-};
-
-type ShrineMeter = {
-  label: string;
-  value: string;
-  width: string;
-};
-
-const shrineTags = [
-  "the pack",
-  "future capo",
-  "lupo edge",
-  "red hood aura",
-];
-
-const devotionStats: ShrineMeter[] = [
-  {
-    label: "pack loyalty",
-    value: "97%",
-    width: "97%",
-  },
-  {
-    label: "hood aura",
-    value: "93%",
-    width: "93%",
-  },
-  {
-    label: "blade tempo",
-    value: "89%",
-    width: "89%",
-  },
-];
-
-const altarOfferings: ShrineOffering[] = [
-  {
-    code: "01",
-    title: "pack crest ribbon",
+const shrine: CharacterShrineData = {
+  canonical: "https://mirabellier.com/shrine/rossina",
+  structuredDataId: "rossina-structured-data",
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "Rossina Wulfperl Luppino Shrine",
     description:
-      "A neat strip of red meant for clan loyalty, family weight, and vows said without shaking.",
-    detail: "tied carefully and never left crooked",
-    imageSrc: "/ribbon.png",
-    imageAlt: "red ribbon offering",
+      "A long-form Rossina Wulfperl Luppino shrine with profile details, Pack lore, battle notes, quotes, and personal favorites.",
+    url: "https://mirabellier.com/shrine/rossina",
+    about: {
+      "@type": "Thing",
+      name: "Rossina Wulfperl Luppino",
+      alternateName: "Rossi",
+    },
   },
-  {
-    code: "02",
-    title: "field report notebook",
-    description:
-      "For plans, grudges, route sketches, and every small detail worth keeping sharp.",
-    detail: "no sloppy handwriting permitted",
-    imageSrc: "/notebook.png",
-    imageAlt: "field report notebook offering",
+  hero: {
+    name: "Rossina Wulfperl Luppino",
+    subtitle: "Dedicated to the one and only Rossi",
+    intro:
+      "Rossi brings exactly the kind of character energy I never get tired of: crimson hood, wolfish poise, family duty, theatrical pride, and a blade-first confidence that can turn a full-name introduction into a battle cry.",
+    badges: [
+      "future capo",
+      "red knight energy",
+      "lupo pride",
+      "blade-first elegance",
+    ],
+    heroImage: {
+      src: "/rossi1.jpg",
+      alt: "Rossina Wulfperl Luppino promotional artwork",
+      caption: "The red-hood silhouette that makes a shrine inevitable.",
+    },
+    supportingImages: [
+      {
+        src: "/rossi1.jpg",
+        alt: "Rossi portrait art with strong red accents",
+        caption: "Sharp posture, sharper presence.",
+      },
+      {
+        src: "/rossi2.jpg",
+        alt: "Rossi close-up portrait",
+        caption: "Every angle reinforces the pack-heir aura.",
+      },
+    ],
   },
-  {
-    code: "03",
-    title: "midnight watch thermos",
-    description:
-      "An offering for long nights, colder streets, and the kind of patience that still feels armed.",
-    detail: "best served hot and carried without complaint",
-    imageSrc: "/thermos.png",
-    imageAlt: "midnight watch thermos offering",
+  welcome: [
+    "Rossi hooked me the second that red hood, formal name drop, and whole impossible level of poise hit the screen. She feels like a fairy-tale knight pulled through industrial grime and wolf-pack politics without losing any of her elegance.",
+    "This shrine exists because I love characters who carry family, ambition, and vulnerability all at once. Rossi can look completely in control while still letting flashes of youth, sincerity, and old hurt show through the armor.",
+  ],
+  profile: [
+    {
+      label: "Full Name",
+      value: "Rossina Wulfperl Luppino",
+    },
+    {
+      label: "Age / Apparent Age",
+      value: "Young adult / exact age not publicly listed",
+    },
+    {
+      label: "Birthday",
+      value: "March 10",
+    },
+    {
+      label: "Height / Weight",
+      value: "Not publicly listed",
+    },
+    {
+      label: "Species / Race",
+      value: "Lupo",
+    },
+    {
+      label: "Origin",
+      value: "Arknights: Endfield",
+    },
+    {
+      label: "Voice Actor",
+      value: "Rina Hidaka (JP), Giada Sabellico (EN), Wu Zheru (CN)",
+    },
+    {
+      label: "First Appearance",
+      value: "Gamescom 2025 Special Trailer / Chapter I Process III",
+    },
+    {
+      label: "Affiliation / Occupation",
+      value: "The Pack, Endfield Industries operator, Prima Elite and future Capo candidate",
+    },
+  ],
+  appearance: [
+    {
+      title: "Silhouette first, details second",
+      text: "Rossi lands immediately because the silhouette does so much heavy lifting: hood, cape, sword, long line through the torso, and a posture that says she has been raised to be watched from the moment she enters a room.",
+    },
+    {
+      title: "Color story and symbolism",
+      text: "Scarlet is the obvious lead, but the black, steel, and pale accents stop the design from becoming loud. The palette reads like bloodline, pride, danger, and ceremony without ever losing control.",
+    },
+    {
+      title: "Accessories and wolfish identity",
+      text: "Her outfit folds fairy-tale red-riding imagery into Pack iconography and combat practicality. The result feels half storybook knight, half clan enforcer, which is exactly why it rules.",
+    },
+    {
+      title: "How the design evolves",
+      text: "From early trailer impressions to her full operator release and The Red Knight story framing, Rossi's presentation leans more and more into the idea that she is both a young heir and a legend she is actively trying to become.",
+    },
+  ],
+  appearanceImages: [
+    {
+      src: "/rossi4.jpg",
+      alt: "Rossi side portrait artwork with red hood",
+      caption: "The hood does half the storytelling before she even speaks.",
+    },
+    {
+      src: "/rossi5.jpg",
+      alt: "Rossi artwork showing a cleaner ceremonial pose",
+      caption: "More ceremonial, but still edged like a drawn blade.",
+    },
+    {
+      src: "/rossi2.jpg",
+      alt: "Rossi portrait focusing on expression and outfit details",
+      caption: "A closer look at the sharp expression work and layered outfit.",
+    },
+  ],
+  personality: [
+    {
+      title: "Core traits",
+      text: "Rossi is proud, composed, deeply loyal, and just theatrical enough to be unforgettable. She clearly enjoys the gravity of her own introduction, but she also works hard to deserve it.",
+    },
+    {
+      title: "Strengths and flaws",
+      text: "She is decisive, protective, and willing to shoulder difficult work without complaint. The downside is that duty sits so close to identity for her that stubbornness, self-pressure, and image-consciousness can easily harden into isolation.",
+    },
+    {
+      title: "Growth through the story",
+      text: "The more time we spend with her, the clearer it becomes that Rossi is not just playing the role of future Capo. She is trying to grow into it without losing the parts of herself that still believe in stories, courage, and tenderness.",
+    },
+    {
+      title: "Little habits and tells",
+      text: "The full-name introduction, the rigid posture, the instinct to frame things in knightly or pack terms, and the way her softer side leaks out around children and trusted allies all make her feel far more human than the title-first image suggests.",
+    },
+  ],
+  lore: {
+    spoilerFree: [
+      "Rossi is Wulfgard's younger sister and a member of the Pack, a Landbreaker clan partnered with Endfield Industries.",
+      "She usually spends her time handling Pack and family matters, which means her story starts with responsibility already sitting heavily on her shoulders.",
+      "Her whole character turns on a beautiful tension: she wants to be feared and respected, but she also wants to be heroic in a way that protects people instead of simply commanding them.",
+    ],
+    spoilers: [
+      "Chapter I establishes that Rossi will stay behind and face overwhelming odds if it means the mission and her allies can keep moving, which tells you almost everything about her priorities.",
+      "The Red Knight side story lets her lighten up around children, improvise a story to help someone face their fear, and admit that play, courage, and care matter to her more than she usually lets on.",
+      "Her legend is something she is actively authoring. The red hood, the title, and the Pack role are not empty style choices; they are the shape she is trying to grow into.",
+    ],
+    hidden: [
+      "A lot of Rossi's appeal is contrast: old-world fairy-tale imagery stitched onto a modern industrial frontier setting.",
+      "She is easy to read as all steel at first glance, but her best scenes keep proving that her pride is tied to protection, not just ego.",
+      "The Pack identity can look like pure intimidation from the outside, yet Rossi's writing often uses it to explore inheritance, performance, and what leadership costs when you are still young.",
+    ],
   },
-  {
-    code: "04",
-    title: "hood clasp polish",
-    description:
-      "A tiny ritual object for that unmistakable red-silhouette energy and everything it implies.",
-    detail: "buffed until it catches low light properly",
-    imageSrc: "/redhood.png",
-    imageAlt: "red hood clasp offering",
+  abilities: {
+    overview:
+      "Rossi fights like a disciplined burst-damage operator who wants every opening to matter and every enemy to feel marked by her presence.",
+    items: [
+      {
+        title: "Sword guard pressure",
+        text: "As a Physical Guard wielding a sword, she thrives in close range and turns direct engagement into a statement rather than a compromise.",
+      },
+      {
+        title: "Razor Clawmark and follow-up threat",
+        text: "Her kit revolves around marking enemies, then exploiting those marks with follow-up damage and pressure that rewards careful setup.",
+      },
+      {
+        title: "Lift, Vulnerable, and team synergy",
+        text: "Rossi is not just selfish damage. She helps create windows for allied physical teams by converting afflictions into stronger punishment states for the enemy.",
+      },
+      {
+        title: "Burst with bite",
+        text: "Signature moments like Crimson Shadow, Razorclaw Ambush, and her wolf-blood-flavored ultimate language make her combat style feel like a controlled hunt rather than random aggression.",
+      },
+    ],
   },
-];
-
-const devotionCards: ShrineCard[] = [
-  {
-    eyebrow: "reason one",
-    title: "pack lineage with real gravity",
-    body: "Rossi being part of the Pack and Wulfgard's younger sister gives her immediate weight before the page even starts talking.",
-  },
-  {
-    eyebrow: "reason two",
-    title: "future capo energy",
-    body: "She feels like someone already standing one step away from command, all discipline, confidence, and cleanly contained danger.",
-  },
-  {
-    eyebrow: "reason three",
-    title: "sharp without becoming noisy",
-    body: "The best part of her vibe is how controlled it feels. Nothing here has to shout to look serious.",
-  },
-];
-
-const ritualLoop: ShrineCard[] = [
-  {
-    eyebrow: "step 01",
-    title: "enter respectfully",
-    body: "This room works best when it feels less like a joke and more like a small private place with rules.",
-  },
-  {
-    eyebrow: "step 02",
-    title: "remember the full name",
-    body: "Rossina Wulfperl Luppino deserves the whole introduction. Anything shorter should still sound deliberate.",
-  },
-  {
-    eyebrow: "step 03",
-    title: "leave standing straighter",
-    body: "A Rossi shrine should leave the room feeling cleaner, sharper, and a little more dangerous than before.",
-  },
-];
-
-const memoryWall: ShrineCard[] = [
-  {
-    eyebrow: "memory shard",
-    title: "wolfish silhouette",
-    body: "The hood, the posture, and the silence all hit before the details do, which is exactly why the character lands.",
-  },
-  {
-    eyebrow: "memory shard",
-    title: "family gravity",
-    body: "Being Wulfgard's younger sister adds the kind of built-in tension that makes a shrine feel connected to a bigger story.",
-  },
-  {
-    eyebrow: "memory shard",
-    title: "pack before comfort",
-    body: "This room is less blanket-fort cozy and more ceremonial loyalty, which gives it a different kind of calm.",
-  },
-];
-
-const shrineMeters: ShrineMeter[] = [
-  {
-    label: "capo potential",
-    value: "95%",
-    width: "95%",
-  },
-  {
-    label: "watchful silence",
-    value: "91%",
-    width: "91%",
-  },
-  {
-    label: "wolfish poise",
-    value: "94%",
-    width: "94%",
-  },
-];
-
-const shrineEtiquette = [
-  "Respect the Pack before you say anything else.",
-  "Say Rossi like you actually mean it.",
-  "Do not leave the room softer than it asked you to be.",
-];
-
-const Rossina = () => {
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement | null;
-
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/shrine/rossina";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "rossina-structured-data";
-    script.text = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      name: "Rossina Shrine",
-      description:
-        "A Rossina Wulfperl Luppino shrine page with Pack loyalty, shrine offerings, and wolfish future Capo energy.",
-      url: "https://mirabellier.com/shrine/rossina",
-      about: [
-        "Rossina Wulfperl Luppino",
-        "Rossi",
-        "Arknights: Endfield",
-        "The Pack",
+  relationships: [
+    {
+      title: "Wulfgard",
+      text: "Her older brother is one of the most important anchors in her story. Their connection gives her authority emotional context instead of leaving it as cool-girl posturing.",
+    },
+    {
+      title: "The Pack",
+      text: "This is family, inheritance, political weight, and identity all at once. Rossi loves the Pack enough to carry it like armor, which is exactly why its expectations cut so deep.",
+    },
+    {
+      title: "Endministrator and Endfield allies",
+      text: "Her partnership with Endfield brings out her tactical confidence but also her willingness to trust, coordinate, and protect beyond the Pack's own borders.",
+    },
+    {
+      title: "Children and weaker civilians",
+      text: "The Red Knight is where the softer truth peeks through: for all the ceremony and sharp edges, Rossi badly wants to be the kind of strong person that frightened people can rely on.",
+    },
+  ],
+  quotes: [
+    {
+      theme: "pack pride",
+      items: [
+        {
+          line: "\"Remember this well!\"",
+          context: "Her signature punctuation mark: dramatic, proud, and completely earned.",
+        },
+        {
+          line: "\"The name of the Pack will echo across the land!\"",
+          context: "Victory as family honor, not just personal swagger.",
+        },
+        {
+          line: "\"With me around, victory is a sure thing!\"",
+          context: "Confidence that somehow lands as charming instead of hollow.",
+        },
       ],
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const restoredCanonical = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement | null;
-
-      if (restoredCanonical) {
-        restoredCanonical.href = "https://mirabellier.com/";
-      }
-
-      document.getElementById("rossina-structured-data")?.remove();
-    };
-  }, []);
-
-  return (
-    <div className="shrine-page min-h-screen flex flex-col font-[sans-serif] text-blue-900">
-      <Header />
-
-      <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
-        style={{ backgroundImage: "var(--page-bg)" }}
-      >
-        <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">
-          <div className="left-side-rail flex-grow flex-col">
-            <Navigation />
-
-            <div className="mt-3 hidden justify-center lg:flex">
-              <div className="shrine-side-card w-full max-w-[320px] rounded-[1.4rem] p-3">
-                <div className="shrine-frame">
-                  <img
-                    className="h-[420px] w-full rounded-[1.15rem] object-cover object-top"
-                    src="/rossi4.jpg"
-                    width="320"
-                    height="420"
-                    alt="Rossina blessing seal image"
-                    loading="lazy"
-                  />
-                </div>
-                <p className="mt-3 text-center text-sm font-bold text-blue-600">
-                  wolfpack blessing seal
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <main className="w-full space-y-4 p-4 lg:w-3/5">
-            <section className="card-border shrine-hero">
-              <div className="shrine-glow shrine-glow--one" aria-hidden="true" />
-              <div className="shrine-glow shrine-glow--two" aria-hidden="true" />
-
-              <div className="grid gap-4 lg:grid-cols-[1.12fr_0.88fr]">
-                <div className="relative z-10 space-y-4 p-5 lg:p-6">
-                  <div className="space-y-3">
-                    <h2 className="text-3xl font-bold text-blue-700 lg:text-4xl">
-                      Rossina Wulfperl Luppino Shrine
-                    </h2>
-                    <p className="max-w-2xl text-[15px] leading-7 text-slate-700">
-                      Rossina Wulfperl Luppino, better known as Rossi, is a Lupo
-                      of the Pack and Wulfgard&apos;s younger sister, carrying the
-                      exact kind of disciplined, dangerous presence that makes a
-                      shrine feel inevitable.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {shrineTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-blue-200 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-blue-600"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="space-y-3">
-                    {devotionStats.map((stat) => (
-                      <div key={stat.label} className="space-y-2">
-                        <div className="min-w-0 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-blue-500">
-                          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-blue-400">
-                            {stat.label}
-                          </span>
-                          <span className="flex-shrink-0 whitespace-nowrap text-blue-700">
-                            {stat.value}
-                          </span>
-                        </div>
-                        <div className="shrine-meter">
-                          <span style={{ width: stat.width }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                </div>
-
-                <div className="relative z-10 grid gap-3 p-5 sm:grid-cols-2 lg:p-6">
-                  <div>
-                    <img
-                      className="block h-52 w-full rounded-[1.35rem] object-cover object-top"
-                      src="/rossi3.jpg"
-                      width="320"
-                      height="208"
-                      alt="Rossina shrine image 3"
-                      loading="eager"
-                      style={{
-                        boxShadow: "var(--tt-shadow-elevated-md)",
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <img
-                      className="block h-52 w-full rounded-[1.35rem] object-cover object-top"
-                      src="/rossi2.jpg"
-                      width="320"
-                      height="208"
-                      alt="Rossina shrine image 2"
-                      loading="lazy"
-                      style={{
-                        boxShadow: "var(--tt-shadow-elevated-md)",
-                      }}
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <img
-                      className="block h-56 w-full rounded-[1.35rem] border object-cover object-top"
-                      src="/rossi1.jpg"
-                      width="640"
-                      height="224"
-                      alt="Rossina shrine image"
-                      loading="lazy"
-                      style={{
-                        borderColor: "var(--tt-card-border-color)",
-                        boxShadow: "var(--tt-shadow-elevated-md)",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="card-border shrine-panel p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-blue-700">
-                    (づ ᴗ _ᴗ)づ♡ offerings on the altar
-                  </h3>
-                  <p className="text-sm leading-6 text-slate-700">
-                    Four items currently maintaining the exact level of Pack
-                    loyalty this room requires.
-                  </p>
-                </div>
-              </div>
-
-              <div className="shrine-copy-list">
-                {altarOfferings.map((offering) => (
-                  <div key={offering.code} className="shrine-copy-entry">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                      {offering.code} . offering
-                    </p>
-                    <h4 className="mt-2 text-lg font-bold text-blue-700">
-                      {offering.title}
-                    </h4>
-                    {offering.imageSrc ? (
-                      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm leading-7 text-slate-700">
-                            {offering.description}{" "}
-                            <span className="font-semibold text-blue-500">
-                              {offering.detail}.
-                            </span>
-                          </p>
-                        </div>
-                        <img
-                          className="h-28 w-full rounded-xl object-cover shadow-sm sm:w-32"
-                          src={offering.imageSrc}
-                          width="128"
-                          height="112"
-                          alt={offering.imageAlt || offering.title}
-                          loading="lazy"
-                        />
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-sm leading-7 text-slate-700">
-                        {offering.description}{" "}
-                        <span className="font-semibold text-blue-500">
-                          {offering.detail}.
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <div className="card-border shrine-panel p-4">
-                <div className="mb-4">
-                  <h3 className="text-2xl font-bold text-blue-700">
-                    ( ╹ -╹)? why the shrine exists
-                  </h3>
-                  <p className="text-sm leading-6 text-slate-700">
-                    A small record of the exact kind of sharpness this page is
-                    trying to protect.
-                  </p>
-                </div>
-
-                <div className="shrine-copy-list">
-                  {devotionCards.map((card) => (
-                    <div key={card.title} className="shrine-copy-entry">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                        {card.eyebrow}
-                      </p>
-                      <h4 className="mt-2 text-lg font-bold text-blue-700">
-                        {card.title}
-                      </h4>
-                      <p className="mt-2 text-sm leading-7 text-slate-700">
-                        {card.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="card-border shrine-panel p-4">
-                <div className="mb-4">
-                  <h3 className="text-2xl font-bold text-blue-700">
-                    (´˘ -˘ 人) ritual loop
-                  </h3>
-                  <p className="text-sm leading-6 text-slate-700">
-                    The intended way t o move through the room without diluting
-                    the mood.
-                  </p>
-                </div>
-
-                <div className="shrine-copy-list">
-                  {ritualLoop.map((step) => (
-                    <div key={step.title} className="shrine-copy-entry">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                        {step.eyebrow}
-                      </p>
-                      <h4 className="mt-2 text-lg font-bold text-blue-700">
-                        {step.title}
-                      </h4>
-                      <p className="mt-2 text-sm leading-7 text-slate-700">
-                        {step.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <section className="card-border shrine-panel p-4">
-              <div className="mb-4">
-                <h3 className="text-2xl font-bold text-blue-700">
-                  ⸜(｡˃ ᵕ ˂ )⸝♡ memory wall
-                </h3>
-                <p className="text-sm leading-6 text-slate-700">
-                  Three fragments that explain the shrine mood at a glance.
-                </p>
-              </div>
-
-              <div className="shrine-copy-list">
-                {memoryWall.map((card) => (
-                  <div key={card.title} className="shrine-copy-entry">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                      {card.eyebrow}
-                    </p>
-                    <h4 className="mt-2 text-lg font-bold text-blue-700">
-                      {card.title}
-                    </h4>
-                    <p className="mt-2 text-sm leading-7 text-slate-700">
-                      {card.body}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </main>
-
-          <aside className="mb-auto w-full space-y-4 lg:w-1/5">
-            <section className="right-side-panel shrine-sidebar rounded-xl border border-blue-300 p-4 shadow-md opacity-90">
-              <h2 className="text-center text-lg font-bold text-blue-700">
-                shrine status
-              </h2>
-              <p className="mt-2 text-center text-sm text-blue-500">
-                currently sharpened and watching the door
-              </p>
-
-              <div className="shrine-candle-row" aria-hidden="true">
-                <span className="shrine-candle" />
-                <span className="shrine-candle" />
-                <span className="shrine-candle" />
-              </div>
-
-              <div className="space-y-3">
-                {shrineMeters.map((meter) => (
-                  <div key={meter.label} className="space-y-1">
-                    <div className="min-w-0 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.1em] text-blue-500">
-                      <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                        {meter.label}
-                      </span>
-                      <span className="flex-shrink-0 whitespace-nowrap">
-                        {meter.value}
-                      </span>
-                    </div>
-                    <div className="shrine-meter">
-                      <span style={{ width: meter.width }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="right-side-panel shrine-side-card rounded-[1.4rem] p-3 shadow-md">
-              <div className="shrine-frame">
-                <img
-                  className="min-h-[260px] w-full rounded-[1.15rem] object-cover object-top"
-                  src="/rossi5.jpg"
-                  width="320"
-                  height="260"
-                  alt="Rossina ceremonial wolfpack notice image"
-                  loading="lazy"
-                />
-              </div>
-              <p className="mt-3 text-center text-sm font-bold text-blue-600">
-                ceremonial wolfpack notice
-              </p>
-            </section>
-
-            <section className="right-side-panel shrine-sidebar rounded-xl border border-blue-300 p-4 shadow-md opacity-90">
-              <h2 className="text-center text-lg font-bold text-blue-700">
-                visitor etiquette
-              </h2>
-              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-blue-400">
-                {shrineEtiquette.map((rule) => (
-                  <li key={rule}>{rule}</li>
-                ))}
-              </ul>
-            </section>
-          </aside>
-        </div>
-      </div>
-
-      <Footer />
-    </div>
-  );
+    },
+    {
+      theme: "battle steel",
+      items: [
+        {
+          line: "\"Hunting time!\"",
+          context: "Short, sharp, and exactly as wolf-coded as it needs to be.",
+        },
+        {
+          line: "\"Scorching claws!\"",
+          context: "A skill call that sounds like the red hood itself caught fire.",
+        },
+        {
+          line: "\"No escape!\"",
+          context: "Pure frontline pressure with zero wasted softness.",
+        },
+      ],
+    },
+    {
+      theme: "heart under the armor",
+      items: [
+        {
+          line: "\"This little setback means nothing... I, Rossina won't give up!\"",
+          context: "Defeat lines tell you who a character really is. Rossi's says: stubbornly hopeful.",
+        },
+        {
+          line: "\"The Pack isn't afraid of more scars!\"",
+          context: "Pain is not denial for her; it is proof that survival has a cost.",
+        },
+        {
+          line: "\"I'd like to stay a little longer.\"",
+          context: "The Red Knight lets the softer, younger part of her step into the light.",
+        },
+      ],
+    },
+  ],
+  gallery: [
+    {
+      title: "Official art and release visuals",
+      note: "Where the red hood, sword line, and full Pack identity feel most polished and iconic.",
+      items: [
+        {
+          src: "/rossi-oa1.webp",
+          alt: "Rossi key art image",
+          caption: "The release-era image that sells the whole character in one glance.",
+        },
+        {
+          src: "/rossi-oa2.webp",
+          alt: "Rossi polished portrait artwork",
+          caption: "Ceremonial and dangerous in equal measure.",
+        },
+      ],
+    },
+    {
+      title: "Story and event stills",
+      note: "These are the images that make the Red Knight, Pack duty, and softer emotional beats feel connected instead of separate moods.",
+      items: [
+        {
+          src: "/rossi2.jpg",
+          alt: "Rossi story still image",
+          caption: "A cleaner look at the balance between elegance and threat.",
+        },
+        {
+          src: "/rossi4.jpg",
+          alt: "Rossi side still with hood and stance details",
+          caption: "The kind of pose that makes future-Capo talk sound believable.",
+        },
+      ],
+    },
+    {
+      title: "Design details and red-hood studies",
+      note: "Cloth shapes, cape movement, pale accents, and wolfish framing all deserve their own appreciation lane.",
+      items: [
+        {
+          src: "/rossi-d1.jpg",
+          alt: "Rossi close-up detail art",
+          caption: "Expression work, clean lines, and hood framing all doing excellent work.",
+        },
+                {
+          src: "/rossi-d2.jpg",
+          alt: "Rossi close-up detail art",
+          caption: "Expression work, clean lines, and hood framing all doing excellent work.",
+        },
+      ],
+    },
+    {
+      title: "Fanart credit queue",
+      note: "Here is where I will feature the fan artists.",
+      items: [
+        {
+          src: "/rossi-fa1.jpg",
+          alt: "Rossi fanart image",
+          caption: "A placeholder for now, but I can't wait to fill this with properly credited fanart.",
+        },
+        {
+          src: "/rossi-fa2.jpg",
+          alt: "Rossi fanart image",
+          caption: "A placeholder for now, but I can't wait to fill this with properly credited fanart.",
+        },
+      ],
+    },
+  ],
+  personal: [
+    "Rossi works on me because she feels composed from contradictions I always love: she is severe but not empty, proud but not untouchable, theatrical but still sincere. The design grabs first, but the staying power comes from the vulnerability under it.",
+    "The scenes that stay with me are the ones where the mask loosens a little: the absolute commitment in battle, the family weight around Wulfgard and the Pack, and especially the Red Knight material where her storybook instincts and softer protectiveness start peeking through.",
+    "What she teaches me is that style means more when it is carrying history. The hood, the full name, the posture, the blade, the titles: none of it is random. Rossi feels like someone trying to become worthy of the image she projects, and that is always compelling to me.",
+  ],
+  extras: [
+    {
+      title: "playlist",
+      items: [
+        "\"Red Right Hand\" for the mythic menace.",
+        "\"Wolf Like Me\" for the predatory energy and confidence.",
+        "\"Howl\" for the full red-hood, pack-blood, dramatic-heart vibe.",
+      ],
+    },
+    {
+      title: "moodboard",
+      items: [
+        "scarlet fabric in low light",
+        "steel catching furnace glow",
+        "wolf heraldry, old vows, and mine-road dust",
+      ],
+    },
+    {
+      title: "updates log",
+      items: [
+        "April 2026 - rewired the page into a long-form shrine with lore, quotes, and gallery sections.",
+        "Next wish - expand this with more Red Knight notes and properly credited fanart.",
+      ],
+    },
+  ],
+  snapshot: [
+    "Origin: Arknights: Endfield",
+    "Core mood: red-hood myth with pack discipline",
+    "Current obsession: the future-Capo presence",
+  ],
+  railImage: {
+    src: "/rossi4.jpg",
+    alt: "Rossi side rail image",
+    caption: "wolfpack blessing on the left rail",
+  },
+  sideImage: {
+    src: "/rossi3.jpg",
+    alt: "Rossi sidebar image",
+    caption: "the ceremonial red-hood finish on the right side",
+  },
 };
+
+const Rossina = () => <CharacterShrinePage shrine={shrine} />;
 
 export default Rossina;
