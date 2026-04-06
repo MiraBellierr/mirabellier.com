@@ -181,21 +181,6 @@ const CharacterShrinePage = ({ shrine }: CharacterShrinePageProps) => {
     structuredData: shrine.structuredData,
   });
 
-  const sectionLinks = [
-    { id: "landing", label: "landing" },
-    { id: "introduction", label: "welcome" },
-    { id: "profile", label: "profile" },
-    { id: "appearance", label: "appearance" },
-    { id: "personality", label: "personality" },
-    { id: "lore", label: "lore" },
-    { id: "abilities", label: "abilities" },
-    { id: "relationships", label: "relationships" },
-    { id: "quotes", label: "quotes" },
-    { id: "gallery", label: "gallery" },
-    { id: "personal", label: "why I love them" },
-    { id: "extras", label: "extras" },
-  ];
-
   return (
     <div className="shrine-page min-h-screen flex flex-col font-[sans-serif] text-blue-900">
       <Header />
