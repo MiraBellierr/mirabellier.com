@@ -22,6 +22,9 @@ const AdminHome = lazy(() => import("./pages/AdminHome"));
 const AdminQuestionOfTheDay = lazy(
   () => import("./pages/AdminQuestionOfTheDay"),
 );
+const AdminShrines = lazy(() => import("./pages/AdminShrines"));
+const AdminShrinePreview = lazy(() => import("./pages/AdminShrinePreview"));
+const ShrineEntry = lazy(() => import("./pages/ShrineEntry"));
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -74,6 +77,7 @@ function App() {
       <Route path="/shrine" element={<Shrine />} />
       <Route path="/shrine/kanna" element={<Kanna />} />
       <Route path="/shrine/rossina" element={<Rossina />} />
+      <Route path="/shrine/:slug" element={<ShrineEntry />} />
       <Route path="/quotes" element={<Quotes />} />
       <Route path="/question-of-the-day" element={<QuestionOfTheDay />} />
       <Route
@@ -94,6 +98,8 @@ function App() {
         path="/admin/question-of-the-day"
         element={<AdminQuestionOfTheDay />}
       />
+      <Route path="/admin/shrines" element={<AdminShrines />} />
+      <Route path="/admin/shrines/preview" element={<AdminShrinePreview />} />
       <Route path="/login" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/settings" element={<Settings />} />

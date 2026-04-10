@@ -23,17 +23,6 @@ const shrine: CharacterShrineData = {
     subtitle: "My Eternal Shrine to Kanna Kamui",
     intro:
       "Small, sleepy, electric, and impossible not to adore, Kanna brings the exact kind of quiet warmth that can make even the softest scene feel unforgettable.",
-    badges: [
-      "quiet thunder",
-      "dragon daughter comfort",
-      "third-grade icon",
-      "pancake-certified",
-    ],
-    heroImage: {
-      src: "/kanna-kobayashi-poster.webp",
-      alt: "Kanna Kamui key visual art",
-      caption: "The soft, serious little face that started all of this.",
-    },
     supportingImages: [
       {
         src: "/kanna1.jpg",
@@ -107,23 +96,6 @@ const shrine: CharacterShrineData = {
       text: "The manga keeps her sharp and quietly funny, the anime smooths her into a softer emotional shape, and the 2025 film gives her expressions even more weight when the story turns toward loneliness, family, and wanting to be praised.",
     },
   ],
-  appearanceImages: [
-    {
-      src: "/kanna3.jpg",
-      alt: "Kanna Kamui standing in a soft blue-toned image",
-      caption: "Classic Kanna calm: small frame, huge presence.",
-    },
-    {
-      src: "/kanna2.jpg",
-      alt: "Kanna Kamui portrait showing her gentle expression",
-      caption: "The sleepy gaze that makes the whole design work.",
-    },
-    {
-      src: "/kanna1.jpg",
-      alt: "Kanna Kamui image with brighter expression",
-      caption: "A brighter look that still keeps her reserved aura.",
-    },
-  ],
   personality: [
     {
       title: "Core traits",
@@ -160,8 +132,6 @@ const shrine: CharacterShrineData = {
     ],
   },
   abilities: {
-    overview:
-      "Kanna is strongest when the story lets sleepy cuteness flip, without warning, into genuine dragon force.",
     items: [
       {
         title: "Electricity absorption and discharge",
@@ -205,15 +175,12 @@ const shrine: CharacterShrineData = {
       items: [
         {
           line: "\"I'm home, Kobayashi.\"",
-          context: "The kind of line that turns an apartment into a real family space.",
         },
         {
           line: "\"I like it here.\"",
-          context: "Simple, quiet, and devastating because it means she finally feels safe.",
         },
         {
           line: "\"Food tastes better together.\"",
-          context: "Kanna is at her cutest when meals become a love language.",
         },
       ],
     },
@@ -222,15 +189,12 @@ const shrine: CharacterShrineData = {
       items: [
         {
           line: "\"Saikawa is weird.\"",
-          context: "Possibly the cleanest summary of that entire school dynamic.",
         },
         {
           line: "\"I'm full.\"",
-          context: "Usually delivered after impossible levels of pancake destruction.",
         },
         {
           line: "\"Ohh.\"",
-          context: "Peak Kanna communication: one tiny syllable, maximum emotional value.",
         },
       ],
     },
@@ -239,15 +203,12 @@ const shrine: CharacterShrineData = {
       items: [
         {
           line: "\"Stop fighting.\"",
-          context: "Her calm voice lands hardest when everyone else has already escalated.",
         },
         {
           line: "\"I'll do it.\"",
-          context: "The moment sleepy softness turns into dragon resolve.",
         },
         {
           line: "\"I want to stay.\"",
-          context: "The line memory underneath almost every part of her arc.",
         },
       ],
     },
@@ -331,11 +292,6 @@ const shrine: CharacterShrineData = {
         "Next wish - add a properly credited fanart wall and more film-era notes.",
       ],
     },
-  ],
-  snapshot: [
-    "Origin: Miss Kobayashi's Dragon Maid",
-    "Best mood: quiet thunder with pancakes nearby",
-    "Home base: Kobayashi's apartment and school life",
   ],
   railImage: {
     src: "/kanna3.jpg",

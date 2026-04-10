@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import DeferredAnimatedImage from "@/components/DeferredAnimatedImage";
@@ -9,6 +10,7 @@ import Navigation from "../parts/Navigation";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 import kannaRight from "@/assets/anime/kanna-right.webp";
+import { fetchShrinePages, type ShrinePageRecord } from "@/lib/shrine-api";
 
 const shrineEntries = [
   {
@@ -34,6 +36,8 @@ const shrineEntries = [
 ] as const;
 
 const Shrine = () => {
+  const [dynamicEntries, setDynamicEntries] = useState<ShrinePageRecord[]>([]);
+
   useEffect(() => {
     const canonicalLink = document.querySelector(
       'link[rel="canonical"]',
@@ -65,6 +69,16 @@ const Shrine = () => {
     return () => {
       document.getElementById("shrines-structured-data")?.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    fetchShrinePages()
+      .then((entries) => {
+        setDynamicEntries(
+          entries.filter((entry) => !["kanna", "rossina"].includes(entry.slug)),
+        );
+      })
+      .catch(() => setDynamicEntries([]));
   }, []);
 
   return (
@@ -109,7 +123,17 @@ const Shrine = () => {
               </div>
 
               <ol className="space-y-1">
-                {shrineEntries.map((entry, index) => (
+                {[
+                  ...shrineEntries,
+                  ...dynamicEntries.map((entry) => ({
+                    title: entry.title,
+                    path: entry.path,
+                    imageSrc: entry.image || "/background.jpg",
+                    imageAlt: entry.imageAlt || `${entry.title} shrine preview`,
+                    summary: entry.description || entry.excerpt || "Shrine page",
+                    details: entry.excerpt || "Custom shrine entry",
+                  })),
+                ].map((entry, index) => (
                   <li
                     key={entry.path}
                     className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"

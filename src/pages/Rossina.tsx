@@ -23,17 +23,6 @@ const shrine: CharacterShrineData = {
     subtitle: "Dedicated to the one and only Rossi",
     intro:
       "Rossi brings exactly the kind of character energy I never get tired of: crimson hood, wolfish poise, family duty, theatrical pride, and a blade-first confidence that can turn a full-name introduction into a battle cry.",
-    badges: [
-      "future capo",
-      "red knight energy",
-      "lupo pride",
-      "blade-first elegance",
-    ],
-    heroImage: {
-      src: "/rossi1.jpg",
-      alt: "Rossina Wulfperl Luppino promotional artwork",
-      caption: "The red-hood silhouette that makes a shrine inevitable.",
-    },
     supportingImages: [
       {
         src: "/rossi1.jpg",
@@ -107,23 +96,6 @@ const shrine: CharacterShrineData = {
       text: "From early trailer impressions to her full operator release and The Red Knight story framing, Rossi's presentation leans more and more into the idea that she is both a young heir and a legend she is actively trying to become.",
     },
   ],
-  appearanceImages: [
-    {
-      src: "/rossi4.jpg",
-      alt: "Rossi side portrait artwork with red hood",
-      caption: "The hood does half the storytelling before she even speaks.",
-    },
-    {
-      src: "/rossi5.jpg",
-      alt: "Rossi artwork showing a cleaner ceremonial pose",
-      caption: "More ceremonial, but still edged like a drawn blade.",
-    },
-    {
-      src: "/rossi2.jpg",
-      alt: "Rossi portrait focusing on expression and outfit details",
-      caption: "A closer look at the sharp expression work and layered outfit.",
-    },
-  ],
   personality: [
     {
       title: "Core traits",
@@ -160,8 +132,6 @@ const shrine: CharacterShrineData = {
     ],
   },
   abilities: {
-    overview:
-      "Rossi fights like a disciplined burst-damage operator who wants every opening to matter and every enemy to feel marked by her presence.",
     items: [
       {
         title: "Sword guard pressure",
@@ -205,15 +175,12 @@ const shrine: CharacterShrineData = {
       items: [
         {
           line: "\"Remember this well!\"",
-          context: "Her signature punctuation mark: dramatic, proud, and completely earned.",
         },
         {
           line: "\"The name of the Pack will echo across the land!\"",
-          context: "Victory as family honor, not just personal swagger.",
         },
         {
           line: "\"With me around, victory is a sure thing!\"",
-          context: "Confidence that somehow lands as charming instead of hollow.",
         },
       ],
     },
@@ -222,15 +189,12 @@ const shrine: CharacterShrineData = {
       items: [
         {
           line: "\"Hunting time!\"",
-          context: "Short, sharp, and exactly as wolf-coded as it needs to be.",
         },
         {
           line: "\"Scorching claws!\"",
-          context: "A skill call that sounds like the red hood itself caught fire.",
         },
         {
           line: "\"No escape!\"",
-          context: "Pure frontline pressure with zero wasted softness.",
         },
       ],
     },
@@ -239,15 +203,12 @@ const shrine: CharacterShrineData = {
       items: [
         {
           line: "\"This little setback means nothing... I, Rossina won't give up!\"",
-          context: "Defeat lines tell you who a character really is. Rossi's says: stubbornly hopeful.",
         },
         {
           line: "\"The Pack isn't afraid of more scars!\"",
-          context: "Pain is not denial for her; it is proof that survival has a cost.",
         },
         {
           line: "\"I'd like to stay a little longer.\"",
-          context: "The Red Knight lets the softer, younger part of her step into the light.",
         },
       ],
     },
@@ -347,11 +308,6 @@ const shrine: CharacterShrineData = {
         "Next wish - expand this with more Red Knight notes and properly credited fanart.",
       ],
     },
-  ],
-  snapshot: [
-    "Origin: Arknights: Endfield",
-    "Core mood: red-hood myth with pack discipline",
-    "Current obsession: the future-Capo presence",
   ],
   railImage: {
     src: "/rossi4.jpg",

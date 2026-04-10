@@ -9,7 +9,7 @@ import { usePageSeo } from "@/lib/seo";
 export type ShrineImage = {
   src: string;
   alt: string;
-  caption: string;
+  caption?: string;
 };
 
 export type ShrineDetail = {
@@ -24,7 +24,6 @@ export type ShrineStat = {
 
 export type ShrineQuote = {
   line: string;
-  context: string;
 };
 
 export type ShrineQuoteGroup = {
@@ -51,14 +50,11 @@ export type CharacterShrineData = {
     name: string;
     subtitle: string;
     intro: string;
-    badges: string[];
-    heroImage: ShrineImage;
     supportingImages: ShrineImage[];
   };
   welcome: string[];
   profile: ShrineStat[];
   appearance: ShrineDetail[];
-  appearanceImages: ShrineImage[];
   personality: ShrineDetail[];
   lore: {
     spoilerFree: string[];
@@ -66,7 +62,6 @@ export type CharacterShrineData = {
     hidden: string[];
   };
   abilities: {
-    overview: string;
     items: ShrineDetail[];
   };
   relationships: ShrineDetail[];
@@ -74,7 +69,6 @@ export type CharacterShrineData = {
   gallery: ShrineGalleryGroup[];
   personal: string[];
   extras: ShrineExtraGroup[];
-  snapshot: string[];
   railImage: ShrineImage;
   sideImage: ShrineImage;
 };

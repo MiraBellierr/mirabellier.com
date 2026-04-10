@@ -64,6 +64,13 @@ const adminTools = [
     to: "/admin/question-of-the-day",
     action: "Open question admin",
   },
+  {
+    title: "Shrine Pages",
+    description:
+      "Create and edit shrine pages from admin, including full shrine payload JSON and SEO metadata.",
+    to: "/admin/shrines",
+    action: "Open shrine admin",
+  },
 ];
 
 const AdminHome = () => {
