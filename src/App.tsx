@@ -13,6 +13,11 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const BlogEdit = lazy(() => import("./pages/BlogEdit"));
 const Quotes = lazy(() => import("./pages/Quotes"));
 const Anime = lazy(() => import("./pages/Anime"));
+const Arena = lazy(() => import("./pages/Arena"));
+const ArenaFight = lazy(() => import("./pages/ArenaFight"));
+const ArenaShop = lazy(() => import("./pages/ArenaShop"));
+const ArenaLeaderboard = lazy(() => import("./pages/ArenaLeaderboard"));
+const ArenaCollection = lazy(() => import("./pages/ArenaCollection"));
 const Guestbook = lazy(() => import("./pages/Guestbook"));
 const GuestbookSign = lazy(() => import("./pages/GuestbookSign"));
 const QuestionOfTheDay = lazy(() => import("./pages/QuestionOfTheDay"));
@@ -74,6 +79,11 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />
+      <Route path="/arena" element={<Arena />} />
+      <Route path="/arena/fight" element={<ArenaFight />} />
+      <Route path="/arena/shop" element={<ArenaShop />} />
+      <Route path="/arena/leaderboard" element={<ArenaLeaderboard />} />
+      <Route path="/arena/collection" element={<ArenaCollection />} />
       <Route path="/shrine" element={<Shrine />} />
       <Route path="/shrine/kanna" element={<Kanna />} />
       <Route path="/shrine/rossina" element={<Rossina />} />
