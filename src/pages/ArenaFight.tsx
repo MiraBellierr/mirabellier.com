@@ -297,9 +297,15 @@ const ArenaFight = () => {
             {fight ? (
               <section className="card-border space-y-3 bg-white/60 p-4">
                 <h3 className="text-xl font-bold text-blue-700">battle console</h3>
-                <p className="text-sm font-semibold text-slate-700">
-                  You {fight.result} | +{fight.rewards.xp} EXP | +{fight.rewards.coins} coins
-                </p>
+                {playbackDone ? (
+                  <p className="text-sm font-semibold text-slate-700">
+                    You {fight.result} | +{fight.rewards.xp} EXP | +{fight.rewards.coins} coins
+                  </p>
+                ) : (
+                  <p className="text-sm font-semibold text-slate-700">
+                    Battle in progress... winner will be declared after playback.
+                  </p>
+                )}
                 <p className="text-sm text-slate-700">
                   Opponent: {fight.opponent.displayName} {fight.opponent.isNpc ? "(NPC)" : ""}
                 </p>
