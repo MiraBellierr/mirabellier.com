@@ -12,7 +12,7 @@ import {
   type ArenaShopResponse,
   buyArenaItem,
   fetchArenaShop,
-  useArenaConsumable,
+  useArenaConsumable as activateArenaConsumable,
 } from "@/lib/arena-api";
 
 function normalizeArenaError(error: unknown) {
@@ -107,7 +107,7 @@ const ArenaShop = () => {
     setActioningId(itemId);
     setErrorMessage(null);
     try {
-      const payload = await useArenaConsumable(token, itemId);
+      const payload = await activateArenaConsumable(token, itemId);
       setShop(payload.shop);
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
