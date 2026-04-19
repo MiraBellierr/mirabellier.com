@@ -303,7 +303,7 @@ const ArenaFight = () => {
                   </p>
                 ) : (
                   <p className="text-sm font-semibold text-slate-700">
-                    Battle in progress... winner will be declared after playback.
+                    Battle in progress...
                   </p>
                 )}
                 <p className="text-sm text-slate-700">
