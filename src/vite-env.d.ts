@@ -28,4 +28,13 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+  glob<T = unknown>(
+    pattern: string | readonly string[],
+    options?: {
+      as?: string;
+      eager?: boolean;
+      import?: string;
+      query?: string | Record<string, string | number | boolean>;
+    },
+  ): Record<string, T>;
 }

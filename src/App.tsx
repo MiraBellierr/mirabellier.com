@@ -16,6 +16,7 @@ const Anime = lazy(() => import("./pages/Anime"));
 const Arena = lazy(() => import("./pages/Arena"));
 const ArenaFight = lazy(() => import("./pages/ArenaFight"));
 const ArenaShop = lazy(() => import("./pages/ArenaShop"));
+const ArenaCrafting = lazy(() => import("./pages/ArenaCrafting"));
 const ArenaLeaderboard = lazy(() => import("./pages/ArenaLeaderboard"));
 const ArenaCollection = lazy(() => import("./pages/ArenaCollection"));
 const Guestbook = lazy(() => import("./pages/Guestbook"));
@@ -82,6 +83,7 @@ function App() {
       <Route path="/arena" element={<Arena />} />
       <Route path="/arena/fight" element={<ArenaFight />} />
       <Route path="/arena/shop" element={<ArenaShop />} />
+      <Route path="/arena/crafting" element={<ArenaCrafting />} />
       <Route path="/arena/leaderboard" element={<ArenaLeaderboard />} />
       <Route path="/arena/collection" element={<ArenaCollection />} />
       <Route path="/shrine" element={<Shrine />} />

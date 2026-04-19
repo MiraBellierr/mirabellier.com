@@ -107,6 +107,12 @@ const ArenaLeaderboard = () => {
                   shop
                 </Link>
                 <Link
+                  to="/arena/crafting"
+                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white"
+                >
+                  crafting
+                </Link>
+                <Link
                   to="/arena/collection"
                   className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
                 >

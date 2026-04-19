@@ -2136,3 +2136,169 @@ h6 {
     animation: none !important;
   }
 }
+
+.arena-portrait-card {
+  --arena-card-frame: linear-gradient(160deg, #897055 0%, #d8c39d 46%, #80664a 100%);
+  --arena-card-glow: rgba(216, 188, 144, 0.38);
+  --arena-card-badge: #cfb687;
+  --arena-card-accent: #f8e8c9;
+  position: relative;
+  width: 152px;
+  aspect-ratio: 10 / 16;
+  padding: 2px;
+  border-radius: 14px;
+  background: var(--arena-card-frame);
+  box-shadow:
+    0 12px 26px rgba(9, 9, 12, 0.3),
+    0 0 18px var(--arena-card-glow);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.arena-portrait-card--compact {
+  width: 118px;
+}
+
+.arena-portrait-card__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #161217;
+}
+
+.arena-portrait-card__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arena-portrait-card__veil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 14% 10%, rgba(255, 245, 226, 0.3) 0%, transparent 32%),
+    radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.2) 0%, transparent 28%),
+    linear-gradient(
+      180deg,
+      rgba(18, 14, 14, 0.08) 0%,
+      rgba(15, 11, 12, 0.36) 54%,
+      rgba(8, 6, 9, 0.82) 100%
+    );
+}
+
+.arena-portrait-card__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.24) 0.45px, transparent 0.45px),
+    radial-gradient(rgba(255, 255, 255, 0.14) 0.45px, transparent 0.45px);
+  background-size:
+    3px 3px,
+    4px 4px;
+  background-position:
+    0 0,
+    1px 1px;
+  pointer-events: none;
+}
+
+.arena-portrait-card__top {
+  position: absolute;
+  left: 0.45rem;
+  top: 0.45rem;
+  z-index: 3;
+}
+
+.arena-portrait-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 1.2rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--arena-card-badge) 90%, white), var(--arena-card-badge));
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #24180d;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.arena-portrait-card__bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 0.6rem 0.55rem 0.5rem 0.65rem;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 7, 10, 0) 0%,
+    rgba(8, 7, 10, 0.75) 35%,
+    rgba(8, 7, 10, 0.95) 100%
+  );
+}
+
+.arena-portrait-card__name {
+  margin: 0;
+  color: #f9f4e8;
+  font-size: 0.72rem;
+  line-height: 1.18;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.arena-portrait-card__meta {
+  margin-top: 0.18rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.arena-portrait-card__stars {
+  color: var(--arena-card-accent);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 10px var(--arena-card-glow),
+    0 1px 4px rgba(0, 0, 0, 0.65);
+}
+
+.arena-portrait-card__level {
+  color: #f4e7cb;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+.arena-portrait-card__iv {
+  margin: 0.2rem 0 0;
+  color: rgba(248, 238, 212, 0.86);
+  font-size: 0.51rem;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-portrait-card {
+    box-shadow:
+      0 8px 18px rgba(9, 9, 12, 0.22),
+      0 0 10px var(--arena-card-glow);
+  }
+}

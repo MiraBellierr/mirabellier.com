@@ -10,6 +10,49 @@ export type ArenaStatsBlock = {
   luck: number;
 };
 
+export type ArenaSpriteRef = {
+  sheet: "game.png";
+  row: number;
+  col: number;
+  size: number;
+};
+
+export type ArenaPassiveCondition = {
+  left: string;
+  op: "==" | "!=" | ">" | ">=" | "<" | "<=";
+  right: number | string | boolean;
+};
+
+export type ArenaPassiveAction =
+  | { type: "addFlatDamage"; value: number; chancePct?: number; maxTriggersPerFight?: number }
+  | { type: "scaleDamagePct"; value: number; chancePct?: number; maxTriggersPerFight?: number }
+  | { type: "reduceIncomingDamagePct"; value: number; chancePct?: number; maxTriggersPerFight?: number }
+  | { type: "applyShield"; value: number; chancePct?: number; maxTriggersPerFight?: number }
+  | { type: "healFlat"; value: number; chancePct?: number; maxTriggersPerFight?: number }
+  | { type: "rewardBonusPct"; target: "xp" | "coins"; value: number; chancePct?: number; maxTriggersPerFight?: number }
+  | { type: "rarityStepUp"; steps: number; target: "lowest_round_card"; chancePct?: number; maxTriggersPerFight?: number }
+  | { type: string; [key: string]: unknown };
+
+export type ArenaPassiveRule = {
+  key: string;
+  trigger: "onFightStart" | "onAttack" | "onDamageTaken" | "onDamageDealt" | "onWin" | "onLose";
+  priority: number;
+  when?: ArenaPassiveCondition[];
+  actions: ArenaPassiveAction[];
+  source?: {
+    itemId: string;
+    itemName: string;
+    slot: "weapon" | "armor" | "charm";
+    tier: string;
+    equippedAt?: string | null;
+  };
+};
+
+export type ArenaConsumableRule = {
+  kind: string;
+  [key: string]: unknown;
+};
+
 export type ArenaCardIv = {
   power: number;
   guard: number;
@@ -63,17 +106,30 @@ export type ArenaProfile = {
     expBoostWinsRemaining: number;
     coinBoostPct: number;
     coinBoostWinsRemaining: number;
-    refocusCharges: number;
+    rerollKeepHigherCharges: number;
     streakShieldCharges: number;
     upgradeLowestRarityCharges: number;
     guaranteeSsrPlusCharges: number;
     ascensionLastPurchasedAt: string | null;
+    fightStartShieldCharges: number;
+    fightStartShieldAmount: number;
+    evadeBoostPct: number;
+    evadeBoostFightsRemaining: number;
+    firstHitTrueDamageCharges: number;
+    firstHitTrueDamageValue: number;
+    higherRarityDamageBonusPctCharges: number;
+    higherRarityDamageBonusPct: number;
+    gateKeyCharges: number;
+    doublePassiveTriggerFightsRemaining: number;
   };
   equipment: {
     weapon: ArenaEquippedItem | null;
     armor: ArenaEquippedItem | null;
     charm: ArenaEquippedItem | null;
   };
+  activePassives?: ArenaPassiveRule[];
+  materialInventory?: Record<string, number>;
+  catalogVersion?: string;
   recentFights?: ArenaRecentFight[];
   lastFightAt: string | null;
   createdAt: string | null;
@@ -158,11 +214,18 @@ export type ArenaFightResponse = {
     coins: number;
     rarityCoinReward: number;
     levelsGained: number;
+    materialDrops?: Array<{ itemId: string; quantity: number }>;
   };
   effectUsage: {
-    usedRefocus: boolean;
+    usedRerollKeepHigher: boolean;
     usedUpgradeLowest: boolean;
     usedGuaranteeSsrPlus: boolean;
+    usedFightStartShield?: boolean;
+    usedEvadeBoost?: boolean;
+    usedFirstHitTrueDamage?: boolean;
+    usedHigherRarityBonus?: boolean;
+    usedDoublePassiveTrigger?: boolean;
+    usedGateKeyBypass?: boolean;
   };
   profile: ArenaProfile;
 };
@@ -184,15 +247,20 @@ export type ArenaShopItem = {
   tier: string;
   unlockLevel: number;
   price: number;
-  type: "gear" | "consumable" | "instant";
+  type: "gear" | "consumable" | "material" | "instant";
+  acquisition?: "buy" | "craft" | "drop";
   slot?: "weapon" | "armor" | "charm";
   stats?: Partial<ArenaStatsBlock>;
-  effect?: Record<string, unknown>;
+  passive?: ArenaPassiveRule | null;
+  consumableEffect?: ArenaConsumableRule | null;
+  sprite?: ArenaSpriteRef;
+  recipeId?: string | null;
   ownedQuantity: number;
   isOwned: boolean;
   isEquipped: boolean;
   unlocked: boolean;
   canBuy: boolean;
+  canCraft?: boolean;
   cooldownEndsAt?: string | null;
 };
 
@@ -202,13 +270,36 @@ export type ArenaShopTier = {
 };
 
 export type ArenaShopResponse = {
+  catalogVersion: string;
   profile: ArenaProfile;
   shop: ArenaShopTier[];
+  recipes: ArenaShopRecipe[];
   equipped: {
     weapon: ArenaEquippedItem | null;
     armor: ArenaEquippedItem | null;
     charm: ArenaEquippedItem | null;
   };
+};
+
+export type ArenaShopRecipe = {
+  id: string;
+  tier: string;
+  unlockLevel: number;
+  coinCost: number;
+  output: {
+    itemId: string;
+    quantity: number;
+    itemName?: string;
+  };
+  inputs: Array<{
+    itemId: string;
+    itemName?: string;
+    required: number;
+    quantity?: number;
+    owned?: number;
+  }>;
+  unlocked?: boolean;
+  canCraft?: boolean;
 };
 
 export type ArenaLeaderboardResponse = {
@@ -443,6 +534,29 @@ export async function useArenaConsumable(
   return (await response.json()) as {
     activatedItemId: string;
     effects: ArenaProfile["effects"];
+    shop: ArenaShopResponse;
+  };
+}
+
+export async function craftArenaRecipe(
+  token: string,
+  recipeId: string,
+  quantity = 1,
+): Promise<{ craftedRecipeId: string; outputItemId: string; craftedQuantity: number; shop: ArenaShopResponse }> {
+  const response = await fetch(joinApi("/arena/shop/craft"), {
+    method: "POST",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ recipeId, quantity }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as {
+    craftedRecipeId: string;
+    outputItemId: string;
+    craftedQuantity: number;
     shop: ArenaShopResponse;
   };
 }

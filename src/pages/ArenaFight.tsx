@@ -5,6 +5,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
+import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -185,6 +186,12 @@ const ArenaFight = () => {
                   shop
                 </Link>
                 <Link
+                  to="/arena/crafting"
+                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white"
+                >
+                  crafting
+                </Link>
+                <Link
                   to="/arena/leaderboard"
                   className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
                 >
@@ -219,12 +226,13 @@ const ArenaFight = () => {
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
                       <p className="font-semibold text-blue-700">Your Card</p>
-                      <div className="mt-2 flex items-center gap-3">
+                      <div className="mt-2 flex items-start gap-3">
                         {profile?.selectedCard ? (
-                          <img
-                            src={profile.selectedCard.imageUrl}
-                            alt={profile.selectedCard.title}
-                            className="h-16 w-12 rounded-md border border-blue-200 object-cover"
+                          <ArenaPortraitCard
+                            card={profile.selectedCard}
+                            level={profile.level}
+                            size="compact"
+                            showIvLine={false}
                           />
                         ) : null}
                         <div>
@@ -238,11 +246,12 @@ const ArenaFight = () => {
                     <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
                       <p className="font-semibold text-blue-700">Opponent&apos;s Card</p>
                       {fight?.opponent?.selectedCard ? (
-                        <div className="mt-2 flex items-center gap-3">
-                          <img
-                            src={fight.opponent.selectedCard.imageUrl}
-                            alt={fight.opponent.selectedCard.title}
-                            className="h-16 w-12 rounded-md border border-blue-200 object-cover"
+                        <div className="mt-2 flex items-start gap-3">
+                          <ArenaPortraitCard
+                            card={fight.opponent.selectedCard}
+                            level={fight.opponent.level}
+                            size="compact"
+                            showIvLine={false}
                           />
                           <div>
                             <p className="text-sm text-slate-700">{fight.opponent.selectedCard.title}</p>

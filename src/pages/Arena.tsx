@@ -5,6 +5,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
+import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -177,12 +178,8 @@ const Arena = () => {
                   ) : (
                     <div className="rounded-xl border border-blue-200 bg-white/70 p-4">
                       <p className="font-bold text-blue-700">Chosen Card</p>
-                      <div className="mt-3 flex flex-col gap-3 md:flex-row">
-                        <img
-                          src={profile.selectedCard.imageUrl}
-                          alt={profile.selectedCard.title}
-                          className="h-44 w-32 rounded-xl border border-blue-200 object-cover"
-                        />
+                      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-start">
+                        <ArenaPortraitCard card={profile.selectedCard} level={profile.level} />
                         <div className="space-y-1">
                           <p className="font-semibold text-blue-700">
                             {profile.selectedCard.title}
@@ -255,6 +252,12 @@ const Arena = () => {
                       className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
                     >
                       shop
+                    </Link>
+                    <Link
+                      to="/arena/crafting"
+                      className="rounded-full bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700"
+                    >
+                      crafting
                     </Link>
                     <Link
                       to="/arena/leaderboard"

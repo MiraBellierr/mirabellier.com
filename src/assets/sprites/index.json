@@ -1,0 +1,1995 @@
+{
+  "source": "src/assets/game.png",
+  "tileSize": 32,
+  "total": 284,
+  "sprites": [
+    {
+      "name": "skull_face",
+      "file": "sprites/skull_face.png",
+      "row": 0,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "green_slime_blob",
+      "file": "sprites/green_slime_blob.png",
+      "row": 0,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "dark_portal_ring",
+      "file": "sprites/dark_portal_ring.png",
+      "row": 0,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "speech_bubble",
+      "file": "sprites/speech_bubble.png",
+      "row": 0,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "bat_wings",
+      "file": "sprites/bat_wings.png",
+      "row": 0,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "gold_sparkles",
+      "file": "sprites/gold_sparkles.png",
+      "row": 0,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "pink_heart",
+      "file": "sprites/pink_heart.png",
+      "row": 0,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "sleep_zzz",
+      "file": "sprites/sleep_zzz.png",
+      "row": 0,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "yellow_lightning",
+      "file": "sprites/yellow_lightning.png",
+      "row": 0,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "burning_face",
+      "file": "sprites/burning_face.png",
+      "row": 0,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "water_droplets",
+      "file": "sprites/water_droplets.png",
+      "row": 0,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "bloody_hand",
+      "file": "sprites/bloody_hand.png",
+      "row": 1,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "red_lungs",
+      "file": "sprites/red_lungs.png",
+      "row": 1,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "stomach_organ",
+      "file": "sprites/stomach_organ.png",
+      "row": 1,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "pink_brain",
+      "file": "sprites/pink_brain.png",
+      "row": 1,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "flexed_bicep",
+      "file": "sprites/flexed_bicep.png",
+      "row": 1,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "green_arrow_up",
+      "file": "sprites/green_arrow_up.png",
+      "row": 2,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "red_arrow_down",
+      "file": "sprites/red_arrow_down.png",
+      "row": 2,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "green_arrow_up_right",
+      "file": "sprites/green_arrow_up_right.png",
+      "row": 2,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "red_arrow_down_right",
+      "file": "sprites/red_arrow_down_right.png",
+      "row": 2,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "green_arrow_u_turn",
+      "file": "sprites/green_arrow_u_turn.png",
+      "row": 2,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "red_arrow_u_turn",
+      "file": "sprites/red_arrow_u_turn.png",
+      "row": 2,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "blue_refresh_arrows",
+      "file": "sprites/blue_refresh_arrows.png",
+      "row": 2,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "blood_dagger",
+      "file": "sprites/blood_dagger.png",
+      "row": 3,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "holy_axe",
+      "file": "sprites/holy_axe.png",
+      "row": 3,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "crossed_swords",
+      "file": "sprites/crossed_swords.png",
+      "row": 3,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "white_magic_staff",
+      "file": "sprites/white_magic_staff.png",
+      "row": 3,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "twin_daggers",
+      "file": "sprites/twin_daggers.png",
+      "row": 3,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "thorn_staff",
+      "file": "sprites/thorn_staff.png",
+      "row": 3,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "fist_hit",
+      "file": "sprites/fist_hit.png",
+      "row": 3,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "short_sword",
+      "file": "sprites/short_sword.png",
+      "row": 3,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "blue_kite_shield",
+      "file": "sprites/blue_kite_shield.png",
+      "row": 3,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "fire_ring",
+      "file": "sprites/fire_ring.png",
+      "row": 3,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "poison_skull",
+      "file": "sprites/poison_skull.png",
+      "row": 3,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "red_impact_burst",
+      "file": "sprites/red_impact_burst.png",
+      "row": 3,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "moon_sickle",
+      "file": "sprites/moon_sickle.png",
+      "row": 3,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "shadow_step",
+      "file": "sprites/shadow_step.png",
+      "row": 3,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "purple_portal",
+      "file": "sprites/purple_portal.png",
+      "row": 3,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "yellow_sunburst",
+      "file": "sprites/yellow_sunburst.png",
+      "row": 3,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "speech_bubble_outline",
+      "file": "sprites/speech_bubble_outline.png",
+      "row": 4,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "double_speech_bubbles",
+      "file": "sprites/double_speech_bubbles.png",
+      "row": 4,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "campfire",
+      "file": "sprites/campfire.png",
+      "row": 4,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "camp_tent",
+      "file": "sprites/camp_tent.png",
+      "row": 4,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "dark_bird",
+      "file": "sprites/dark_bird.png",
+      "row": 4,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "crossbow",
+      "file": "sprites/crossbow.png",
+      "row": 4,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "ballista",
+      "file": "sprites/ballista.png",
+      "row": 4,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "spellbook",
+      "file": "sprites/spellbook.png",
+      "row": 4,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "crossed_maces",
+      "file": "sprites/crossed_maces.png",
+      "row": 4,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "bronze_sword",
+      "file": "sprites/bronze_sword.png",
+      "row": 5,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "iron_sword",
+      "file": "sprites/iron_sword.png",
+      "row": 5,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "steel_sword",
+      "file": "sprites/steel_sword.png",
+      "row": 5,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "dark_sword",
+      "file": "sprites/dark_sword.png",
+      "row": 5,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "golden_rapier",
+      "file": "sprites/golden_rapier.png",
+      "row": 5,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "curved_saber",
+      "file": "sprites/curved_saber.png",
+      "row": 5,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "azure_blade",
+      "file": "sprites/azure_blade.png",
+      "row": 5,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "crimson_blade",
+      "file": "sprites/crimson_blade.png",
+      "row": 5,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "obsidian_blade",
+      "file": "sprites/obsidian_blade.png",
+      "row": 5,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "greatsword",
+      "file": "sprites/greatsword.png",
+      "row": 5,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "battle_axe",
+      "file": "sprites/battle_axe.png",
+      "row": 5,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "runic_chakram",
+      "file": "sprites/runic_chakram.png",
+      "row": 5,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "ghost_scythe",
+      "file": "sprites/ghost_scythe.png",
+      "row": 5,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "bone_club",
+      "file": "sprites/bone_club.png",
+      "row": 5,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "shadow_swirl",
+      "file": "sprites/shadow_swirl.png",
+      "row": 5,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "fist_punch",
+      "file": "sprites/fist_punch.png",
+      "row": 5,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "round_shield",
+      "file": "sprites/round_shield.png",
+      "row": 6,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "tower_shield",
+      "file": "sprites/tower_shield.png",
+      "row": 6,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "kite_shield",
+      "file": "sprites/kite_shield.png",
+      "row": 6,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "dual_hatchets",
+      "file": "sprites/dual_hatchets.png",
+      "row": 6,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "short_crossbow",
+      "file": "sprites/short_crossbow.png",
+      "row": 6,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "boomerang",
+      "file": "sprites/boomerang.png",
+      "row": 6,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "wooden_crook",
+      "file": "sprites/wooden_crook.png",
+      "row": 6,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "teal_dagger",
+      "file": "sprites/teal_dagger.png",
+      "row": 6,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "red_dagger",
+      "file": "sprites/red_dagger.png",
+      "row": 6,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "green_dagger",
+      "file": "sprites/green_dagger.png",
+      "row": 6,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "gold_dagger",
+      "file": "sprites/gold_dagger.png",
+      "row": 6,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "dark_dagger",
+      "file": "sprites/dark_dagger.png",
+      "row": 6,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "green_shoe",
+      "file": "sprites/green_shoe.png",
+      "row": 7,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "iron_helmet",
+      "file": "sprites/iron_helmet.png",
+      "row": 7,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "demon_helmet",
+      "file": "sprites/demon_helmet.png",
+      "row": 7,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "silver_helmet",
+      "file": "sprites/silver_helmet.png",
+      "row": 7,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "gray_helmet",
+      "file": "sprites/gray_helmet.png",
+      "row": 7,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "blue_helmet",
+      "file": "sprites/blue_helmet.png",
+      "row": 7,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "brown_armor",
+      "file": "sprites/brown_armor.png",
+      "row": 7,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "dark_armor",
+      "file": "sprites/dark_armor.png",
+      "row": 7,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "blue_tunic",
+      "file": "sprites/blue_tunic.png",
+      "row": 7,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "green_tunic",
+      "file": "sprites/green_tunic.png",
+      "row": 7,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "red_trousers",
+      "file": "sprites/red_trousers.png",
+      "row": 7,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "leather_boots",
+      "file": "sprites/leather_boots.png",
+      "row": 7,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "heart_boxers",
+      "file": "sprites/heart_boxers.png",
+      "row": 7,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "blue_dress",
+      "file": "sprites/blue_dress.png",
+      "row": 7,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "purple_robe",
+      "file": "sprites/purple_robe.png",
+      "row": 7,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "dark_belt",
+      "file": "sprites/dark_belt.png",
+      "row": 7,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "brown_boot",
+      "file": "sprites/brown_boot.png",
+      "row": 8,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "gray_boot",
+      "file": "sprites/gray_boot.png",
+      "row": 8,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "red_boots",
+      "file": "sprites/red_boots.png",
+      "row": 8,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "black_boots",
+      "file": "sprites/black_boots.png",
+      "row": 8,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "gold_ring",
+      "file": "sprites/gold_ring.png",
+      "row": 8,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "blue_ring",
+      "file": "sprites/blue_ring.png",
+      "row": 8,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "gold_necklace",
+      "file": "sprites/gold_necklace.png",
+      "row": 8,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "crimson_coil_charm",
+      "file": "sprites/crimson_coil_charm.png",
+      "row": 8,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "white_wing_charm",
+      "file": "sprites/white_wing_charm.png",
+      "row": 8,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "brown_pouch",
+      "file": "sprites/brown_pouch.png",
+      "row": 8,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "red_potion_small",
+      "file": "sprites/red_potion_small.png",
+      "row": 9,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "blue_potion_small",
+      "file": "sprites/blue_potion_small.png",
+      "row": 9,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "green_potion_small",
+      "file": "sprites/green_potion_small.png",
+      "row": 9,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "amber_potion_small",
+      "file": "sprites/amber_potion_small.png",
+      "row": 9,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "red_elixir_small",
+      "file": "sprites/red_elixir_small.png",
+      "row": 9,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "cyan_elixir_small",
+      "file": "sprites/cyan_elixir_small.png",
+      "row": 9,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "lime_elixir_small",
+      "file": "sprites/lime_elixir_small.png",
+      "row": 9,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "orange_elixir_small",
+      "file": "sprites/orange_elixir_small.png",
+      "row": 9,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "star_elixir_small",
+      "file": "sprites/star_elixir_small.png",
+      "row": 9,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "sky_elixir_small",
+      "file": "sprites/sky_elixir_small.png",
+      "row": 9,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "olive_elixir_small",
+      "file": "sprites/olive_elixir_small.png",
+      "row": 9,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "honey_elixir_small",
+      "file": "sprites/honey_elixir_small.png",
+      "row": 9,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "red_flask",
+      "file": "sprites/red_flask.png",
+      "row": 9,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "orange_flask",
+      "file": "sprites/orange_flask.png",
+      "row": 9,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "pink_flask",
+      "file": "sprites/pink_flask.png",
+      "row": 9,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "white_bedroll",
+      "file": "sprites/white_bedroll.png",
+      "row": 9,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "brown_bag",
+      "file": "sprites/brown_bag.png",
+      "row": 10,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "battle_axe_tool",
+      "file": "sprites/battle_axe_tool.png",
+      "row": 10,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "pickaxe",
+      "file": "sprites/pickaxe.png",
+      "row": 10,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "hammer",
+      "file": "sprites/hammer.png",
+      "row": 10,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "war_hammer",
+      "file": "sprites/war_hammer.png",
+      "row": 10,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "dark_mace",
+      "file": "sprites/dark_mace.png",
+      "row": 10,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "iron_dagger_tool",
+      "file": "sprites/iron_dagger_tool.png",
+      "row": 10,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "torch",
+      "file": "sprites/torch.png",
+      "row": 10,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "magnifying_glass",
+      "file": "sprites/magnifying_glass.png",
+      "row": 10,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "lantern",
+      "file": "sprites/lantern.png",
+      "row": 10,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "small_axe",
+      "file": "sprites/small_axe.png",
+      "row": 10,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "candle_pair",
+      "file": "sprites/candle_pair.png",
+      "row": 10,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "round_bomb",
+      "file": "sprites/round_bomb.png",
+      "row": 10,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "shell",
+      "file": "sprites/shell.png",
+      "row": 10,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "feather_crown",
+      "file": "sprites/feather_crown.png",
+      "row": 10,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "hourglass",
+      "file": "sprites/hourglass.png",
+      "row": 10,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "raw_meat",
+      "file": "sprites/raw_meat.png",
+      "row": 11,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "blue_magic_card",
+      "file": "sprites/blue_magic_card.png",
+      "row": 11,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "dark_goggles",
+      "file": "sprites/dark_goggles.png",
+      "row": 11,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "gold_lyre",
+      "file": "sprites/gold_lyre.png",
+      "row": 11,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "violin",
+      "file": "sprites/violin.png",
+      "row": 11,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "blue_ocarina",
+      "file": "sprites/blue_ocarina.png",
+      "row": 11,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "wooden_flute",
+      "file": "sprites/wooden_flute.png",
+      "row": 11,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "pan_flute",
+      "file": "sprites/pan_flute.png",
+      "row": 11,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "lute",
+      "file": "sprites/lute.png",
+      "row": 11,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "silver_key",
+      "file": "sprites/silver_key.png",
+      "row": 11,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "ribbon_medal",
+      "file": "sprites/ribbon_medal.png",
+      "row": 11,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "treasure_chest",
+      "file": "sprites/treasure_chest.png",
+      "row": 11,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "mortar_pestle",
+      "file": "sprites/mortar_pestle.png",
+      "row": 11,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "green_herbs",
+      "file": "sprites/green_herbs.png",
+      "row": 11,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "orange_leaf",
+      "file": "sprites/orange_leaf.png",
+      "row": 11,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "green_leaf",
+      "file": "sprites/green_leaf.png",
+      "row": 11,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "chicken_drumstick",
+      "file": "sprites/chicken_drumstick.png",
+      "row": 12,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "pink_flame",
+      "file": "sprites/pink_flame.png",
+      "row": 12,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "dark_claws",
+      "file": "sprites/dark_claws.png",
+      "row": 12,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "potted_plant",
+      "file": "sprites/potted_plant.png",
+      "row": 12,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "small_plant",
+      "file": "sprites/small_plant.png",
+      "row": 12,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "potted_herb",
+      "file": "sprites/potted_herb.png",
+      "row": 12,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "brown_herb",
+      "file": "sprites/brown_herb.png",
+      "row": 12,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "gold_coin",
+      "file": "sprites/gold_coin.png",
+      "row": 12,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "wood_logs",
+      "file": "sprites/wood_logs.png",
+      "row": 12,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "silver_ingots",
+      "file": "sprites/silver_ingots.png",
+      "row": 12,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "gold_ingots",
+      "file": "sprites/gold_ingots.png",
+      "row": 12,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "coin_bag",
+      "file": "sprites/coin_bag.png",
+      "row": 12,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "wooden_spoon",
+      "file": "sprites/wooden_spoon.png",
+      "row": 12,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "brown_mushroom",
+      "file": "sprites/brown_mushroom.png",
+      "row": 12,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "blue_crystal_shards",
+      "file": "sprites/blue_crystal_shards.png",
+      "row": 12,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "red_gem",
+      "file": "sprites/red_gem.png",
+      "row": 12,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "blue_book",
+      "file": "sprites/blue_book.png",
+      "row": 13,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "red_book",
+      "file": "sprites/red_book.png",
+      "row": 13,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "green_book",
+      "file": "sprites/green_book.png",
+      "row": 13,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "yellow_book",
+      "file": "sprites/yellow_book.png",
+      "row": 13,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "brown_book",
+      "file": "sprites/brown_book.png",
+      "row": 13,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "tan_book",
+      "file": "sprites/tan_book.png",
+      "row": 13,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "navy_spellbook",
+      "file": "sprites/navy_spellbook.png",
+      "row": 13,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "red_spellbook",
+      "file": "sprites/red_spellbook.png",
+      "row": 13,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "open_book",
+      "file": "sprites/open_book.png",
+      "row": 13,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "envelope",
+      "file": "sprites/envelope.png",
+      "row": 13,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "feather_quill",
+      "file": "sprites/feather_quill.png",
+      "row": 13,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "parchment",
+      "file": "sprites/parchment.png",
+      "row": 13,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "old_scroll",
+      "file": "sprites/old_scroll.png",
+      "row": 13,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "white_dice",
+      "file": "sprites/white_dice.png",
+      "row": 13,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "playing_cards",
+      "file": "sprites/playing_cards.png",
+      "row": 13,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "green_bottle",
+      "file": "sprites/green_bottle.png",
+      "row": 13,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "red_apple",
+      "file": "sprites/red_apple.png",
+      "row": 14,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "banana",
+      "file": "sprites/banana.png",
+      "row": 14,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "pear",
+      "file": "sprites/pear.png",
+      "row": 14,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "lemon_slice",
+      "file": "sprites/lemon_slice.png",
+      "row": 14,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "strawberry",
+      "file": "sprites/strawberry.png",
+      "row": 14,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "grapes",
+      "file": "sprites/grapes.png",
+      "row": 14,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "carrot",
+      "file": "sprites/carrot.png",
+      "row": 14,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "corn",
+      "file": "sprites/corn.png",
+      "row": 14,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "garlic",
+      "file": "sprites/garlic.png",
+      "row": 14,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "tomato",
+      "file": "sprites/tomato.png",
+      "row": 14,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "eggplant",
+      "file": "sprites/eggplant.png",
+      "row": 14,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "red_chili",
+      "file": "sprites/red_chili.png",
+      "row": 14,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "mushroom_cap",
+      "file": "sprites/mushroom_cap.png",
+      "row": 14,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "bread_loaf",
+      "file": "sprites/bread_loaf.png",
+      "row": 14,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "croissant",
+      "file": "sprites/croissant.png",
+      "row": 14,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "raw_pork",
+      "file": "sprites/raw_pork.png",
+      "row": 14,
+      "col": 15,
+      "size": 32
+    },
+    {
+      "name": "meat_drumstick",
+      "file": "sprites/meat_drumstick.png",
+      "row": 15,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "steak_cut",
+      "file": "sprites/steak_cut.png",
+      "row": 15,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "ham_bone",
+      "file": "sprites/ham_bone.png",
+      "row": 15,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "sausage_link",
+      "file": "sprites/sausage_link.png",
+      "row": 15,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "small_fish",
+      "file": "sprites/small_fish.png",
+      "row": 15,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "egg_cluster",
+      "file": "sprites/egg_cluster.png",
+      "row": 15,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "egg",
+      "file": "sprites/egg.png",
+      "row": 15,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "cheese_wedge",
+      "file": "sprites/cheese_wedge.png",
+      "row": 15,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "milk_bottle",
+      "file": "sprites/milk_bottle.png",
+      "row": 15,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "purple_potion_bottle",
+      "file": "sprites/purple_potion_bottle.png",
+      "row": 15,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "salt_pile",
+      "file": "sprites/salt_pile.png",
+      "row": 15,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "purple_spice_pile",
+      "file": "sprites/purple_spice_pile.png",
+      "row": 15,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "pink_candy",
+      "file": "sprites/pink_candy.png",
+      "row": 15,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "cake_slice",
+      "file": "sprites/cake_slice.png",
+      "row": 15,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "coffee_cup",
+      "file": "sprites/coffee_cup.png",
+      "row": 15,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "rusty_hook",
+      "file": "sprites/rusty_hook.png",
+      "row": 16,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "double_hook",
+      "file": "sprites/double_hook.png",
+      "row": 16,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "pink_worm",
+      "file": "sprites/pink_worm.png",
+      "row": 16,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "blue_fish",
+      "file": "sprites/blue_fish.png",
+      "row": 16,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "left_brown_boot",
+      "file": "sprites/left_brown_boot.png",
+      "row": 16,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "right_dark_boot",
+      "file": "sprites/right_dark_boot.png",
+      "row": 16,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "yellow_fish",
+      "file": "sprites/yellow_fish.png",
+      "row": 16,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "firecracker_bundle",
+      "file": "sprites/firecracker_bundle.png",
+      "row": 16,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "jellyfish",
+      "file": "sprites/jellyfish.png",
+      "row": 16,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "red_insect",
+      "file": "sprites/red_insect.png",
+      "row": 16,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "green_beetle",
+      "file": "sprites/green_beetle.png",
+      "row": 16,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "white_bones",
+      "file": "sprites/white_bones.png",
+      "row": 16,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "dark_bones",
+      "file": "sprites/dark_bones.png",
+      "row": 16,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "stone_disc",
+      "file": "sprites/stone_disc.png",
+      "row": 16,
+      "col": 13,
+      "size": 32
+    },
+    {
+      "name": "golden_chest",
+      "file": "sprites/golden_chest.png",
+      "row": 16,
+      "col": 14,
+      "size": 32
+    },
+    {
+      "name": "wood_log",
+      "file": "sprites/wood_log.png",
+      "row": 17,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "stone_block",
+      "file": "sprites/stone_block.png",
+      "row": 17,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "blue_crystal_cluster",
+      "file": "sprites/blue_crystal_cluster.png",
+      "row": 17,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "gold_bar",
+      "file": "sprites/gold_bar.png",
+      "row": 17,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "diamond",
+      "file": "sprites/diamond.png",
+      "row": 17,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "white_feather",
+      "file": "sprites/white_feather.png",
+      "row": 17,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "pink_feather",
+      "file": "sprites/pink_feather.png",
+      "row": 17,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "yellow_paper",
+      "file": "sprites/yellow_paper.png",
+      "row": 17,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "dark_branch",
+      "file": "sprites/dark_branch.png",
+      "row": 17,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "curved_bone",
+      "file": "sprites/curved_bone.png",
+      "row": 17,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "silver_feather",
+      "file": "sprites/silver_feather.png",
+      "row": 17,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "red_orb",
+      "file": "sprites/red_orb.png",
+      "row": 18,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "blue_orb",
+      "file": "sprites/blue_orb.png",
+      "row": 18,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "green_orb",
+      "file": "sprites/green_orb.png",
+      "row": 18,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "gold_orb",
+      "file": "sprites/gold_orb.png",
+      "row": 18,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "purple_orb",
+      "file": "sprites/purple_orb.png",
+      "row": 18,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "dark_orb",
+      "file": "sprites/dark_orb.png",
+      "row": 18,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "white_potion",
+      "file": "sprites/white_potion.png",
+      "row": 19,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "clear_potion",
+      "file": "sprites/clear_potion.png",
+      "row": 19,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "rolled_scroll",
+      "file": "sprites/rolled_scroll.png",
+      "row": 19,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "bandage_roll",
+      "file": "sprites/bandage_roll.png",
+      "row": 19,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "red_potion_large",
+      "file": "sprites/red_potion_large.png",
+      "row": 19,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "blue_potion_large",
+      "file": "sprites/blue_potion_large.png",
+      "row": 19,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "green_potion_large",
+      "file": "sprites/green_potion_large.png",
+      "row": 19,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "yellow_potion_large",
+      "file": "sprites/yellow_potion_large.png",
+      "row": 19,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "purple_cauldron",
+      "file": "sprites/purple_cauldron.png",
+      "row": 19,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "dark_cauldron",
+      "file": "sprites/dark_cauldron.png",
+      "row": 19,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "dark_fur",
+      "file": "sprites/dark_fur.png",
+      "row": 19,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "wood_plank",
+      "file": "sprites/wood_plank.png",
+      "row": 19,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "empty_sack",
+      "file": "sprites/empty_sack.png",
+      "row": 20,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "brown_powder",
+      "file": "sprites/brown_powder.png",
+      "row": 20,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "purple_powder",
+      "file": "sprites/purple_powder.png",
+      "row": 20,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "tan_powder",
+      "file": "sprites/tan_powder.png",
+      "row": 20,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "orange_powder",
+      "file": "sprites/orange_powder.png",
+      "row": 20,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "red_powder",
+      "file": "sprites/red_powder.png",
+      "row": 20,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "blue_powder",
+      "file": "sprites/blue_powder.png",
+      "row": 20,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "green_powder",
+      "file": "sprites/green_powder.png",
+      "row": 20,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "yellow_powder",
+      "file": "sprites/yellow_powder.png",
+      "row": 20,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "magenta_powder",
+      "file": "sprites/magenta_powder.png",
+      "row": 20,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "emerald_powder",
+      "file": "sprites/emerald_powder.png",
+      "row": 20,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "white_powder",
+      "file": "sprites/white_powder.png",
+      "row": 20,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "gray_powder",
+      "file": "sprites/gray_powder.png",
+      "row": 20,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "sparkle_wand",
+      "file": "sprites/sparkle_wand.png",
+      "row": 21,
+      "col": 0,
+      "size": 32
+    },
+    {
+      "name": "wood_pickaxe",
+      "file": "sprites/wood_pickaxe.png",
+      "row": 21,
+      "col": 1,
+      "size": 32
+    },
+    {
+      "name": "bronze_pickaxe",
+      "file": "sprites/bronze_pickaxe.png",
+      "row": 21,
+      "col": 2,
+      "size": 32
+    },
+    {
+      "name": "silver_pickaxe",
+      "file": "sprites/silver_pickaxe.png",
+      "row": 21,
+      "col": 3,
+      "size": 32
+    },
+    {
+      "name": "steel_pickaxe",
+      "file": "sprites/steel_pickaxe.png",
+      "row": 21,
+      "col": 4,
+      "size": 32
+    },
+    {
+      "name": "gold_pickaxe",
+      "file": "sprites/gold_pickaxe.png",
+      "row": 21,
+      "col": 5,
+      "size": 32
+    },
+    {
+      "name": "crown_banner",
+      "file": "sprites/crown_banner.png",
+      "row": 21,
+      "col": 6,
+      "size": 32
+    },
+    {
+      "name": "sun_banner",
+      "file": "sprites/sun_banner.png",
+      "row": 21,
+      "col": 7,
+      "size": 32
+    },
+    {
+      "name": "moon_banner",
+      "file": "sprites/moon_banner.png",
+      "row": 21,
+      "col": 8,
+      "size": 32
+    },
+    {
+      "name": "blue_snowflake",
+      "file": "sprites/blue_snowflake.png",
+      "row": 21,
+      "col": 9,
+      "size": 32
+    },
+    {
+      "name": "orange_burst",
+      "file": "sprites/orange_burst.png",
+      "row": 21,
+      "col": 10,
+      "size": 32
+    },
+    {
+      "name": "blue_burst",
+      "file": "sprites/blue_burst.png",
+      "row": 21,
+      "col": 11,
+      "size": 32
+    },
+    {
+      "name": "orange_star_burst",
+      "file": "sprites/orange_star_burst.png",
+      "row": 21,
+      "col": 12,
+      "size": 32
+    },
+    {
+      "name": "icy_star_burst",
+      "file": "sprites/icy_star_burst.png",
+      "row": 21,
+      "col": 13,
+      "size": 32
+    }
+  ]
+}

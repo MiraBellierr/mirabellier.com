@@ -5,6 +5,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
+import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -132,6 +133,12 @@ const ArenaCollection = () => {
                   shop
                 </Link>
                 <Link
+                  to="/arena/crafting"
+                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white"
+                >
+                  crafting
+                </Link>
+                <Link
                   to="/arena/leaderboard"
                   className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
                 >
@@ -181,10 +188,11 @@ const ArenaCollection = () => {
                           className="rounded-xl border border-blue-200 bg-white/70 p-3"
                         >
                           <div className="flex gap-3">
-                            <img
-                              src={card.imageUrl}
-                              alt={card.title}
-                              className="h-28 w-20 rounded-lg border border-blue-200 object-cover"
+                            <ArenaPortraitCard
+                              card={card}
+                              level={collection.profile.level}
+                              size="compact"
+                              showIvLine={false}
                             />
                             <div className="space-y-1">
                               <p className="font-semibold text-blue-700">{card.title}</p>
