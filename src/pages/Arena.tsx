@@ -53,7 +53,7 @@ const Arena = () => {
       "@type": "WebPage",
       name: "Character Card Arena Hub",
       description:
-        "Draw one character card per day, view your IV card stats, and open fight/shop/leaderboard pages.",
+        "Draw up to five character cards per day, view your IV card stats, and open fight/shop/leaderboard pages.",
       url: "https://mirabellier.com/arena",
     },
   });
@@ -136,7 +136,7 @@ const Arena = () => {
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold text-blue-700">Daily Draw Duel</h2>
                 <p className="text-sm text-blue-500">
-                  Draw one character card per day, then fight with your chosen card.
+                  Draw up to five character cards per day, then fight with your chosen card.
                 </p>
               </div>
 
@@ -155,7 +155,10 @@ const Arena = () => {
                     <div className="rounded-xl border border-blue-300 bg-blue-50 p-4">
                       <p className="font-semibold text-blue-700">Draw a card to start.</p>
                       <p className="mt-1 text-sm text-blue-600">
-                        You can draw only one card per day.
+                        You can draw up to five cards per day.
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        Draws left today: {profile.dailyDrawsRemaining}/{profile.dailyDrawLimit}
                       </p>
                       <button
                         type="button"
@@ -193,6 +196,9 @@ const Arena = () => {
                           <p className="text-sm text-slate-700">
                             Total IV: {profile.selectedCard.iv.total}
                           </p>
+                          <p className="text-xs text-slate-600">
+                            Draws left today: {profile.dailyDrawsRemaining}/{profile.dailyDrawLimit}
+                          </p>
                         </div>
                       </div>
                       <div className="mt-3">
@@ -205,11 +211,11 @@ const Arena = () => {
                           {drawing ? "drawing..." : "redraw today card"}
                         </button>
                         {!profile.canDrawCard ? (
-                          <p className="mt-2 text-xs text-amber-700">
-                            You already drew today. Next draw: {formatTime(profile.nextCardDrawAt)}
-                          </p>
-                        ) : null}
-                      </div>
+                        <p className="mt-2 text-xs text-amber-700">
+                          Daily draw limit reached. Next draw: {formatTime(profile.nextCardDrawAt)}
+                        </p>
+                      ) : null}
+                    </div>
                     </div>
                   )}
 
@@ -281,7 +287,7 @@ const Arena = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-3 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">arena flow</h2>
-                <p>1) Draw a card once per day.</p>
+                <p>1) Draw up to 5 cards per day.</p>
                 <p>2) Use your card in fights.</p>
                 <p>3) Buy gear in shop and climb leaderboards.</p>
               </div>

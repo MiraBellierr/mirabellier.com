@@ -98,13 +98,12 @@ const ArenaCollection = () => {
   const normalizedQuery = query.trim().toLowerCase();
   const filteredCards = (collection?.cards || []).filter((card) => {
     if (!normalizedQuery) return true;
-    const favoritesText =
-      typeof card.favorites === "number" ? String(card.favorites) : "";
+    const ivText = `${card.iv.power} ${card.iv.guard} ${card.iv.speed} ${card.iv.luck} ${card.iv.total}`;
     return (
       card.title.toLowerCase().includes(normalizedQuery) ||
       card.rarity.toLowerCase().includes(normalizedQuery) ||
       String(card.malId).includes(normalizedQuery) ||
-      favoritesText.includes(normalizedQuery)
+      ivText.includes(normalizedQuery)
     );
   });
 
@@ -163,7 +162,7 @@ const ArenaCollection = () => {
                       type="search"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search by name, rarity, id, favorites..."
+                      placeholder="Search by name, rarity, id, iv..."
                       className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700"
                     />
                   </div>
@@ -191,10 +190,7 @@ const ArenaCollection = () => {
                               <p className="font-semibold text-blue-700">{card.title}</p>
                               <p className="text-xs text-slate-700">Rarity: {card.rarity}</p>
                               <p className="text-xs text-slate-700">
-                                Favorites:{" "}
-                                {typeof card.favorites === "number"
-                                  ? card.favorites.toLocaleString()
-                                  : "unknown"}
+                                IV Value: {card.iv.total}
                               </p>
                               <p className="text-xs text-slate-700">IV: {formatIvBlock(card.iv)}</p>
                               {isSelected ? (

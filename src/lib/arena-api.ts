@@ -52,6 +52,9 @@ export type ArenaProfile = {
   };
   selectedCard: ArenaCard | null;
   canDrawCard: boolean;
+  dailyDrawLimit: number;
+  dailyDrawsUsed: number;
+  dailyDrawsRemaining: number;
   nextCardDrawAt: string | null;
   lastCardDrawDate: string | null;
   lifetimeCoinsEarned: number;
