@@ -216,22 +216,46 @@ const ArenaFight = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                    <p className="font-semibold text-blue-700">Your Card</p>
-                    <div className="mt-2 flex items-center gap-3">
-                      {profile?.selectedCard ? (
-                        <img
-                          src={profile.selectedCard.imageUrl}
-                          alt={profile.selectedCard.title}
-                          className="h-16 w-12 rounded-md border border-blue-200 object-cover"
-                        />
-                      ) : null}
-                      <div>
-                        <p className="text-sm text-slate-700">{profile?.selectedCard?.title}</p>
-                        <p className="text-xs text-slate-600">
-                          {profile?.selectedCard ? formatIvBlock(profile.selectedCard.iv) : ""}
-                        </p>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
+                      <p className="font-semibold text-blue-700">Your Card</p>
+                      <div className="mt-2 flex items-center gap-3">
+                        {profile?.selectedCard ? (
+                          <img
+                            src={profile.selectedCard.imageUrl}
+                            alt={profile.selectedCard.title}
+                            className="h-16 w-12 rounded-md border border-blue-200 object-cover"
+                          />
+                        ) : null}
+                        <div>
+                          <p className="text-sm text-slate-700">{profile?.selectedCard?.title}</p>
+                          <p className="text-xs text-slate-600">
+                            {profile?.selectedCard ? formatIvBlock(profile.selectedCard.iv) : ""}
+                          </p>
+                        </div>
                       </div>
+                    </div>
+                    <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
+                      <p className="font-semibold text-blue-700">Opponent&apos;s Card</p>
+                      {fight?.opponent?.selectedCard ? (
+                        <div className="mt-2 flex items-center gap-3">
+                          <img
+                            src={fight.opponent.selectedCard.imageUrl}
+                            alt={fight.opponent.selectedCard.title}
+                            className="h-16 w-12 rounded-md border border-blue-200 object-cover"
+                          />
+                          <div>
+                            <p className="text-sm text-slate-700">{fight.opponent.selectedCard.title}</p>
+                            <p className="text-xs text-slate-600">
+                              {formatIvBlock(fight.opponent.selectedCard.iv)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-slate-600">
+                          Fight to reveal opponent card.
+                        </p>
+                      )}
                     </div>
                   </div>
 

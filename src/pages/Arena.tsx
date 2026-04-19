@@ -134,7 +134,7 @@ const Arena = () => {
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4">
               <div className="space-y-1">
-                <h2 className="text-2xl font-bold text-blue-700">anime card arena</h2>
+                <h2 className="text-2xl font-bold text-blue-700">Daily Draw Duel</h2>
                 <p className="text-sm text-blue-500">
                   Draw one character card per day, then fight with your chosen card.
                 </p>
