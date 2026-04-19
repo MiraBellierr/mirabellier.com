@@ -136,7 +136,7 @@ const ArenaFight = () => {
   }, [token]);
 
   const handleFight = async () => {
-    if (!token) return;
+    if (!token || fighting || !playbackDone) return;
     setFighting(true);
     setErrorMessage(null);
     try {
@@ -279,10 +279,10 @@ const ArenaFight = () => {
                   <button
                     type="button"
                     onClick={() => void handleFight()}
-                    disabled={fighting}
+                    disabled={fighting || !playbackDone}
                     className="rounded-full bg-pink-500 px-6 py-2 text-sm font-bold text-white transition hover:bg-pink-600 disabled:opacity-60"
                   >
-                    {fighting ? "fighting..." : "fight"}
+                    {fighting ? "fighting..." : !playbackDone ? "wait for console..." : "fight"}
                   </button>
                 </div>
               )}
