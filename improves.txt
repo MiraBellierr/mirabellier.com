@@ -1,0 +1,38 @@
+I’d improve it in this order:
+
+1. **Fix/verify text encoding first**
+   In the terminal, some cute symbols/emojis show as mojibake like `ðŸŒ¸`, `â¤ï¸`, etc. If that appears in the browser too, it will make the site feel broken immediately. Check [Home.tsx](c:/projects/mirabellier.com/src/pages/Home.tsx), [Footer.tsx](c:/projects/mirabellier.com/src/parts/Footer.tsx), Blog, Guestbook, and Question pages.
+
+2. **Upgrade the Projects page**
+   Your project data already has `kind`, `stack`, section titles, and descriptions in [projects.ts](c:/projects/mirabellier.com/src/lib/projects.ts), but [Projects.tsx](c:/projects/mirabellier.com/src/pages/Projects.tsx) only renders a simple list. I’d turn it into a proper portfolio page with:
+   - project cards grouped by section
+   - stack badges
+   - “type” labels like REST API, Mobile app, Discord bot
+   - GitHub button
+   - optional featured project spotlight
+
+3. **Make the homepage point visitors somewhere**
+   The homepage is cute, but it could use stronger calls to action: “read blog,” “sign guestbook,” “see projects,” “answer today’s question.” Right now it introduces you well, but it doesn’t guide someone into the best parts of the site.
+
+4. **Add a “Now” or “Updates” panel**
+   Since this is a personal site, a small “what I’m doing lately” box would fit perfectly. It could show current project, latest blog post, latest question, or mood/status.
+
+5. **Improve mobile ergonomics**
+   You have responsive navigation already, which is good. I’d specifically audit mobile spacing, footer wrapping, long headings, and side images. Some pages have dense side panels that may feel heavy on small screens.
+
+6. **Add richer project proof**
+   For each project, add screenshots, short “what I learned,” and “what I built” notes. This would make the developer side of the site much stronger without losing the cozy feel.
+
+7. **Add loading/error polish**
+   Blog, guestbook, and question pages already handle loading/errors, but the states could be more branded: cute empty states, retry buttons, and friendlier offline/backend-down messages.
+
+8. **Performance polish**
+   The build passes, nice. A few images are fairly large, like `kanna-smile` around 663 kB and the Tiptap table chunk around 683 kB. Not urgent, but you could further lazy-load heavy editor/table features and review image sizes.
+
+9. **SEO/social previews**
+   You already have structured data in several pages. Next thing I’d add is per-page Open Graph/Twitter metadata, especially for blog posts and projects, so shared links look nicer.
+
+10. **Add a tiny site “map” or directory**
+   Your site has many fun pages now: blog, anime, shrine, arena, guestbook, question, quotes. A cute “directory” page or homepage section could help visitors discover everything.
+
+Best immediate improvement: **Projects page upgrade**. Best polish improvement: **encoding/text cleanup**. Best new feature: **a “Now” panel or activity feed**.

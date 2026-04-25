@@ -91,10 +91,18 @@ const Projects = () => {
               <div className="border-1 border-b align-middle mb-2"></div>
 
               {projectSections.map((section) => (
-                <div key={section.id} className="">
+                <div key={section.id}>
                   {section.projects.map((project) => (
                     <div key={project.id} className="mb-3">
-                      <p className="font-bold">{project.name} ⊹ <Link className="font-normal text-sm underline text-blue-600 hover:cursor-pointer hover:text-blue-800" to={project.repoUrl}>(Github)</Link></p>
+                      <p className="font-bold">
+                        {project.name} ⊹{" "}
+                        <Link
+                          className="font-normal text-sm underline text-blue-600 hover:cursor-pointer hover:text-blue-800"
+                          to={project.repoUrl}
+                        >
+                          (Github)
+                        </Link>
+                      </p>
                       <p className="text-sm">{project.summary}</p>
                     </div>
                   ))}
