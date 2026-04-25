@@ -144,8 +144,12 @@ const BlogPost = () => {
       setMetaContent('meta[property="og:type"]', "article");
       setMetaContent('meta[property="og:title"]', post.title);
       setMetaContent('meta[property="og:description"]', description);
+      setMetaContent('meta[property="og:site_name"]', "Mirabellier");
       setMetaContent('meta[property="og:url"]', postUrl);
       setMetaContent('meta[property="og:image"]', imageUrl);
+      setMetaContent('meta[name="twitter:card"]', "summary_large_image");
+      setMetaContent('meta[name="twitter:site"]', "@mirabellier");
+      setMetaContent('meta[name="twitter:creator"]', "@mirabellier");
       setMetaContent('meta[name="twitter:title"]', post.title);
       setMetaContent('meta[name="twitter:description"]', description);
       setMetaContent('meta[name="twitter:image"]', imageUrl);
@@ -193,8 +197,12 @@ const BlogPost = () => {
           'meta[property="og:description"]',
           "A tiny, cozy blog sharing small joys, photos, and short posts.",
         );
+        setMetaContent('meta[property="og:site_name"]', "Mirabellier");
         setMetaContent('meta[property="og:url"]', DEFAULT_SEO.url);
         setMetaContent('meta[property="og:image"]', DEFAULT_SEO.image);
+        setMetaContent('meta[name="twitter:card"]', "summary_large_image");
+        setMetaContent('meta[name="twitter:site"]', "@mirabellier");
+        setMetaContent('meta[name="twitter:creator"]', "@mirabellier");
         setMetaContent('meta[name="twitter:title"]', DEFAULT_SEO.title);
         setMetaContent(
           'meta[name="twitter:description"]',

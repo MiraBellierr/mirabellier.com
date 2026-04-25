@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Footer from "../parts/Footer";
@@ -6,6 +6,8 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import kannaRight from "@/assets/anime/kanna-right.webp";
+import AsyncStateCard from "@/components/AsyncStateCard";
+import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { usePageSeo } from "@/lib/seo";
 import {
   fetchQuestionOfTheDayArchive,
@@ -17,6 +19,7 @@ const QuestionArchive = () => {
   const [entries, setEntries] = useState<QuestionOfTheDayArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   usePageSeo({
     canonical: "https://mirabellier.com/question-of-the-day/archive",
@@ -35,6 +38,8 @@ const QuestionArchive = () => {
     let cancelled = false;
 
     const loadArchive = async () => {
+      setLoading(true);
+
       try {
         const data = await fetchQuestionOfTheDayArchive();
         if (!cancelled) {
@@ -59,7 +64,16 @@ const QuestionArchive = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadTick]);
+
+  const archiveLoadErrorMessage = useMemo(
+    () => getFriendlyFetchMessage("Question archive", error),
+    [error],
+  );
+
+  const retryLoadArchive = () => {
+    setReloadTick((value) => value + 1);
+  };
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
@@ -105,18 +119,28 @@ const QuestionArchive = () => {
               </div>
 
               {loading ? (
-                <div className="text-blue-500">
-                  Loading archive...
-                </div>
+                <AsyncStateCard
+                  variant="loading"
+                  title="Loading archive..."
+                  message="Collecting previously answered question days."
+                />
               ) : error ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
-                  {error}
-                </div>
+                <AsyncStateCard
+                  variant="error"
+                  title={archiveLoadErrorMessage.title}
+                  message={archiveLoadErrorMessage.message}
+                  detail={archiveLoadErrorMessage.detail}
+                  actionLabel="Retry"
+                  onAction={retryLoadArchive}
+                />
               ) : entries.length === 0 ? (
-                <div className="text-blue-500">
-                  No archived questions yet. Once a past UTC day exists, it will
-                  appear here.
-                </div>
+                <AsyncStateCard
+                  variant="empty"
+                  title="No archived questions yet."
+                  message="Once a past UTC day has answered prompts, it will appear here."
+                  actionLabel="Check again"
+                  onAction={retryLoadArchive}
+                />
               ) : (
                 <div className="space-y-4">
                   {entries.map((entry) => (

@@ -1,10 +1,19 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
-import { Link } from "react-router-dom";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import kannaShy from "@/assets/anime/kanna-shy.webp";
+import AsyncStateCard from "@/components/AsyncStateCard";
 import { resolveAsset } from "@/lib/blog-utils";
+import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useConfirm } from "@/states/ConfirmContext";
 import {
@@ -40,10 +49,12 @@ function getNoteRotation(id: string, index: number) {
 }
 
 const Guestbook = () => {
+  const navigate = useNavigate();
   const auth = useOptionalAuth();
   const { confirm } = useConfirm();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draggingNoteId, setDraggingNoteId] = useState<string | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
@@ -112,24 +123,25 @@ const Guestbook = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchGuestbookEntries();
-        setEntries(data);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load guestbook entries",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadEntries = useCallback(async () => {
+    setLoading(true);
 
-    load();
+    try {
+      const data = await fetchGuestbookEntries();
+      setEntries(data);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(
+        err instanceof Error ? err.message : "Failed to load guestbook entries",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadEntries();
+  }, [loadEntries]);
 
   useEffect(() => {
     const viewport = boardViewportRef.current;
@@ -295,6 +307,10 @@ const Guestbook = () => {
 
   const boardIsExpanded = isFullscreen || isExpandedFallback;
   const isAdmin = auth?.user?.discordId === OWNER_DISCORD_ID;
+  const guestbookLoadErrorMessage = useMemo(
+    () => getFriendlyFetchMessage("Guestbook board", loadError),
+    [loadError],
+  );
 
   const applyBoardZoom = (
     nextZoom: number,
@@ -462,11 +478,32 @@ const Guestbook = () => {
                     >
                       {loading ? (
                         <div className="guestbook-board-empty">
-                          Loading the pinned notes...
+                          <AsyncStateCard
+                            variant="loading"
+                            title="Pinning notes into place..."
+                            message="Setting up the board for everyone."
+                          />
+                        </div>
+                      ) : loadError ? (
+                        <div className="guestbook-board-empty">
+                          <AsyncStateCard
+                            variant="error"
+                            title={guestbookLoadErrorMessage.title}
+                            message={guestbookLoadErrorMessage.message}
+                            detail={guestbookLoadErrorMessage.detail}
+                            actionLabel="Retry"
+                            onAction={() => void loadEntries()}
+                          />
                         </div>
                       ) : entries.length === 0 ? (
                         <div className="guestbook-board-empty">
-                          No notes yet. Be the first one to pin a little hello.
+                          <AsyncStateCard
+                            variant="empty"
+                            title="No notes pinned yet."
+                            message="Be the first to pin a tiny hello to the board."
+                            actionLabel="Sign guestbook"
+                            onAction={() => navigate("/guestbook/sign")}
+                          />
                         </div>
                       ) : (
                         entries.map((entry, index) => {

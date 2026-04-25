@@ -177,6 +177,8 @@ const Anime = () => {
                 width="320"
                 height="427"
                 alt="kanna smiling"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           </div>

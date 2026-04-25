@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import AsyncStateCard from "@/components/AsyncStateCard";
 import { BlogTagList } from "@/components/BlogTagList";
 import { useAuth } from "@/states/AuthContext";
 import { useConfirm } from "@/states/ConfirmContext";
 import { useToast } from "@/states/ToastContext";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
+import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
@@ -175,25 +177,28 @@ const Blog = () => {
     navigate({ search: params.toString() }, { replace: true });
   }, [searchTerm, navigate]);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchPosts();
-        setPosts(data);
-        setFilteredPosts(data);
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("An unknown error occurred");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
 
-    load();
+    try {
+      const data = await fetchPosts();
+      setPosts(data);
+      setFilteredPosts(data);
+      setError(null);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred while loading posts");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
 
   const handleDelete = async (id: string | number) => {
     const shouldDelete = await confirm({
@@ -237,6 +242,15 @@ const Blog = () => {
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
   const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+  const hasFilteredPosts = filteredPosts.length > 0;
+  const displayStart = hasFilteredPosts ? indexOfFirstPost + 1 : 0;
+  const displayEnd = hasFilteredPosts
+    ? Math.min(indexOfLastPost, filteredPosts.length)
+    : 0;
+  const blogErrorMessage = useMemo(
+    () => getFriendlyFetchMessage("Blog posts", error),
+    [error],
+  );
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
@@ -286,18 +300,35 @@ const Blog = () => {
 
           <main className="w-full lg:w-3/5 space-y-4 p-4">
             {loading ? (
-              <div className="p-2 card-border text-center">
-                <p>Loading posts...</p>
-              </div>
+              <AsyncStateCard
+                variant="loading"
+                title="Gathering blog posts..."
+                message="Getting the cozy reading shelf ready."
+              />
             ) : error ? (
-              <div className="bg-red-100 border border-red-400 text-red-700 p-4 rounded-xl">
-                Error: {error}
-              </div>
+              <AsyncStateCard
+                variant="error"
+                title={blogErrorMessage.title}
+                message={blogErrorMessage.message}
+                detail={blogErrorMessage.detail}
+                actionLabel="Retry"
+                onAction={() => void loadPosts()}
+              />
             ) : filteredPosts.length === 0 ? (
               <div className="space-y-1 p-2 card-border">
-                <h2 className="text-xl font-bold text-blue-700 mb-2 text-center">
-                  {searchTerm ? "No matching posts found" : "No posts yet"}
-                </h2>
+                <AsyncStateCard
+                  variant="empty"
+                  title={
+                    searchTerm ? "No matching posts found yet." : "No posts yet."
+                  }
+                  message={
+                    searchTerm
+                      ? "Try a shorter phrase or clear the search filter."
+                      : "The page is ready whenever the first story is posted."
+                  }
+                  actionLabel={searchTerm ? "Clear search" : undefined}
+                  onAction={searchTerm ? () => setSearchTerm("") : undefined}
+                />
                 <img
                   src={kannaEating}
                   alt="No posts"
@@ -506,6 +537,8 @@ const Blog = () => {
                   width="498"
                   height="498"
                   alt="kanna gif"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>
@@ -546,9 +579,7 @@ const Blog = () => {
           )}
 
           <div className="text-center text-sm text-blue-600 mt-2 mb-4">
-            Showing posts {indexOfFirstPost + 1} to{" "}
-            {Math.min(indexOfLastPost, filteredPosts.length)} of{" "}
-            {filteredPosts.length}
+            Showing posts {displayStart} to {displayEnd} of {filteredPosts.length}
           </div>
         </div>
       </div>

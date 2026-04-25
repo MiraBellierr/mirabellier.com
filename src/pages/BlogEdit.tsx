@@ -3,8 +3,7 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Toast from "../parts/Toast";
 
-import React, { useEffect, useState } from "react";
-import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
@@ -17,6 +16,12 @@ import {
   validateTags,
   normalizeTags,
 } from "@/lib/blog-edit-api";
+
+const SimpleEditor = lazy(() =>
+  import("@/components/tiptap-templates/simple/simple-editor").then(
+    (module) => ({ default: module.SimpleEditor }),
+  ),
+);
 
 const RAINBOW_TAGS = new Set(["cat", "cats", "kitten", "kittens"]);
 
@@ -436,11 +441,19 @@ const BlogEdit = () => {
                         Loading post content...
                       </div>
                     ) : (
-                      <SimpleEditor
-                        key={postId || "new"}
-                        onContentChange={setContent}
-                        initialContent={content}
-                      />
+                      <Suspense
+                        fallback={
+                          <div className="border rounded-lg border-blue-300 p-4 text-center text-blue-600">
+                            Loading editor tools...
+                          </div>
+                        }
+                      >
+                        <SimpleEditor
+                          key={postId || "new"}
+                          onContentChange={setContent}
+                          initialContent={content}
+                        />
+                      </Suspense>
                     )}
                   </div>
                 </div>

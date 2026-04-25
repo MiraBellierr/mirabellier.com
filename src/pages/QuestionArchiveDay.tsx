@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import Footer from "../parts/Footer";
@@ -6,7 +6,9 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
+import AsyncStateCard from "@/components/AsyncStateCard";
 import { resolveAsset } from "@/lib/blog-utils";
+import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import {
   deleteQuestionOfTheDayAnswer,
@@ -34,6 +36,14 @@ const QuestionArchiveDay = () => {
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const isOwner = auth?.user?.discordId === QUESTION_OWNER_DISCORD_ID;
+  const archiveDayLoadErrorMessage = useMemo(
+    () => getFriendlyFetchMessage("Archived question day", error),
+    [error],
+  );
+
+  const retryLoadDay = () => {
+    setReloadTick((value) => value + 1);
+  };
 
   usePageSeo({
     canonical: `https://mirabellier.com/question-of-the-day/archive/${recordedDate}`,
@@ -132,6 +142,8 @@ const QuestionArchiveDay = () => {
                 width="320"
                 height="427"
                 alt="kanna smiling"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           </div>
@@ -162,17 +174,28 @@ const QuestionArchiveDay = () => {
               </div>
 
               {loading && !data ? (
-                <div className="text-blue-500">
-                  Loading archived day...
-                </div>
+                <AsyncStateCard
+                  variant="loading"
+                  title="Loading archived day..."
+                  message="Bringing this archived prompt and answers into view."
+                />
               ) : error && !data?.question ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
-                  {error}
-                </div>
+                <AsyncStateCard
+                  variant="error"
+                  title={archiveDayLoadErrorMessage.title}
+                  message={archiveDayLoadErrorMessage.message}
+                  detail={archiveDayLoadErrorMessage.detail}
+                  actionLabel="Retry"
+                  onAction={retryLoadDay}
+                />
               ) : !data?.question ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
-                  Archived question not found
-                </div>
+                <AsyncStateCard
+                  variant="empty"
+                  title="Archived question not found."
+                  message="This day may not be archived yet, or the link is outdated."
+                  actionLabel="Check again"
+                  onAction={retryLoadDay}
+                />
               ) : (
                 <>
                   {error ? (
@@ -262,9 +285,11 @@ const QuestionArchiveDay = () => {
                       })}
                     </div>
                   ) : (
-                    <div className="text-blue-500">
-                      This archived day does not have any answers.
-                    </div>
+                    <AsyncStateCard
+                      variant="empty"
+                      title="No answers saved for this archived day."
+                      message="When answers are submitted on that day, they appear here."
+                    />
                   )}
                 </>
               )}

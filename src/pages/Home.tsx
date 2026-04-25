@@ -7,11 +7,13 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 
 import { Link } from "react-router-dom";
+import { fetchPosts } from "@/lib/blog-api";
+import { slugify, type Post } from "@/lib/blog-utils";
+import {
+  fetchCurrentQuestionOfTheDay,
+  type QuestionOfTheDayQuestion,
+} from "@/lib/question-of-the-day-api";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
-import blogIcon from "@/assets/icons/img3-24.webp";
-import guestbookIcon from "@/assets/icons/cats-24.webp";
-import projectsIcon from "@/assets/icons/img4-24.webp";
-import questionIcon from "@/assets/icons/art-20.webp";
 
 const DeferredAnimatedImage = lazy(
   () => import("@/components/DeferredAnimatedImage"),
@@ -20,32 +22,10 @@ const HOME_HERO_POSTER_SRC = "/kanna-kobayashi-poster.webp";
 const MALAYSIA_TIMEZONE = "Asia/Kuala_Lumpur";
 const HOME_HERO_ANIMATION_MEDIA_QUERY = "(min-width: 1024px)";
 
-const homeCtaLinks = [
-  {
-    label: "read the blog",
-    to: "/blog",
-    description: "notes, updates, and little thoughts",
-    icon: blogIcon,
-  },
-  {
-    label: "sign the guestbook",
-    to: "/guestbook/sign",
-    description: "leave a tiny mark on the wall",
-    icon: guestbookIcon,
-  },
-  {
-    label: "see projects",
-    to: "/projects",
-    description: "things I have built and learned from",
-    icon: projectsIcon,
-  },
-  {
-    label: "answer today's question",
-    to: "/question-of-the-day",
-    description: "a small daily prompt to join in",
-    icon: questionIcon,
-  },
-];
+type HomeUpdatesState = {
+  latestPost: Post | null;
+  currentQuestion: QuestionOfTheDayQuestion | null;
+};
 
 function getHomeClockParts(value: Date) {
   const parts = new Intl.DateTimeFormat("en-MY", {
@@ -97,9 +77,91 @@ function getHomeGreeting(value: Date) {
   return "cozy night ⋆.˚ ☾⭒.˚";
 }
 
+function getHomeStatus(value: Date) {
+  const hour = getMalaysiaHour(value);
+
+  if (hour < 12) {
+    return "Planning and polishing little details";
+  }
+
+  if (hour < 18) {
+    return "Building features and shipping small improvements";
+  }
+
+  return "Writing updates and wrapping up the day's work";
+}
+
+function toTimestamp(value: string | null | undefined) {
+  if (!value) return 0;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatHomeUpdateDate(value: string | null | undefined) {
+  if (!value) {
+    return "recently";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "recently";
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatHomeQuestionDate(recordedDate: string | null | undefined) {
+  if (!recordedDate) {
+    return "today";
+  }
+
+  const parsed = new Date(`${recordedDate}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return "today";
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function truncateHomeText(value: string, maxLength = 96) {
+  const normalized = value.trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
+}
+
+function getHomePostHref(post: Post | null) {
+  if (!post) {
+    return "/blog";
+  }
+
+  const postId = String(post.id || "").trim();
+  if (!postId) {
+    return "/blog";
+  }
+
+  const slug = slugify(post.title);
+  return `/blog/${slug ? `${slug}-${postId}` : postId}`;
+}
+
 const Home = () => {
   const auth = useOptionalAuth();
   const [now, setNow] = useState(() => new Date());
+  const [homeUpdates, setHomeUpdates] = useState<HomeUpdatesState>({
+    latestPost: null,
+    currentQuestion: null,
+  });
+  const [homeUpdatesLoading, setHomeUpdatesLoading] = useState(true);
+  const [homeUpdatesError, setHomeUpdatesError] = useState<string | null>(null);
   const [showAnimatedHero, setShowAnimatedHero] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -167,6 +229,60 @@ const Home = () => {
 
     return () => {
       mediaQuery.removeEventListener("change", updateAnimatedHero);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadHomeUpdates = async () => {
+      setHomeUpdatesLoading(true);
+      setHomeUpdatesError(null);
+
+      const [postsResult, questionResult] = await Promise.allSettled([
+        fetchPosts(),
+        fetchCurrentQuestionOfTheDay(),
+      ]);
+
+      if (!isActive) {
+        return;
+      }
+
+      let latestPost: Post | null = null;
+      let currentQuestion: QuestionOfTheDayQuestion | null = null;
+      const failedSections: string[] = [];
+
+      if (postsResult.status === "fulfilled") {
+        latestPost =
+          postsResult.value
+            .slice()
+            .sort(
+              (left, right) =>
+                toTimestamp(right.createdAt) - toTimestamp(left.createdAt),
+            )[0] || null;
+      } else {
+        failedSections.push("blog");
+      }
+
+      if (questionResult.status === "fulfilled") {
+        currentQuestion = questionResult.value.question;
+      } else {
+        failedSections.push("daily question");
+      }
+
+      setHomeUpdates({ latestPost, currentQuestion });
+      setHomeUpdatesError(
+        failedSections.length
+          ? `Couldn't refresh ${failedSections.join(" and ")} right now.`
+          : null,
+      );
+      setHomeUpdatesLoading(false);
+    };
+
+    void loadHomeUpdates();
+
+    return () => {
+      isActive = false;
     };
   }, []);
 
@@ -280,7 +396,7 @@ const Home = () => {
                 might add more pages soon, like:
               </p>
               <p>• ✏️ My blog</p>
-              <p>• 🎨 Art or doodles</p>
+              <p>• 💬 quotes</p>
               <p>• 💾 Programming experiments</p>
             </div>
           </main>
@@ -326,36 +442,84 @@ const Home = () => {
 
                 <div className="border-t border-blue-200/70 pt-4 dark:border-purple-300/20">
                   <p className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-400">
-                    start here
+                    What I'm doing now
                   </p>
 
-                  <div className="mt-3 space-y-2">
-                    {homeCtaLinks.map((item) => (
-                      <Link
-                        key={item.to}
-                        className="group flex items-center gap-2 rounded-xl border border-blue-200 bg-white/75 px-3 py-2 text-left shadow-sm transition hover:border-pink-200 hover:bg-pink-50/80 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-200 dark:border-purple-300/20 dark:bg-purple-950/30 dark:hover:border-pink-300/40 dark:hover:bg-purple-900/40"
-                        to={item.to}
-                      >
-                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 shadow-inner dark:bg-purple-900/80">
-                          <img
-                            className="h-5 w-5"
-                            src={item.icon}
-                            width="20"
-                            height="20"
-                            alt=""
-                            aria-hidden="true"
-                          />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-xs font-bold leading-snug text-blue-700 group-hover:text-pink-600 dark:text-purple-100 dark:group-hover:text-pink-200">
-                            {item.label}
-                          </span>
-                          <span className="mt-0.5 block text-[11px] leading-snug text-blue-500 dark:text-purple-200">
-                            {item.description}
-                          </span>
-                        </span>
-                      </Link>
-                    ))}
+                  <div className="mt-3 space-y-3 px-1">
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-400">
+                        status
+                      </p>
+                      <p className="text-xs font-semibold leading-snug text-blue-700 dark:text-purple-100">
+                        {getHomeStatus(now)}
+                      </p>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-400">
+                        latest blog post
+                      </p>
+                      {homeUpdatesLoading ? (
+                        <p className="text-[11px] leading-snug text-blue-500 dark:text-purple-200">
+                          loading...
+                        </p>
+                      ) : homeUpdates.latestPost ? (
+                        <>
+                          <p className="text-xs font-bold leading-snug text-blue-700 dark:text-purple-100">
+                            {truncateHomeText(homeUpdates.latestPost.title, 72)}
+                          </p>
+                          <p className="text-[11px] leading-snug text-blue-500 dark:text-purple-200">
+                            posted {formatHomeUpdateDate(homeUpdates.latestPost.createdAt)}
+                          </p>
+                          <Link
+                            to={getHomePostHref(homeUpdates.latestPost)}
+                            className="inline-flex text-[11px] font-semibold text-blue-600 underline transition hover:text-blue-800 dark:text-pink-200 dark:hover:text-pink-100"
+                          >
+                            read post
+                          </Link>
+                        </>
+                      ) : (
+                        <p className="text-[11px] leading-snug text-blue-500 dark:text-purple-200">
+                          No posts yet.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-400">
+                        today's question
+                      </p>
+                      {homeUpdatesLoading ? (
+                        <p className="text-[11px] leading-snug text-blue-500 dark:text-purple-200">
+                          loading...
+                        </p>
+                      ) : homeUpdates.currentQuestion?.prompt ? (
+                        <>
+                          <p className="text-xs font-bold leading-snug text-blue-700 dark:text-purple-100">
+                            {truncateHomeText(homeUpdates.currentQuestion.prompt, 78)}
+                          </p>
+                          <p className="text-[11px] leading-snug text-blue-500 dark:text-purple-200">
+                            for {formatHomeQuestionDate(homeUpdates.currentQuestion.recordedDate)}
+                          </p>
+                          <Link
+                            to="/question-of-the-day"
+                            className="inline-flex text-[11px] font-semibold text-blue-600 underline transition hover:text-blue-800 dark:text-pink-200 dark:hover:text-pink-100"
+                          >
+                            answer it
+                          </Link>
+                        </>
+                      ) : (
+                        <p className="text-[11px] leading-snug text-blue-500 dark:text-purple-200">
+                          No question is live right now.
+                        </p>
+                      )}
+                    </div>
+
+                    {homeUpdatesError ? (
+                      <p className="px-1 text-center text-[11px] font-semibold leading-snug text-pink-500 dark:text-pink-200">
+                        {homeUpdatesError}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 

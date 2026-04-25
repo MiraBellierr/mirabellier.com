@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useMemo, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import Footer from "../parts/Footer";
@@ -6,7 +6,9 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
+import AsyncStateCard from "@/components/AsyncStateCard";
 import { resolveAsset } from "@/lib/blog-utils";
+import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -138,6 +140,14 @@ const QuestionOfTheDay = () => {
       getQuestionAnswerTimestamp(right.createdAt) -
       getQuestionAnswerTimestamp(left.createdAt),
   );
+  const questionLoadErrorMessage = useMemo(
+    () => getFriendlyFetchMessage("Question page", error),
+    [error],
+  );
+
+  const retryPageLoad = () => {
+    setRefreshTick((value) => value + 1);
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -250,13 +260,20 @@ const QuestionOfTheDay = () => {
               </div>
 
               {loading && !currentData ? (
-                <div className="text-blue-500">
-                  Loading today&apos;s question...
-                </div>
+                <AsyncStateCard
+                  variant="loading"
+                  title="Loading today's question..."
+                  message="Finding the current prompt and recent archive."
+                />
               ) : error && !currentData ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
-                  {error}
-                </div>
+                <AsyncStateCard
+                  variant="error"
+                  title={questionLoadErrorMessage.title}
+                  message={questionLoadErrorMessage.message}
+                  detail={questionLoadErrorMessage.detail}
+                  actionLabel="Retry"
+                  onAction={retryPageLoad}
+                />
               ) : (
                 <>
                   {error ? (
@@ -350,19 +367,13 @@ const QuestionOfTheDay = () => {
                       )}
                     </div>
                   ) : (
-                    <div className="space-y-2 text-blue-500">
-                      <p className="font-bold text-blue-700">
-                        No active question yet.
-                      </p>
-                      <p>
-                        There is no live question right now. Check back soon
-                        for the next question.
-                      </p>
-                      <p className="text-sm">
-                        The answer form opens again as soon as the next active
-                        question is available.
-                      </p>
-                    </div>
+                    <AsyncStateCard
+                      variant="empty"
+                      title="No active question yet."
+                      message="There is no live prompt right now. The answer form opens again as soon as a new question is available."
+                      actionLabel="Check again"
+                      onAction={retryPageLoad}
+                    />
                   )}
                 </>
               )}
@@ -443,9 +454,11 @@ const QuestionOfTheDay = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-blue-500">
-                  No answers yet. Be the first one to leave a little note.
-                </p>
+                <AsyncStateCard
+                  variant="empty"
+                  title="No answers yet."
+                  message="Be the first one to leave a little note for today."
+                />
               )}
             </section>
           </main>

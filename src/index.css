@@ -1506,14 +1506,10 @@ h6 {
 
 .guestbook-board-empty {
   position: absolute;
-  top: 2.5rem;
-  left: 2.5rem;
-  padding: 1rem 1.2rem;
-  border-radius: 1rem;
-  background: rgba(255, 251, 235, 0.86);
-  color: #7b5321;
-  font-weight: 700;
-  box-shadow: 0 12px 24px rgba(92, 61, 21, 0.18);
+  top: 2.25rem;
+  left: 2.25rem;
+  right: 2.25rem;
+  max-width: min(480px, calc(100% - 4.5rem));
 }
 
 .board-note {
@@ -1794,7 +1790,6 @@ h6 {
     url("/board.jpg") left top / 1199px 678px repeat;
 }
 
-.dark .guestbook-board-empty,
 .dark .guestbook-board-toolbar {
   color: #f0ddba;
 }

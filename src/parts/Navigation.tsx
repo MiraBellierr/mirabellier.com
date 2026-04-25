@@ -7,8 +7,6 @@ import home from "../assets/icons/img1-24.webp";
 import about from "../assets/icons/img2-24.webp";
 import blog from "../assets/icons/img3-24.webp";
 import projects from "../assets/icons/img4-24.webp";
-import art from "../assets/icons/art-20.webp";
-import shrine from "../assets/icons/about-20.webp";
 import guestbook from "../assets/icons/cats-24.webp";
 import cursor from "../assets/icons/cursor-24.webp";
 import DarkToggle from "../components/DarkToggle";
@@ -20,6 +18,17 @@ type NavItem = {
   icon: string;
   isActive: (pathname: string) => boolean;
 };
+
+const NAV_ICON_ANIME =
+  "https://cdn.discordapp.com/emojis/761014368476332079.webp?size=40&animated=true";
+const NAV_ICON_SHRINE =
+  "https://cdn.discordapp.com/emojis/1050193537972584448.webp?size=40";
+const NAV_ICON_QUESTION =
+  "https://cdn.discordapp.com/emojis/948077750432985128.webp?size=40";
+const NAV_ICON_QUOTES =
+  "https://cdn.discordapp.com/emojis/761014368476332079.webp?size=40&animated=true";
+const NAV_ICON_ARENA =
+  "https://cdn.discordapp.com/emojis/1077057865098997800.webp?size=40";
 
 const navSections: Array<{ label: string; items: NavItem[] }> = [
   {
@@ -47,13 +56,13 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
       {
         label: "anime",
         to: "/anime",
-        icon: art,
+        icon: NAV_ICON_ANIME,
         isActive: (pathname) => pathname === "/anime",
       },
       {
         label: "shrine",
         to: "/shrine",
-        icon: shrine,
+        icon: NAV_ICON_SHRINE,
         isActive: (pathname) =>
           pathname === "/shrine" || pathname.startsWith("/shrine/"),
       },
@@ -71,19 +80,19 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
       {
         label: "question",
         to: "/question-of-the-day",
-        icon: art,
+        icon: NAV_ICON_QUESTION,
         isActive: (pathname) => pathname.startsWith("/question-of-the-day"),
       },
       {
         label: "quotes",
         to: "/quotes",
-        icon: art,
+        icon: NAV_ICON_QUOTES,
         isActive: (pathname) => pathname === "/quotes",
       },
       {
         label: "arena",
         to: "/arena",
-        icon: art,
+        icon: NAV_ICON_ARENA,
         isActive: (pathname) =>
           pathname === "/arena" || pathname.startsWith("/arena/"),
       },
