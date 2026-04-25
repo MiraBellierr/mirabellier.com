@@ -8,6 +8,10 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 
 import { Link } from "react-router-dom";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
+import blogIcon from "@/assets/icons/img3-24.webp";
+import guestbookIcon from "@/assets/icons/cats-24.webp";
+import projectsIcon from "@/assets/icons/img4-24.webp";
+import questionIcon from "@/assets/icons/art-20.webp";
 
 const DeferredAnimatedImage = lazy(
   () => import("@/components/DeferredAnimatedImage"),
@@ -15,6 +19,33 @@ const DeferredAnimatedImage = lazy(
 const HOME_HERO_POSTER_SRC = "/kanna-kobayashi-poster.webp";
 const MALAYSIA_TIMEZONE = "Asia/Kuala_Lumpur";
 const HOME_HERO_ANIMATION_MEDIA_QUERY = "(min-width: 1024px)";
+
+const homeCtaLinks = [
+  {
+    label: "read the blog",
+    to: "/blog",
+    description: "notes, updates, and little thoughts",
+    icon: blogIcon,
+  },
+  {
+    label: "sign the guestbook",
+    to: "/guestbook/sign",
+    description: "leave a tiny mark on the wall",
+    icon: guestbookIcon,
+  },
+  {
+    label: "see projects",
+    to: "/projects",
+    description: "things I have built and learned from",
+    icon: projectsIcon,
+  },
+  {
+    label: "answer today's question",
+    to: "/question-of-the-day",
+    description: "a small daily prompt to join in",
+    icon: questionIcon,
+  },
+];
 
 function getHomeClockParts(value: Date) {
   const parts = new Intl.DateTimeFormat("en-MY", {
@@ -291,6 +322,41 @@ const Home = () => {
                   <p className="home-clock-greeting mt-3 rounded-full bg-pink-100/70 px-3 py-1 text-center text-xs font-bold tracking-[0.16em] text-pink-600">
                     {getHomeGreeting(now)}
                   </p>
+                </div>
+
+                <div className="border-t border-blue-200/70 pt-4 dark:border-purple-300/20">
+                  <p className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-400">
+                    start here
+                  </p>
+
+                  <div className="mt-3 space-y-2">
+                    {homeCtaLinks.map((item) => (
+                      <Link
+                        key={item.to}
+                        className="group flex items-center gap-2 rounded-xl border border-blue-200 bg-white/75 px-3 py-2 text-left shadow-sm transition hover:border-pink-200 hover:bg-pink-50/80 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-200 dark:border-purple-300/20 dark:bg-purple-950/30 dark:hover:border-pink-300/40 dark:hover:bg-purple-900/40"
+                        to={item.to}
+                      >
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 shadow-inner dark:bg-purple-900/80">
+                          <img
+                            className="h-5 w-5"
+                            src={item.icon}
+                            width="20"
+                            height="20"
+                            alt=""
+                            aria-hidden="true"
+                          />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-xs font-bold leading-snug text-blue-700 group-hover:text-pink-600 dark:text-purple-100 dark:group-hover:text-pink-200">
+                            {item.label}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] leading-snug text-blue-500 dark:text-purple-200">
+                            {item.description}
+                          </span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
 
                 {auth &&
