@@ -18,6 +18,7 @@ const variantStyleMap: Record<
     shell: string;
     icon: string;
     iconText: string;
+    showIcon: boolean;
   }
 > = {
   loading: {
@@ -25,18 +26,21 @@ const variantStyleMap: Record<
       "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-700/50 dark:bg-slate-900/70 dark:text-blue-100",
     icon: "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-200",
     iconText: "...",
+    showIcon: true,
   },
   error: {
     shell:
       "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-700/50 dark:bg-rose-950/40 dark:text-rose-100",
     icon: "bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-200",
     iconText: "!!",
+    showIcon: true,
   },
   empty: {
     shell:
       "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100",
     icon: "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-200",
-    iconText: "<3",
+    iconText: "",
+    showIcon: false,
   },
 };
 
@@ -65,12 +69,14 @@ const AsyncStateCard = ({
     <div
       className={`rounded-2xl border p-5 text-center shadow-sm ${variantStyles.shell}${className ? ` ${className}` : ""}`}
     >
-      <div
-        className={`mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-black ${variantStyles.icon}`}
-        aria-hidden="true"
-      >
-        {variantStyles.iconText}
-      </div>
+      {variantStyles.showIcon ? (
+        <div
+          className={`mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-black ${variantStyles.icon}`}
+          aria-hidden="true"
+        >
+          {variantStyles.iconText}
+        </div>
+      ) : null}
       <h3 className="text-base font-bold">{title}</h3>
       {message ? <p className="mt-2 text-sm opacity-90">{message}</p> : null}
       {detail ? (
