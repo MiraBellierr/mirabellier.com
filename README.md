@@ -58,7 +58,7 @@ npm install
 Use `.env.example` as your starting point.
 
 ```env
-VITE_API_BASE=http://localhost:3000
+VITE_API_BASE=http://localhost:3000/v1
 WEBSITE_BASE=http://localhost:5173
 ```
 

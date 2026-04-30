@@ -6,7 +6,7 @@
  *
  * Usage:
  *   node generate-sitemap.cjs
- *   VITE_API_BASE=https://api.mirabellier.com node generate-sitemap.cjs
+ *   VITE_API_BASE=https://api.mirabellier.com/v1 node generate-sitemap.cjs
  */
 
 const fs = require("fs");
@@ -14,7 +14,7 @@ const path = require("path");
 const http = require("http");
 const https = require("https");
 
-const API_BASE = process.env.VITE_API_BASE || "https://api.mirabellier.com";
+const API_BASE = process.env.VITE_API_BASE || "https://api.mirabellier.com/v1";
 const WEBSITE_BASE = process.env.WEBSITE_BASE || "https://mirabellier.com";
 const OUTPUT_PATH = path.join(__dirname, "public", "sitemap.xml");
 const BACKEND_DIR = path.join(__dirname, "mirabellier-backend");
