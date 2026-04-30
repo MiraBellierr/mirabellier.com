@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: CI and Deploy
 
 on:
   push:
@@ -6,13 +6,14 @@ on:
   pull_request:
     branches: [main, master]
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+env:
+  FRONTEND_DEPLOY_PATH: /var/www/mirabellier.com/current
+  BACKEND_DEPLOY_PATH: /srv/mirabellier.com/api
+  BACKEND_SOURCE_PATH: /srv/mirabellier.com/api
 
-    strategy:
-      matrix:
-        node-version: [20.x]
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -21,8 +22,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          node-version: 20.x
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -30,11 +31,29 @@ jobs:
       - name: Run linter
         run: npm run lint --if-present
 
-      - name: Build application
+      - name: Build frontend
         run: npm run build
 
-      - name: Deploy to VPS
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+          if-no-files-found: error
+
+  deploy-frontend:
+    needs: build-frontend
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      - name: Prepare frontend directory on VPS
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -43,11 +62,11 @@ jobs:
           timeout: 60s
           command_timeout: 30m
           script: |
-            mkdir -p /var/www/mirabellier/
-            rm -rf /var/www/mirabellier/*
+            set -eu
+            mkdir -p "${{ env.FRONTEND_DEPLOY_PATH }}"
+            find "${{ env.FRONTEND_DEPLOY_PATH }}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
-      - name: Copy build files to VPS
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      - name: Copy frontend dist to VPS
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -56,17 +75,77 @@ jobs:
           timeout: 60s
           command_timeout: 30m
           source: "dist/*"
-          target: "/var/www/mirabellier"
+          target: "${{ env.FRONTEND_DEPLOY_PATH }}"
+          strip_components: 1
 
-      - name: Generate sitemap via backend
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+  deploy-backend:
+    needs: build-frontend
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy backend to VPS
         uses: appleboy/ssh-action@master
+        env:
+          BACKEND_RESTART_COMMAND: ${{ secrets.BACKEND_RESTART_COMMAND }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           timeout: 60s
           command_timeout: 30m
+          envs: BACKEND_RESTART_COMMAND
           script: |
-            cd /root/mirabellier-backend
-            NODE_ENV=production npm run generate:sitemap
+            set -euo pipefail
+
+            BRANCH="${{ github.ref_name }}"
+            SOURCE_PATH="${{ env.BACKEND_SOURCE_PATH }}"
+            DEPLOY_PATH="${{ env.BACKEND_DEPLOY_PATH }}"
+
+            if [ ! -d "$SOURCE_PATH/.git" ]; then
+              echo "Backend source repository was not found at $SOURCE_PATH"
+              echo "Create it on the server (or update BACKEND_SOURCE_PATH in this workflow)."
+              exit 1
+            fi
+
+            cd "$SOURCE_PATH"
+            git fetch --all --prune
+            git checkout "$BRANCH"
+            git pull --ff-only origin "$BRANCH"
+
+            mkdir -p "$DEPLOY_PATH"
+
+            if command -v rsync >/dev/null 2>&1; then
+              rsync -a --delete \
+                --exclude ".git/" \
+                --exclude ".github/" \
+                --exclude "node_modules/" \
+                --exclude ".env" \
+                --exclude "database.sqlite3" \
+                "$SOURCE_PATH"/ "$DEPLOY_PATH"/
+            else
+              find "$DEPLOY_PATH" -mindepth 1 -maxdepth 1 ! -name '.env' ! -name 'database.sqlite3' -exec rm -rf {} +
+              cp -a "$SOURCE_PATH"/. "$DEPLOY_PATH"/
+              rm -rf "$DEPLOY_PATH/.git" "$DEPLOY_PATH/.github" "$DEPLOY_PATH/node_modules"
+            fi
+
+            if [ ! -f "$DEPLOY_PATH/.env" ] && [ -f "$SOURCE_PATH/.env" ]; then
+              cp "$SOURCE_PATH/.env" "$DEPLOY_PATH/.env"
+            fi
+
+            if [ ! -f "$DEPLOY_PATH/database.sqlite3" ] && [ -f "$SOURCE_PATH/database.sqlite3" ]; then
+              cp "$SOURCE_PATH/database.sqlite3" "$DEPLOY_PATH/database.sqlite3"
+            fi
+
+            cd "$DEPLOY_PATH"
+            if [ -f package-lock.json ]; then
+              npm ci --omit=dev
+            else
+              npm install --omit=dev
+            fi
+
+            if [ -n "${BACKEND_RESTART_COMMAND:-}" ]; then
+              sh -lc "$BACKEND_RESTART_COMMAND"
+            else
+              echo "BACKEND_RESTART_COMMAND secret is empty; skipping backend process restart."
+            fi
