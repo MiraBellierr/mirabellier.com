@@ -86,15 +86,12 @@ jobs:
     steps:
       - name: Deploy backend to VPS
         uses: appleboy/ssh-action@master
-        env:
-          BACKEND_RESTART_COMMAND: ${{ secrets.BACKEND_RESTART_COMMAND }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           timeout: 60s
           command_timeout: 30m
-          envs: BACKEND_RESTART_COMMAND
           script: |
             set -euo pipefail
 
@@ -144,8 +141,16 @@ jobs:
               npm install --omit=dev
             fi
 
-            if [ -n "${BACKEND_RESTART_COMMAND:-}" ]; then
-              sh -lc "$BACKEND_RESTART_COMMAND"
-            else
-              echo "BACKEND_RESTART_COMMAND secret is empty; skipping backend process restart."
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo "pm2 is not installed for user $(whoami)."
+              echo "Install pm2 first: npm install -g pm2"
+              exit 1
             fi
+
+            if pm2 describe mirabellier-api >/dev/null 2>&1; then
+              pm2 restart mirabellier-api --update-env
+            else
+              pm2 start app.js --name mirabellier-api
+            fi
+
+            pm2 save
