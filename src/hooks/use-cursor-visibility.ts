@@ -47,7 +47,7 @@ export function useCursorVisibility({
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("scroll", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
     };
   }, [updateRect]);
 
