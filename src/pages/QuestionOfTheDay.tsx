@@ -102,7 +102,7 @@ const QuestionOfTheDay = () => {
         if (cancelled) return;
 
         setCurrentData(current);
-        setArchivePreview(archive.slice(0, 5));
+        setArchivePreview(archive.slice(0, 3));
         setError(null);
       } catch (err) {
         if (cancelled) return;
