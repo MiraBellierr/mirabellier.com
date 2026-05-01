@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type {
   ArenaConsumableRule,
   ArenaPassiveAction,
@@ -8,9 +9,10 @@ import type {
 import { ArenaApiError } from "@/lib/arena-api";
 
 const spriteModules = import.meta.glob("/src/assets/sprites/*.png", {
-  eager: true,
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
+const spriteUrlCache = new Map<string, string | null>();
+const spriteLoadPromiseCache = new Map<string, Promise<string | null>>();
 
 const ITEM_SPRITE_NAME_BY_ID: Record<string, string> = {
   rustblade_weapon: "bronze_sword",
@@ -75,8 +77,81 @@ const ITEM_SPRITE_NAME_BY_ID: Record<string, string> = {
   lunar_gem: "blue_orb",
 };
 
-function spriteUrlByName(spriteName: string) {
+function getSpriteLoader(spriteName: string) {
   return spriteModules[`/src/assets/sprites/${spriteName}.png`] || null;
+}
+
+async function loadSpriteUrlByName(spriteName: string) {
+  if (spriteUrlCache.has(spriteName)) {
+    return spriteUrlCache.get(spriteName) ?? null;
+  }
+
+  const existingPromise = spriteLoadPromiseCache.get(spriteName);
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const loader = getSpriteLoader(spriteName);
+  if (!loader) {
+    spriteUrlCache.set(spriteName, null);
+    return null;
+  }
+
+  const loadingPromise = loader()
+    .then((loadedUrl) => {
+      const url = loadedUrl || null;
+      spriteUrlCache.set(spriteName, url);
+      spriteLoadPromiseCache.delete(spriteName);
+      return url;
+    })
+    .catch(() => {
+      spriteUrlCache.set(spriteName, null);
+      spriteLoadPromiseCache.delete(spriteName);
+      return null;
+    });
+
+  spriteLoadPromiseCache.set(spriteName, loadingPromise);
+  return loadingPromise;
+}
+
+function useArenaSpriteUrl(spriteName: string | null) {
+  const [spriteUrl, setSpriteUrl] = useState<string | null>(() => {
+    if (!spriteName) {
+      return null;
+    }
+    return spriteUrlCache.get(spriteName) ?? null;
+  });
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!spriteName) {
+      setSpriteUrl(null);
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    if (spriteUrlCache.has(spriteName)) {
+      setSpriteUrl(spriteUrlCache.get(spriteName) ?? null);
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    setSpriteUrl(null);
+    void loadSpriteUrlByName(spriteName).then((loadedUrl) => {
+      if (!isCancelled) {
+        setSpriteUrl(loadedUrl);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [spriteName]);
+
+  return spriteUrl;
 }
 
 function toNumber(value: unknown, fallback = 0) {
@@ -232,10 +307,23 @@ export function ArenaItemSprite({
   item: ArenaShopItem;
   className?: string;
 }) {
-  const spriteName = ITEM_SPRITE_NAME_BY_ID[item.id];
-  const spriteUrl = spriteName ? spriteUrlByName(spriteName) : null;
+  const spriteName = ITEM_SPRITE_NAME_BY_ID[item.id] || null;
+  const spriteUrl = useArenaSpriteUrl(spriteName);
+  const hasSprite = !!(spriteName && getSpriteLoader(spriteName));
+  const isSpriteLoading =
+    !!spriteName && hasSprite && !spriteUrl && !spriteUrlCache.has(spriteName);
 
-  if (!spriteUrl) {
+  if (isSpriteLoading) {
+    return (
+      <div
+        className={`flex h-8 w-8 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-[10px] text-blue-500 ${className}`}
+      >
+        ...
+      </div>
+    );
+  }
+
+  if (!hasSprite || !spriteUrl) {
     return (
       <div
         className={`flex h-8 w-8 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-[10px] text-blue-500 ${className}`}
@@ -250,6 +338,8 @@ export function ArenaItemSprite({
       src={spriteUrl}
       alt={item.name}
       className={`h-8 w-8 rounded-md border border-blue-200 object-contain ${className}`}
+      loading="lazy"
+      decoding="async"
       draggable={false}
       style={{ imageRendering: "pixelated" }}
     />

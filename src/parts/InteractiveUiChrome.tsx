@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
-
-import GuestbookReminder from "./GuestbookReminder";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ConfirmProvider, useConfirm } from "@/states/ConfirmContext";
 import { ToastProvider } from "@/states/ToastContext";
+const GuestbookReminder = lazy(() => import("./GuestbookReminder"));
 
 function ExternalLinkWarning() {
   const { confirm } = useConfirm();
@@ -77,11 +76,38 @@ type InteractiveUiChromeProps = {
 };
 
 const InteractiveUiChrome = ({ children }: InteractiveUiChromeProps) => {
+  const [showGuestbookReminder, setShowGuestbookReminder] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: number | null = null;
+
+    const enableReminder = () => {
+      timeoutId = window.setTimeout(() => {
+        setShowGuestbookReminder(true);
+      }, 1200);
+    };
+
+    if (document.readyState === "complete") {
+      enableReminder();
+    } else {
+      window.addEventListener("load", enableReminder, { once: true });
+    }
+
+    return () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      window.removeEventListener("load", enableReminder);
+    };
+  }, []);
+
   return (
     <ConfirmProvider>
       <ToastProvider>
         <ExternalLinkWarning />
-        <GuestbookReminder />
+        <Suspense fallback={null}>
+          {showGuestbookReminder ? <GuestbookReminder /> : null}
+        </Suspense>
         {children}
       </ToastProvider>
     </ConfirmProvider>
