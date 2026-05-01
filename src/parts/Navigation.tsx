@@ -38,8 +38,7 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         label: "home",
         to: "/",
         icon: home,
-        isActive: (pathname) =>
-          pathname === "/" || pathname === "/home" || pathname === "/spill",
+        isActive: (pathname) => pathname === "/",
       },
       {
         label: "about",
@@ -204,7 +203,8 @@ const Navigation = () => {
                       <img
                         className="h-4 w-4"
                         src={item.icon}
-                        alt={`${item.label} icon`}
+                        alt=""
+                        aria-hidden="true"
                       />
                       <Link
                         aria-current={active ? "page" : undefined}
@@ -220,7 +220,8 @@ const Navigation = () => {
                       <img
                         className="h-4 w-4"
                         src={item.icon}
-                        alt={`${item.label} icon`}
+                        alt=""
+                        aria-hidden="true"
                       />
                     </div>
                   );
@@ -242,7 +243,8 @@ const Navigation = () => {
                 src={cursor}
                 width="16"
                 height="16"
-                alt="cursor icon"
+                alt=""
+                aria-hidden="true"
               />
               <button
                 onClick={toggleCursor}

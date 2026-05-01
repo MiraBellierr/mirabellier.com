@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState } from "react";
 
 import Home from "./pages/Home";
@@ -41,7 +41,9 @@ const InteractiveUiChrome = lazy(() => import("./parts/InteractiveUiChrome"));
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
 
-const HOME_PATHS = new Set(["/", "/home", "/spill"]);
+const HOME_CANONICAL_PATH = "/";
+const HOME_ALIAS_PATHS = ["/home"] as const;
+const HOME_PATHS = new Set<string>([HOME_CANONICAL_PATH, ...HOME_ALIAS_PATHS]);
 
 function App() {
   const location = useLocation();
@@ -74,9 +76,14 @@ function App() {
 
   const routeTree = (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/spill" element={<Home />} />
-      <Route path="/home" element={<Home />} />
+      <Route path={HOME_CANONICAL_PATH} element={<Home />} />
+      {HOME_ALIAS_PATHS.map((path) => (
+        <Route
+          key={path}
+          path={path}
+          element={<Navigate to={HOME_CANONICAL_PATH} replace />}
+        />
+      ))}
       <Route path="/about" element={<About />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />

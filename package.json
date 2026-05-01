@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://MiraBellierr.github.io/spill",
+  "homepage": "https://mirabellier.com",
   "scripts": {
     "dev": "vite",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=512 tsc -b && cross-env NODE_OPTIONS=--max-old-space-size=512 vite build",
