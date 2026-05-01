@@ -1,4 +1,5 @@
 import { joinApi } from "@/lib/config";
+import { shouldSendBearerToken } from "@/lib/auth-session";
 
 export type QuestionOfTheDayUser = {
   id?: string;
@@ -174,6 +175,7 @@ export async function fetchCurrentQuestionOfTheDay(input?: {
   token?: string | null;
   guestToken?: string | null;
 }) {
+  const sessionToken = input?.token ?? null;
   const searchParams = new URLSearchParams();
   if (input?.guestToken) {
     searchParams.set("guestToken", input.guestToken);
@@ -185,8 +187,9 @@ export async function fetchCurrentQuestionOfTheDay(input?: {
     ),
     {
       cache: "no-store",
-      headers: input?.token
-        ? { Authorization: `Bearer ${input.token}` }
+      credentials: "include",
+      headers: shouldSendBearerToken(sessionToken)
+        ? { Authorization: `Bearer ${sessionToken}` }
         : undefined,
     },
   );
@@ -217,9 +220,12 @@ export async function submitQuestionOfTheDayAnswer(input: {
 }) {
   const response = await fetch(joinApi("/question-of-the-day/current/answers"), {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(input.token ? { Authorization: `Bearer ${input.token}` } : {}),
+      ...(shouldSendBearerToken(input.token)
+        ? { Authorization: `Bearer ${input.token}` }
+        : {}),
     },
     body: JSON.stringify({
       answer: input.answer,
@@ -239,6 +245,7 @@ export async function submitQuestionOfTheDayAnswer(input: {
 export async function fetchQuestionOfTheDayArchive() {
   const response = await fetch(joinApi("/question-of-the-day/archive"), {
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -254,6 +261,7 @@ export async function fetchQuestionOfTheDayArchiveDay(recordedDate: string) {
     joinApi(`/question-of-the-day/archive/${encodeURIComponent(recordedDate)}`),
     {
       cache: "no-store",
+      credentials: "include",
     },
   );
 
@@ -299,9 +307,10 @@ export async function fetchQuestionOfTheDayAdminQueue(
     ),
     {
       cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
+      headers: shouldSendBearerToken(token)
+        ? { Authorization: `Bearer ${token}` }
+        : undefined,
     },
   );
 
@@ -332,9 +341,10 @@ export async function queueQuestionOfTheDayPrompts(
 ) {
   const response = await fetch(joinApi("/question-of-the-day/admin/questions"), {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ prompts }),
   });
@@ -362,9 +372,10 @@ export async function forceArchiveCurrentQuestionOfTheDay(token: string) {
     joinApi("/question-of-the-day/admin/current/force-archive"),
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
+      headers: shouldSendBearerToken(token)
+        ? { Authorization: `Bearer ${token}` }
+        : undefined,
     },
   );
 
@@ -390,9 +401,10 @@ export async function saveCurrentQuestionOfTheDay(
 ) {
   const response = await fetch(joinApi("/question-of-the-day/current"), {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ prompt }),
   });
@@ -411,9 +423,10 @@ export async function deleteQuestionOfTheDayAnswer(id: string, token: string) {
     joinApi(`/question-of-the-day/answers/${encodeURIComponent(id)}`),
     {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
+      headers: shouldSendBearerToken(token)
+        ? { Authorization: `Bearer ${token}` }
+        : undefined,
     },
   );
 

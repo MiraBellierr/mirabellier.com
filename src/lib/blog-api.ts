@@ -1,4 +1,5 @@
 import { API_BASE } from "@/lib/config";
+import { shouldSendBearerToken } from "@/lib/auth-session";
 import {
   normalizeComments,
   normalizePost,
@@ -24,6 +25,7 @@ async function readErrorText(response: Response) {
 export const fetchPosts = async (): Promise<Post[]> => {
   const response = await fetch(`${API_BASE}/posts`, {
     cache: "no-store",
+    credentials: "include",
   });
   if (!response.ok) {
     throw new Error("Failed to fetch posts");
@@ -35,6 +37,7 @@ export const fetchPosts = async (): Promise<Post[]> => {
 export const fetchPost = async (id: string | number): Promise<Post> => {
   const response = await fetch(`${API_BASE}/posts/${id}`, {
     cache: "no-store",
+    credentials: "include",
   });
   if (!response.ok) {
     throw new Error("Failed to fetch post");
@@ -53,9 +56,12 @@ export const togglePostLike = async (
 ) => {
   const response = await fetch(`${API_BASE}/posts/${id}/like`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+      ...(shouldSendBearerToken(options.token)
+        ? { Authorization: `Bearer ${options.token}` }
+        : {}),
       ...(options.clientId
         ? { "X-Like-Client-Id": options.clientId }
         : {}),
@@ -82,9 +88,10 @@ export const addPostComment = async (
 ): Promise<BlogComment> => {
   const response = await fetch(`${API_BASE}/posts/${id}/comments`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ text, parentId }),
   });
@@ -107,8 +114,9 @@ export const deletePost = async (
 ) => {
   const resp = await fetch(`${API_BASE}/posts/${id}`, {
     method: "DELETE",
+    credentials: "include",
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
 

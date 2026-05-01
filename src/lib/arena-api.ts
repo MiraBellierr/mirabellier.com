@@ -1,4 +1,5 @@
 import { joinApi } from "@/lib/config";
+import { shouldSendBearerToken } from "@/lib/auth-session";
 
 export type ArenaMetric = "level" | "win_rate" | "rich";
 
@@ -393,16 +394,17 @@ async function readApiError(response: Response): Promise<ArenaApiError> {
 
 function makeAuthHeaders(token: string) {
   return {
-    Authorization: `Bearer ${token}`,
+    ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     "Content-Type": "application/json",
   };
 }
 
 export async function fetchArenaProfile(token: string): Promise<ArenaProfile> {
   const response = await fetch(joinApi("/arena/profile"), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
     cache: "no-store",
   });
 
@@ -418,6 +420,7 @@ export async function drawArenaCard(
 ): Promise<{ card: ArenaCard; profile: ArenaProfile }> {
   const response = await fetch(joinApi("/arena/draw-card"), {
     method: "POST",
+    credentials: "include",
     headers: makeAuthHeaders(token),
     body: JSON.stringify({}),
   });
@@ -432,6 +435,7 @@ export async function drawArenaCard(
 export async function runArenaFight(token: string): Promise<ArenaFightResponse> {
   const response = await fetch(joinApi("/arena/fight"), {
     method: "POST",
+    credentials: "include",
     headers: makeAuthHeaders(token),
     body: JSON.stringify({}),
   });
@@ -451,9 +455,10 @@ export async function fetchArenaCollection(
     limit: String(limit),
   });
   const response = await fetch(joinApi(`/arena/collection?${params.toString()}`), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
     cache: "no-store",
   });
 
@@ -470,6 +475,7 @@ export async function selectArenaCollectionCard(
 ): Promise<ArenaSelectCollectionCardResponse> {
   const response = await fetch(joinApi("/arena/collection/select-card"), {
     method: "POST",
+    credentials: "include",
     headers: makeAuthHeaders(token),
     body: JSON.stringify({ cardInstanceId }),
   });
@@ -483,9 +489,10 @@ export async function selectArenaCollectionCard(
 
 export async function fetchArenaShop(token: string): Promise<ArenaShopResponse> {
   const response = await fetch(joinApi("/arena/shop"), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
     cache: "no-store",
   });
 
@@ -502,6 +509,7 @@ export async function buyArenaItem(
 ): Promise<{ purchasedItemId: string; appliedInstantly: boolean; shop: ArenaShopResponse }> {
   const response = await fetch(joinApi("/arena/shop/buy"), {
     method: "POST",
+    credentials: "include",
     headers: makeAuthHeaders(token),
     body: JSON.stringify({ itemId }),
   });
@@ -523,6 +531,7 @@ export async function useArenaConsumable(
 ): Promise<{ activatedItemId: string; effects: ArenaProfile["effects"]; shop: ArenaShopResponse }> {
   const response = await fetch(joinApi("/arena/shop/use-consumable"), {
     method: "POST",
+    credentials: "include",
     headers: makeAuthHeaders(token),
     body: JSON.stringify({ itemId }),
   });
@@ -545,6 +554,7 @@ export async function craftArenaRecipe(
 ): Promise<{ craftedRecipeId: string; outputItemId: string; craftedQuantity: number; shop: ArenaShopResponse }> {
   const response = await fetch(joinApi("/arena/shop/craft"), {
     method: "POST",
+    credentials: "include",
     headers: makeAuthHeaders(token),
     body: JSON.stringify({ recipeId, quantity }),
   });

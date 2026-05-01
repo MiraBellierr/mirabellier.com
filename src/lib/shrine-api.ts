@@ -1,4 +1,5 @@
 import { API_BASE } from "@/lib/config";
+import { shouldSendBearerToken } from "@/lib/auth-session";
 import type { CharacterShrineData } from "@/components/CharacterShrinePage";
 
 export type ShrinePageRecord = {
@@ -45,21 +46,26 @@ async function parseJsonOrThrow(response: Response) {
 }
 
 export async function fetchShrinePages() {
-  const response = await fetch(`${API_BASE}/shrines/pages`);
+  const response = await fetch(`${API_BASE}/shrines/pages`, {
+    credentials: "include",
+  });
   return (await parseJsonOrThrow(response)) as ShrinePageRecord[];
 }
 
 export async function fetchShrinePage(slug: string) {
-  const response = await fetch(`${API_BASE}/shrines/pages/${slug}`);
+  const response = await fetch(`${API_BASE}/shrines/pages/${slug}`, {
+    credentials: "include",
+  });
   return (await parseJsonOrThrow(response)) as ShrinePageRecord;
 }
 
 export async function createShrinePage(input: ShrineMutationInput, token: string) {
   const response = await fetch(`${API_BASE}/shrines/pages`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(input),
   });
@@ -73,9 +79,10 @@ export async function updateShrinePage(
 ) {
   const response = await fetch(`${API_BASE}/shrines/pages/${slug}`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(input),
   });

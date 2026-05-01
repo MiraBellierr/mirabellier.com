@@ -1,8 +1,11 @@
 import { API_BASE } from "@/lib/config";
+import { shouldSendBearerToken } from "@/lib/auth-session";
 
 export const fetchTagSuggestions = async () => {
   try {
-    const res = await fetch(`${API_BASE}/tags`);
+    const res = await fetch(`${API_BASE}/tags`, {
+      credentials: "include",
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data.filter(Boolean).slice(0, 100) : [];
@@ -12,7 +15,9 @@ export const fetchTagSuggestions = async () => {
 };
 
 export const fetchPostForEdit = async (id: string) => {
-  const res = await fetch(`${API_BASE}/posts/${id}`);
+  const res = await fetch(`${API_BASE}/posts/${id}`, {
+    credentials: "include",
+  });
   if (!res.ok) {
     const errorText = await res.text();
     throw new Error(`Failed to load post: ${res.status} ${errorText}`);
@@ -30,9 +35,10 @@ export const savePost = async (
 
   const response = await fetch(url, {
     method,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(blogData),
   });

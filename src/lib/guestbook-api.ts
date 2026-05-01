@@ -1,4 +1,5 @@
 import { API_BASE } from "@/lib/config";
+import { shouldSendBearerToken } from "@/lib/auth-session";
 
 export type GuestbookMood =
   | "sparkly"
@@ -113,6 +114,7 @@ async function readErrorText(response: Response) {
 export async function fetchGuestbookEntries(): Promise<GuestbookEntry[]> {
   const response = await fetch(`${API_BASE}/guestbook`, {
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -134,9 +136,12 @@ export async function createGuestbookEntry(input: {
 }) {
   const response = await fetch(`${API_BASE}/guestbook`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(input.token ? { Authorization: `Bearer ${input.token}` } : {}),
+      ...(shouldSendBearerToken(input.token)
+        ? { Authorization: `Bearer ${input.token}` }
+        : {}),
     },
     body: JSON.stringify({
       name: input.name,
@@ -163,6 +168,7 @@ export async function updateGuestbookEntryPosition(
 ) {
   const response = await fetch(`${API_BASE}/guestbook/${id}/position`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -180,8 +186,9 @@ export async function updateGuestbookEntryPosition(
 export async function deleteGuestbookEntry(id: string, token: string) {
   const response = await fetch(`${API_BASE}/guestbook/${id}`, {
     method: "DELETE",
+    credentials: "include",
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
 

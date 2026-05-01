@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { API_BASE } from "@/lib/config";
+import { COOKIE_SESSION_TOKEN_MARKER } from "@/lib/auth-session";
 
 type User = {
   id: string;
@@ -17,73 +18,75 @@ type AuthContextType = {
   token: string | null;
   logout: () => void;
   updateProfile: (data: FormData) => Promise<User>;
-  handleAuthCallback: (token: string) => Promise<void>;
+  handleAuthCallback: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("token"),
-  );
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    if (token) {
-      fetch(`${API_BASE}/me`, {
-        headers: { Authorization: `Bearer ${token}` },
+    let canceled = false;
+    fetch(`${API_BASE}/me`, {
+      cache: "no-store",
+      credentials: "include",
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => {
+        if (canceled) return;
+        setUser(data);
+        setToken(COOKIE_SESSION_TOKEN_MARKER);
       })
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
-        .then((data) => setUser(data))
-        .catch(() => {
-          setUser(null);
-          setToken(null);
-          localStorage.removeItem("token");
-        });
-    }
-  }, [token]);
+      .catch(() => {
+        if (canceled) return;
+        setUser(null);
+        setToken(null);
+      });
 
-  const handleAuthCallback = async (newToken: string) => {
-    setToken(newToken);
-    localStorage.setItem("token", newToken);
+    return () => {
+      canceled = true;
+    };
+  }, []);
 
-    // Fetch user profile with the new token
+  const handleAuthCallback = async () => {
     try {
       const res = await fetch(`${API_BASE}/me`, {
-        headers: { Authorization: `Bearer ${newToken}` },
+        cache: "no-store",
+        credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to fetch user");
-      const data = await res.json();
+      if (!res.ok) throw new Error("Failed to complete auth callback");
+      const data = (await res.json()) as User;
       setUser(data);
+      setToken(COOKIE_SESSION_TOKEN_MARKER);
     } catch {
       setUser(null);
       setToken(null);
-      localStorage.removeItem("token");
+      throw new Error("Failed to complete auth callback");
     }
   };
 
   const logout = () => {
-    if (token) {
-      fetch(`${API_BASE}/logout`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
+    fetch(`${API_BASE}/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
     setUser(null);
     setToken(null);
-    localStorage.removeItem("token");
   };
 
   const updateProfile = async (formData: FormData) => {
     if (!token) throw new Error("Not authenticated");
     const res = await fetch(`${API_BASE}/me`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
       body: formData,
     });
     if (!res.ok) throw new Error("Update failed");
-    const data = await res.json();
+    const data = (await res.json()) as User;
     setUser(data);
+    setToken(COOKIE_SESSION_TOKEN_MARKER);
     return data;
   };
 
