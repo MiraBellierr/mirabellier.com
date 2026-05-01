@@ -409,6 +409,25 @@
   color: var(--tt-color-text-gray);
 }
 
+/* Keep blockquotes compact in post content and ignore empty trailing lines */
+.prose blockquote {
+  margin-top: 0.9em;
+  margin-bottom: 0.9em;
+}
+
+.prose blockquote > :first-child {
+  margin-top: 0;
+}
+
+.prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.prose blockquote > p:empty,
+.prose blockquote > p:has(> br:only-child) {
+  display: none;
+}
+
 /* Center images with center alignment from editor */
 .prose img[data-align="center"],
 .prose img[style*="text-align:center"],
