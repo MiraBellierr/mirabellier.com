@@ -16,6 +16,7 @@ import {
   validateTags,
   normalizeTags,
 } from "@/lib/blog-edit-api";
+import "@/styles/blog.css";
 
 const SimpleEditor = lazy(() =>
   import("@/components/tiptap-templates/simple/simple-editor").then(

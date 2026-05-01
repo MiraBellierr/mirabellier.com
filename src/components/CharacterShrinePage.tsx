@@ -5,6 +5,7 @@ import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import { usePageSeo } from "@/lib/seo";
+import "@/styles/shrine.css";
 
 export type ShrineImage = {
   src: string;

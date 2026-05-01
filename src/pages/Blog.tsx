@@ -23,6 +23,7 @@ import {
   type Post as PostType,
 } from "@/lib/blog-utils";
 import { fetchPosts, deletePost } from "@/lib/blog-api";
+import "@/styles/blog.css";
 
 const POST_MENU_WIDTH = 144;
 const POST_MENU_HEIGHT = 88;

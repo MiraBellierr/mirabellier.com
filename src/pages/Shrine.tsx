@@ -11,6 +11,7 @@ import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 import kannaRight from "@/assets/anime/kanna-right.webp";
 import { fetchShrinePages, type ShrinePageRecord } from "@/lib/shrine-api";
+import "@/styles/shrine.css";
 
 const shrineEntries = [
   {

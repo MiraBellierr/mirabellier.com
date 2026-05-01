@@ -8,6 +8,7 @@ import { resolveAsset } from "@/lib/blog-utils";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { createGuestbookEntry, type GuestbookMood } from "@/lib/guestbook-api";
 import { guestbookMoodMeta } from "@/lib/guestbook-ui";
+import "@/styles/guestbook.css";
 
 const moodValues = Object.keys(guestbookMoodMeta) as GuestbookMood[];
 

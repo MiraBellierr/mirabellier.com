@@ -1,0 +1,443 @@
+/* Rainbow tag animation for special tags */
+@keyframes rainbow-slide {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.rainbow-tag {
+  background-size: 300% 100%;
+  animation:
+    rainbow-slide 3s linear infinite,
+    rainbow-colors 6s linear infinite;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: background-position;
+  transform: translateZ(0);
+}
+
+@keyframes rainbow-colors {
+  0% {
+    background-image: linear-gradient(
+      90deg,
+      #ff4d4d,
+      #ffb84d,
+      #fff14d,
+      #4dff88,
+      #4da6ff,
+      #b84dff
+    );
+  }
+  25% {
+    background-image: linear-gradient(
+      90deg,
+      #ffb84d,
+      #fff14d,
+      #4dff88,
+      #4da6ff,
+      #b84dff,
+      #ff4d4d
+    );
+  }
+  50% {
+    background-image: linear-gradient(
+      90deg,
+      #fff14d,
+      #4dff88,
+      #4da6ff,
+      #b84dff,
+      #ff4d4d,
+      #ffb84d
+    );
+  }
+  75% {
+    background-image: linear-gradient(
+      90deg,
+      #4dff88,
+      #4da6ff,
+      #b84dff,
+      #ff4d4d,
+      #ffb84d,
+      #fff14d
+    );
+  }
+  100% {
+    background-image: linear-gradient(
+      90deg,
+      #ff4d4d,
+      #ffb84d,
+      #fff14d,
+      #4dff88,
+      #4da6ff,
+      #b84dff
+    );
+  }
+}
+
+/* glossy sheen overlay for shiny effect */
+.rainbow-tag {
+  position: relative;
+  overflow: hidden;
+}
+
+.rainbow-tag::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 60%;
+  height: 100%;
+  pointer-events: none;
+  transform: skewX(-20deg) translateX(0);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(0.5px);
+  opacity: 0.85;
+  animation: rainbow-sheen 2.8s linear infinite;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+@keyframes rainbow-sheen {
+  0% {
+    transform: skewX(-20deg) translateX(0);
+  }
+  100% {
+    transform: skewX(-20deg) translateX(367%);
+  }
+}
+
+/* card hover animation: only in blog page - use transforms and box-shadow for efficient GPU compositing */
+.blog-page .card-border {
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform, box-shadow;
+}
+
+.blog-page .card-border img {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.blog-page .card-border:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.35);
+}
+
+.blog-page .card-border:hover img {
+  transform: scale(1.03);
+}
+
+.dark .blog-page,
+.dark .blog-post-page {
+  --blog-heading-1: #f5e8ff;
+  --blog-heading-2: #e9d5ff;
+  --blog-heading-3: #d8b4fe;
+  --blog-heading-4: #c4b5fd;
+  --blog-heading-shadow: 0 2px 14px rgba(160, 120, 255, 0.22);
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h1,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h1 {
+  color: var(--blog-heading-1) !important;
+  text-shadow: var(--blog-heading-shadow);
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h2,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h2 {
+  color: var(--blog-heading-2) !important;
+  text-shadow: var(--blog-heading-shadow);
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h3,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h3 {
+  color: var(--blog-heading-3) !important;
+}
+
+.dark .blog-page :is(.card-border, .right-side-panel, .prose) h4,
+.dark .blog-post-page :is(.card-border, .right-side-panel, .prose) h4 {
+  color: var(--blog-heading-4) !important;
+}
+
+.blog-card-link {
+  display: block;
+  min-width: 0;
+}
+
+.blog-card-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.blog-card-media {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  aspect-ratio: 9 / 7;
+}
+
+.blog-card-content {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.blog-card-copy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.blog-card-title,
+.blog-card-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.blog-card-title {
+  -webkit-line-clamp: 2;
+  min-height: 3.5rem;
+}
+
+.blog-card-meta {
+  min-height: 1.25rem;
+}
+
+.blog-card-summary {
+  -webkit-line-clamp: 2;
+  min-height: 2.75rem;
+}
+
+.blog-card-footer {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.blog-card-tags {
+  max-height: 3.5rem;
+  overflow: hidden;
+}
+
+.blog-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-content: flex-start;
+}
+
+.blog-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  border: 1px solid;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.1;
+  transition:
+    transform 150ms ease-in-out,
+    box-shadow 150ms ease-in-out;
+}
+
+.blog-tag:hover {
+  transform: scale(1.05);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.blog-tag--light {
+  background: rgb(229, 231, 235) !important;
+  color: rgb(31, 41, 55) !important;
+  border-color: rgb(209, 213, 219) !important;
+}
+
+.blog-tag--dark {
+  background: rgb(31, 41, 55) !important;
+  color: rgb(249, 250, 251) !important;
+  border-color: rgb(55, 65, 81) !important;
+}
+
+.blog-tag--rainbow {
+  background: linear-gradient(
+    90deg,
+    #ff4d4d,
+    #ffb84d,
+    #fff14d,
+    #4dff88,
+    #4da6ff,
+    #b84dff
+  ) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  background-size: 300% 100%;
+}
+
+.blog-tag-more {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(96, 165, 250);
+}
+
+.dark .card-border .blog-tag--dark {
+  background: rgb(31, 41, 55) !important;
+  color: rgb(249, 250, 251) !important;
+  border-color: rgb(55, 65, 81) !important;
+}
+
+.dark .card-border .blog-tag--rainbow {
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+.dark .card-border .blog-tag-more {
+  color: rgba(196, 181, 253, 0.92) !important;
+}
+
+@media (min-width: 640px) {
+  .blog-card-layout {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .blog-card-media {
+    width: 9rem;
+    flex-shrink: 0;
+    aspect-ratio: auto;
+    height: 10rem;
+  }
+
+  .blog-card-content {
+    min-height: 10rem;
+  }
+}
+
+/* Reduce spacing for lists in blog post content */
+.prose ul,
+.prose ol {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+.prose ul > li,
+.prose ol > li {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+  padding-left: 0.1em;
+}
+
+.prose ul > li > p,
+.prose ol > li > p {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+/* For nested lists */
+.prose ul ul,
+.prose ul ol,
+.prose ol ul,
+.prose ol ol {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+/* Make bullet list markers black */
+.prose ul > li::marker {
+  color: black;
+}
+
+.dark .prose ul > li::marker {
+  color: white;
+}
+
+/* Reduce H1 size */
+.prose h1 {
+  display: block;
+  font-size: 2em;
+  margin-top: 0.67em;
+  margin-bottom: 0.67em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: bold;
+}
+
+.prose h2 {
+  display: block;
+  font-size: 1.5rem;
+  margin-top: 0.83em;
+  margin-bottom: 0.83em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: bold;
+}
+
+.prose h3 {
+  display: block;
+  font-size: 1.17rem;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: bold;
+}
+
+.prose h4 {
+  display: block;
+  margin-top: 1.33em;
+  margin-bottom: 1.33em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: bold;
+}
+
+.prose p {
+  color: var(--tt-color-text-gray);
+}
+
+/* Center images with center alignment from editor */
+.prose img[data-align="center"],
+.prose img[style*="text-align:center"],
+.prose p[style*="text-align:center"] > img,
+.prose .align-center,
+.prose img.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.prose img[data-align="right"],
+.prose img[style*="text-align:right"],
+.prose p[style*="text-align:right"] > img,
+.prose .align-right,
+.prose img.align-right {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+  float: right;
+  clear: both;
+}
+
+/* Keep headers visible in dark mode */
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4,
+.dark .prose h5,
+.dark .prose h6 {
+  color: #bfdbfe;
+}

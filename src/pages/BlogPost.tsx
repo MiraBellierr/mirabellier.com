@@ -21,6 +21,7 @@ import {
   readAnonymousLikeId,
 } from "@/lib/post-like-session";
 import { useAuth } from "@/states/AuthContext";
+import "@/styles/blog.css";
 
 const DEFAULT_SEO = {
   title: "Mirabellier | Cute thoughts & cozy corners",

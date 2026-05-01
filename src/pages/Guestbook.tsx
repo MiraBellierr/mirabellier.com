@@ -28,6 +28,7 @@ import {
   GUESTBOOK_BOARD_WIDTH,
   GUESTBOOK_NOTE_SIZE,
 } from "@/lib/guestbook-ui";
+import "@/styles/guestbook.css";
 
 const BOARD_INITIAL_SCROLL = { left: 0, top: 0 };
 const OWNER_DISCORD_ID = "548050617889980426";
