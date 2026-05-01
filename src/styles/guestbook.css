@@ -311,6 +311,11 @@
   background: linear-gradient(180deg, #c38b58 0%, #8f5d31 100%);
 }
 
+.guestbook-board-viewport:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
 .guestbook-board-shell:fullscreen .guestbook-board-viewport,
 .guestbook-board-shell--fullscreen .guestbook-board-viewport {
   height: calc(100% - 2.5rem);
@@ -359,6 +364,11 @@
   cursor: grab;
   box-shadow: 0 18px 24px rgba(66, 45, 12, 0.18);
   will-change: transform;
+}
+
+.board-note:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
 }
 
 .board-note::before {

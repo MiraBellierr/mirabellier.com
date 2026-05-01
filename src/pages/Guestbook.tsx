@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -36,6 +37,8 @@ const OWNER_DISCORD_ID = "548050617889980426";
 const BOARD_ZOOM_MIN = 0.7;
 const BOARD_ZOOM_MAX = 1.8;
 const BOARD_ZOOM_STEP = 0.15;
+const BOARD_KEYBOARD_PAN_STEP = 80;
+const NOTE_KEYBOARD_MOVE_STEP = 24;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -83,6 +86,7 @@ const Guestbook = () => {
     scrollLeft: number;
     scrollTop: number;
   } | null>(null);
+  const noteSaveNonceRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     boardZoomRef.current = boardZoom;
@@ -193,21 +197,7 @@ const Guestbook = () => {
         dragRef.current = null;
         setDraggingNoteId(null);
 
-        void updateGuestbookEntryPosition(id, lastX, lastY)
-          .then((updated) => {
-            setEntries((current) =>
-              current.map((entry) =>
-                entry.id === updated.id
-                  ? { ...entry, x: updated.x, y: updated.y }
-                  : entry,
-              ),
-            );
-          })
-          .catch((err) => {
-            setError(
-              err instanceof Error ? err.message : "Failed to save note position",
-            );
-          });
+        persistNotePosition(id, lastX, lastY);
       }
 
       if (panRef.current) {
@@ -290,6 +280,55 @@ const Guestbook = () => {
     [loadError],
   );
 
+  const persistNotePosition = useCallback((id: string, x: number, y: number) => {
+    const nextNonce = (noteSaveNonceRef.current.get(id) ?? 0) + 1;
+    noteSaveNonceRef.current.set(id, nextNonce);
+
+    void updateGuestbookEntryPosition(id, x, y)
+      .then((updated) => {
+        if (noteSaveNonceRef.current.get(id) !== nextNonce) return;
+
+        setEntries((current) =>
+          current.map((entry) =>
+            entry.id === updated.id ? { ...entry, x: updated.x, y: updated.y } : entry,
+          ),
+        );
+      })
+      .catch((err) => {
+        setError(
+          err instanceof Error ? err.message : "Failed to save note position",
+        );
+      });
+  }, []);
+
+  const moveNoteByDelta = useCallback(
+    (entryId: string, deltaX: number, deltaY: number) => {
+      const currentEntry = entries.find((entry) => entry.id === entryId);
+      if (!currentEntry) return;
+
+      const nextX = clamp(
+        currentEntry.x + deltaX,
+        0,
+        GUESTBOOK_BOARD_WIDTH - GUESTBOOK_NOTE_SIZE,
+      );
+      const nextY = clamp(
+        currentEntry.y + deltaY,
+        0,
+        GUESTBOOK_BOARD_HEIGHT - GUESTBOOK_NOTE_SIZE,
+      );
+
+      if (nextX === currentEntry.x && nextY === currentEntry.y) return;
+
+      setEntries((current) =>
+        current.map((entry) =>
+          entry.id === entryId ? { ...entry, x: nextX, y: nextY } : entry,
+        ),
+      );
+      persistNotePosition(entryId, nextX, nextY);
+    },
+    [entries, persistNotePosition],
+  );
+
   const applyBoardZoom = (
     nextZoom: number,
     focusPoint?: { clientX: number; clientY: number },
@@ -322,6 +361,95 @@ const Guestbook = () => {
       currentViewport.scrollLeft = focusX * clampedZoom - offsetX;
       currentViewport.scrollTop = focusY * clampedZoom - offsetY;
     });
+  };
+
+  const panBoardBy = useCallback((deltaX: number, deltaY: number) => {
+    const viewport = boardViewportRef.current;
+    if (!viewport) return;
+
+    viewport.scrollLeft = clamp(
+      viewport.scrollLeft + deltaX,
+      0,
+      viewport.scrollWidth - viewport.clientWidth,
+    );
+    viewport.scrollTop = clamp(
+      viewport.scrollTop + deltaY,
+      0,
+      viewport.scrollHeight - viewport.clientHeight,
+    );
+  }, []);
+
+  const handleBoardKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+
+    const panStep = event.shiftKey
+      ? BOARD_KEYBOARD_PAN_STEP * 2
+      : BOARD_KEYBOARD_PAN_STEP;
+
+    switch (event.key) {
+      case "ArrowUp":
+        event.preventDefault();
+        panBoardBy(0, -panStep);
+        return;
+      case "ArrowDown":
+        event.preventDefault();
+        panBoardBy(0, panStep);
+        return;
+      case "ArrowLeft":
+        event.preventDefault();
+        panBoardBy(-panStep, 0);
+        return;
+      case "ArrowRight":
+        event.preventDefault();
+        panBoardBy(panStep, 0);
+        return;
+      case "+":
+      case "=":
+      case "Add":
+        event.preventDefault();
+        applyBoardZoom(boardZoomRef.current + BOARD_ZOOM_STEP);
+        return;
+      case "-":
+      case "_":
+      case "Subtract":
+        event.preventDefault();
+        applyBoardZoom(boardZoomRef.current - BOARD_ZOOM_STEP);
+        return;
+      default:
+        return;
+    }
+  };
+
+  const handleNoteKeyDown = (
+    event: ReactKeyboardEvent<HTMLElement>,
+    entryId: string,
+  ) => {
+    if (event.target !== event.currentTarget) return;
+
+    const moveStep = event.shiftKey
+      ? NOTE_KEYBOARD_MOVE_STEP * 2
+      : NOTE_KEYBOARD_MOVE_STEP;
+
+    switch (event.key) {
+      case "ArrowUp":
+        event.preventDefault();
+        moveNoteByDelta(entryId, 0, -moveStep);
+        return;
+      case "ArrowDown":
+        event.preventDefault();
+        moveNoteByDelta(entryId, 0, moveStep);
+        return;
+      case "ArrowLeft":
+        event.preventDefault();
+        moveNoteByDelta(entryId, -moveStep, 0);
+        return;
+      case "ArrowRight":
+        event.preventDefault();
+        moveNoteByDelta(entryId, moveStep, 0);
+        return;
+      default:
+        return;
+    }
   };
 
   useEffect(() => {
@@ -428,7 +556,11 @@ const Guestbook = () => {
                 <div
                   ref={boardViewportRef}
                   className={`guestbook-board-viewport ${isPanning ? "is-panning" : ""}`}
+                  tabIndex={0}
+                  role="region"
+                  aria-label="Guestbook board"
                   onMouseDown={handleBoardMouseDown}
+                  onKeyDown={handleBoardKeyDown}
                   onAuxClick={(event) => {
                     if (event.button === 1) {
                       event.preventDefault();
@@ -495,9 +627,12 @@ const Guestbook = () => {
                             <article
                               key={entry.id}
                               className={`board-note ${mood.noteClass} ${draggingNoteId === entry.id ? "is-dragging" : ""}`}
+                              tabIndex={0}
+                              aria-label={`Guestbook note by ${entry.author}`}
                               onMouseDown={(event) =>
                                 handleNoteMouseDown(event, entry)
                               }
+                              onKeyDown={(event) => handleNoteKeyDown(event, entry.id)}
                               style={{
                                 transform: `translate(${entry.x}px, ${entry.y}px) rotate(${rotation}deg)`,
                               }}
