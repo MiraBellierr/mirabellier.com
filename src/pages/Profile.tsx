@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
 import { API_BASE } from "@/lib/config";
+import { usePageSeo } from "@/lib/seo";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
@@ -33,56 +34,29 @@ const Profile = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const profileUserForSeo = username ? profileUser : auth.user;
+  const profileCanonical = username
+    ? `https://mirabellier.com/profile/${username}`
+    : "https://mirabellier.com/profile";
 
-  useEffect(() => {
-    // Update canonical URL to point to the Profile page
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      if (username) {
-        canonicalLink.href = `https://mirabellier.com/profile/${username}`;
-      } else {
-        canonicalLink.href = "https://mirabellier.com/profile";
-      }
-    }
-
-    // Add structured data for rich results
-    if (profileUser || auth.user) {
-      const user = username ? profileUser : auth.user;
-      if (user) {
-        const script = document.createElement("script");
-        script.type = "application/ld+json";
-        script.id = "profile-structured-data";
-        script.text = JSON.stringify({
+  usePageSeo({
+    canonical: profileCanonical,
+    structuredDataId: "profile-structured-data",
+    structuredData: profileUserForSeo
+      ? {
           "@context": "https://schema.org",
           "@type": "ProfilePage",
-          name: `${user.username} - Profile`,
-          url: username
-            ? `https://mirabellier.com/profile/${username}`
-            : "https://mirabellier.com/profile",
+          name: `${profileUserForSeo.username} - Profile`,
+          url: profileCanonical,
           mainEntity: {
             "@type": "Person",
-            name: user.username,
-            description: user.bio || undefined,
-            url: user.website || undefined,
+            name: profileUserForSeo.username,
+            description: profileUserForSeo.bio || undefined,
+            url: profileUserForSeo.website || undefined,
           },
-        });
-        document.head.appendChild(script);
-      }
-    }
-
-    return () => {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById("profile-structured-data");
-      if (oldScript) oldScript.remove();
-    };
-  }, [username, profileUser, auth.user]);
+        }
+      : null,
+  });
 
   // Determine which user to display
   const user = username ? profileUser : auth.user;

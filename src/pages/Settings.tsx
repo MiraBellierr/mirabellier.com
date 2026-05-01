@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/states/AuthContext";
 import { API_BASE } from "@/lib/config";
+import { usePageSeo } from "@/lib/seo";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
@@ -22,39 +23,17 @@ const Settings = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    // Update canonical URL to point to the Settings page
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/settings";
-    }
-
-    // Add structured data for rich results
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "settings-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/settings",
+    structuredDataId: "settings-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
       name: "Settings",
       description: "Account settings and preferences",
       url: "https://mirabellier.com/settings",
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById("settings-structured-data");
-      if (oldScript) oldScript.remove();
-    };
-  }, []);
+    },
+  });
 
   useEffect(() => {
     if (avatarFile) {

@@ -8,6 +8,7 @@ import { resolveAsset } from "@/lib/blog-utils";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { createGuestbookEntry, type GuestbookMood } from "@/lib/guestbook-api";
 import { guestbookMoodMeta } from "@/lib/guestbook-ui";
+import { usePageSeo } from "@/lib/seo";
 import "@/styles/guestbook.css";
 
 const moodValues = Object.keys(guestbookMoodMeta) as GuestbookMood[];
@@ -25,41 +26,17 @@ const GuestbookSign = () => {
     mood: "sparkly" as GuestbookMood,
   });
 
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/guestbook/sign";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "guestbook-sign-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/guestbook/sign",
+    structuredDataId: "guestbook-sign-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
       name: "Sign the Mirabellier Guestbook",
       description: "Leave a note for the Mirabellier guestbook board.",
       url: "https://mirabellier.com/guestbook/sign",
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const restoredCanonical = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (restoredCanonical) {
-        restoredCanonical.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById(
-        "guestbook-sign-structured-data",
-      );
-      if (oldScript) {
-        oldScript.remove();
-      }
-    };
-  }, []);
+    },
+  });
 
   useEffect(() => {
     if (!signedInUsername) return;

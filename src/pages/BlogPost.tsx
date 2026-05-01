@@ -20,23 +20,14 @@ import {
   ensureAnonymousLikeId,
   readAnonymousLikeId,
 } from "@/lib/post-like-session";
+import { usePageSeo } from "@/lib/seo";
 import { useAuth } from "@/states/AuthContext";
 import "@/styles/blog.css";
 
-const DEFAULT_SEO = {
-  title: "Mirabellier | Cute thoughts & cozy corners",
-  description:
-    "Mirabellier - a tiny, cozy blog where I share cute thoughts, fuzzy photos, and little projects.",
-  url: "https://mirabellier.com/",
-  image: "https://mirabellier.com/background.jpg",
-};
-
-function setMetaContent(selector: string, content: string) {
-  const element = document.querySelector(selector) as HTMLMetaElement | null;
-  if (element) {
-    element.content = content;
-  }
-}
+const BLOG_POST_FALLBACK_TITLE = "Mirabellier ⭐ — Cute thoughts & cozy corners";
+const BLOG_POST_FALLBACK_DESCRIPTION =
+  "A tiny, cozy blog sharing small joys, photos, and short posts.";
+const BLOG_POST_FALLBACK_IMAGE = "https://mirabellier.com/background.jpg";
 
 function getBlogSeoDescription(post: BlogPostRecord) {
   const summary = (post.shortDescription || "").trim();
@@ -100,119 +91,64 @@ const BlogPost = () => {
   const [interactionError, setInteractionError] = useState<string | null>(null);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
+  const postUrl = slug
+    ? `https://mirabellier.com/blog/${slug}`
+    : "https://mirabellier.com/blog";
+  const postSeoDescription = post
+    ? getBlogSeoDescription(post)
+    : BLOG_POST_FALLBACK_DESCRIPTION;
+  const postSeoImage = post
+    ? resolveAsset(post.thumbnail) || BLOG_POST_FALLBACK_IMAGE
+    : BLOG_POST_FALLBACK_IMAGE;
+  const authorProfileUrl =
+    post && post.userId
+      ? `https://mirabellier.com/profile/${encodeURIComponent(post.author)}`
+      : undefined;
+  const blogPostStructuredData =
+    post && slug
+      ? {
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          headline: post.title,
+          url: postUrl,
+          mainEntityOfPage: postUrl,
+          datePublished: post.createdAt,
+          dateModified: post.updatedAt || post.createdAt,
+          author: {
+            "@type": "Person",
+            name: post.author,
+            ...(authorProfileUrl ? { url: authorProfileUrl } : {}),
+          },
+          publisher: {
+            "@type": "Person",
+            name: "Mirabellier",
+          },
+          description: postSeoDescription,
+          ...(postSeoImage ? { image: [postSeoImage] } : {}),
+          ...(post.tags && post.tags.length
+            ? { keywords: post.tags.join(", ") }
+            : {}),
+        }
+      : null;
+
+  usePageSeo({
+    canonical: postUrl,
+    structuredDataId: "blogpost-structured-data",
+    structuredData: blogPostStructuredData,
+    socialMeta: {
+      title: post?.title || BLOG_POST_FALLBACK_TITLE,
+      description: postSeoDescription,
+      url: postUrl,
+      image: postSeoImage,
+      type: post ? "article" : "website",
+    },
+  });
 
   const loadPost = async (postId: string) => {
     const found = await fetchPost(postId);
     setPost(found);
     return found;
   };
-
-  useEffect(() => {
-    if (slug) {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = `https://mirabellier.com/blog/${slug}`;
-      }
-    }
-
-    return () => {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
-      }
-    };
-  }, [slug]);
-
-  useEffect(() => {
-    if (post && slug) {
-      const postUrl = `https://mirabellier.com/blog/${slug}`;
-      const description = getBlogSeoDescription(post);
-      const imageUrl = resolveAsset(post.thumbnail) || DEFAULT_SEO.image;
-      const authorProfileUrl = post.userId
-        ? `https://mirabellier.com/profile/${encodeURIComponent(post.author)}`
-        : undefined;
-
-      document.title = post.title;
-      setMetaContent('meta[name="description"]', description);
-      setMetaContent(
-        'meta[name="robots"]',
-        "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
-      );
-      setMetaContent('meta[property="og:type"]', "article");
-      setMetaContent('meta[property="og:title"]', post.title);
-      setMetaContent('meta[property="og:description"]', description);
-      setMetaContent('meta[property="og:site_name"]', "Mirabellier");
-      setMetaContent('meta[property="og:url"]', postUrl);
-      setMetaContent('meta[property="og:image"]', imageUrl);
-      setMetaContent('meta[name="twitter:card"]', "summary_large_image");
-      setMetaContent('meta[name="twitter:site"]', "@mirabellier");
-      setMetaContent('meta[name="twitter:creator"]', "@mirabellier");
-      setMetaContent('meta[name="twitter:title"]', post.title);
-      setMetaContent('meta[name="twitter:description"]', description);
-      setMetaContent('meta[name="twitter:image"]', imageUrl);
-
-      const script = document.createElement("script");
-      script.type = "application/ld+json";
-      script.id = "blogpost-structured-data";
-      script.text = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        headline: post.title,
-        url: postUrl,
-        mainEntityOfPage: postUrl,
-        datePublished: post.createdAt,
-        dateModified: post.updatedAt || post.createdAt,
-        author: {
-          "@type": "Person",
-          name: post.author,
-          ...(authorProfileUrl ? { url: authorProfileUrl } : {}),
-        },
-        publisher: {
-          "@type": "Person",
-          name: "Mirabellier",
-        },
-        description,
-        ...(imageUrl ? { image: [imageUrl] } : {}),
-        ...(post.tags && post.tags.length
-          ? { keywords: post.tags.join(", ") }
-          : {}),
-      });
-      document.head.appendChild(script);
-
-      return () => {
-        const oldScript = document.getElementById("blogpost-structured-data");
-        if (oldScript) oldScript.remove();
-        document.title = DEFAULT_SEO.title;
-        setMetaContent('meta[name="description"]', DEFAULT_SEO.description);
-        setMetaContent(
-          'meta[name="robots"]',
-          "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
-        );
-        setMetaContent('meta[property="og:type"]', "website");
-        setMetaContent('meta[property="og:title"]', DEFAULT_SEO.title);
-        setMetaContent(
-          'meta[property="og:description"]',
-          "A tiny, cozy blog sharing small joys, photos, and short posts.",
-        );
-        setMetaContent('meta[property="og:site_name"]', "Mirabellier");
-        setMetaContent('meta[property="og:url"]', DEFAULT_SEO.url);
-        setMetaContent('meta[property="og:image"]', DEFAULT_SEO.image);
-        setMetaContent('meta[name="twitter:card"]', "summary_large_image");
-        setMetaContent('meta[name="twitter:site"]', "@mirabellier");
-        setMetaContent('meta[name="twitter:creator"]', "@mirabellier");
-        setMetaContent('meta[name="twitter:title"]', DEFAULT_SEO.title);
-        setMetaContent(
-          'meta[name="twitter:description"]',
-          "A tiny, cozy blog sharing small joys, photos, and short posts.",
-        );
-        setMetaContent('meta[name="twitter:image"]', DEFAULT_SEO.image);
-      };
-    }
-  }, [post, slug]);
 
   useEffect(() => {
     const load = async () => {

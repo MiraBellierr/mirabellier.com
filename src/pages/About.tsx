@@ -9,6 +9,7 @@ import kofi from "../assets/kofi.webp";
 import Divider from "../parts/Divider";
 import kannaWink from "@/assets/anime/kanna-wink.webp";
 import { fetchGuestbookEntries, type GuestbookEntry } from "@/lib/guestbook-api";
+import { usePageSeo } from "@/lib/seo";
 
 const handwrittenStyle: CSSProperties = {
   fontFamily: '"Comic Sans MS", "Segoe Print", "Bradley Hand", cursive',
@@ -104,19 +105,10 @@ const About = () => {
   );
   const [guestbookLoading, setGuestbookLoading] = useState(true);
 
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement | null;
-
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/about";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "about-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/about",
+    structuredDataId: "about-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "AboutPage",
       name: "About Mirabellier",
@@ -141,21 +133,8 @@ const About = () => {
           "https://ko-fi.com/mirabellier",
         ],
       },
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const nextCanonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement | null;
-
-      if (nextCanonicalLink) {
-        nextCanonicalLink.href = "https://mirabellier.com/";
-      }
-
-      document.getElementById("about-structured-data")?.remove();
-    };
-  }, []);
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;

@@ -1,44 +1,22 @@
-import { useEffect } from "react";
 import { API_BASE } from "@/lib/config";
+import { usePageSeo } from "@/lib/seo";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import kannaShy from "@/assets/anime/kanna-shy.webp";
 
 const Login = () => {
-  useEffect(() => {
-    // Update canonical URL to point to the Login page
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/login";
-    }
-
-    // Add structured data for rich results
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "login-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/login",
+    structuredDataId: "login-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
       name: "Login",
       description: "Login to Mirabellier",
       url: "https://mirabellier.com/login",
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById("login-structured-data");
-      if (oldScript) oldScript.remove();
-    };
-  }, []);
+    },
+  });
 
   const handleDiscordLogin = () => {
     // Redirect to Discord OAuth

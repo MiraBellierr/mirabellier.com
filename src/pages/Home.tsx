@@ -13,6 +13,7 @@ import {
   fetchCurrentQuestionOfTheDay,
   type QuestionOfTheDayQuestion,
 } from "@/lib/question-of-the-day-api";
+import { usePageSeo } from "@/lib/seo";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
 
 const DeferredAnimatedImage = lazy(
@@ -172,18 +173,10 @@ const Home = () => {
   const clockParts = getHomeClockParts(now);
   const showClockSeparator = now.getSeconds() % 2 === 0;
 
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "home-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/",
+    structuredDataId: "home-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "Mirabellier",
@@ -195,14 +188,8 @@ const Home = () => {
         target: "https://mirabellier.com/blog?search={search_term_string}",
         "query-input": "required name=search_term_string",
       },
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const oldScript = document.getElementById("home-structured-data");
-      if (oldScript) oldScript.remove();
-    };
-  }, []);
+    },
+  });
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {

@@ -12,6 +12,7 @@ import { useToast } from "@/states/ToastContext";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
+import { usePageSeo } from "@/lib/seo";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
@@ -52,20 +53,10 @@ const Blog = () => {
     null,
   );
 
-  useEffect(() => {
-    // Update canonical URL to point to the Blog page
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/blog";
-    }
-
-    // Add structured data for rich results
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "blog-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/blog",
+    structuredDataId: "blog-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "Blog",
       name: "Mirabellier Blog",
@@ -75,20 +66,8 @@ const Blog = () => {
         "@type": "Person",
         name: "Mirabellier",
       },
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById("blog-structured-data");
-      if (oldScript) oldScript.remove();
-    };
-  }, []);
+    },
+  });
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {

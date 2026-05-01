@@ -5,6 +5,7 @@ import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
 import { joinApi } from "@/lib/config";
+import { usePageSeo } from "@/lib/seo";
 
 type QuoteEntry = {
   key: string;
@@ -58,18 +59,10 @@ const Quotes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/quotes";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "quotes-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/quotes",
+    structuredDataId: "quotes-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       name: "Mirabellier Quotes",
@@ -82,22 +75,8 @@ const Quotes = () => {
         "Nature Quote of the Day",
         "Funny Quote Of the Day",
       ],
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const restoredCanonical = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (restoredCanonical) {
-        restoredCanonical.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById("quotes-structured-data");
-      if (oldScript) {
-        oldScript.remove();
-      }
-    };
-  }, []);
+    },
+  });
 
   const loadQuotes = async (recordedDate: string, signal?: AbortSignal) => {
     const searchParams = new URLSearchParams({

@@ -14,6 +14,7 @@ import kannaShy from "@/assets/anime/kanna-shy.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import { resolveAsset } from "@/lib/blog-utils";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
+import { usePageSeo } from "@/lib/seo";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useConfirm } from "@/states/ConfirmContext";
 import {
@@ -87,42 +88,18 @@ const Guestbook = () => {
     boardZoomRef.current = boardZoom;
   }, [boardZoom]);
 
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/guestbook";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "guestbook-board-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/guestbook",
+    structuredDataId: "guestbook-board-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       name: "Mirabellier Guestbook Board",
       description:
         "A draggable board full of pinned guestbook notes from visitors.",
       url: "https://mirabellier.com/guestbook",
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const restoredCanonical = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (restoredCanonical) {
-        restoredCanonical.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById(
-        "guestbook-board-structured-data",
-      );
-      if (oldScript) {
-        oldScript.remove();
-      }
-    };
-  }, []);
+    },
+  });
 
   const loadEntries = useCallback(async () => {
     setLoading(true);

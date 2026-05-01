@@ -16,6 +16,7 @@ import {
   validateTags,
   normalizeTags,
 } from "@/lib/blog-edit-api";
+import { usePageSeo } from "@/lib/seo";
 import "@/styles/blog.css";
 
 const SimpleEditor = lazy(() =>
@@ -49,39 +50,17 @@ const BlogEdit = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    // Update canonical URL to point to the BlogEdit page
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/blog/edit";
-    }
-
-    // Add structured data for rich results
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "blogedit-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/blog/edit",
+    structuredDataId: "blogedit-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
       name: "Create/Edit Blog Post",
       description: "Create or edit a blog post",
       url: "https://mirabellier.com/blog/edit",
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      const canonicalLink = document.querySelector(
-        'link[rel="canonical"]',
-      ) as HTMLLinkElement;
-      if (canonicalLink) {
-        canonicalLink.href = "https://mirabellier.com/";
-      }
-      const oldScript = document.getElementById("blogedit-structured-data");
-      if (oldScript) oldScript.remove();
-    };
-  }, []);
+    },
+  });
 
   useEffect(() => {
     if (!auth?.token) {

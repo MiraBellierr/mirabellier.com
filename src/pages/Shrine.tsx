@@ -11,6 +11,7 @@ import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 import kannaRight from "@/assets/anime/kanna-right.webp";
 import { fetchShrinePages, type ShrinePageRecord } from "@/lib/shrine-api";
+import { usePageSeo } from "@/lib/seo";
 import "@/styles/shrine.css";
 
 const shrineEntries = [
@@ -39,19 +40,10 @@ const shrineEntries = [
 const Shrine = () => {
   const [dynamicEntries, setDynamicEntries] = useState<ShrinePageRecord[]>([]);
 
-  useEffect(() => {
-    const canonicalLink = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement | null;
-
-    if (canonicalLink) {
-      canonicalLink.href = "https://mirabellier.com/shrine";
-    }
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "shrines-structured-data";
-    script.text = JSON.stringify({
+  usePageSeo({
+    canonical: "https://mirabellier.com/shrine",
+    structuredDataId: "shrines-structured-data",
+    structuredData: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       name: "Character Shrines",
@@ -64,13 +56,8 @@ const Shrine = () => {
         "Kanna Kamui",
         "Rossina Wulfperl Luppino",
       ],
-    });
-    document.head.appendChild(script);
-
-    return () => {
-      document.getElementById("shrines-structured-data")?.remove();
-    };
-  }, []);
+    },
+  });
 
   useEffect(() => {
     fetchShrinePages()
