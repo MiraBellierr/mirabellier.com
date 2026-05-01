@@ -111,8 +111,8 @@ export default defineConfig({
     },
     // Minify and optimize
     minify: "esbuild",
-    // Target modern browsers for smaller bundles
-    target: "es2020",
+    // Keep syntax compatible with older iPhone Safari builds used in the wild.
+    target: "es2018",
     cssCodeSplit: true,
     // Stricter warning threshold than default oversized chunk budget.
     chunkSizeWarningLimit: 450,
