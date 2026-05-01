@@ -348,8 +348,8 @@ const BlogPost = () => {
                 width="350"
                 height="350"
                 alt="kanna gif"
-                loading="eager"
-                fetchPriority="high"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           </div>
