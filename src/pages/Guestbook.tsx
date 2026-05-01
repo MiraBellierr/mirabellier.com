@@ -30,10 +30,10 @@ import {
   GUESTBOOK_BOARD_WIDTH,
   GUESTBOOK_NOTE_SIZE,
 } from "@/lib/guestbook-ui";
+import { canModerateGuestbook } from "@/lib/user-permissions";
 import "@/styles/guestbook.css";
 
 const BOARD_INITIAL_SCROLL = { left: 0, top: 0 };
-const OWNER_DISCORD_ID = "548050617889980426";
 const BOARD_ZOOM_MIN = 0.7;
 const BOARD_ZOOM_MAX = 1.8;
 const BOARD_ZOOM_STEP = 0.15;
@@ -274,7 +274,7 @@ const Guestbook = () => {
   };
 
   const boardIsExpanded = isFullscreen || isExpandedFallback;
-  const isAdmin = auth?.user?.discordId === OWNER_DISCORD_ID;
+  const isAdmin = canModerateGuestbook(auth?.user);
   const guestbookLoadErrorMessage = useMemo(
     () => getFriendlyFetchMessage("Guestbook board", loadError),
     [loadError],

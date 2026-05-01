@@ -25,8 +25,8 @@ import {
   formatQuestionHeadingDate,
   formatQuestionRecordedDate,
   getQuestionAnswerDisplayName,
-  QUESTION_OWNER_DISCORD_ID,
 } from "@/lib/question-of-the-day-ui";
+import { canModerateQuestionOfTheDay } from "@/lib/user-permissions";
 import { useConfirm } from "@/states/ConfirmContext";
 
 const QUESTION_DESCRIPTION =
@@ -59,7 +59,7 @@ const QuestionOfTheDay = () => {
   const [guestName, setGuestName] = useState("");
   const [answer, setAnswer] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
-  const isOwner = auth?.user?.discordId === QUESTION_OWNER_DISCORD_ID;
+  const isOwner = canModerateQuestionOfTheDay(auth?.user);
 
   usePageSeo({
     canonical: "https://mirabellier.com/question-of-the-day",

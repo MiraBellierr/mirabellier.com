@@ -5,7 +5,7 @@ import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import { useAuth } from "@/states/AuthContext";
-import { QUESTION_OWNER_DISCORD_ID } from "@/lib/question-of-the-day-ui";
+import { canManageShrines } from "@/lib/user-permissions";
 import {
   createShrinePage,
   fetchShrinePage,
@@ -126,7 +126,7 @@ function toFormState(entry?: ShrinePageRecord): FormState {
 
 const AdminShrines = () => {
   const auth = useAuth();
-  const isOwner = auth.user?.discordId === QUESTION_OWNER_DISCORD_ID;
+  const isOwner = canManageShrines(auth.user);
   const [entries, setEntries] = useState<ShrinePageRecord[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string>("");
   const [form, setForm] = useState<FormState>(toFormState());

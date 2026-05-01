@@ -17,10 +17,8 @@ import {
   type QuestionOfTheDayCurrentPayload,
 } from "@/lib/question-of-the-day-api";
 import { usePageSeo } from "@/lib/seo";
-import {
-  formatQuestionRecordedDate,
-  QUESTION_OWNER_DISCORD_ID,
-} from "@/lib/question-of-the-day-ui";
+import { formatQuestionRecordedDate } from "@/lib/question-of-the-day-ui";
+import { canModerateQuestionOfTheDay } from "@/lib/user-permissions";
 import { useAuth } from "@/states/AuthContext";
 import { useConfirm } from "@/states/ConfirmContext";
 
@@ -104,7 +102,7 @@ const AdminQuestionOfTheDay = () => {
   const [reloadTick, setReloadTick] = useState(0);
   const [queuePage, setQueuePage] = useState(1);
 
-  const isOwner = auth.user?.discordId === QUESTION_OWNER_DISCORD_ID;
+  const isOwner = canModerateQuestionOfTheDay(auth.user);
 
   usePageSeo({
     canonical: "https://mirabellier.com/admin/question-of-the-day",

@@ -14,6 +14,7 @@ import {
   type QuestionOfTheDayQuestion,
 } from "@/lib/question-of-the-day-api";
 import { usePageSeo } from "@/lib/seo";
+import { canAccessAdminPanel } from "@/lib/user-permissions";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
 
 const DeferredAnimatedImage = lazy(
@@ -510,18 +511,16 @@ const Home = () => {
                   </div>
                 </div>
 
-                {auth &&
-                  auth.user &&
-                  (auth.user as any).discordId === "548050617889980426" && (
-                    <div className="text-center">
-                      <Link
-                        to="/admin"
-                        className="inline-flex rounded-full border border-pink-200 bg-white/80 px-4 py-2 text-sm font-semibold text-pink-500 transition hover:bg-pink-50"
-                      >
-                        Open admin
-                      </Link>
-                    </div>
-                  )}
+                {canAccessAdminPanel(auth?.user) ? (
+                  <div className="text-center">
+                    <Link
+                      to="/admin"
+                      className="inline-flex rounded-full border border-pink-200 bg-white/80 px-4 py-2 text-sm font-semibold text-pink-500 transition hover:bg-pink-50"
+                    >
+                      Open admin
+                    </Link>
+                  </div>
+                ) : null}
               </div>
             </div>
           </aside>

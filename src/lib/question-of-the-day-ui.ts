@@ -1,7 +1,5 @@
 import type { QuestionOfTheDayAnswer } from "@/lib/question-of-the-day-api";
 
-export const QUESTION_OWNER_DISCORD_ID = "548050617889980426";
-
 export function formatQuestionRecordedDate(recordedDate: string) {
   if (!recordedDate) {
     return "Unknown day";

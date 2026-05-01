@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { API_BASE } from "@/lib/config";
 import { COOKIE_SESSION_TOKEN_MARKER } from "@/lib/auth-session";
+import type { AuthUserPermissions, AuthUserRole } from "@/lib/user-permissions";
 
 type User = {
   id: string;
@@ -11,6 +12,8 @@ type User = {
   bio?: string | null;
   location?: string | null;
   website?: string | null;
+  roles?: AuthUserRole[];
+  permissions?: AuthUserPermissions;
 };
 
 type AuthContextType = {

@@ -5,7 +5,7 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import kannaPolice from "@/assets/anime/kanna-police.webp";
 import { usePageSeo } from "@/lib/seo";
-import { QUESTION_OWNER_DISCORD_ID } from "@/lib/question-of-the-day-ui";
+import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { useAuth } from "@/states/AuthContext";
 
 function AdminNotice({
@@ -75,7 +75,7 @@ const adminTools = [
 
 const AdminHome = () => {
   const auth = useAuth();
-  const isOwner = auth.user?.discordId === QUESTION_OWNER_DISCORD_ID;
+  const isOwner = canAccessAdminPanel(auth.user);
 
   usePageSeo({
     canonical: "https://mirabellier.com/admin",

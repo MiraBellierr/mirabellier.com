@@ -20,8 +20,8 @@ import {
   formatQuestionAnswerTime,
   formatQuestionRecordedDate,
   getQuestionAnswerDisplayName,
-  QUESTION_OWNER_DISCORD_ID,
 } from "@/lib/question-of-the-day-ui";
+import { canModerateQuestionOfTheDay } from "@/lib/user-permissions";
 import { useConfirm } from "@/states/ConfirmContext";
 
 const QuestionArchiveDay = () => {
@@ -35,7 +35,7 @@ const QuestionArchiveDay = () => {
   const [error, setError] = useState<string | null>(null);
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
-  const isOwner = auth?.user?.discordId === QUESTION_OWNER_DISCORD_ID;
+  const isOwner = canModerateQuestionOfTheDay(auth?.user);
   const archiveDayLoadErrorMessage = useMemo(
     () => getFriendlyFetchMessage("Archived question day", error),
     [error],
