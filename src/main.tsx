@@ -4,6 +4,59 @@ import App from "./App.tsx";
 import { API_BASE } from "./lib/config";
 import "./index.css";
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
+const CHUNK_RELOAD_QUERY = "__chunk_reload";
+const CHUNK_RELOAD_COOLDOWN_MS = 90_000;
+
+function parsePositiveInteger(value: string | null) {
+  if (!value) return 0;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function readChunkReloadGuardFromSession() {
+  try {
+    return parsePositiveInteger(sessionStorage.getItem(CHUNK_RELOAD_GUARD));
+  } catch {
+    return 0;
+  }
+}
+
+function writeChunkReloadGuardToSession(timestamp: number) {
+  try {
+    sessionStorage.setItem(CHUNK_RELOAD_GUARD, String(timestamp));
+  } catch {
+    // Safari can deny storage access in some modes; URL guard still applies.
+  }
+}
+
+function consumeChunkReloadGuardFromUrl() {
+  const url = new URL(window.location.href);
+  const queryTimestamp = parsePositiveInteger(
+    url.searchParams.get(CHUNK_RELOAD_QUERY),
+  );
+  if (!queryTimestamp) return;
+
+  writeChunkReloadGuardToSession(queryTimestamp);
+  url.searchParams.delete(CHUNK_RELOAD_QUERY);
+
+  try {
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  } catch {
+    // Ignore history API failures and keep app boot resilient.
+  }
+}
+
+function readLastChunkReloadTimestamp() {
+  const sessionTimestamp = readChunkReloadGuardFromSession();
+  const urlTimestamp = parsePositiveInteger(
+    new URL(window.location.href).searchParams.get(CHUNK_RELOAD_QUERY),
+  );
+  return Math.max(sessionTimestamp, urlTimestamp);
+}
 
 function preconnectOrigin(url: string) {
   if (typeof document === "undefined") {
@@ -37,17 +90,22 @@ function preconnectOrigin(url: string) {
 }
 
 function reloadForUpdatedBuild() {
-  if (sessionStorage.getItem(CHUNK_RELOAD_GUARD) === "1") {
+  const now = Date.now();
+  const lastReloadTimestamp = readLastChunkReloadTimestamp();
+  if (
+    lastReloadTimestamp > 0 &&
+    now - lastReloadTimestamp < CHUNK_RELOAD_COOLDOWN_MS
+  ) {
     return;
   }
 
-  sessionStorage.setItem(CHUNK_RELOAD_GUARD, "1");
-  window.location.reload();
+  writeChunkReloadGuardToSession(now);
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set(CHUNK_RELOAD_QUERY, String(now));
+  window.location.replace(nextUrl.toString());
 }
 
-window.addEventListener("pageshow", () => {
-  sessionStorage.removeItem(CHUNK_RELOAD_GUARD);
-});
+consumeChunkReloadGuardFromUrl();
 
 window.addEventListener("vite:preloadError", (event) => {
   event.preventDefault();
