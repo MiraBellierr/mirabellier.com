@@ -575,10 +575,10 @@ h6 {
 }
 
 :root {
-  --page-bg: url("/light.webp");
+  --page-bg: url("/light.webp?v=20260502");
 }
 .dark {
-  --page-bg: url("/dark.webp");
+  --page-bg: url("/dark.webp?v=20260502");
 }
 
 /* Keep the page background cheap to paint while preserving cover behavior. */

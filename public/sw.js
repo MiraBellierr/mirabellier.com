@@ -1,4 +1,4 @@
-const STATIC_CHUNK_CACHE = "mirabellier-static-chunks-v1";
+const STATIC_CHUNK_CACHE = "mirabellier-static-chunks-v20260502";
 
 function isCacheableStaticChunk(request) {
   if (request.method !== "GET") {
