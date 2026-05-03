@@ -20,7 +20,7 @@
             isHomePath ? "home" : "route",
           );
         } catch {
-          document.documentElement.setAttribute("data-spa-boot-route", "home");
+          document.documentElement.setAttribute("data-spa-boot-route", "route");
         }
       })();
     </script>
@@ -89,7 +89,7 @@
       html[data-spa-boot-route="route"] [data-boot-shell="route"] {
         display: block;
       }
-      html:not([data-spa-boot-route]) [data-boot-shell="home"] {
+      html:not([data-spa-boot-route]) [data-boot-shell="route"] {
         display: block;
       }
       .boot-shell {
