@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mirabellier ⭐ — Cute thoughts & cozy corners</title>
 
+    <script>
+      (function () {
+        try {
+          var pathname = window.location.pathname || "/";
+          var normalizedPath = pathname.replace(/\/+$/, "");
+          if (!normalizedPath) {
+            normalizedPath = "/";
+          }
+
+          var isHomePath = normalizedPath === "/" || normalizedPath === "/home";
+          document.documentElement.setAttribute(
+            "data-spa-boot-route",
+            isHomePath ? "home" : "route",
+          );
+        } catch {
+          document.documentElement.setAttribute("data-spa-boot-route", "home");
+        }
+      })();
+    </script>
+
     <link
       rel="preload"
       as="font"
@@ -62,6 +82,16 @@
         display: flex;
         flex-direction: column;
       }
+      [data-boot-shell] {
+        display: none;
+      }
+      html[data-spa-boot-route="home"] [data-boot-shell="home"],
+      html[data-spa-boot-route="route"] [data-boot-shell="route"] {
+        display: block;
+      }
+      html:not([data-spa-boot-route]) [data-boot-shell="home"] {
+        display: block;
+      }
       .boot-shell {
         min-height: 100vh;
         background:
@@ -82,6 +112,13 @@
         margin: 0 auto;
         width: min(100%, 80rem);
         padding: 1rem;
+      }
+      .boot-shell__body--route {
+        width: min(100%, 44rem);
+        min-height: calc(100vh - 6rem);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .boot-shell__layout {
         display: grid;
@@ -137,6 +174,9 @@
         font-size: 1rem;
         line-height: 1.7;
         margin: 0.85rem 0 0;
+      }
+      .boot-shell__copy--muted {
+        color: #1e40af;
       }
       .boot-shell__poster {
         display: block;
@@ -272,7 +312,7 @@
   </head>
   <body>
     <div id="root">
-      <div class="boot-shell">
+      <div class="boot-shell" data-boot-shell="home">
         <header class="boot-shell__header">Welcome to my website</header>
         <div class="boot-shell__body">
           <div class="boot-shell__layout">
@@ -299,6 +339,18 @@
               />
             </div>
           </div>
+        </div>
+      </div>
+      <div class="boot-shell" data-boot-shell="route">
+        <header class="boot-shell__header">Loading page...</header>
+        <div class="boot-shell__body boot-shell__body--route">
+          <main class="boot-shell__card">
+            <p class="boot-shell__eyebrow">preparing this route</p>
+            <h1 class="boot-shell__title">Mirabellier</h1>
+            <p class="boot-shell__copy boot-shell__copy--muted">
+              Taking you to your page now.
+            </p>
+          </main>
         </div>
       </div>
     </div>

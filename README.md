@@ -3,37 +3,52 @@
 
 This is the frontend for my little corner of the web.
 
-It is a cute React + TypeScript site where I share blog posts, daily quotes, profile pages, anime updates, a draggable guestbook board, and other cozy internet things. The goal is simple: make the site feel soft and personal without turning the code into a mess.
+It is a cozy React + TypeScript app where I share blog posts, shrines, anime updates, question-of-the-day prompts, a draggable guestbook board, and other soft internet things.
 
 ## Hiya!!
 
-If you are reading this repo, welcome. This part of the project is the part people actually see. It handles the pages, the styling, the blog UI, the editor screen, the profile pages, the little decorative details, and all the cute presentation stuff that makes the site feel like mine.
+If you are peeking around this repo, welcome welcome. This part is the one people actually see: pages, styling, route flow, cute details, and all the UI bits that make the site feel personal.
+
+## What this frontend does
+
+- Renders all public and logged-in pages for `mirabellier.com`
+- Calls the backend API for blog, profile, guestbook, anime, and quote/question data
+- Handles auth-related routes like login and callback flow
+- Includes rich blog editing with Tiptap
+- Ships the production static build for deployment
 
 ## What lives here
 
-- A home page and about page with a personal, handmade feel
-- A blog list and blog post pages
-- A guestbook board and a guestbook signing page
-- A Tiptap editor UI for writing posts
-- Login, settings, and profile screens
-- A daily quotes page
-- An anime list and admin page
-- Shared layout pieces like the header, footer, navigation, and cards
+- Home/about/projects pages with a handmade personal style
+- Blog list, blog post, and blog editor screens
+- Character shrine routes (including dynamic shrine entries)
+- Guestbook board and guestbook signing page
+- Question of the Day page plus archive pages
+- Quotes page and anime page
+- Arena pages (fight, shop, crafting, leaderboard, collection)
+- Admin pages for question-of-the-day and shrine management
+- Shared layout pieces, context providers, hooks, and reusable components
 
 ## Tiny project tour
 
 ```text
 .
 |- src/
-|  |- pages/         Route pages like Home, Blog, Guestbook, Quotes
-|  |- parts/         Shared layout pieces like Header and Footer
-|  |- components/    Reusable UI and Tiptap pieces
+|  |- assets/        Images, icons, and frontend assets
+|  |- components/    Reusable UI + Tiptap components
+|  |- database/      Frontend-side data helpers/constants
 |  |- hooks/         React hooks
-|  |- lib/           Utilities and API helpers
-|  `- states/        React context providers
+|  |- lib/           API config and utility helpers
+|  |- pages/         Route pages
+|  |- parts/         Layout/chrome pieces
+|  |- states/        Context providers (auth, cursor, etc.)
+|  |- styles/        Extra style modules
+|  |- App.tsx        Route tree
+|  `- main.tsx       App bootstrap
 |- public/           Static public files
-|- index.html        Vite entry HTML
-`- package.json      Frontend scripts
+|- index.html        Vite HTML entry
+|- vite.config.ts    Vite config
+`- package.json      Frontend scripts and deps
 ```
 
 ## The stack
@@ -42,7 +57,7 @@ If you are reading this repo, welcome. This part of the project is the part peop
 - TypeScript
 - Vite
 - Tailwind CSS
-- `react-router-dom`
+- React Router
 - Tiptap
 
 ## Running it locally
@@ -55,12 +70,14 @@ npm install
 
 ### 2. Create `.env`
 
-Use `.env.example` as your starting point.
+Copy `.env.example` to `.env`, then set values for your environment.
 
 ```env
-VITE_API_BASE=http://localhost:3000/v1
-WEBSITE_BASE=http://localhost:5173
+VITE_API_BASE=https://api.mirabellier.com/v1
+WEBSITE_BASE=https://mirabellier.com
 ```
+
+For local backend development, `VITE_API_BASE` is usually something like `http://localhost:3000/v1`.
 
 ### 3. Start the frontend
 
@@ -68,57 +85,67 @@ WEBSITE_BASE=http://localhost:5173
 npm run dev
 ```
 
-The app will open at `http://localhost:5173`.
+The app runs at `http://localhost:5173` by default.
 
-This frontend expects an API at `VITE_API_BASE`. If your backend uses a different local port, change that value to match. The matching API has its own guide in [mirabellier-backend/README.md](./mirabellier-backend/README.md).
+This frontend expects a working API at `VITE_API_BASE`. Backend setup lives in [mirabellier-backend/README.md](./mirabellier-backend/README.md).
 
 ## Useful scripts
 
-- `npm run dev` - start the frontend dev server
-- `npm run build` - type-check and build the app
-- `npm run preview` - preview the production build
+- `npm run dev` - start Vite dev server
+- `npm run build` - run TypeScript build + production Vite build
+- `npm run preview` - preview the production build locally
 - `npm run lint` - run ESLint
-- `npm run generate:sitemap` - regenerate sitemap data from the current content
-- `npm run predeploy` - generate sitemap data and build
-- `npm run deploy` - deploy the built frontend
+- `npm run backend:dev` - run backend app entry from repo root
+- `npm run generate:sitemap` - regenerate sitemap data
+- `npm run predeploy` - generate sitemap and build
+- `npm run deploy` - deploy `dist/` with `gh-pages`
+- `npm run indexnow:submit-all` - submit all sitemap URLs to IndexNow
 
-## A few nice details
-
-- Non-critical pages are lazy-loaded to keep the first load lighter
-- Background images are preloaded for a nicer first paint
-- The site supports dark mode
-- There is a custom cursor system
-- The blog editor uses Tiptap instead of a plain textarea
-- Blog post likes work even if the visitor is not logged in
-- The guestbook board supports dragging, board-only zoom, and synced note positions
-- The overall UI is meant to feel more like a personal homepage than a generic product site
-
-## Main pages
+## Main route map
 
 - `/` - home page
+- `/home` - alias redirect to `/`
 - `/about` - about page
+- `/projects` - projects page
+- `/anime` - anime page
+- `/arena` - arena home
+- `/arena/fight` - arena fight page
+- `/arena/shop` - arena shop page
+- `/arena/crafting` - arena crafting page
+- `/arena/leaderboard` - arena leaderboard page
+- `/arena/collection` - arena collection page
+- `/shrine` - shrine hub
+- `/shrine/kanna` - Kanna shrine page
+- `/shrine/rossina` - Rossina shrine page
+- `/shrine/:slug` - dynamic shrine entry page
+- `/quotes` - quotes page
+- `/question-of-the-day` - question of the day page
+- `/question-of-the-day/archive` - question archive list
+- `/question-of-the-day/archive/:recordedDate` - archive day detail
 - `/guestbook` - draggable guestbook board
 - `/guestbook/sign` - guestbook signing page
-- `/blog` - blog listing
+- `/blog` - blog list
 - `/blog/:slug` - single blog post
-- `/blog/edit` - editor page
-- `/quotes` - daily quotes page
+- `/blog/edit` - blog editor page
+- `/admin` - admin home
+- `/admin/question-of-the-day` - admin question management
+- `/admin/shrines` - admin shrine management
+- `/admin/shrines/preview` - shrine preview page
 - `/login` - login page
-- `/auth/callback` - Discord login callback page
+- `/auth/callback` - auth callback page
 - `/settings` - account settings
-- `/profile` - your own profile page when logged in
-- `/profile/:username` - public profile page
+- `/profile` - your profile page when logged in
+- `/profile/:username` - public profile page by username
 
 ## If something feels broken
 
-- Make sure `VITE_API_BASE` points at a running API
-- If blog data, guestbook notes, or quotes are missing, the frontend is probably not reaching the backend
-- If login does not work, check the backend auth setup before changing frontend code
-- If styling looks odd, make sure the Vite dev server actually finished rebuilding
-- If the guestbook board feels strange after a layout change, check the board CSS and the API response shape together
+- Check `.env` first, especially `VITE_API_BASE`
+- Make sure the backend is actually running and reachable
+- If auth fails, check backend Discord/OAuth settings before changing frontend logic
+- If routes load blank after deploy, rebuild and verify static asset paths
+- If styling looks strange, restart `npm run dev` so Vite can rebuild cleanly
 
 ## Why this repo exists
 
-This frontend is where I try to make code feel warm. I wanted pages that feel cute, but still have enough structure to grow properly as the site gets bigger.
-
-If you are reading through the code, that is the main idea behind it: playful on the surface, practical underneath.
+This frontend is where I try to make code feel warm.  
+Cute on the surface, practical underneath, and comfy to keep growing over time.
