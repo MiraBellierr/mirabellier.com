@@ -35,6 +35,26 @@ function formatIvBlock(stats: { power: number; guard: number; speed: number; luc
   return `P ${stats.power} | G ${stats.guard} | S ${stats.speed} | L ${stats.luck}`;
 }
 
+type DmgFloater = { key: number; value: number; crit: boolean; x: number; y: number };
+
+function HpBar({ current, max, label }: { current: number; max: number; label: string }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+  const color = pct > 60 ? "bg-emerald-500" : pct > 30 ? "bg-amber-400" : "bg-red-500";
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-blue-500 mb-1">{label}</p>
+      <div className="h-5 w-full rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ease-out ${color}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="text-xs text-slate-600 mt-0.5">{current} / {max}</p>
+    </div>
+  );
+}
+
 const ArenaFight = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
@@ -46,6 +66,38 @@ const ArenaFight = () => {
   const [playbackDone, setPlaybackDone] = useState(true);
   const [speedMode, setSpeedMode] = useState<FightSpeedMode>("real_time");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [floaters, setFloaters] = useState<DmgFloater[]>([]);
+  const [playerFallen, setPlayerFallen] = useState(false);
+  const [opponentFallen, setOpponentFallen] = useState(false);
+  const playerCardRef = useRef<HTMLDivElement | null>(null);
+  const opponentCardRef = useRef<HTMLDivElement | null>(null);
+  const floaterKey = useRef(0);
+
+  const shakeCard = (ref: React.RefObject<HTMLDivElement | null>, hard: boolean) => {
+    const el = ref.current;
+    if (!el) return;
+    const keyframes = hard
+      ? [
+          { transform: "translateX(0) rotate(0deg)" },
+          { transform: "translateX(-8px) rotate(-2deg)", offset: 0.1 },
+          { transform: "translateX(8px) rotate(2deg)", offset: 0.25 },
+          { transform: "translateX(-6px) rotate(-1deg)", offset: 0.4 },
+          { transform: "translateX(6px) rotate(1deg)", offset: 0.55 },
+          { transform: "translateX(-3px) rotate(0deg)", offset: 0.7 },
+          { transform: "translateX(3px) rotate(0deg)", offset: 0.85 },
+          { transform: "translateX(0) rotate(0deg)" },
+        ]
+      : [
+          { transform: "translateX(0)" },
+          { transform: "translateX(-5px)", offset: 0.15 },
+          { transform: "translateX(5px)", offset: 0.3 },
+          { transform: "translateX(-3px)", offset: 0.45 },
+          { transform: "translateX(3px)", offset: 0.6 },
+          { transform: "translateX(-1px)", offset: 0.75 },
+          { transform: "translateX(0)" },
+        ];
+    el.animate(keyframes, { duration: hard ? 600 : 450, easing: "ease-out" });
+  };
   const playbackTimerRef = useRef<number | null>(null);
   const consoleRef = useRef<HTMLDivElement | null>(null);
 
@@ -100,6 +152,74 @@ const ArenaFight = () => {
       clearPlayback();
     };
   }, []);
+
+  // Trigger card fall on defeat
+  useEffect(() => {
+    if (!playbackDone || !fight) return;
+    const playerLost = fight.battle.finalHp.player <= 0;
+    const opponentLost = fight.battle.finalHp.opponent <= 0;
+    if (playerLost) setPlayerFallen(true);
+    if (opponentLost) setOpponentFallen(true);
+  }, [playbackDone, fight]);
+
+  // Reset fall on new fight
+  useEffect(() => {
+    if (!fight) return;
+    setPlayerFallen(false);
+    setOpponentFallen(false);
+  }, [fight]);
+
+  // Spawn floaters + shakes synced to console playback events
+  const lastPlayedIdx = useRef(-1);
+  useEffect(() => {
+    if (!fight || visibleConsole.length === 0) return;
+    const rounds = fight.rounds || [];
+    if (rounds.length === 0) return;
+
+    // Only process rounds that just appeared in the console
+    for (let i = lastPlayedIdx.current + 1; i < rounds.length && i < visibleConsole.length; i++) {
+      const r = rounds[i];
+      const attacker = String(r.attacker || "");
+      const isPlayerDefending = attacker === "opponent";
+
+      if (r.avoided) {
+        // Miss floater on the defender's side
+        const key = floaterKey.current++;
+        const mx = isPlayerDefending ? 8 + Math.random() * 28 : 64 + Math.random() * 28;
+        setFloaters((prev) => [...prev, { key, value: 0, crit: false, x: mx, y: 20 + Math.random() * 40 }]);
+        setTimeout(() => setFloaters((prev) => prev.filter((f) => f.key !== key)), 1400);
+        lastPlayedIdx.current = i;
+        continue;
+      }
+
+      const dmg = Number(r.damage) || 0;
+      if (dmg <= 0) { lastPlayedIdx.current = i; continue; }
+
+      const isCrit = Boolean(r.critical);
+
+      // Damage floater on defender's side
+      const key = floaterKey.current++;
+      const fx = isPlayerDefending ? 8 + Math.random() * 28 : 64 + Math.random() * 28;
+      setFloaters((prev) => [...prev, { key, value: dmg, crit: isCrit, x: fx, y: 20 + Math.random() * 40 }]);
+      setTimeout(() => setFloaters((prev) => prev.filter((f) => f.key !== key)), 1800);
+
+      // Shake
+      if (attacker === "player") {
+        shakeCard(opponentCardRef, isCrit);
+      } else if (attacker === "opponent") {
+        shakeCard(playerCardRef, isCrit);
+      }
+
+      lastPlayedIdx.current = i;
+    }
+  }, [visibleConsole, fight]);
+
+  // Reset on new fight
+  useEffect(() => {
+    if (!fight) return;
+    setFloaters([]);
+    lastPlayedIdx.current = -1;
+  }, [fight]);
 
   useEffect(() => {
     if (!consoleRef.current) return;
@@ -222,77 +342,124 @@ const ArenaFight = () => {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                    <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                      <p className="font-semibold text-blue-700">Your Card</p>
-                      <div className="mt-2 flex items-start gap-3">
-                        {profile?.selectedCard ? (
-                          <ArenaPortraitCard
-                            card={profile.selectedCard}
-                            level={profile.level}
-                            size="compact"
-                            showIvLine={false}
-                          />
-                        ) : null}
-                        <div>
-                          <p className="text-sm text-slate-700">{profile?.selectedCard?.title}</p>
-                          <p className="text-xs text-slate-600">
-                            {profile?.selectedCard ? formatIvBlock(profile.selectedCard.iv) : ""}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                      <p className="font-semibold text-blue-700">Opponent&apos;s Card</p>
-                      {fight?.opponent?.selectedCard ? (
-                        <div className="mt-2 flex items-start gap-3">
-                          <ArenaPortraitCard
-                            card={fight.opponent.selectedCard}
-                            level={fight.opponent.level}
-                            size="compact"
-                            showIvLine={false}
-                          />
-                          <div>
-                            <p className="text-sm text-slate-700">{fight.opponent.selectedCard.title}</p>
-                            <p className="text-xs text-slate-600">
-                              {formatIvBlock(fight.opponent.selectedCard.iv)}
-                            </p>
+                <div className="space-y-5 max-w-lg mx-auto">
+                  {/* Card vs Card display */}
+                  <div className="relative">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                      {/* Player card */}
+                      <div className="text-center">
+                        <div ref={playerCardRef} className={playerFallen ? "card-fall-off" : ""}>
+                          <div className="mx-auto inline-block">
+                            {profile?.selectedCard ? (
+                              <ArenaPortraitCard card={profile.selectedCard} level={profile.level} size="compact" showIvLine={false} />
+                            ) : null}
                           </div>
                         </div>
-                      ) : (
-                        <p className="mt-2 text-xs text-slate-600">
-                          Fight to reveal opponent card.
-                        </p>
-                      )}
+                        <p className="text-xs font-bold text-slate-700 mt-2 truncate">{profile?.selectedCard?.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{profile?.selectedCard ? formatIvBlock(profile.selectedCard.iv) : ""}</p>
+                      </div>
+
+                      {/* VS */}
+                      <span className="text-2xl font-black text-pink-400 select-none shrink-0 self-center">VS</span>
+
+                      {/* Opponent card */}
+                      <div className="text-center">
+                        <div ref={opponentCardRef} className={opponentFallen ? "card-fall-off" : ""}>
+                          <div className="mx-auto inline-block">
+                            {fight?.opponent?.selectedCard ? (
+                              <ArenaPortraitCard card={fight.opponent.selectedCard} level={fight.opponent.level} size="compact" showIvLine={false} />
+                            ) : (
+                              <div className="mx-auto h-[140px] w-[100px] rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center">
+                                <span className="text-sm text-slate-400 font-bold">?</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {fight?.opponent?.selectedCard ? (
+                          <>
+                            <p className="text-xs font-bold text-slate-700 mt-2 truncate">{fight.opponent.selectedCard.title}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{formatIvBlock(fight.opponent.selectedCard.iv)}</p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-slate-400 mt-2">Fight to reveal</p>
+                        )}
+                        {fight?.opponent ? (
+                          <p className="text-xs text-slate-500 mt-0.5">{fight.opponent.displayName}{fight.opponent.isNpc ? " (NPC)" : ""}</p>
+                        ) : null}
+                      </div>
                     </div>
+
+                    {/* Floating damage over cards */}
+                    {floaters.map((f) => (
+                      <span
+                        key={f.key}
+                        className={f.value === 0 ? "dmg-float dmg-float--miss" : f.crit ? "dmg-float dmg-float--crit" : "dmg-float dmg-float--hit"}
+                        style={{ left: `${f.x}%`, top: `${f.y}%` }}
+                      >
+                        {f.value === 0 ? "MISS!" : f.crit ? `CRIT ${f.value}!` : `-${f.value}`}
+                      </span>
+                    ))}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  {/* HP bars — only after fight starts */}
+                  {fight ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <HpBar current={hpSnapshot?.playerHp ?? fight.battle.maxHp.player} max={fight.battle.maxHp.player} label="Your HP" />
+                      <HpBar current={hpSnapshot?.opponentHp ?? fight.battle.maxHp.opponent} max={fight.battle.maxHp.opponent} label="Opponent HP" />
+                    </div>
+                  ) : null}
+
+                  {/* Result summary */}
+                  {playbackDone && fight ? (
+                    <div className={`rounded-lg p-3 text-center text-sm font-semibold ${fight.result === "win" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                      {fight.result === "win" ? "VICTORY!" : "DEFEAT"} — +{fight.rewards.xp} XP · +{fight.rewards.coins} 🪙
+                    </div>
+                  ) : null}
+
+                  {/* Buttons */}
+                  <div className="flex flex-wrap justify-center gap-2">
                     {SPEED_OPTIONS.map((option) => (
                       <button
                         key={option.id}
                         type="button"
                         onClick={() => setSpeedMode(option.id)}
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        className={`rounded-full px-3 py-1 text-xs font-bold transition ${
                           option.id === speedMode
                             ? "bg-pink-500 text-white"
-                            : "bg-blue-100 text-blue-700"
+                            : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                         }`}
                       >
                         {option.label}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => void handleFight()}
+                      disabled={fighting || !playbackDone}
+                      className="rounded-full bg-pink-500 px-6 py-2 text-sm font-bold text-white transition hover:bg-pink-600 disabled:opacity-60"
+                    >
+                      {fighting ? "fighting..." : !playbackDone ? "wait..." : "fight!"}
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => void handleFight()}
-                    disabled={fighting || !playbackDone}
-                    className="rounded-full bg-pink-500 px-6 py-2 text-sm font-bold text-white transition hover:bg-pink-600 disabled:opacity-60"
-                  >
-                    {fighting ? "fighting..." : !playbackDone ? "wait for console..." : "fight"}
-                  </button>
+                  {/* Battle console — last 3 events */}
+                  {fight ? (
+                    <div>
+                      <p className="text-xs font-semibold text-blue-500 mb-1">console</p>
+                      <div
+                        ref={consoleRef}
+                        className="fight-console rounded-lg border border-slate-300 bg-slate-950 p-2 font-mono text-xs text-green-300"
+                      >
+                        {visibleConsole.length > 0 ? (
+                          visibleConsole.slice(-3).map((entry, index) => (
+                            <p key={`log-${index}`} className="leading-snug">{entry.line}</p>
+                          ))
+                        ) : (
+                          <p className="leading-snug">waiting for battle...</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -303,55 +470,6 @@ const ArenaFight = () => {
               ) : null}
             </section>
 
-            {fight ? (
-              <section className="card-border space-y-3 bg-white/60 p-4">
-                <h3 className="text-xl font-bold text-blue-700">battle console</h3>
-                {playbackDone ? (
-                  <p className="text-sm font-semibold text-slate-700">
-                    You {fight.result} | +{fight.rewards.xp} EXP | +{fight.rewards.coins} coins
-                  </p>
-                ) : (
-                  <p className="text-sm font-semibold text-slate-700">
-                    Battle in progress...
-                  </p>
-                )}
-                <p className="text-sm text-slate-700">
-                  Opponent: {fight.opponent.displayName} {fight.opponent.isNpc ? "(NPC)" : ""}
-                </p>
-
-                <div className="grid grid-cols-1 gap-2 rounded-xl border border-blue-200 bg-white/70 p-3 md:grid-cols-2">
-                  <div>
-                    <p className="text-xs text-blue-500">Your HP</p>
-                    <p className="font-semibold text-blue-700">
-                      {hpSnapshot?.playerHp ?? fight.battle.maxHp.player} / {fight.battle.maxHp.player}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-blue-500">Opponent HP</p>
-                    <p className="font-semibold text-blue-700">
-                      {hpSnapshot?.opponentHp ?? fight.battle.maxHp.opponent} / {fight.battle.maxHp.opponent}
-                    </p>
-                  </div>
-                </div>
-
-                {!playbackDone ? (
-                  <p className="text-xs text-blue-600">battle playback running...</p>
-                ) : null}
-
-                <div
-                  ref={consoleRef}
-                  className="max-h-72 overflow-y-auto rounded-xl border border-slate-300 bg-slate-950 p-3 font-mono text-xs text-green-300"
-                >
-                  {visibleConsole.length > 0 ? (
-                    visibleConsole.map((entry, index) => (
-                      <p key={`battle-log-${index}`}>{entry.line}</p>
-                    ))
-                  ) : (
-                    <p>no battle events yet</p>
-                  )}
-                </div>
-              </section>
-            ) : null}
             <Divider />
           </main>
 
