@@ -362,24 +362,24 @@ export class ArenaApiError extends Error {
 let jikanHealthRequest: Promise<void> | null = null;
 
 async function checkJikanHealth(): Promise<void> {
-  // try {
-  //   const response = await fetch("https://api.jikan.moe/v4/health", {
-  //     cache: "no-store",
-  //   });
+  try {
+    const response = await fetch("https://api.jikan.moe/v4/health", {
+      cache: "no-store",
+    });
 
-  //   if (!response.ok) {
-  //     throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
-  //       status: response.status,
-  //       code: "JIKAN_MAINTENANCE",
-  //     });
-  //   }
-  // } catch (error) {
-  //   if (error instanceof ArenaApiError) throw error;
-  //   throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
-  //     status: 503,
-  //     code: "JIKAN_MAINTENANCE",
-  //   });
-  // }
+    if (!response.ok) {
+      throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
+        status: response.status,
+        code: "JIKAN_MAINTENANCE",
+      });
+    }
+  } catch (error) {
+    if (error instanceof ArenaApiError) throw error;
+    throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
+      status: 503,
+      code: "JIKAN_MAINTENANCE",
+    });
+  }
 }
 
 async function ensureJikanHealth(): Promise<void> {
