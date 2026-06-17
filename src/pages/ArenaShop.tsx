@@ -19,7 +19,6 @@ import {
   ArenaItemSprite,
   describeConsumableEffect,
   describePassive,
-  formatActiveEffects,
   formatStats,
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
@@ -115,8 +114,6 @@ const ArenaShop = () => {
     }
   };
 
-  const activeEffects = shop ? formatActiveEffects(shop) : [];
-  const activePassives = shop?.profile.activePassives || [];
   const materialEntries = Object.entries(shop?.profile.materialInventory || {}).filter(
     ([, quantity]) => Number(quantity || 0) > 0,
   );

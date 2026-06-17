@@ -25,10 +25,6 @@ function normalizeArenaError(error: unknown) {
   return "Arena request failed.";
 }
 
-function formatIvBlock(stats: { power: number; guard: number; speed: number; luck: number }) {
-  return `P ${stats.power} | G ${stats.guard} | S ${stats.speed} | L ${stats.luck}`;
-}
-
 type DmgFloater = { key: number; value: number; crit: boolean; x: number; y: number };
 
 function HpBar({ current, max, label }: { current: number; max: number; label: string }) {

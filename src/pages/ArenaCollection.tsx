@@ -5,7 +5,6 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
-import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
@@ -194,7 +193,7 @@ const ArenaCollection = () => {
                     </p>
                   ) : null}
                   <ol className="space-y-1">
-                    {paginatedCards.map((card, index) => {
+                    {paginatedCards.map((card) => {
                       const isSelected =
                         collection.profile.selectedCard?.cardInstanceId === card.cardInstanceId;
                       return (

@@ -146,7 +146,7 @@ const ArenaLeaderboard = () => {
                   {board.entries.length === 0 ? (
                     <p className="text-sm text-blue-500">No entries yet.</p>
                   ) : (
-                    board.entries.map((entry, index) => (
+                    board.entries.map((entry) => (
                       <li
                         key={`${activeMetric}-${entry.user.id}`}
                         className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
