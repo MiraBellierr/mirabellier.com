@@ -896,6 +896,515 @@ h6 {
   }
 }
 
+.arena-draw-duel {
+  position: relative;
+}
+
+.arena-duel-panel {
+  border: 10px solid transparent;
+  background-color: rgba(255, 255, 255, 0.94);
+  background-clip: padding-box;
+  border-image-source: url("/border.png");
+  border-image-slice: 10;
+  border-image-repeat: round;
+  border-image-outset: 0;
+  border-image-width: 10px;
+}
+
+.dark .arena-duel-panel {
+  background-color: rgba(40, 35, 55, 0.94);
+  border-image-source: url("/border-dark.png");
+}
+
+.dark .arena-duel-panel :is(h2, p, span, b, div) {
+  color: rgb(233, 213, 255);
+}
+
+.dark .arena-duel-panel .arena-portrait-card__name { color: #f9f4e8; }
+.dark .arena-duel-panel .arena-portrait-card__badge { color: #24180d; }
+.dark .arena-duel-panel .arena-portrait-card__level { color: #f4e7cb; }
+.dark .arena-duel-panel .arena-portrait-card__stars { color: var(--arena-card-accent); }
+.dark .arena-duel-panel .arena-portrait-card__iv { color: rgba(248, 238, 212, 0.86); }
+
+.dark .arena-duel-panel .text-amber-700 {
+  color: rgb(253, 230, 138) !important;
+}
+
+.dark .card-border .arena-redraw-button {
+  color: rgb(196, 160, 255) !important;
+}
+
+.dark .card-border .arena-redraw-button:hover:not(:disabled) {
+  color: rgb(216, 190, 255) !important;
+}
+
+.dark .arena-redraw-button {
+  color: rgb(196, 160, 255) !important;
+}
+
+.dark .arena-redraw-button:hover:not(:disabled) {
+  color: rgb(216, 190, 255) !important;
+}
+
+.dark .arena-duel-panel .arena-redraw-button {
+  color: rgb(196, 160, 255) !important;
+}
+
+.dark .arena-duel-panel .arena-redraw-button:hover:not(:disabled) {
+  color: rgb(216, 190, 255) !important;
+}
+
+.arena-duel-title {
+  color: #2563d4;
+  font-size: clamp(2rem, 5.6vw, 3.25rem);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow:
+    0 4px 0 #ffffff,
+    0 7px 0 rgba(147, 197, 253, 0.72),
+    0 12px 22px rgba(29, 78, 216, 0.22);
+}
+
+.dark .arena-duel-title {
+  color: rgb(196, 160, 255);
+  text-shadow:
+    0 4px 0 rgba(40, 35, 55, 0.94),
+    0 7px 0 rgba(160, 120, 240, 0.5),
+    0 12px 22px rgba(180, 140, 255, 0.22);
+}
+
+.dark .arena-duel-panel [class*="border-sky"] {
+  border-color: rgba(180, 160, 220, 0.25) !important;
+}
+
+.arena-duel-card {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 18px 26px rgba(29, 78, 216, 0.15),
+    0 10px 18px rgba(85, 58, 35, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform-origin: center;
+  transform-style: preserve-3d;
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
+  will-change: transform;
+}
+
+.arena-card-portrait-slot {
+  perspective: 800px;
+}
+
+.arena-duel-card:hover {
+  animation: arena-card-inspect 2.4s ease-in-out infinite;
+  box-shadow:
+    0 26px 36px rgba(29, 78, 216, 0.18),
+    0 16px 24px rgba(85, 58, 35, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.arena-duel-card .arena-portrait-card__inner {
+  border-radius: 14px;
+}
+
+.arena-duel-card .arena-portrait-card__inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      transparent 28%,
+      rgba(255, 255, 255, 0.34) 38%,
+      rgba(255, 255, 255, 0.1) 47%,
+      transparent 58%,
+      transparent 100%
+    ),
+    radial-gradient(circle at 24% 8%, rgba(255, 255, 255, 0.32), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 34%);
+  mix-blend-mode: screen;
+  opacity: 0.76;
+  transform: translate3d(-8%, -4%, 0);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.arena-duel-card:hover .arena-portrait-card__inner::after {
+  animation: arena-card-gloss-sweep 2.4s ease-in-out infinite;
+  opacity: 0.92;
+}
+
+.arena-duel-card .arena-portrait-card__name {
+  font-size: 0.72rem;
+}
+
+.arena-duel-card .arena-portrait-card__badge {
+  min-width: 2rem;
+  height: 1.2rem;
+  font-size: 0.58rem;
+  background: #fff7dc;
+}
+
+.arena-duel-card .arena-portrait-card__level {
+  font-size: 0.58rem;
+}
+
+.arena-duel-card .arena-portrait-card__iv {
+  font-size: 0.51rem;
+}
+
+@keyframes arena-card-inspect {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  }
+  22% {
+    transform: translate3d(3px, -4px, 0) rotateX(5deg) rotateY(-7deg);
+  }
+  48% {
+    transform: translate3d(-3px, -6px, 0) rotateX(-4deg) rotateY(8deg);
+  }
+  74% {
+    transform: translate3d(2px, -3px, 0) rotateX(4deg) rotateY(5deg);
+  }
+}
+
+@keyframes arena-card-gloss-sweep {
+  0%,
+  100% {
+    transform: translate3d(-18%, -8%, 0);
+  }
+  48% {
+    transform: translate3d(14%, 8%, 0);
+  }
+  74% {
+    transform: translate3d(8%, -4%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-duel-card,
+  .arena-duel-card:hover,
+  .arena-duel-card:hover .arena-portrait-card__inner::after {
+    animation: none;
+  }
+}
+
+.arena-empty-card {
+  display: flex;
+  width: 100%;
+  aspect-ratio: 10 / 16;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 2px dashed #bfdbfe;
+  background: linear-gradient(180deg, #f8fbff, #e0f2fe);
+  color: #93c5fd;
+  font-size: 1.1rem;
+  font-weight: 1000;
+  box-shadow: inset 0 0 0 7px rgba(255, 255, 255, 0.75);
+}
+
+.dark .arena-empty-card {
+  border-color: rgba(180, 160, 220, 0.3);
+  background: linear-gradient(180deg, rgba(40, 35, 55, 0.7), rgba(50, 40, 70, 0.7));
+  color: rgb(180, 160, 220);
+  box-shadow: inset 0 0 0 7px rgba(180, 160, 220, 0.1);
+}
+
+.arena-chosen-card-body {
+  display: grid;
+  grid-template-columns: minmax(188px, 205px) minmax(0, 1fr);
+  align-items: stretch;
+  column-gap: 1.15rem;
+}
+
+.arena-card-portrait-slot {
+  width: 100%;
+  min-width: 188px;
+  max-width: 205px;
+  justify-self: center;
+}
+
+.arena-chosen-card-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.arena-chosen-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.arena-card-detail-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.arena-card-detail-list > p {
+  display: flex;
+  align-items: center;
+}
+
+.arena-card-detail-list :is(p, div) {
+  min-width: 0;
+}
+
+.arena-draw-count-row {
+  display: flex;
+  align-items: center;
+}
+
+.arena-redraw-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.arena-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-weight: 1000;
+  color: #1e3a8a;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.72);
+}
+
+.arena-stat-pill b {
+  font-size: 1rem;
+}
+
+.arena-stat-pill--pink {
+  background: #ffe3ef;
+  color: #db2777;
+}
+
+.arena-stat-pill--green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.arena-stat-pill--blue {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.arena-stat-pill--purple {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+.arena-redraw-button {
+  min-height: 1.75rem;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-size: 0.95rem;
+  font-weight: 1000;
+  text-shadow: none;
+  box-shadow: none;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.arena-redraw-button:hover:not(:disabled) {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.arena-redraw-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.arena-summary-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 7rem;
+  border-radius: 18px;
+  padding: 0.85rem;
+  border: 2px solid #bfdbfe;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 10px 24px rgba(89, 143, 193, 0.14);
+}
+
+.arena-summary-card--level {
+  border-color: #93c5fd;
+  background: linear-gradient(135deg, rgba(239, 248, 255, 0.95), rgba(255, 255, 255, 0.9));
+}
+
+.arena-summary-card--coins {
+  border-color: #fde68a;
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.96), rgba(255, 255, 255, 0.9));
+}
+
+.arena-summary-card--draws {
+  border-color: #bbf7d0;
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.96), rgba(255, 255, 255, 0.9));
+}
+
+.arena-summary-icon {
+  display: flex;
+  width: 3.25rem;
+  height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 1.75rem;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 8px 20px rgba(89, 143, 193, 0.16);
+}
+
+.arena-gear-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.55rem;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background: rgba(255, 255, 255, 0.9);
+  color: #172554;
+  font-size: 0.9rem;
+  font-weight: 1000;
+  box-shadow: 0 6px 16px rgba(89, 143, 193, 0.12);
+}
+
+.arena-gear-pill span {
+  font-size: 1.15rem;
+}
+
+.arena-gear-pill--hp {
+  border-color: #fbcfe8;
+  color: #db2777;
+}
+
+.arena-nav-button {
+  display: flex;
+  min-height: 4.4rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 1000;
+  text-align: center;
+  text-shadow: 0 2px 0 rgba(15, 23, 42, 0.24);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.54),
+    0 5px 0 rgba(37, 99, 235, 0.2),
+    0 10px 18px rgba(59, 130, 246, 0.18);
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.arena-nav-button span {
+  font-size: 1.4rem;
+}
+
+.arena-nav-button:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.08);
+}
+
+.arena-nav-button--fight {
+  background: linear-gradient(180deg, #93c5fd, #3b82f6 70%, #2563eb);
+}
+
+.arena-nav-button--shop {
+  background: linear-gradient(180deg, #fda4af, #fb7185 70%, #e11d48);
+}
+
+.arena-nav-button--craft {
+  background: linear-gradient(180deg, #bbf7d0, #4ade80 70%, #22c55e);
+}
+
+.arena-nav-button--board {
+  background: linear-gradient(180deg, #c4b5fd, #8b5cf6 70%, #7c3aed);
+}
+
+.arena-nav-button--collection {
+  background: linear-gradient(180deg, #fed7aa, #fb923c 70%, #f97316);
+}
+
+.arena-duel-maintenance {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 2px solid #bfdbfe;
+  background:
+    radial-gradient(circle at 92% 90%, rgba(147, 197, 253, 0.34) 0 4rem, transparent 4.1rem),
+    linear-gradient(135deg, rgba(239, 248, 255, 0.96), rgba(255, 255, 255, 0.92));
+  padding: 0.85rem 1rem;
+  box-shadow: 0 12px 28px rgba(89, 143, 193, 0.16);
+}
+
+.arena-duel-maintenance__image {
+  width: 5rem;
+  height: 3.6rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e0f2fe;
+}
+
+.arena-duel-maintenance__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 640px) {
+  .arena-chosen-card-body {
+    grid-template-columns: 1fr;
+  }
+
+  .arena-card-portrait-slot {
+    min-width: 0;
+    max-width: 188px;
+  }
+
+  .arena-chosen-card-heading,
+  .arena-redraw-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .arena-redraw-button {
+    font-size: 1rem;
+  }
+
+  .arena-duel-maintenance {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
 /* ========================================
    Arena Fight — HP Bars, Floating Damage, Card Shake
    ======================================== */

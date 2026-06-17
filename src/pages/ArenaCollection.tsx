@@ -6,6 +6,7 @@ import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
+import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -96,6 +97,9 @@ const ArenaCollection = () => {
     }
   };
 
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+
   const normalizedQuery = query.trim().toLowerCase();
   const filteredCards = (collection?.cards || []).filter((card) => {
     if (!normalizedQuery) return true;
@@ -107,6 +111,15 @@ const ArenaCollection = () => {
       ivText.includes(normalizedQuery)
     );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredCards.length / PAGE_SIZE));
+  const paginatedCards = filteredCards.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset to page 1 when search changes
+  const handleSearch = (value: string) => {
+    setQuery(value);
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -121,28 +134,33 @@ const ArenaCollection = () => {
           </div>
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4">
-              <h2 className="text-2xl font-bold text-blue-700">arena collection</h2>
-              <div className="flex flex-wrap gap-2">
-                <Link to="/arena" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  arena home
+              <div className="">
+                <h2 className="text-4xl font-bold text-blue-900">Card Collection {`>^. .^<`}</h2>
+                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                  <span className="text-pink-300">✿</span> Browse your collected character cards!{" "}
+                  <span className="text-pink-300">✿</span>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 pb-3 border-b border-sky-100">
+                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
+                  [ Arena Home ]
                 </Link>
-                <Link to="/arena/fight" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  fight
+                <span className="font-bold">|</span>
+                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
+                  [ Fight ]
                 </Link>
-                <Link to="/arena/shop" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  shop
+                <span className="font-bold">|</span>
+                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
+                  [ Shop ]
                 </Link>
-                <Link
-                  to="/arena/crafting"
-                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  crafting
+                <span className="font-bold">|</span>
+                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
+                  [ Craft ]
                 </Link>
-                <Link
-                  to="/arena/leaderboard"
-                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  leaderboard
+                <span className="font-bold">|</span>
+                <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
+                  [ Leaderboard ]
                 </Link>
               </div>
 
@@ -157,20 +175,17 @@ const ArenaCollection = () => {
                 <p className="text-blue-500">Loading collection...</p>
               ) : collection ? (
                 <div className="space-y-3">
-                  <p className="text-sm text-blue-600">
-                    Cards collected: {collection.cards.length}
-                  </p>
-                  <div>
-                    <label htmlFor="collection-search" className="text-xs font-semibold text-blue-600">
-                      Search cards
-                    </label>
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm text-blue-600">
+                      Cards collected: {collection.cards.length}
+                    </p>
                     <input
                       id="collection-search"
                       type="search"
                       value={query}
-                      onChange={(event) => setQuery(event.target.value)}
+                      onChange={(event) => handleSearch(event.target.value)}
                       placeholder="Search by name, rarity, id, iv..."
-                      className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700"
+                      className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
                     />
                   </div>
                   {normalizedQuery ? (
@@ -178,29 +193,26 @@ const ArenaCollection = () => {
                       Found: {filteredCards.length}
                     </p>
                   ) : null}
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {filteredCards.map((card) => {
+                  <ol className="space-y-1">
+                    {paginatedCards.map((card, index) => {
                       const isSelected =
                         collection.profile.selectedCard?.cardInstanceId === card.cardInstanceId;
                       return (
-                        <article
+                        <li
                           key={card.cardInstanceId || `${card.malId}-${card.drawnAt || "card"}`}
-                          className="rounded-xl border border-blue-200 bg-white/70 p-3"
+                          className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
                         >
-                          <div className="flex gap-3">
-                            <ArenaPortraitCard
-                              card={card}
-                              level={collection.profile.level}
-                              size="compact"
-                              showIvLine={false}
+                          <article className="flex items-start gap-3">
+                            <img
+                              src={card.imageUrl}
+                              alt={card.title}
+                              className="h-16 w-12 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                              loading="lazy"
                             />
-                            <div className="space-y-1">
-                              <p className="font-semibold text-blue-700">{card.title}</p>
-                              <p className="text-xs text-slate-700">Rarity: {card.rarity}</p>
-                              <p className="text-xs text-slate-700">
-                                IV Value: {card.iv.total}
-                              </p>
-                              <p className="text-xs text-slate-700">IV: {formatIvBlock(card.iv)}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-blue-700 text-sm">{card.title}</p>
+                              <p className="text-xs text-slate-700">Rarity: {card.rarity} · IV: {card.iv.total}</p>
+                              <p className="text-xs text-slate-500">{formatIvBlock(card.iv)}</p>
                               {isSelected ? (
                                 <p className="text-xs font-semibold text-pink-600">currently selected</p>
                               ) : (
@@ -215,29 +227,51 @@ const ArenaCollection = () => {
                                     !card.cardInstanceId ||
                                     selectingCardId === card.cardInstanceId
                                   }
-                                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                                  className="arena-redraw-button hover:animate-wiggle text-xs"
                                 >
                                   {selectingCardId === card.cardInstanceId
-                                    ? "choosing..."
-                                    : "choose card"}
+                                    ? "[ choosing... ]"
+                                    : "[ choose card ]"}
                                 </button>
                               )}
                             </div>
-                          </div>
-                        </article>
+                          </article>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ol>
                   {filteredCards.length === 0 ? (
                     <p className="text-sm text-slate-600">No cards match your search.</p>
+                  ) : null}
+
+                  {totalPages > 1 ? (
+                    <div className="flex flex-wrap justify-center gap-2 pt-2 border-t border-sky-100">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="arena-redraw-button hover:animate-wiggle"
+                      >
+                        [ prev ]
+                      </button>
+                      <span className="text-sm text-blue-600 self-center">
+                        Page {page} of {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="arena-redraw-button hover:animate-wiggle"
+                      >
+                        [ next ]
+                      </button>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
 
               {errorMessage ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-                  {errorMessage}
-                </div>
+                <ArenaErrorNotice message={errorMessage} />
               ) : null}
             </section>
             <Divider />

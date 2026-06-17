@@ -1,73 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>http://localhost:5173/</loc>
+    <loc>http://localhost:5173//</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/home</loc>
+    <loc>http://localhost:5173//home</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/about</loc>
+    <loc>http://localhost:5173//about</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/projects</loc>
+    <loc>http://localhost:5173//projects</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/anime</loc>
+    <loc>http://localhost:5173//anime</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/question-of-the-day</loc>
+    <loc>http://localhost:5173//question-of-the-day</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/question-of-the-day/archive</loc>
+    <loc>http://localhost:5173//question-of-the-day/archive</loc>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/quotes</loc>
+    <loc>http://localhost:5173//quotes</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/blog</loc>
+    <loc>http://localhost:5173//blog</loc>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/shrine/kana</loc>
+    <loc>http://localhost:5173//shrine/kana</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>http://localhost:5173/blog/post_1781436632873_1890</loc>
-    <lastmod>2026-06-14T11:30:32Z</lastmod>
-  </url>
-  <url>
-    <loc>http://localhost:5173/blog/1777617712928</loc>
+    <loc>http://localhost:5173//blog/1777617712928</loc>
     <lastmod>2026-05-01T06:41:52.928Z</lastmod>
   </url>
   <url>
-    <loc>http://localhost:5173/blog/1773640150011</loc>
+    <loc>http://localhost:5173//blog/1773640150011</loc>
     <lastmod>2026-03-16T05:49:10.011Z</lastmod>
   </url>
   <url>
-    <loc>http://localhost:5173/blog/1773270866059</loc>
+    <loc>http://localhost:5173//blog/1773270866059</loc>
     <lastmod>2026-05-01T06:10:32.594Z</lastmod>
   </url>
   <url>
-    <loc>http://localhost:5173/blog/1773113305661</loc>
+    <loc>http://localhost:5173//blog/1773113305661</loc>
     <lastmod>2026-03-10T03:28:25.662Z</lastmod>
   </url>
   <url>
-    <loc>http://localhost:5173/blog/1773055680568</loc>
+    <loc>http://localhost:5173//blog/1773055680568</loc>
     <lastmod>2026-03-09T11:28:00.568Z</lastmod>
   </url>
   <url>
-    <loc>http://localhost:5173/blog/1772929487882</loc>
+    <loc>http://localhost:5173//blog/1772929487882</loc>
   </url>
   <url>
-    <loc>http://localhost:5173/blog/1772926606491</loc>
+    <loc>http://localhost:5173//blog/1772926606491</loc>
   </url>
 </urlset>

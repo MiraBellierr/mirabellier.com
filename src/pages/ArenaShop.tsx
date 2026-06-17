@@ -5,6 +5,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
+import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -133,31 +134,33 @@ const ArenaShop = () => {
           </div>
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4">
-              <h2 className="text-2xl font-bold text-blue-700">arena shop</h2>
-              <div className="flex flex-wrap gap-2">
-                <Link to="/arena" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  arena home
+              <div className="">
+                <h2 className="text-4xl font-bold text-blue-900">Material Shop {`>^. .^<`}</h2>
+                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                  <span className="text-pink-300">✿</span> Here are some materials you can use to craft!{" "}
+                  <span className="text-pink-300">✿</span>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 pb-3">
+                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
+                  [ Arena Home ]
                 </Link>
-                <Link to="/arena/fight" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  fight
+                <span className="font-bold">|</span>
+                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
+                  [ Fight ]
                 </Link>
-                <Link
-                  to="/arena/crafting"
-                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  crafting
+                <span className="font-bold">|</span>
+                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
+                  [ Craft ]
                 </Link>
-                <Link
-                  to="/arena/leaderboard"
-                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  leaderboard
+                <span className="font-bold">|</span>
+                <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
+                  [ Leaderboard ]
                 </Link>
-                <Link
-                  to="/arena/collection"
-                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  collection
+                <span className="font-bold">|</span>
+                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
+                  [ Collection ]
                 </Link>
               </div>
 
@@ -171,49 +174,33 @@ const ArenaShop = () => {
               ) : loading && !shop ? (
                 <p className="text-blue-500">Loading shop...</p>
               ) : shop ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                    <p className="text-sm text-blue-500">
-                      Coins: <span className="font-bold text-blue-700">{shop.profile.coins}</span>
-                    </p>
-                    <p className="text-xs text-slate-600">Catalog: {shop.catalogVersion}</p>
-                    <p className="text-xs text-slate-600">
-                      Equipped: W {shop.equipped.weapon?.name || "none"} | A {shop.equipped.armor?.name || "none"} | C{" "}
-                      {shop.equipped.charm?.name || "none"}
-                    </p>
+                <div className="space-y-4 ">
+                  <div className="gap-2 border-t p-2 border-b border-sky-500 text-sm font-bold">
+                    <div className="text-sm pt-2">
+                      <p className="text-lg font-semibold underline">Materials</p>
+                    </div>
                     {materialEntries.length > 0 ? (
-                      <p className="mt-1 text-xs text-slate-600">
-                        Materials:{" "}
-                        {materialEntries
-                          .map(([itemId, qty]) => `${itemById.get(itemId)?.name || itemId} x${qty}`)
-                          .join(" | ")}
-                      </p>
-                    ) : null}
-                    <p className="mt-1 text-xs text-slate-600">
-                      Craft-only items are available in{" "}
-                      <Link to="/arena/crafting" className="font-semibold underline">
-                        crafting
-                      </Link>
-                      .
-                    </p>
-                    {activeEffects.length > 0 ? (
-                      <p className="mt-1 text-xs text-slate-600">Active effects: {activeEffects.join(" | ")}</p>
+                      materialEntries.map(([itemId, qty]) => (
+                        <p key={itemId}>
+                          <span className="font-normal">✦ {itemById.get(itemId)?.name || itemId}</span> x{qty}
+                        </p>
+                      ))
                     ) : (
-                      <p className="mt-1 text-xs text-slate-500">Active effects: none</p>
+                      <p><span className="font-normal">✦ none</span></p>
                     )}
-                    {activePassives.length > 0 ? (
-                      <p className="mt-1 text-xs text-slate-600">
-                        Active passives:{" "}
-                        {activePassives
-                          .map((passive) => {
-                            const sourceName = passive.source?.itemName || passive.key;
-                            return `${sourceName} (${describePassive(passive)})`;
-                          })
-                          .join(" | ")}
-                      </p>
-                    ) : null}
+
+                    <div className="arena-draw-count-rowpt-1 pb-1 text-sm font-semibold text-blue-950">
+                      <span className="mr-1 items-center justify-center text-md">
+                        Coins:
+                      </span>
+                      {" "}
+                      <span className="font-black text-blue-600">
+                        {shop.profile.coins} 🪙
+                      </span>
+                    </div>
                   </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {shop.shop.map((tierBlock) => {
                     const visibleItems = tierBlock.items.filter(
                       (item) => item.acquisition !== "craft",
@@ -222,21 +209,49 @@ const ArenaShop = () => {
 
                     return (
                     <section key={tierBlock.tier} className="space-y-2">
-                      <h3 className="font-bold text-blue-700">{tierBlock.tier}</h3>
-                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <h3 className="font-bold text-blue-700 dark:text-white">{tierBlock.tier} (Lv {visibleItems[0]?.unlockLevel} needed)</h3>
+                      <ol className="space-y-1">
                         {visibleItems.map((item) => {
                           const isBuying = actioningId === `buy:${item.id}`;
                           const isUsing = actioningId === `use:${item.id}`;
                           return (
-                            <article key={item.id} className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                              <div className="flex gap-3">
+                            <li key={item.id} className="pb-3 last:border-b-0 last:pb-0">
+                              <article className="flex items-start gap-3">
                                 <ArenaItemSprite item={item} />
-                                <div className="space-y-1">
-                                  <p className="font-semibold text-blue-700">{item.name}</p>
-                                  <p className="text-xs text-slate-600">
-                                    Lv {item.unlockLevel} | {item.tier} | {item.type}
-                                    {item.slot ? ` | ${item.slot}` : ""}
-                                  </p>
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-semibold text-blue-700">{item.name}</p>
+                                    <div className="flex flex-wrap gap-1 shrink-0">
+                                      {item.acquisition === "buy" ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleBuy(item.id)}
+                                          disabled={!item.canBuy || isBuying}
+                                          className="arena-redraw-button hover:animate-wiggle"
+                                        >
+                                          {isBuying ? "[ buying... ]" : "[ buy ]"}
+                                        </button>
+                                      ) : null}
+                                      {item.acquisition === "craft" ? (
+                                        <Link
+                                          to="/arena/crafting"
+                                          className="arena-redraw-button hover:animate-wiggle"
+                                        >
+                                          [ craft ]
+                                        </Link>
+                                      ) : null}
+                                      {item.type === "consumable" ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleUse(item.id)}
+                                          disabled={item.ownedQuantity <= 0 || isUsing}
+                                          className="arena-redraw-button hover:animate-wiggle"
+                                        >
+                                          {isUsing ? "[ using... ]" : "[ use ]"}
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  </div>
                                   {item.acquisition === "buy" ? (
                                     <p className="text-xs text-slate-700">Price: {item.price} coins</p>
                                   ) : null}
@@ -263,51 +278,19 @@ const ArenaShop = () => {
                                     </p>
                                   ) : null}
                                 </div>
-                              </div>
-
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {item.acquisition === "buy" ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleBuy(item.id)}
-                                    disabled={!item.canBuy || isBuying}
-                                    className="rounded-full bg-blue-500 px-3 py-1 text-xs font-bold text-white transition hover:bg-blue-600 disabled:opacity-60"
-                                  >
-                                    {isBuying ? "buying..." : "buy"}
-                                  </button>
-                                ) : null}
-                                {item.acquisition === "craft" ? (
-                                  <Link
-                                    to="/arena/crafting"
-                                    className="rounded-full bg-sky-500 px-3 py-1 text-xs font-bold text-white transition hover:bg-sky-600"
-                                  >
-                                    crafting
-                                  </Link>
-                                ) : null}
-                                {item.type === "consumable" ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleUse(item.id)}
-                                    disabled={item.ownedQuantity <= 0 || isUsing}
-                                    className="rounded-full bg-pink-500 px-3 py-1 text-xs font-bold text-white transition hover:bg-pink-600 disabled:opacity-60"
-                                  >
-                                    {isUsing ? "using..." : "use"}
-                                  </button>
-                                ) : null}
-                              </div>
-                            </article>
+                              </article>
+                            </li>
                           );
                         })}
-                      </div>
+                      </ol>
                     </section>
                   );})}
+                  </div>
                 </div>
               ) : null}
 
               {errorMessage ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-                  {errorMessage}
-                </div>
+                <ArenaErrorNotice message={errorMessage} />
               ) : null}
             </section>
             <Divider />

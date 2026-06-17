@@ -6,6 +6,7 @@ import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
+import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -15,14 +16,6 @@ import {
   fetchArenaProfile,
 } from "@/lib/arena-api";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
-
-function formatIvBlock(stats: { power: number; guard: number; speed: number; luck: number }) {
-  return `P ${stats.power} | G ${stats.guard} | S ${stats.speed} | L ${stats.luck}`;
-}
-
-function formatTotalStatBlock(stats: { hp: number; power: number; guard: number; speed: number; luck: number }) {
-  return `HP ${stats.hp} | P ${stats.power} | G ${stats.guard} | S ${stats.speed} | L ${stats.luck}`;
-}
 
 function formatTime(value: string | null) {
   if (!value) return "unknown";
@@ -135,154 +128,164 @@ const Arena = () => {
           </div>
 
           <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <section className="card-border space-y-4 bg-white/60 p-4">
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold text-blue-700">Daily Draw Duel</h2>
-                <p className="text-sm text-blue-500">
-                  Draw up to five character cards per day, then fight with your chosen card.
-                </p>
-              </div>
-
+            <section className="arena-draw-duel">
               {!token ? (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
+                <div className="rounded-[28px] border-2 border-amber-200 bg-white/90 p-6 text-center text-amber-800 shadow-xl">
                   <p className="font-semibold">Login is required to play Arena.</p>
-                  <Link to="/login" className="mt-2 inline-block underline">
+                  <Link to="/login" className="mt-2 inline-block font-bold underline">
                     go to login
                   </Link>
                 </div>
               ) : loading && !profile ? (
-                <p className="text-blue-500">Loading arena profile...</p>
+                <div className="rounded-[28px] border-2 border-blue-200 bg-white/90 p-6 text-center font-bold text-blue-500 shadow-xl">
+                  Loading arena profile...
+                </div>
               ) : profile ? (
-                <div className="space-y-3">
-                  {!profile.selectedCard ? (
-                    <div className="rounded-xl border border-blue-300 bg-blue-50 p-4">
-                      <p className="font-semibold text-blue-700">Draw a card to start.</p>
-                      <p className="mt-1 text-sm text-blue-600">
-                        You can draw up to five cards per day.
+                <div className="arena-duel-panel relative mx-auto max-w-2xl overflow-hidden p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4">
+                  <div className="relative space-y-4">
+                    <div className="">
+                        <h2 className="text-4xl font-bold text-blue-900">Champione Information {`>^. .^<`}</h2>
+                      <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                        <span className="text-pink-300">✿</span> Draw cards, pick your fighter, and duel!{" "}
+                        <span className="text-pink-300">✿</span>
                       </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        Draws left today: {profile.dailyDrawsRemaining}/{profile.dailyDrawLimit}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => void handleDrawCard()}
-                        disabled={drawing || !profile.canDrawCard}
-                        className="mt-3 rounded-full bg-pink-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-pink-600 disabled:opacity-60"
-                      >
-                        {drawing ? "drawing..." : "draw card"}
-                      </button>
-                      {!profile.canDrawCard ? (
-                        <p className="mt-2 text-xs text-amber-700">
-                          Next draw: {formatTime(profile.nextCardDrawAt)}
-                        </p>
-                      ) : null}
                     </div>
-                  ) : (
-                    <div className="rounded-xl border border-blue-200 bg-white/70 p-4">
-                      <p className="font-bold text-blue-700">Chosen Card</p>
-                      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-start">
-                        <ArenaPortraitCard card={profile.selectedCard} level={profile.level} />
-                        <div className="space-y-1">
-                          <p className="font-semibold text-blue-700">
-                            {profile.selectedCard.title}
-                          </p>
-                          <p className="text-sm text-slate-700">
-                            Rarity: {profile.selectedCard.rarity}
-                          </p>
-                          <p className="text-sm text-slate-700">
-                            IV: {formatIvBlock(profile.selectedCard.iv)}
-                          </p>
-                          <p className="text-sm text-slate-700">
-                            Total IV: {profile.selectedCard.iv.total}
-                          </p>
-                          <p className="text-xs text-slate-600">
-                            Draws left today: {profile.dailyDrawsRemaining}/{profile.dailyDrawLimit}
-                          </p>
+
+                      <div className="flex flex-wrap justify-center gap-3">
+                      <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
+                        [ Fight ]
+                      </Link>
+                      <span className="font-bold">|</span>
+                      <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
+                        [ Shop ]
+                      </Link>
+                      <span className="font-bold">|</span>
+                      <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
+                        [ Craft ]
+                      </Link>
+                      <span className="font-bold">|</span>
+                      <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
+                        [ Leaderboard ]
+                      </Link>
+                      <span className="font-bold">|</span>
+                      <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
+                        [ Collection ]
+                      </Link>
+                    </div>
+
+                    <div className="arena-chosen-card-body">
+                      <div className="arena-card-portrait-slot">
+                        {profile.selectedCard ? (
+                          <ArenaPortraitCard
+                            card={profile.selectedCard}
+                            level={profile.level}
+                            className="arena-duel-card"
+                          />
+                        ) : (
+                          <div className="arena-empty-card">CARD</div>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="arena-chosen-card-heading">
+                          <div className="min-w-0 flex-1">
+                            <p className="pb-2 break-words text-center text-2xl font-black leading-tight text-blue-900 sm:text-left">
+                              {profile.selectedCard?.title || "No card yet"} ({profile.selectedCard?.rarity || "-"})
+                            </p>
+                          </div>
+                        </div>
+                        <div className="border-t-2 border-dotted border-sky-200" />
+
+                        <div className="text-md pt-1 pb-1">
+                        <div className="text-sm">
+                          {/* <p className="text-lg font-semibold underline">Card Stats (Total)</p> */}
+                        </div>
+                        <div className="text-sm">
+                          <span>✦ Health:</span> <b>{profile.stats.total.hp}</b>
+                        </div>
+                        <div className="text-sm">
+                          <span>✦ Power:</span> <b>{profile.stats.total.power}</b>
+                        </div>
+                        <div className="text-sm">
+                          <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>
+                        </div>
+                        <div className="text-sm">
+                          <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>
+                        </div>
+                        <div className="text-sm">
+                          <span>✦ Luck:</span> <b>{profile.stats.total.luck}</b>
                         </div>
                       </div>
-                      <div className="mt-3">
-                        <button
-                          type="button"
-                          onClick={() => void handleDrawCard()}
-                          disabled={drawing || !profile.canDrawCard}
-                          className="rounded-full bg-pink-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-pink-600 disabled:opacity-60"
-                        >
-                          {drawing ? "drawing..." : "redraw today card"}
-                        </button>
+
+                      <div className=" gap-2 border-t border-sky-100 text-sm font-bold">
+                        <div className="text-sm">
+                        <p className="text-lg font-semibold underline">Gears</p>
+                        </div>
+                        <p><span className="font-normal">✦ Weapon:</span> {profile.equipment.weapon?.name || "none"}</p>
+                        <p><span className="font-normal">✦ Armor:</span> {profile.equipment.armor?.name || "none"}</p>
+                        <p><span className="font-normal">✦   Charm:</span> {profile.equipment.charm?.name || "none"}</p>
+
+                        <div className="arena-draw-count-row border-t border-sky-100 pt-1 pb-1 text-sm font-semibold text-blue-950">
+                          <span className="mr-1 items-center justify-center text-md">
+                            Coins:
+                          </span>
+                          {" "}
+                          <span className="font-black text-blue-600">
+                            {profile.coins} 🪙
+                          </span>
+                        </div>
+
+
+                        <div className="arena-draw-count-row border-t border-sky-100 pt-2 text-sm font-semibold text-blue-950">
+                          <span className="mr-1 items-center justify-center text-md">
+                            Draws left today:
+                          </span>
+                          {" "}
+                          <span className="font-black text-blue-600">
+                            {profile.dailyDrawsRemaining}/{profile.dailyDrawLimit} draws
+                          </span>
+                        </div>
+                      </div>
+                      </div>
+
+                      <div />
+
+                      <div>
+                        <div className="arena-redraw-row">
+                          <button
+                            type="button"
+                            onClick={() => void handleDrawCard()}
+                            disabled={drawing || !profile.canDrawCard}
+                            className="arena-redraw-button hover:animate-wiggle"
+                          >
+                            {drawing
+                              ? "[ Drawing... ]"
+                              : profile.selectedCard
+                                ? "[ Redraw Cards ]"
+                                : "[ Draw Cards ]"}
+                          </button>
+                        </div>
                         {!profile.canDrawCard ? (
-                        <p className="mt-2 text-xs text-amber-700">
-                          Daily draw limit reached. Next draw: {formatTime(profile.nextCardDrawAt)}
-                        </p>
-                      ) : null}
+                          <p className="text-sm font-semibold text-amber-700">
+                            Daily draw limit reached. Next draw: {formatTime(profile.nextCardDrawAt)}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
-                    </div>
-                  )}
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                      <p className="text-sm text-blue-500">Level / XP</p>
-                      <p className="font-semibold text-blue-700">
-                        Lv {profile.level} | {profile.xp}/{profile.xpToNext}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                      <p className="text-sm text-blue-500">Coins</p>
-                      <p className="font-semibold text-blue-700">{profile.coins}</p>
-                    </div>
-                    <div className="rounded-xl border border-blue-200 bg-white/70 p-3 md:col-span-2">
-                      <p className="text-sm text-blue-500">Gear + Stats</p>
-                      <p className="text-sm text-slate-700">
-                        {formatTotalStatBlock(profile.stats.total)}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        Weapon: {profile.equipment.weapon?.name || "none"} | Armor:{" "}
-                        {profile.equipment.armor?.name || "none"} | Charm:{" "}
-                        {profile.equipment.charm?.name || "none"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      to="/arena/fight"
-                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
-                    >
-                      fight
-                    </Link>
-                    <Link
-                      to="/arena/shop"
-                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
-                    >
-                      shop
-                    </Link>
-                    <Link
-                      to="/arena/crafting"
-                      className="rounded-full bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700"
-                    >
-                      crafting
-                    </Link>
-                    <Link
-                      to="/arena/leaderboard"
-                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
-                    >
-                      leaderboard
-                    </Link>
-                    <Link
-                      to="/arena/collection"
-                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
-                    >
-                      collection
-                    </Link>
+                    {errorMessage ? (
+                      <ArenaErrorNotice message={errorMessage} variant="duel" />
+                    ) : null}
                   </div>
                 </div>
               ) : (
-                <p className="text-red-600">Failed to load arena profile.</p>
+                <p className="rounded-[24px] border-2 border-red-200 bg-white/90 p-4 text-red-600">
+                  Failed to load arena profile.
+                </p>
               )}
 
-              {errorMessage ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-                  {errorMessage}
-                </div>
+              {errorMessage && !profile ? (
+                <ArenaErrorNotice message={errorMessage} variant="duel" />
               ) : null}
             </section>
             <Divider />
@@ -298,6 +301,7 @@ const Arena = () => {
               </div>
             </div>
           </aside>
+
         </div>
       </div>
       <Footer />

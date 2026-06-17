@@ -5,6 +5,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
+import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -33,6 +34,16 @@ const ArenaCrafting = () => {
   const [loading, setLoading] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [expandedRecipes, setExpandedRecipes] = useState(new Set<string>());
+
+  const toggleExpanded = (recipeId: string) => {
+    setExpandedRecipes((prev) => {
+      const next = new Set(prev);
+      if (next.has(recipeId)) next.delete(recipeId);
+      else next.add(recipeId);
+      return next;
+    });
+  };
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/crafting",
@@ -124,28 +135,33 @@ const ArenaCrafting = () => {
           </div>
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4">
-              <h2 className="text-2xl font-bold text-blue-700">arena crafting</h2>
-              <div className="flex flex-wrap gap-2">
-                <Link to="/arena" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  arena home
+              <div className="">
+                <h2 className="text-4xl font-bold text-blue-900">Crafting Workshop {`>^. .^<`}</h2>
+                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                  <span className="text-pink-300">✿</span> Craft gear and consumables from collected materials!{" "}
+                  <span className="text-pink-300">✿</span>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 pb-3">
+                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
+                  [ Arena Home ]
                 </Link>
-                <Link to="/arena/fight" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  fight
+                <span className="font-bold">|</span>
+                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
+                  [ Fight ]
                 </Link>
-                <Link to="/arena/shop" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  shop
+                <span className="font-bold">|</span>
+                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
+                  [ Shop ]
                 </Link>
-                <Link
-                  to="/arena/leaderboard"
-                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  leaderboard
+                <span className="font-bold">|</span>
+                <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
+                  [ Leaderboard ]
                 </Link>
-                <Link
-                  to="/arena/collection"
-                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  collection
+                <span className="font-bold">|</span>
+                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
+                  [ Collection ]
                 </Link>
               </div>
 
@@ -160,50 +176,91 @@ const ArenaCrafting = () => {
                 <p className="text-blue-500">Loading crafting...</p>
               ) : shop ? (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                    <p className="text-sm text-blue-500">
-                      Coins: <span className="font-bold text-blue-700">{shop.profile.coins}</span>
-                    </p>
-                    <p className="text-xs text-slate-600">
-                      Materials:{" "}
-                      {materialEntries.length > 0
-                        ? materialEntries
-                            .map(([itemId, qty]) => `${itemById.get(itemId)?.name || itemId} x${qty}`)
-                            .join(" | ")
-                        : "none"}
-                    </p>
+
+                  <div className="gap-2 border-t p-2 border-b border-sky-500 text-sm font-bold">
+                    <div className="text-sm pt-2">
+                      <p className="text-lg font-semibold underline">Materials</p>
+                    </div>
+                    {materialEntries.length > 0 ? (
+                      materialEntries.map(([itemId, qty]) => (
+                        <p key={itemId}>
+                          <span className="font-normal">✦ {itemById.get(itemId)?.name || itemId}</span> x{qty}
+                        </p>
+                      ))
+                    ) : (
+                      <p><span className="font-normal">✦ none</span></p>
+                    )}
+
+                    <div className="arena-draw-count-row pt-1 pb-1 text-sm font-semibold text-blue-950">
+                      <span className="mr-1 items-center justify-center text-md">
+                        Coins:
+                      </span>
+                      {" "}
+                      <span className="font-black text-blue-600">
+                        {shop.profile.coins} 🪙
+                      </span>
+                    </div>
+
+                    <div className=" pt-1 pb-1 text-sm font-bold">
+                      <p className="text-lg font-semibold underline pb-1">Gears</p>
+                      <p><span className="font-normal">✦ Weapon:</span> {shop.equipped.weapon?.name || "none"}</p>
+                      <p><span className="font-normal">✦ Armor:</span> {shop.equipped.armor?.name || "none"}</p>
+                      <p><span className="font-normal">✦ Charm:</span> {shop.equipped.charm?.name || "none"}</p>
+                    </div>
                   </div>
 
-                  {recipesByTier.map((tierBlock) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {recipesByTier.map((tierBlock) => {
+                    if (tierBlock.recipes.length === 0) return null;
+
+                    return (
                     <section key={tierBlock.tier} className="space-y-2">
-                      <h3 className="font-bold text-blue-700">{tierBlock.tier}</h3>
-                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <h3 className="font-bold text-blue-700 dark:text-white">{tierBlock.tier} (Lv {tierBlock.recipes[0]?.unlockLevel} needed)</h3>
+                      <ol className="space-y-1">
                         {tierBlock.recipes.map((recipe) => {
                           const outputItem = itemById.get(recipe.output.itemId);
                           const isCrafting = actioningId === recipe.id;
                           return (
-                            <article key={recipe.id} className="rounded-xl border border-blue-200 bg-white/70 p-3">
-                              <div className="flex gap-3">
+                            <li key={recipe.id} className="pb-3 last:border-b-0 last:pb-0">
+                              <article className="flex items-start gap-3">
                                 {outputItem ? (
                                   <ArenaItemSprite item={outputItem} />
                                 ) : (
-                                  <div className="h-8 w-8 rounded-md border border-blue-200 bg-blue-50" />
+                                  <div className="h-8 w-8 shrink-0 rounded-md border border-blue-200 bg-blue-50" />
                                 )}
-                                <div className="space-y-1">
-                                  <p className="font-semibold text-blue-700">
-                                    {recipe.output.itemName || recipe.output.itemId}
-                                  </p>
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-semibold text-blue-700">
+                                      {recipe.output.itemName || recipe.output.itemId}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleCraft(recipe.id)}
+                                      disabled={!recipe.canCraft || isCrafting}
+                                      className="arena-redraw-button hover:animate-wiggle shrink-0"
+                                    >
+                                      {isCrafting ? "[ crafting... ]" : "[ craft ]"}
+                                    </button>
+                                  </div>
                                   <p className="text-xs text-slate-600">
-                                    Lv {recipe.unlockLevel} | Fee {recipe.coinCost} coins
+                                    Fee {recipe.coinCost} coins
                                   </p>
-                                  <p className="text-xs text-slate-600">
-                                    {recipe.inputs
-                                      .map(
-                                        (input) =>
-                                          `${input.itemName || input.itemId} ${input.owned || 0}/${input.required}`,
-                                      )
-                                      .join(" | ")}
-                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpanded(recipe.id)}
+                                    className="text-xs"
+                                  >
+                                    Materials needed {expandedRecipes.has(recipe.id) ? "▲" : "▼"}
+                                  </button>
+                                  {expandedRecipes.has(recipe.id) ? (
+                                    <div className="text-xs text-slate-600 space-y-0.5">
+                                      {recipe.inputs.map((input) => (
+                                        <p key={input.itemId}>
+                                          ✦ {input.itemName || input.itemId} {input.owned || 0}/{input.required}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  ) : null}
                                   {outputItem?.stats ? (
                                     <p className="text-xs text-blue-600">{formatStats(outputItem.stats)}</p>
                                   ) : null}
@@ -216,30 +273,19 @@ const ArenaCrafting = () => {
                                     </p>
                                   ) : null}
                                 </div>
-                              </div>
-                              <div className="mt-2">
-                                <button
-                                  type="button"
-                                  onClick={() => void handleCraft(recipe.id)}
-                                  disabled={!recipe.canCraft || isCrafting}
-                                  className="rounded-full bg-sky-500 px-3 py-1 text-xs font-bold text-white transition hover:bg-sky-600 disabled:opacity-60"
-                                >
-                                  {isCrafting ? "crafting..." : "craft"}
-                                </button>
-                              </div>
-                            </article>
+                              </article>
+                            </li>
                           );
                         })}
-                      </div>
+                      </ol>
                     </section>
-                  ))}
+                  );})}
+                  </div>
                 </div>
               ) : null}
 
               {errorMessage ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-                  {errorMessage}
-                </div>
+                <ArenaErrorNotice message={errorMessage} />
               ) : null}
             </section>
             <Divider />

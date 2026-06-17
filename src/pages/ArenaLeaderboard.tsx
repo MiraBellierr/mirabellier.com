@@ -5,6 +5,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
+import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
@@ -95,44 +96,45 @@ const ArenaLeaderboard = () => {
           </div>
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4">
-              <h2 className="text-2xl font-bold text-blue-700">arena leaderboard</h2>
-              <div className="flex flex-wrap gap-2">
-                <Link to="/arena" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  arena home
+              <div className="">
+                <h2 className="text-4xl font-bold text-blue-900">Leaderboards {`>^. .^<`}</h2>
+                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                  <span className="text-pink-300">✿</span> Top trainers ranked by level, win rate, and wealth!{" "}
+                  <span className="text-pink-300">✿</span>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 pb-3 border-b border-sky-100">
+                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
+                  [ Arena Home ]
                 </Link>
-                <Link to="/arena/fight" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  fight
+                <span className="font-bold">|</span>
+                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
+                  [ Fight ]
                 </Link>
-                <Link to="/arena/shop" className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                  shop
+                <span className="font-bold">|</span>
+                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
+                  [ Shop ]
                 </Link>
-                <Link
-                  to="/arena/crafting"
-                  className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  crafting
+                <span className="font-bold">|</span>
+                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
+                  [ Craft ]
                 </Link>
-                <Link
-                  to="/arena/collection"
-                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
-                >
-                  collection
+                <span className="font-bold">|</span>
+                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
+                  [ Collection ]
                 </Link>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap justify-center gap-3">
                 {METRICS.map((metric) => (
                   <button
                     key={metric.id}
                     type="button"
                     onClick={() => setActiveMetric(metric.id)}
-                    className={`rounded-full px-3 py-1 text-xs font-bold ${
-                      metric.id === activeMetric
-                        ? "bg-pink-500 text-white"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
+                    className="arena-redraw-button hover:animate-wiggle"
                   >
-                    {metric.label}
+                    {metric.id === activeMetric ? `» ${metric.label} «` : metric.label}
                   </button>
                 ))}
               </div>
@@ -140,21 +142,47 @@ const ArenaLeaderboard = () => {
               {loading && !board ? (
                 <p className="text-blue-500">Loading leaderboard...</p>
               ) : board ? (
-                <ol className="space-y-2">
+                <ol className="space-y-1">
                   {board.entries.length === 0 ? (
                     <p className="text-sm text-blue-500">No entries yet.</p>
                   ) : (
-                    board.entries.map((entry) => (
+                    board.entries.map((entry, index) => (
                       <li
                         key={`${activeMetric}-${entry.user.id}`}
-                        className="rounded-xl border border-blue-200 bg-white/70 p-3"
+                        className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
                       >
-                        <p className="font-semibold text-blue-700">
-                          #{entry.rank} {entry.user.username}
-                        </p>
-                        <p className="text-xs text-slate-700">
-                          Lv {entry.level} | Win Rate {formatPercent(entry.winRate)} | Coins {entry.coins}
-                        </p>
+                        <article className="flex items-start gap-3">
+                          {entry.user.avatar ? (
+                            <img
+                              src={entry.user.avatar}
+                              alt={entry.user.username}
+                              className="h-12 w-12 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-blue-200 bg-blue-50 text-lg text-blue-400 font-bold">
+                              {entry.rank}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-blue-700">
+                              #{entry.rank} {entry.user.username}
+                            </p>
+                            {activeMetric === "level" ? (
+                              <p className="text-xs text-slate-600">
+                                Lv {entry.level} · {entry.xp} XP · {formatPercent(entry.xpProgress)} to next
+                              </p>
+                            ) : activeMetric === "win_rate" ? (
+                              <p className="text-xs text-slate-600">
+                                Win Rate {formatPercent(entry.winRate)} · {entry.wins}W {entry.losses}L ({entry.totalFights} fights)
+                              </p>
+                            ) : (
+                              <p className="text-xs text-slate-600">
+                                {entry.coins} 🪙 · Lifetime {entry.lifetimeCoinsEarned} 🪙
+                              </p>
+                            )}
+                          </div>
+                        </article>
                       </li>
                     ))
                   )}
@@ -162,9 +190,7 @@ const ArenaLeaderboard = () => {
               ) : null}
 
               {errorMessage ? (
-                <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-                  {errorMessage}
-                </div>
+                <ArenaErrorNotice message={errorMessage} />
               ) : null}
             </section>
             <Divider />

@@ -359,6 +359,36 @@ export class ArenaApiError extends Error {
   }
 }
 
+let jikanHealthRequest: Promise<void> | null = null;
+
+async function checkJikanHealth(): Promise<void> {
+  // try {
+  //   const response = await fetch("https://api.jikan.moe/v4/health", {
+  //     cache: "no-store",
+  //   });
+
+  //   if (!response.ok) {
+  //     throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
+  //       status: response.status,
+  //       code: "JIKAN_MAINTENANCE",
+  //     });
+  //   }
+  // } catch (error) {
+  //   if (error instanceof ArenaApiError) throw error;
+  //   throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
+  //     status: 503,
+  //     code: "JIKAN_MAINTENANCE",
+  //   });
+  // }
+}
+
+async function ensureJikanHealth(): Promise<void> {
+  jikanHealthRequest ||= checkJikanHealth().finally(() => {
+    jikanHealthRequest = null;
+  });
+  await jikanHealthRequest;
+}
+
 function normalizeProfile(value: unknown): ArenaProfile {
   return value as ArenaProfile;
 }
@@ -400,6 +430,8 @@ function makeAuthHeaders(token: string) {
 }
 
 export async function fetchArenaProfile(token: string): Promise<ArenaProfile> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/profile"), {
     credentials: "include",
     headers: shouldSendBearerToken(token)
@@ -418,6 +450,8 @@ export async function fetchArenaProfile(token: string): Promise<ArenaProfile> {
 export async function drawArenaCard(
   token: string,
 ): Promise<{ card: ArenaCard; profile: ArenaProfile }> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/draw-card"), {
     method: "POST",
     credentials: "include",
@@ -433,6 +467,8 @@ export async function drawArenaCard(
 }
 
 export async function runArenaFight(token: string): Promise<ArenaFightResponse> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/fight"), {
     method: "POST",
     credentials: "include",
@@ -451,6 +487,8 @@ export async function fetchArenaCollection(
   token: string,
   limit = 200,
 ): Promise<ArenaCollectionResponse> {
+  await ensureJikanHealth();
+
   const params = new URLSearchParams({
     limit: String(limit),
   });
@@ -473,6 +511,8 @@ export async function selectArenaCollectionCard(
   token: string,
   cardInstanceId: string,
 ): Promise<ArenaSelectCollectionCardResponse> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/collection/select-card"), {
     method: "POST",
     credentials: "include",
@@ -488,6 +528,8 @@ export async function selectArenaCollectionCard(
 }
 
 export async function fetchArenaShop(token: string): Promise<ArenaShopResponse> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/shop"), {
     credentials: "include",
     headers: shouldSendBearerToken(token)
@@ -507,6 +549,8 @@ export async function buyArenaItem(
   token: string,
   itemId: string,
 ): Promise<{ purchasedItemId: string; appliedInstantly: boolean; shop: ArenaShopResponse }> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/shop/buy"), {
     method: "POST",
     credentials: "include",
@@ -529,6 +573,8 @@ export async function useArenaConsumable(
   token: string,
   itemId: string,
 ): Promise<{ activatedItemId: string; effects: ArenaProfile["effects"]; shop: ArenaShopResponse }> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/shop/use-consumable"), {
     method: "POST",
     credentials: "include",
@@ -552,6 +598,8 @@ export async function craftArenaRecipe(
   recipeId: string,
   quantity = 1,
 ): Promise<{ craftedRecipeId: string; outputItemId: string; craftedQuantity: number; shop: ArenaShopResponse }> {
+  await ensureJikanHealth();
+
   const response = await fetch(joinApi("/arena/shop/craft"), {
     method: "POST",
     credentials: "include",
@@ -575,6 +623,8 @@ export async function fetchArenaLeaderboard(
   metric: ArenaMetric,
   limit = 50,
 ): Promise<ArenaLeaderboardResponse> {
+  await ensureJikanHealth();
+
   const params = new URLSearchParams({
     metric,
     limit: String(limit),
