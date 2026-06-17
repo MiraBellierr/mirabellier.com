@@ -363,7 +363,7 @@ let jikanHealthRequest: Promise<void> | null = null;
 
 async function checkJikanHealth(): Promise<void> {
   try {
-    const response = await fetch("https://api.jikan.moe/v4/health", {
+    const response = await fetch(joinApi("/arena/jikan-health"), {
       cache: "no-store",
     });
 
