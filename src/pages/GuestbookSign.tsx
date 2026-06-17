@@ -112,7 +112,7 @@ const GuestbookSign = () => {
           </div>
 
           <main className="w-full lg:w-3/5 space-y-4 p-4">
-            <section className="card-border space-y-4 p-4">
+            <section className="guestbook-sign-card card-border space-y-4 p-4">
               <div className="space-y-1">
                 <h2 className="text-lg font-bold text-blue-700">
                   your note

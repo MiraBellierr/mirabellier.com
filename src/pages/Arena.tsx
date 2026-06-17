@@ -30,6 +30,12 @@ function normalizeArenaError(error: unknown) {
   return "Arena request failed.";
 }
 
+function isMaintenanceMessage(message: string | null) {
+  if (!message) return false;
+  const normalized = message.toLowerCase();
+  return normalized.includes("maintenance") || normalized.includes("maintanance");
+}
+
 const Arena = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
@@ -38,6 +44,7 @@ const Arena = () => {
   const [loading, setLoading] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const showingDrawMaintenance = isMaintenanceMessage(errorMessage);
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena",
@@ -252,20 +259,22 @@ const Arena = () => {
 
                       <div>
                         <div className="arena-redraw-row">
-                          <button
-                            type="button"
-                            onClick={() => void handleDrawCard()}
-                            disabled={drawing || !profile.canDrawCard}
-                            className="arena-redraw-button hover:animate-wiggle"
-                          >
-                            {drawing
-                              ? "[ Drawing... ]"
-                              : profile.selectedCard
-                                ? "[ Redraw Cards ]"
-                                : "[ Draw Cards ]"}
-                          </button>
+                          {!showingDrawMaintenance ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleDrawCard()}
+                              disabled={drawing || !profile.canDrawCard}
+                              className="arena-redraw-button hover:animate-wiggle"
+                            >
+                              {drawing
+                                ? "[ Drawing... ]"
+                                : profile.selectedCard
+                                  ? "[ Redraw Cards ]"
+                                  : "[ Draw Cards ]"}
+                            </button>
+                          ) : null}
                         </div>
-                        {!profile.canDrawCard ? (
+                        {!showingDrawMaintenance && !profile.canDrawCard ? (
                           <p className="text-sm font-semibold text-amber-700">
                             Daily draw limit reached. Next draw: {formatTime(profile.nextCardDrawAt)}
                           </p>
@@ -273,20 +282,26 @@ const Arena = () => {
                       </div>
                     </div>
 
-                    {errorMessage ? (
-                      <ArenaErrorNotice message={errorMessage} variant="duel" />
+                    {showingDrawMaintenance && errorMessage ? (
+                      <div className="arena-duel-maintenance-wrap">
+                        <ArenaErrorNotice message={errorMessage} variant="duel" />
+                      </div>
+                    ) : null}
+
+                    {errorMessage && !showingDrawMaintenance ? (
+                      <ArenaErrorNotice message={errorMessage} />
                     ) : null}
                   </div>
                 </div>
               ) : (
-                <p className="rounded-[24px] border-2 border-red-200 bg-white/90 p-4 text-red-600">
-                  Failed to load arena profile.
-                </p>
+                errorMessage ? (
+                  <ArenaErrorNotice message={errorMessage} />
+                ) : (
+                  <p className="rounded-[24px] border-2 border-red-200 bg-white/90 p-4 text-red-600">
+                    Failed to load arena profile.
+                  </p>
+                )
               )}
-
-              {errorMessage && !profile ? (
-                <ArenaErrorNotice message={errorMessage} variant="duel" />
-              ) : null}
             </section>
             <Divider />
           </main>

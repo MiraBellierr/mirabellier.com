@@ -367,7 +367,7 @@ async function checkJikanHealth(): Promise<void> {
       cache: "no-store",
     });
 
-    if (!response.ok) {
+    if (response.status >= 400 && response.status < 600) {
       throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
         status: response.status,
         code: "JIKAN_MAINTENANCE",
@@ -430,8 +430,6 @@ function makeAuthHeaders(token: string) {
 }
 
 export async function fetchArenaProfile(token: string): Promise<ArenaProfile> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/profile"), {
     credentials: "include",
     headers: shouldSendBearerToken(token)
@@ -467,8 +465,6 @@ export async function drawArenaCard(
 }
 
 export async function runArenaFight(token: string): Promise<ArenaFightResponse> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/fight"), {
     method: "POST",
     credentials: "include",
@@ -487,8 +483,6 @@ export async function fetchArenaCollection(
   token: string,
   limit = 200,
 ): Promise<ArenaCollectionResponse> {
-  await ensureJikanHealth();
-
   const params = new URLSearchParams({
     limit: String(limit),
   });
@@ -511,8 +505,6 @@ export async function selectArenaCollectionCard(
   token: string,
   cardInstanceId: string,
 ): Promise<ArenaSelectCollectionCardResponse> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/collection/select-card"), {
     method: "POST",
     credentials: "include",
@@ -528,8 +520,6 @@ export async function selectArenaCollectionCard(
 }
 
 export async function fetchArenaShop(token: string): Promise<ArenaShopResponse> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/shop"), {
     credentials: "include",
     headers: shouldSendBearerToken(token)
@@ -549,8 +539,6 @@ export async function buyArenaItem(
   token: string,
   itemId: string,
 ): Promise<{ purchasedItemId: string; appliedInstantly: boolean; shop: ArenaShopResponse }> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/shop/buy"), {
     method: "POST",
     credentials: "include",
@@ -573,8 +561,6 @@ export async function useArenaConsumable(
   token: string,
   itemId: string,
 ): Promise<{ activatedItemId: string; effects: ArenaProfile["effects"]; shop: ArenaShopResponse }> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/shop/use-consumable"), {
     method: "POST",
     credentials: "include",
@@ -598,8 +584,6 @@ export async function craftArenaRecipe(
   recipeId: string,
   quantity = 1,
 ): Promise<{ craftedRecipeId: string; outputItemId: string; craftedQuantity: number; shop: ArenaShopResponse }> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/shop/craft"), {
     method: "POST",
     credentials: "include",
@@ -623,8 +607,6 @@ export async function fetchArenaLeaderboard(
   metric: ArenaMetric,
   limit = 50,
 ): Promise<ArenaLeaderboardResponse> {
-  await ensureJikanHealth();
-
   const params = new URLSearchParams({
     metric,
     limit: String(limit),
