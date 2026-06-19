@@ -45,7 +45,10 @@ const Arena = () => {
   const [drawing, setDrawing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const showingDrawMaintenance = isMaintenanceMessage(errorMessage);
-
+  const xpBlocksFilled = profile
+    ? Math.min(10, Math.max(0, Math.round(Number(profile.xpProgress || 0) * 10)))
+    : 0;
+  const xpBlocks = `${"▣".repeat(xpBlocksFilled)}${"☐".repeat(10 - xpBlocksFilled)}`;
   usePageSeo({
     canonical: "https://mirabellier.com/arena",
     structuredDataId: "arena-home-structured-data",
@@ -197,7 +200,10 @@ const Arena = () => {
                         <div className="arena-chosen-card-heading">
                           <div className="min-w-0 flex-1">
                             <p className="pb-2 break-words text-center text-2xl font-black leading-tight text-blue-900 sm:text-left">
-                              {profile.selectedCard?.title || "No card yet"} ({profile.selectedCard?.rarity || "-"})
+                              {profile.selectedCard?.title || "No card yet"} ({profile.selectedCard?.rarity || "-"}){" "}
+                              <span className="whitespace-nowrap text-base text-blue-600">
+                                · Level {profile.level}
+                              </span>
                             </p>
                           </div>
                         </div>
@@ -208,19 +214,24 @@ const Arena = () => {
                           {/* <p className="text-lg font-semibold underline">Card Stats (Total)</p> */}
                         </div>
                         <div className="text-sm">
-                          <span>✦ Health:</span> <b>{profile.stats.total.hp}</b>
+                          <span>✦ Health:</span> <b>{profile.stats.total.hp}</b>{" "}
+                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.hp})</span>
                         </div>
                         <div className="text-sm">
-                          <span>✦ Power:</span> <b>{profile.stats.total.power}</b>
+                          <span>✦ Power:</span> <b>{profile.stats.total.power}</b>{" "}
+                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.power})</span>
                         </div>
                         <div className="text-sm">
-                          <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>
+                          <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>{" "}
+                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.guard})</span>
                         </div>
                         <div className="text-sm">
-                          <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>
+                          <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>{" "}
+                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.speed})</span>
                         </div>
                         <div className="text-sm">
-                          <span>✦ Luck:</span> <b>{profile.stats.total.luck}</b>
+                          <span>✦ Luck:</span> <b>{profile.stats.total.luck}</b>{" "}
+                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.luck})</span>
                         </div>
                       </div>
 
@@ -242,6 +253,15 @@ const Arena = () => {
                           </span>
                         </div>
 
+                        <div className="py-2 text-xs font-semibold text-blue-950">
+                          XP: {profile.xp}/{profile.xpToNext}{" "}
+                          <span
+                            className="whitespace-nowrap tracking-wider text-blue-600"
+                            aria-label={`${profile.xp} of ${profile.xpToNext} experience`}
+                          >
+                            {xpBlocks}
+                          </span>
+                        </div>
 
                         <div className="arena-draw-count-row border-t border-sky-100 pt-2 text-sm font-semibold text-blue-950">
                           <span className="mr-1 items-center justify-center text-md">

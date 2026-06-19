@@ -92,6 +92,7 @@ export type ArenaProfile = {
   stats: {
     base: ArenaStatsBlock;
     equipment: ArenaStatsBlock;
+    card: ArenaStatsBlock;
     total: ArenaStatsBlock;
   };
   selectedCard: ArenaCard | null;
