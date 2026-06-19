@@ -102,18 +102,8 @@ export default function TurnstileWidget({
           theme: "auto",
           size: "flexible",
           callback: (token) => callbackRef.current(token),
-          "expired-callback": () => {
-            // Auto-refresh — request a new challenge silently
-            if (widgetIdRef.current && window.turnstile) {
-              window.turnstile.reset(widgetIdRef.current);
-            }
-          },
-          "error-callback": () => {
-            // Retry on error
-            if (widgetIdRef.current && window.turnstile) {
-              window.turnstile.reset(widgetIdRef.current);
-            }
-          },
+          "expired-callback": () => callbackRef.current(null),
+          "error-callback": () => callbackRef.current(null),
         });
       })
       .catch(() => callbackRef.current(null));
