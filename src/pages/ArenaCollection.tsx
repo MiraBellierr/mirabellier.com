@@ -25,12 +25,15 @@ function formatIvBlock(stats: { power: number; guard: number; speed: number; luc
   return `P ${stats.power} | G ${stats.guard} | S ${stats.speed} | L ${stats.luck}`;
 }
 
+type CollectionSort = "collection" | "iv-desc" | "iv-asc";
+
 const ArenaCollection = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
   const [collection, setCollection] = useState<ArenaCollectionResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<CollectionSort>("collection");
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -111,12 +114,23 @@ const ArenaCollection = () => {
     );
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredCards.length / PAGE_SIZE));
-  const paginatedCards = filteredCards.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const sortedCards = [...filteredCards].sort((left, right) => {
+    if (sort === "iv-desc") return right.iv.total - left.iv.total;
+    if (sort === "iv-asc") return left.iv.total - right.iv.total;
+    return 0;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedCards.length / PAGE_SIZE));
+  const paginatedCards = sortedCards.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset to page 1 when search changes
   const handleSearch = (value: string) => {
     setQuery(value);
+    setPage(1);
+  };
+
+  const handleSort = (value: CollectionSort) => {
+    setSort(value);
     setPage(1);
   };
 
@@ -178,18 +192,33 @@ const ArenaCollection = () => {
                 <p className="text-blue-500">Loading collection...</p>
               ) : collection ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-blue-600">
                       Cards collected: {collection.cards.length}
                     </p>
-                    <input
-                      id="collection-search"
-                      type="search"
-                      value={query}
-                      onChange={(event) => handleSearch(event.target.value)}
-                      placeholder="Search by name, rarity, id, iv..."
-                      className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
-                    />
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <label htmlFor="collection-sort" className="sr-only">
+                        Sort collection
+                      </label>
+                      <select
+                        id="collection-sort"
+                        value={sort}
+                        onChange={(event) => handleSort(event.target.value as CollectionSort)}
+                        className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                      >
+                        <option value="collection">Collection order</option>
+                        <option value="iv-desc">IV: highest first</option>
+                        <option value="iv-asc">IV: lowest first</option>
+                      </select>
+                      <input
+                        id="collection-search"
+                        type="search"
+                        value={query}
+                        onChange={(event) => handleSearch(event.target.value)}
+                        placeholder="Search by name, rarity, id, iv..."
+                        className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                      />
+                    </div>
                   </div>
                   {normalizedQuery ? (
                     <p className="text-xs text-slate-600">
