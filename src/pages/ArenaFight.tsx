@@ -116,6 +116,11 @@ const ArenaFight = () => {
       .catch(() => setTurnstileToken(null)); // reset widget on failure
   }, [token, turnstileToken, verified]);
 
+  // Auto-battle must stay off while Cloudflare is asking for verification.
+  useEffect(() => {
+    if (!verified) setAutoBattle(false);
+  }, [verified]);
+
   usePageSeo({
     canonical: "https://mirabellier.com/arena/fight",
     structuredDataId: "arena-fight-structured-data",
@@ -404,6 +409,10 @@ const ArenaFight = () => {
                   <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
                     [ Collection ]
                   </Link>
+                  <span className="hidden font-bold sm:inline">|</span>
+                  <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
+                    [ Skill Tree ]
+                  </Link>
                 </div>
 
                 {!token ? (
@@ -510,12 +519,19 @@ const ArenaFight = () => {
                     </div>
 
                     <div className="flex justify-center">
-                      <label className="flex items-center gap-2 text-sm font-bold text-blue-800 cursor-pointer select-none">
+                      <label
+                        className={`flex items-center gap-2 text-sm font-bold select-none ${
+                          verified
+                            ? "cursor-pointer text-blue-800"
+                            : "cursor-not-allowed text-slate-400"
+                        }`}
+                      >
                         <input
                           type="checkbox"
                           checked={autoBattle}
+                          disabled={!verified}
                           onChange={(e) => setAutoBattle(e.target.checked)}
-                          className="accent-blue-600 w-4 h-4"
+                          className="accent-blue-600 w-4 h-4 disabled:cursor-not-allowed"
                         />
                         Auto
                       </label>

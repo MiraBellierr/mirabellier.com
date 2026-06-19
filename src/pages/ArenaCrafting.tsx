@@ -163,6 +163,10 @@ const ArenaCrafting = () => {
                 <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
                   [ Collection ]
                 </Link>
+                <span className="font-bold">|</span>
+                <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
+                  [ Skill Tree ]
+                </Link>
               </div>
 
               {!token ? (

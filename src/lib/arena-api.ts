@@ -40,13 +40,20 @@ export type ArenaPassiveRule = {
   priority: number;
   when?: ArenaPassiveCondition[];
   actions: ArenaPassiveAction[];
-  source?: {
-    itemId: string;
-    itemName: string;
-    slot: "weapon" | "armor" | "charm";
-    tier: string;
-    equippedAt?: string | null;
-  };
+  source?:
+    | {
+        itemId: string;
+        itemName: string;
+        slot: "weapon" | "armor" | "charm";
+        tier: string;
+        equippedAt?: string | null;
+      }
+    | {
+        type: "skill";
+        nodeId: string;
+        nodeName: string;
+        branch: ArenaSkillBranchId;
+      };
 };
 
 export type ArenaConsumableRule = {
@@ -93,6 +100,7 @@ export type ArenaProfile = {
     base: ArenaStatsBlock;
     equipment: ArenaStatsBlock;
     card: ArenaStatsBlock;
+    skill: ArenaStatsBlock;
     total: ArenaStatsBlock;
   };
   selectedCard: ArenaCard | null;
@@ -130,6 +138,12 @@ export type ArenaProfile = {
     charm: ArenaEquippedItem | null;
   };
   activePassives?: ArenaPassiveRule[];
+  skillTree?: {
+    earnedPoints: number;
+    spentPoints: number;
+    availablePoints: number;
+    resetCost: number;
+  };
   materialInventory?: Record<string, number>;
   catalogVersion?: string;
   recentFights?: ArenaRecentFight[];
@@ -274,6 +288,49 @@ export type ArenaCollectionResponse = {
 export type ArenaSelectCollectionCardResponse = {
   selectedCard: ArenaCard;
   profile: ArenaProfile;
+};
+
+export type ArenaSkillBranchId = "offense" | "defense" | "utility";
+
+export type ArenaSkillBranch = {
+  id: ArenaSkillBranchId;
+  name: string;
+  color: string;
+};
+
+export type ArenaSkillNode = {
+  id: string;
+  branch: ArenaSkillBranchId;
+  branchName: string;
+  branchColor: string;
+  chain: string;
+  chainName: string;
+  tier: number;
+  name: string;
+  description: string;
+  prerequisiteId: string | null;
+  statBonus: ArenaStatsBlock;
+  passive: ArenaPassiveRule | null;
+  position: { x: number; y: number };
+};
+
+export type ArenaSkillAllocation = {
+  userId: string;
+  nodeId: string;
+  activatedAt: string;
+};
+
+export type ArenaSkillTreeResponse = {
+  branches: ArenaSkillBranch[];
+  nodes: ArenaSkillNode[];
+  allocations: ArenaSkillAllocation[];
+  earnedPoints: number;
+  spentPoints: number;
+  availablePoints: number;
+  level: number;
+  coins: number;
+  resetCost: number;
+  stats: ArenaStatsBlock;
 };
 
 export type ArenaShopItem = {
@@ -477,6 +534,59 @@ export async function fetchArenaProfile(token: string): Promise<ArenaProfile> {
   }
 
   return normalizeProfile(await response.json());
+}
+
+export async function fetchArenaSkillTree(
+  token: string,
+): Promise<ArenaSkillTreeResponse> {
+  const response = await fetch(joinApi("/arena/skill-tree"), {
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaSkillTreeResponse;
+}
+
+export async function activateArenaSkill(
+  token: string,
+  nodeId: string,
+): Promise<ArenaSkillTreeResponse> {
+  const response = await fetch(joinApi("/arena/skill-tree/activate"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ nodeId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaSkillTreeResponse;
+}
+
+export async function resetArenaSkillTree(
+  token: string,
+): Promise<ArenaSkillTreeResponse> {
+  const response = await fetch(joinApi("/arena/skill-tree/reset"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaSkillTreeResponse;
 }
 
 export async function drawArenaCard(

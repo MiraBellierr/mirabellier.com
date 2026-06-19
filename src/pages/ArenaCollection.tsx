@@ -161,6 +161,10 @@ const ArenaCollection = () => {
                 <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
                   [ Leaderboard ]
                 </Link>
+                <span className="font-bold">|</span>
+                <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
+                  [ Skill Tree ]
+                </Link>
               </div>
 
               {!token ? (
