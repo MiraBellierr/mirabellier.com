@@ -7,6 +7,7 @@ import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
+import TurnstileWidget from "@/components/TurnstileWidget";
 import { resolveAsset } from "@/lib/blog-utils";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
@@ -58,6 +59,8 @@ const QuestionOfTheDay = () => {
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
   const [answer, setAnswer] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [refreshTick, setRefreshTick] = useState(0);
   const isOwner = canModerateQuestionOfTheDay(auth?.user);
 
@@ -168,6 +171,11 @@ const QuestionOfTheDay = () => {
       return;
     }
 
+    if (!turnstileToken) {
+      setSubmitError("Please complete the human verification.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -178,6 +186,7 @@ const QuestionOfTheDay = () => {
         name: auth?.user ? undefined : guestName,
         token: auth?.token ?? null,
         guestToken,
+        turnstileToken,
       });
 
       const refreshed = await fetchCurrentQuestionOfTheDay({
@@ -193,6 +202,8 @@ const QuestionOfTheDay = () => {
       );
     } finally {
       setSubmitting(false);
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   };
 
@@ -344,6 +355,12 @@ const QuestionOfTheDay = () => {
                             />
                           </label>
 
+                          <TurnstileWidget
+                            action="question_of_the_day"
+                            onTokenChange={setTurnstileToken}
+                            resetKey={turnstileResetKey}
+                          />
+
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <p className="text-xs text-blue-400">
                               {remainingCharacters} characters left
@@ -351,7 +368,7 @@ const QuestionOfTheDay = () => {
 
                             <button
                               type="submit"
-                              disabled={submitting}
+                              disabled={submitting || !turnstileToken}
                               className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-pink-300"
                             >
                               {submitting ? "Posting..." : "Post answer"}

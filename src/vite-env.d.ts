@@ -24,6 +24,7 @@ interface ImportMetaEnv {
   readonly PROD: boolean;
   readonly VITE_API_BASE?: string;
   readonly VITE_ANIME_STORAGE_KEY?: string;
+  readonly VITE_TURNSTILE_SITE_KEY?: string;
 }
 
 interface ImportMeta {

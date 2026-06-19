@@ -464,12 +464,15 @@ export async function drawArenaCard(
   return (await response.json()) as { card: ArenaCard; profile: ArenaProfile };
 }
 
-export async function runArenaFight(token: string): Promise<ArenaFightResponse> {
+export async function runArenaFight(
+  token: string,
+  turnstileToken: string,
+): Promise<ArenaFightResponse> {
   const response = await fetch(joinApi("/arena/fight"), {
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({}),
+    body: JSON.stringify({ turnstileToken }),
   });
 
   if (!response.ok) {

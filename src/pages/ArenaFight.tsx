@@ -7,6 +7,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import TurnstileWidget from "@/components/TurnstileWidget";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -55,6 +56,8 @@ const ArenaFight = () => {
   const [fighting, setFighting] = useState(false);
   const [playbackDone, setPlaybackDone] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [floaters, setFloaters] = useState<DmgFloater[]>([]);
   const [playerFallen, setPlayerFallen] = useState(false);
   const [opponentFallen, setOpponentFallen] = useState(false);
@@ -248,11 +251,11 @@ const ArenaFight = () => {
   }, [token]);
 
   const handleFight = async () => {
-    if (!token || fighting || !playbackDone) return;
+    if (!token || !turnstileToken || fighting || !playbackDone) return;
     setFighting(true);
     setErrorMessage(null);
     try {
-      const payload = await runArenaFight(token);
+      const payload = await runArenaFight(token, turnstileToken);
       setFight(payload);
       setProfile(payload.profile);
       startConsolePlayback(payload);
@@ -260,6 +263,8 @@ const ArenaFight = () => {
       setErrorMessage(normalizeArenaError(error));
     } finally {
       setFighting(false);
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   };
 
@@ -408,14 +413,28 @@ const ArenaFight = () => {
                   ) : null}
 
                   {/* Buttons */}
+                  <div className="mx-auto w-full max-w-sm">
+                    <TurnstileWidget
+                      action="arena_fight"
+                      onTokenChange={setTurnstileToken}
+                      resetKey={turnstileResetKey}
+                    />
+                  </div>
+
                   <div className="flex flex-wrap justify-center gap-2">
                     <button
                       type="button"
                       onClick={() => void handleFight()}
-                      disabled={fighting || !playbackDone}
+                      disabled={fighting || !playbackDone || !turnstileToken}
                       className="arena-redraw-button hover:animate-wiggle"
                     >
-                      {fighting ? "[ Fighting... ]" : !playbackDone ? "[ Wait... ]" : "[ Fight! ]"}
+                      {fighting
+                        ? "[ Fighting... ]"
+                        : !playbackDone
+                          ? "[ Wait... ]"
+                          : !turnstileToken
+                            ? "[ Verify first ]"
+                            : "[ Fight! ]"}
                     </button>
                   </div>
 

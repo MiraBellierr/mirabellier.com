@@ -10,6 +10,7 @@ env:
   FRONTEND_DEPLOY_PATH: /var/www/mirabellier.com/current
   BACKEND_DEPLOY_PATH: /srv/mirabellier.com/api
   BACKEND_SOURCE_PATH: /srv/mirabellier.com/api
+  VITE_TURNSTILE_SITE_KEY: 0x4AAAAAADnfSZ1AsWqZYErS
 
 jobs:
   build-frontend:

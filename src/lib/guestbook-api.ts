@@ -131,6 +131,7 @@ export async function createGuestbookEntry(input: {
   name?: string;
   website?: string;
   token?: string | null;
+  turnstileToken: string;
   x?: number;
   y?: number;
 }) {
@@ -148,6 +149,7 @@ export async function createGuestbookEntry(input: {
       website: normalizeWebsite(input.website),
       message: input.message,
       mood: input.mood,
+      turnstileToken: input.turnstileToken,
       x: input.x,
       y: input.y,
     }),

@@ -9,6 +9,7 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { createGuestbookEntry, type GuestbookMood } from "@/lib/guestbook-api";
 import { guestbookMoodMeta } from "@/lib/guestbook-ui";
 import { usePageSeo } from "@/lib/seo";
+import TurnstileWidget from "@/components/TurnstileWidget";
 import "@/styles/guestbook.css";
 
 const moodValues = Object.keys(guestbookMoodMeta) as GuestbookMood[];
@@ -19,6 +20,8 @@ const GuestbookSign = () => {
   const signedInUsername = auth?.user?.username || "";
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [form, setForm] = useState({
     name: "",
     website: "",
@@ -63,6 +66,11 @@ const GuestbookSign = () => {
       return;
     }
 
+    if (!turnstileToken) {
+      setSubmitError("Please complete the human verification.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -72,6 +80,7 @@ const GuestbookSign = () => {
         message: form.message,
         mood: form.mood,
         token: auth?.token ?? null,
+        turnstileToken,
         x: 0,
         y: 0,
       });
@@ -83,6 +92,8 @@ const GuestbookSign = () => {
       );
     } finally {
       setSubmitting(false);
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   };
 
@@ -220,6 +231,12 @@ const GuestbookSign = () => {
                   />
                 </label>
 
+                <TurnstileWidget
+                  action="guestbook"
+                  onTokenChange={setTurnstileToken}
+                  resetKey={turnstileResetKey}
+                />
+
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-xs text-blue-400">
                     {remainingChars} characters left
@@ -227,7 +244,7 @@ const GuestbookSign = () => {
 
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || !turnstileToken}
                     className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-pink-300"
                   >
                     {submitting ? "Signing..." : "Pin my note"}

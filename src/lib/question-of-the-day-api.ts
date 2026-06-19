@@ -217,6 +217,7 @@ export async function submitQuestionOfTheDayAnswer(input: {
   name?: string;
   token?: string | null;
   guestToken?: string | null;
+  turnstileToken: string;
 }) {
   const response = await fetch(joinApi("/question-of-the-day/current/answers"), {
     method: "POST",
@@ -231,6 +232,7 @@ export async function submitQuestionOfTheDayAnswer(input: {
       answer: input.answer,
       name: input.name,
       guestToken: input.guestToken,
+      turnstileToken: input.turnstileToken,
     }),
   });
 
