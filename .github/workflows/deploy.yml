@@ -8,8 +8,6 @@ on:
 
 env:
   FRONTEND_DEPLOY_PATH: /var/www/mirabellier.com/current
-  BACKEND_DEPLOY_PATH: /srv/mirabellier.com/api
-  BACKEND_SOURCE_PATH: /srv/mirabellier.com/api
   VITE_TURNSTILE_SITE_KEY: 0x4AAAAAADnfSZ1AsWqZYErS
 
 jobs:
@@ -78,80 +76,3 @@ jobs:
           source: "dist/*"
           target: "${{ env.FRONTEND_DEPLOY_PATH }}"
           strip_components: 1
-
-  deploy-backend:
-    needs: build-frontend
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy backend to VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          timeout: 60s
-          command_timeout: 30m
-          script: |
-            set -euo pipefail
-
-            BRANCH="${{ github.ref_name }}"
-            SOURCE_PATH="${{ env.BACKEND_SOURCE_PATH }}"
-            DEPLOY_PATH="${{ env.BACKEND_DEPLOY_PATH }}"
-
-            if [ ! -d "$SOURCE_PATH/.git" ]; then
-              echo "Backend source repository was not found at $SOURCE_PATH"
-              echo "Create it on the server (or update BACKEND_SOURCE_PATH in this workflow)."
-              exit 1
-            fi
-
-            cd "$SOURCE_PATH"
-            git fetch --all --prune
-            git checkout "$BRANCH"
-            git pull --ff-only origin "$BRANCH"
-
-            mkdir -p "$DEPLOY_PATH"
-
-            if command -v rsync >/dev/null 2>&1; then
-              rsync -a --delete \
-                --exclude ".git/" \
-                --exclude ".github/" \
-                --exclude "node_modules/" \
-                --exclude ".env" \
-                --exclude "database.sqlite3" \
-                "$SOURCE_PATH"/ "$DEPLOY_PATH"/
-            else
-              find "$DEPLOY_PATH" -mindepth 1 -maxdepth 1 ! -name '.env' ! -name 'database.sqlite3' -exec rm -rf {} +
-              cp -a "$SOURCE_PATH"/. "$DEPLOY_PATH"/
-              rm -rf "$DEPLOY_PATH/.git" "$DEPLOY_PATH/.github" "$DEPLOY_PATH/node_modules"
-            fi
-
-            if [ ! -f "$DEPLOY_PATH/.env" ] && [ -f "$SOURCE_PATH/.env" ]; then
-              cp "$SOURCE_PATH/.env" "$DEPLOY_PATH/.env"
-            fi
-
-            if [ ! -f "$DEPLOY_PATH/database.sqlite3" ] && [ -f "$SOURCE_PATH/database.sqlite3" ]; then
-              cp "$SOURCE_PATH/database.sqlite3" "$DEPLOY_PATH/database.sqlite3"
-            fi
-
-            cd "$DEPLOY_PATH"
-            if [ -f package-lock.json ]; then
-              npm ci --omit=dev
-            else
-              npm install --omit=dev
-            fi
-
-            if ! command -v pm2 >/dev/null 2>&1; then
-              echo "pm2 is not installed for user $(whoami)."
-              echo "Install pm2 first: npm install -g pm2"
-              exit 1
-            fi
-
-            if pm2 describe mirabellier-api >/dev/null 2>&1; then
-              pm2 restart mirabellier-api --update-env
-            else
-              pm2 start app.js --name mirabellier-api
-            fi
-
-            pm2 save

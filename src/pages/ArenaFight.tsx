@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -12,13 +12,15 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
+  type ArenaActiveFight,
   type ArenaBattleConsoleEvent,
-  type ArenaFightResponse,
   type ArenaProfile,
+  advanceFightTurn,
   fetchArenaProfile,
-  runArenaFight,
+  fetchFightState,
+  skipFight,
+  startPlaybackFight,
 } from "@/lib/arena-api";
-
 
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;
@@ -49,12 +51,13 @@ function HpBar({ current, max, label }: { current: number; max: number; label: s
 const ArenaFight = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
+
   const [profile, setProfile] = useState<ArenaProfile | null>(null);
-  const [fight, setFight] = useState<ArenaFightResponse | null>(null);
-  const [visibleConsole, setVisibleConsole] = useState<ArenaBattleConsoleEvent[]>([]);
+  const [activeFight, setActiveFight] = useState<ArenaActiveFight | null>(null);
   const [loading, setLoading] = useState(false);
-  const [fighting, setFighting] = useState(false);
-  const [playbackDone, setPlaybackDone] = useState(true);
+  const [starting, setStarting] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
@@ -64,6 +67,78 @@ const ArenaFight = () => {
   const playerCardRef = useRef<HTMLDivElement | null>(null);
   const opponentCardRef = useRef<HTMLDivElement | null>(null);
   const floaterKey = useRef(0);
+  const consoleRef = useRef<HTMLDivElement | null>(null);
+
+  const advanceTimerRef = useRef<number | null>(null);
+  const syncTimerRef = useRef<number | null>(null);
+  const lastCursor = useRef(0);
+
+  const clearTimers = useCallback(() => {
+    if (advanceTimerRef.current !== null) {
+      window.clearInterval(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+    if (syncTimerRef.current !== null) {
+      window.clearInterval(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+  }, []);
+
+  // On unmount
+  useEffect(() => {
+    return () => clearTimers();
+  }, [clearTimers]);
+
+  usePageSeo({
+    canonical: "https://mirabellier.com/arena/fight",
+    structuredDataId: "arena-fight-structured-data",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Arena Fight",
+      description: "Fight opponents using your chosen daily character card.",
+      url: "https://mirabellier.com/arena/fight",
+    },
+  });
+
+  // ---- Load profile on mount ----
+  useEffect(() => {
+    let cancelled = false;
+    if (!token) {
+      setProfile(null);
+      setActiveFight(null);
+      return () => { cancelled = true; };
+    }
+
+    const loadProfile = async () => {
+      setLoading(true);
+      setErrorMessage(null);
+      try {
+        const payload = await fetchArenaProfile(token);
+        if (cancelled) return;
+        setProfile(payload);
+        // If there's an active fight, resume it
+        if (payload.activeFight) {
+          setActiveFight(payload.activeFight);
+          lastCursor.current = payload.activeFight.cursor;
+          if (!payload.activeFight.isFinished) {
+            startAdvanceLoop();
+            startSyncLoop();
+          }
+        }
+      } catch (error) {
+        if (cancelled) return;
+        setErrorMessage(normalizeArenaError(error));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadProfile();
+    return () => { cancelled = true; };
+  }, [token]);
+
+  // ---- Visual effects ----
 
   const shakeCard = (ref: React.RefObject<HTMLDivElement | null>, hard: boolean) => {
     const el = ref.current;
@@ -90,103 +165,18 @@ const ArenaFight = () => {
         ];
     el.animate(keyframes, { duration: hard ? 600 : 450, easing: "ease-out" });
   };
-  const playbackTimerRef = useRef<number | null>(null);
-  const consoleRef = useRef<HTMLDivElement | null>(null);
 
-  usePageSeo({
-    canonical: "https://mirabellier.com/arena/fight",
-    structuredDataId: "arena-fight-structured-data",
-    structuredData: {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      name: "Arena Fight",
-      description: "Fight opponents using your chosen daily character card.",
-      url: "https://mirabellier.com/arena/fight",
-    },
-  });
+  // Detect new turns from cursor changes and spawn floaters/shakes
+  const triggerTurnEffects = useCallback((prevCursor: number, fight: ArenaActiveFight) => {
+    const turns = fight.turns || [];
+    // Only process the newly revealed turn(s)
+    for (let i = prevCursor; i < fight.cursor; i++) {
+      const turn = turns[i];
+      if (!turn) continue;
 
-  const clearPlayback = () => {
-    if (playbackTimerRef.current !== null) {
-      window.clearInterval(playbackTimerRef.current);
-      playbackTimerRef.current = null;
-    }
-  };
+      const isPlayerDefender = turn.defender === "player";
 
-  const startConsolePlayback = (payload: ArenaFightResponse) => {
-    clearPlayback();
-
-    const events = payload.battle.console || [];
-    if (events.length === 0) {
-      setVisibleConsole(events);
-      setPlaybackDone(true);
-      return;
-    }
-
-    setVisibleConsole([]);
-    setPlaybackDone(false);
-
-    let index = 0;
-    const delay = 850;
-
-    playbackTimerRef.current = window.setInterval(() => {
-      index += 1;
-      setVisibleConsole(events.slice(0, index));
-
-      if (index >= events.length) {
-        clearPlayback();
-        setPlaybackDone(true);
-      }
-    }, delay);
-  };
-
-  useEffect(() => {
-    return () => {
-      clearPlayback();
-    };
-  }, []);
-
-  // Trigger card fall on defeat
-  useEffect(() => {
-    if (!playbackDone || !fight) return;
-    const playerLost = fight.battle.finalHp.player <= 0;
-    const opponentLost = fight.battle.finalHp.opponent <= 0;
-    if (playerLost) setPlayerFallen(true);
-    if (opponentLost) setOpponentFallen(true);
-  }, [playbackDone, fight]);
-
-  // Reset fall on new fight
-  useEffect(() => {
-    if (!fight) return;
-    setPlayerFallen(false);
-    setOpponentFallen(false);
-  }, [fight]);
-
-  // Spawn floaters + shakes synced to console playback events
-  const processedRounds = useRef(new Set<number>());
-  useEffect(() => {
-    if (!fight || visibleConsole.length === 0) return;
-    const rounds = fight.rounds || [];
-    if (rounds.length === 0) return;
-
-    // Count console lines that represent actual damage/miss events (not "is attacking")
-    let damageLines = 0;
-    for (const entry of visibleConsole) {
-      const lower = entry.line.toLowerCase();
-      if (lower.includes("dealt") || lower.includes("avoid")) {
-        damageLines++;
-      }
-    }
-
-    // Process rounds up to the number of damage/miss console lines
-    const max = Math.min(rounds.length, damageLines);
-    for (let i = 0; i < max; i++) {
-      if (processedRounds.current.has(i)) continue;
-      processedRounds.current.add(i);
-
-      const r = rounds[i];
-      const isPlayerDefender = r.defender === "player";
-
-      if (r.avoided) {
+      if (turn.avoided) {
         const key = floaterKey.current++;
         const mx = isPlayerDefender ? 8 + Math.random() * 28 : 64 + Math.random() * 28;
         setFloaters((prev) => [...prev, { key, value: 0, crit: false, x: mx, y: 20 + Math.random() * 40 }]);
@@ -195,87 +185,176 @@ const ArenaFight = () => {
         continue;
       }
 
-      const dmg = Number(r.damage) || 0;
+      const dmg = Number(turn.damage) || 0;
       if (dmg <= 0) continue;
 
-      const isCrit = Boolean(r.critical);
+      const isCrit = Boolean(turn.critical);
       const key = floaterKey.current++;
       const fx = isPlayerDefender ? 8 + Math.random() * 28 : 64 + Math.random() * 28;
       setFloaters((prev) => [...prev, { key, value: dmg, crit: isCrit, x: fx, y: 20 + Math.random() * 40 }]);
       setTimeout(() => setFloaters((prev) => prev.filter((f) => f.key !== key)), 1800);
-
       shakeCard(isPlayerDefender ? playerCardRef : opponentCardRef, isCrit);
     }
-  }, [visibleConsole, fight]);
+  }, []);
 
-  // Reset on new fight
+  // Fall animation when fight finishes
   useEffect(() => {
-    if (!fight) return;
-    setFloaters([]);
-    processedRounds.current.clear();
-  }, [fight]);
+    if (!activeFight?.isFinished) return;
+    const playerLost = activeFight.battle.currentHp.player <= 0;
+    const opponentLost = activeFight.battle.currentHp.opponent <= 0;
+    if (playerLost) setPlayerFallen(true);
+    if (opponentLost) setOpponentFallen(true);
+  }, [activeFight?.isFinished]);
 
+  // Reset fall when new fight starts
+  useEffect(() => {
+    if (!activeFight || activeFight.cursor > 0) return;
+    setFloaters([]);
+    setPlayerFallen(false);
+    setOpponentFallen(false);
+    lastCursor.current = 0;
+  }, [activeFight?.fightId]);
+
+  // Auto-scroll console
   useEffect(() => {
     if (!consoleRef.current) return;
     consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
-  }, [visibleConsole, fight]);
+  }, [activeFight?.turns.length, activeFight?.cursor]);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!token) {
-      setProfile(null);
-      return () => {
-        cancelled = true;
-      };
-    }
+  // ---- Advance + Sync loops ----
 
-    const loadProfile = async () => {
-      setLoading(true);
-      setErrorMessage(null);
-      try {
-        const payload = await fetchArenaProfile(token);
-        if (cancelled) return;
-        setProfile(payload);
-      } catch (error) {
-        if (cancelled) return;
-        setErrorMessage(normalizeArenaError(error));
-      } finally {
-        if (!cancelled) setLoading(false);
+  const doAdvance = useCallback(async () => {
+    if (!token || advancing) return;
+    setAdvancing(true);
+    try {
+      const updated = await advanceFightTurn(token);
+      const prev = lastCursor.current;
+      lastCursor.current = updated.cursor;
+      setActiveFight(updated);
+      if (updated.cursor > prev) {
+        triggerTurnEffects(prev, updated);
       }
-    };
+      if (updated.isFinished) {
+        clearTimers();
+        // Refresh profile to get updated stats
+        try {
+          const refreshed = await fetchArenaProfile(token);
+          setProfile(refreshed);
+        } catch { /* ignore profile refresh errors */ }
+      }
+    } catch {
+      // Silently ignore — will retry on next tick
+    } finally {
+      setAdvancing(false);
+    }
+  }, [token, advancing, clearTimers, triggerTurnEffects]);
 
-    void loadProfile();
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+  const startAdvanceLoop = useCallback(() => {
+    if (advanceTimerRef.current !== null) return;
+    advanceTimerRef.current = window.setInterval(() => {
+      void doAdvance();
+    }, 800);
+  }, [doAdvance]);
 
-  const handleFight = async () => {
-    if (!token || !turnstileToken || fighting || !playbackDone) return;
-    setFighting(true);
+  const doSync = useCallback(async () => {
+    if (!token) return;
+    try {
+      const { activeFight: state } = await fetchFightState(token);
+      if (!state) {
+        clearTimers();
+        setActiveFight(null);
+        return;
+      }
+      const prev = lastCursor.current;
+      if (state.cursor > prev) {
+        lastCursor.current = state.cursor;
+        setActiveFight(state);
+        triggerTurnEffects(prev, state);
+      }
+      if (state.isFinished) {
+        clearTimers();
+        setActiveFight(state);
+        try {
+          const refreshed = await fetchArenaProfile(token);
+          setProfile(refreshed);
+        } catch { /* ignore */ }
+      }
+    } catch {
+      // ignore sync errors
+    }
+  }, [token, clearTimers, triggerTurnEffects]);
+
+  const startSyncLoop = useCallback(() => {
+    if (syncTimerRef.current !== null) return;
+    syncTimerRef.current = window.setInterval(() => {
+      void doSync();
+    }, 2000);
+  }, [doSync]);
+
+  // ---- User actions ----
+
+  const handleStartFight = async () => {
+    if (!token || !turnstileToken || starting) return;
+    // If there's already an active fight, don't start a new one
+    if (activeFight && !activeFight.isFinished) return;
+
+    setStarting(true);
     setErrorMessage(null);
     try {
-      const payload = await runArenaFight(token, turnstileToken);
-      setFight(payload);
-      setProfile(payload.profile);
-      startConsolePlayback(payload);
+      const fight = await startPlaybackFight(token, turnstileToken);
+      setActiveFight(fight);
+      lastCursor.current = fight.cursor;
+      // Refresh profile (the start endpoint already updates profile on server)
+      try {
+        const refreshed = await fetchArenaProfile(token);
+        setProfile(refreshed);
+      } catch { /* ignore */ }
+      startAdvanceLoop();
+      startSyncLoop();
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
     } finally {
-      setFighting(false);
-      setTurnstileToken(null);
-      setTurnstileResetKey((value) => value + 1);
+      setStarting(false);
     }
   };
 
-  const hpSnapshot = fight
-    ? visibleConsole.length > 0
-      ? visibleConsole[visibleConsole.length - 1]
-      : {
-          line: "",
-          playerHp: fight.battle.maxHp.player,
-          opponentHp: fight.battle.maxHp.opponent,
-        }
+  const handleSkip = async () => {
+    if (!token || skipping || !activeFight || activeFight.isFinished) return;
+    setSkipping(true);
+    try {
+      const fight = await skipFight(token);
+      setActiveFight(fight);
+      lastCursor.current = fight.cursor;
+      clearTimers();
+      // Refresh profile
+      try {
+        const refreshed = await fetchArenaProfile(token);
+        setProfile(refreshed);
+      } catch { /* ignore */ }
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setSkipping(false);
+    }
+  };
+
+  // ---- Derived display state ----
+
+  const fightInProgress = activeFight && !activeFight.isFinished;
+  const fightFinished = activeFight?.isFinished;
+  const consoleLines: ArenaBattleConsoleEvent[] = activeFight?.battle?.console || [];
+
+  const hpCurrent = activeFight
+    ? activeFight.battle.currentHp
+    : { player: 0, opponent: 0 };
+  const hpMax = activeFight
+    ? activeFight.battle.maxHp
+    : { player: 0, opponent: 0 };
+
+  const resultText = activeFight?.result
+    ? activeFight.result === "win"
+      ? "VICTORY!"
+      : "DEFEAT"
     : null;
 
   return (
@@ -293,166 +372,189 @@ const ArenaFight = () => {
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <div className="arena-duel-panel relative mx-auto max-w-2xl overflow-hidden p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4">
               <div className="relative space-y-4">
-              <div className="">
-                <h2 className="text-4xl font-bold text-blue-900">Time For Battle !{`>^. .^<`}</h2>
-                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
-                  <span className="text-pink-300">✿</span> Let's see if your card is superior than your opponent!{" "}
-                  <span className="text-pink-300">✿</span>
-                </p>
-              </div>
+                <div className="">
+                  <h2 className="text-4xl font-bold text-blue-900">Time For Battle !{`>^. .^<`}</h2>
+                  <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                    <span className="text-pink-300">✿</span> Let's see if your card is superior than your opponent!{" "}
+                    <span className="text-pink-300">✿</span>
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap justify-center gap-3 pt-3 border-b border-sky-100 pb-3">
-                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
-                  [ Arena Home ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
-                  [ Shop ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
-                  [ Craft ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
-                  [ Leaderboard ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
-                  [ Collection ]
-                </Link>
-              </div>
-
-              {!token ? (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
-                  <p className="font-semibold">Login is required to fight.</p>
-                  <Link to="/login" className="mt-2 inline-block underline">
-                    go to login
+                <div className="flex flex-wrap justify-center gap-3 pt-3 border-b border-sky-100 pb-3">
+                  <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
+                    [ Arena Home ]
+                  </Link>
+                  <span className="font-bold">|</span>
+                  <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
+                    [ Shop ]
+                  </Link>
+                  <span className="font-bold">|</span>
+                  <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
+                    [ Craft ]
+                  </Link>
+                  <span className="font-bold">|</span>
+                  <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
+                    [ Leaderboard ]
+                  </Link>
+                  <span className="font-bold">|</span>
+                  <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
+                    [ Collection ]
                   </Link>
                 </div>
-              ) : loading && !profile ? (
-                <p className="text-blue-500">Loading profile...</p>
-              ) : profile && !profile.selectedCard ? (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
-                  <p className="font-semibold">Draw a card to start.</p>
-                  <Link to="/arena" className="mt-2 inline-block underline">
-                    go to arena home
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-5 mx-auto">
-                  {/* Card vs Card display */}
-                  <div className="relative">
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      {/* Player card */}
-                      <div className="flex justify-center">
-                        <div ref={playerCardRef} className={playerFallen ? "card-fall-off" : ""}>
-                          <div className="arena-chosen-card-body">
-                            <div className="arena-card-portrait-slot">
-                              {profile?.selectedCard ? (
-                                <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" />
-                              ) : null}
+
+                {!token ? (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
+                    <p className="font-semibold">Login is required to fight.</p>
+                    <Link to="/login" className="mt-2 inline-block underline">
+                      go to login
+                    </Link>
+                  </div>
+                ) : loading && !profile ? (
+                  <p className="text-blue-500">Loading profile...</p>
+                ) : profile && !profile.selectedCard ? (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
+                    <p className="font-semibold">Draw a card to start.</p>
+                    <Link to="/arena" className="mt-2 inline-block underline">
+                      go to arena home
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-5 mx-auto">
+                    {/* Card vs Card display */}
+                    <div className="relative">
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        {/* Player card */}
+                        <div className="flex justify-center">
+                          <div ref={playerCardRef} className={playerFallen ? "card-fall-off" : ""}>
+                            <div className="arena-chosen-card-body">
+                              <div className="arena-card-portrait-slot">
+                                {profile?.selectedCard ? (
+                                  <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" />
+                                ) : null}
+                              </div>
                             </div>
+                          </div>
+                        </div>
+
+                        {/* VS */}
+                        <div className="flex justify-center">
+                          <span className="text-2xl font-black text-pink-400 select-none shrink-0">VS</span>
+                        </div>
+
+                        {/* Opponent card */}
+                        <div className="flex justify-center">
+                          <div ref={opponentCardRef} className={opponentFallen ? "card-fall-off" : ""}>
+                            {activeFight?.opponent?.selectedCard ? (
+                              <div className="arena-chosen-card-body">
+                                <div className="arena-card-portrait-slot">
+                                  <ArenaPortraitCard card={activeFight.opponent.selectedCard} level={activeFight.opponent.level} className="arena-duel-card" />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="arena-chosen-card-body">
+                                <div className="arena-card-portrait-slot">
+                                  <div className="arena-empty-card">?</div>
+                                </div>
+                              </div>
+                            )}
+                            {activeFight?.opponent ? (
+                              <p className="text-xs text-slate-500 mt-1 text-center">
+                                {activeFight.opponent.displayName}{activeFight.opponent.isNpc ? " (NPC)" : ""}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </div>
 
-                      {/* VS */}
-                      <div className="flex justify-center">
-                        <span className="text-2xl font-black text-pink-400 select-none shrink-0">VS</span>
+                      {/* Floating damage over cards */}
+                      {floaters.map((f) => (
+                        <span
+                          key={f.key}
+                          className={f.value === 0 ? "dmg-float dmg-float--miss" : f.crit ? "dmg-float dmg-float--crit" : "dmg-float dmg-float--hit"}
+                          style={{ left: `${f.x}%`, top: `${f.y}%` }}
+                        >
+                          {f.value === 0 ? "MISS!" : f.crit ? `CRIT ${f.value}!` : `-${f.value}`}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* HP bars */}
+                    {activeFight ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <HpBar current={hpCurrent.player} max={hpMax.player} label="Your HP" />
+                        <HpBar current={hpCurrent.opponent} max={hpMax.opponent} label="Opponent HP" />
                       </div>
+                    ) : null}
 
-                      {/* Opponent card */}
-                      <div className="flex justify-center">
-                        <div ref={opponentCardRef} className={opponentFallen ? "card-fall-off" : ""}>
-                          {fight?.opponent?.selectedCard ? (
-                            <div className="arena-chosen-card-body">
-                              <div className="arena-card-portrait-slot">
-                                <ArenaPortraitCard card={fight.opponent.selectedCard} level={fight.opponent.level} className="arena-duel-card" />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="arena-chosen-card-body">
-                              <div className="arena-card-portrait-slot">
-                                <div className="arena-empty-card">?</div>
-                              </div>
-                            </div>
-                          )}
-                          {fight?.opponent ? (
-                            <p className="text-xs text-slate-500 mt-1 text-center">{fight.opponent.displayName}{fight.opponent.isNpc ? " (NPC)" : ""}</p>
-                          ) : null}
-                        </div>
+                    {/* Turn counter */}
+                    {activeFight ? (
+                      <p className="text-center text-xs text-slate-500">
+                        Turn {activeFight.cursor} / {activeFight.totalTurns}
+                        {fightInProgress ? " — playing..." : fightFinished ? " — finished" : ""}
+                      </p>
+                    ) : null}
+
+                    {/* Result summary */}
+                    {fightFinished ? (
+                      <div className={`p-3 text-center text-sm font-semibold ${activeFight?.result === "win" ? "text-emerald-700" : "text-red-700"}`}>
+                        {resultText}
                       </div>
+                    ) : null}
+
+                    {/* Buttons */}
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {/* Fight / Start button */}
+                      {!fightInProgress ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleStartFight()}
+                          disabled={starting || !turnstileToken || (!!activeFight && !activeFight.isFinished)}
+                          className="arena-redraw-button hover:animate-wiggle"
+                        >
+                          {starting
+                            ? "[ Starting... ]"
+                            : !turnstileToken
+                              ? "[ Verify first ]"
+                              : fightFinished
+                                ? "[ Fight Again! ]"
+                                : "[ Fight! ]"}
+                        </button>
+                      ) : null}
+
+                      {/* Skip button — only while fight is in progress */}
+                      {fightInProgress ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleSkip()}
+                          disabled={skipping}
+                          className="arena-redraw-button hover:animate-wiggle"
+                        >
+                          {skipping ? "[ Skipping... ]" : "[ Skip ]"}
+                        </button>
+                      ) : null}
                     </div>
 
-                    {/* Floating damage over cards */}
-                    {floaters.map((f) => (
-                      <span
-                        key={f.key}
-                        className={f.value === 0 ? "dmg-float dmg-float--miss" : f.crit ? "dmg-float dmg-float--crit" : "dmg-float dmg-float--hit"}
-                        style={{ left: `${f.x}%`, top: `${f.y}%` }}
-                      >
-                        {f.value === 0 ? "MISS!" : f.crit ? `CRIT ${f.value}!` : `-${f.value}`}
-                      </span>
-                    ))}
+                    {errorMessage ? (
+                      <ArenaErrorNotice message={errorMessage} />
+                    ) : null}
                   </div>
-
-                  {/* HP bars — only after fight starts */}
-                  {fight ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <HpBar current={hpSnapshot?.playerHp ?? fight.battle.maxHp.player} max={fight.battle.maxHp.player} label="Your HP" />
-                      <HpBar current={hpSnapshot?.opponentHp ?? fight.battle.maxHp.opponent} max={fight.battle.maxHp.opponent} label="Opponent HP" />
-                    </div>
-                  ) : null}
-
-                  {/* Result summary */}
-                  {playbackDone && fight ? (
-                    <div className={`p-3 text-center text-sm font-semibold ${fight.result === "win" ? "text-emerald-700" : "text-red-700"}`}>
-                      {fight.result === "win" ? "VICTORY!" : "DEFEAT"} — +{fight.rewards.xp} XP · +{fight.rewards.coins} 🪙
-                    </div>
-                  ) : null}
-
-                  {/* Buttons */}
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void handleFight()}
-                      disabled={fighting || !playbackDone || !turnstileToken}
-                      className="arena-redraw-button hover:animate-wiggle"
-                    >
-                      {fighting
-                        ? "[ Fighting... ]"
-                        : !playbackDone
-                          ? "[ Wait... ]"
-                          : !turnstileToken
-                            ? "[ Verify first ]"
-                            : "[ Fight! ]"}
-                    </button>
-                  </div>
-
-              {errorMessage ? (
-                <ArenaErrorNotice message={errorMessage} />
-              ) : null}
-
-              
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </div>
 
             <Divider />
           </main>
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">
-            {fight ? (
+            {activeFight ? (
               <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
                 <h2 className="text-center text-lg font-bold text-blue-700 mb-2">console</h2>
                 <div
                   ref={consoleRef}
                   className="max-h-80 overflow-y-auto rounded-lg border border-slate-300 bg-slate-950 p-2 font-mono text-xs text-green-300"
                 >
-                  {visibleConsole.length > 0 ? (
-                    visibleConsole.map((entry, index) => (
+                  {consoleLines.length > 0 ? (
+                    consoleLines.map((entry, index) => (
                       <p key={`log-${index}`} className="leading-snug">{entry.line}</p>
                     ))
                   ) : (

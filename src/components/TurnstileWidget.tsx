@@ -73,6 +73,15 @@ export default function TurnstileWidget({
   const widgetIdRef = useRef<string | null>(null);
   const callbackRef = useRef(onTokenChange);
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || "";
+  const isDev = import.meta.env.DEV;
+
+  // In development, emit a dummy token immediately so the Fight button works
+  // without needing the Cloudflare Turnstile widget to load / render.
+  // Also re-emits after each resetKey change (post-fight widget reset).
+  useEffect(() => {
+    if (!isDev) return;
+    onTokenChange("dev-bypass-token");
+  }, [isDev, onTokenChange, resetKey]);
 
   useEffect(() => {
     callbackRef.current = onTokenChange;

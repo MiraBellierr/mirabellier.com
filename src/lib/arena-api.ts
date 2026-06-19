@@ -136,6 +136,7 @@ export type ArenaProfile = {
   lastFightAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  activeFight?: ArenaActiveFight | null;
 };
 
 export type ArenaEquippedItem = {
@@ -230,6 +231,38 @@ export type ArenaFightResponse = {
     usedGateKeyBypass?: boolean;
   };
   profile: ArenaProfile;
+};
+
+export type ArenaActiveFightBattle = {
+  maxHp: { player: number; opponent: number };
+  currentHp: { player: number; opponent: number };
+  console: ArenaBattleConsoleEvent[];
+};
+
+export type ArenaActiveFight = {
+  fightId: string;
+  cursor: number;
+  totalTurns: number;
+  isFinished: boolean;
+  result: "win" | "loss" | null;
+  opponent: {
+    userId: string;
+    displayName: string;
+    isNpc: boolean;
+    level: number;
+    stats: ArenaStatsBlock;
+    equipment: {
+      weapon: ArenaEquippedItem | null;
+      armor: ArenaEquippedItem | null;
+      charm: ArenaEquippedItem | null;
+    };
+    selectedCard: ArenaCard | null;
+  };
+  battle: ArenaActiveFightBattle;
+  turns: ArenaBattleTurn[];
+  score: { player: number; opponent: number };
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ArenaCollectionResponse = {
@@ -624,4 +657,74 @@ export async function fetchArenaLeaderboard(
   }
 
   return (await response.json()) as ArenaLeaderboardResponse;
+}
+
+export async function startPlaybackFight(
+  token: string,
+  turnstileToken: string,
+): Promise<ArenaActiveFight> {
+  const response = await fetch(joinApi("/arena/fight/start"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ turnstileToken }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaActiveFight;
+}
+
+export async function fetchFightState(
+  token: string,
+): Promise<{ activeFight: ArenaActiveFight | null }> {
+  const response = await fetch(joinApi("/arena/fight/state"), {
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as { activeFight: ArenaActiveFight | null };
+}
+
+export async function advanceFightTurn(
+  token: string,
+): Promise<ArenaActiveFight> {
+  const response = await fetch(joinApi("/arena/fight/advance"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaActiveFight;
+}
+
+export async function skipFight(
+  token: string,
+): Promise<ArenaActiveFight> {
+  const response = await fetch(joinApi("/arena/fight/skip"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaActiveFight;
 }

@@ -183,6 +183,20 @@ const Arena = () => {
                       </Link>
                     </div>
 
+                    {profile.activeFight && !profile.activeFight.isFinished ? (
+                      <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-center">
+                        <p className="text-sm font-bold text-amber-800">
+                          Fight in progress — Turn {profile.activeFight.cursor} / {profile.activeFight.totalTurns}
+                        </p>
+                        <Link
+                          to="/arena/fight"
+                          className="mt-1 inline-block text-sm font-bold text-blue-600 underline hover:text-blue-800"
+                        >
+                          Resume fight →
+                        </Link>
+                      </div>
+                    ) : null}
+
                     <div className="arena-chosen-card-body">
                       <div className="arena-card-portrait-slot">
                         {profile.selectedCard ? (
