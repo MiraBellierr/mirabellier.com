@@ -1567,6 +1567,75 @@ h6 {
   overflow-y: auto;
 }
 
+.arena-fight-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.arena-fight-combatant {
+  display: flex;
+  min-width: 0;
+  justify-content: center;
+}
+
+.arena-fight-combatant > div {
+  width: min(100%, 205px);
+}
+
+.arena-fight-stage .arena-chosen-card-body {
+  display: block;
+  width: 100%;
+}
+
+.arena-fight-stage .arena-card-portrait-slot {
+  width: 100%;
+  min-width: 0;
+  max-width: 205px;
+}
+
+.arena-fight-versus {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .arena-fight-stage {
+    position: relative;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: clamp(0.5rem, 3vw, 0.75rem);
+  }
+
+  .arena-fight-versus {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    z-index: 20;
+    width: 2.6rem;
+    height: 2.6rem;
+    align-items: center;
+    border: 2px solid rgba(244, 114, 182, 0.45);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 6px 16px rgba(30, 64, 175, 0.16);
+    transform: translate(-50%, -50%);
+  }
+
+  .dark .arena-fight-versus {
+    background: rgba(40, 35, 55, 0.9);
+  }
+
+  .arena-fight-versus span {
+    font-size: 1rem;
+  }
+
+  .arena-fight-panel .arena-redraw-button {
+    font-size: 0.9rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dmg-float, .card-shake, .card-shake-hard { animation: none !important; }
 }

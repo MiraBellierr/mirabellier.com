@@ -366,39 +366,41 @@ const ArenaFight = () => {
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
-        <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">
+        <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-2 sm:p-4 lg:flex-row">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
           </div>
 
-          <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <div className="arena-duel-panel relative mx-auto max-w-2xl overflow-hidden p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4">
+          <main className="w-full min-w-0 space-y-2 p-0 sm:p-4 lg:w-3/5">
+            <div className="arena-duel-panel arena-fight-panel relative mx-auto max-w-2xl overflow-hidden p-2 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4">
               <div className="relative space-y-4">
                 <div className="">
-                  <h2 className="text-4xl font-bold text-blue-900">Time For Battle !{`>^. .^<`}</h2>
+                  <h2 className="text-[clamp(1.75rem,9vw,2.25rem)] font-bold leading-tight text-blue-900 sm:text-4xl">
+                    Time For Battle !{`>^. .^<`}
+                  </h2>
                   <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
                     <span className="text-pink-300">✿</span> Let's see if your card is superior than your opponent!{" "}
                     <span className="text-pink-300">✿</span>
                   </p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-3 pt-3 border-b border-sky-100 pb-3">
+                <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 border-b border-sky-100 pb-3 pt-3">
                   <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
                     [ Arena Home ]
                   </Link>
-                  <span className="font-bold">|</span>
+                  <span className="hidden font-bold sm:inline">|</span>
                   <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
                     [ Shop ]
                   </Link>
-                  <span className="font-bold">|</span>
+                  <span className="hidden font-bold sm:inline">|</span>
                   <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
                     [ Craft ]
                   </Link>
-                  <span className="font-bold">|</span>
+                  <span className="hidden font-bold sm:inline">|</span>
                   <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
                     [ Leaderboard ]
                   </Link>
-                  <span className="font-bold">|</span>
+                  <span className="hidden font-bold sm:inline">|</span>
                   <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
                     [ Collection ]
                   </Link>
@@ -423,8 +425,8 @@ const ArenaFight = () => {
                 ) : (
                   <div className="space-y-5 mx-auto">
                     <div className="relative">
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <div className="flex justify-center">
+                      <div className="arena-fight-stage">
+                        <div className="arena-fight-combatant">
                           <div ref={playerCardRef} className={playerFallen ? "card-fall-off" : ""}>
                             <div className="arena-chosen-card-body">
                               <div className="arena-card-portrait-slot">
@@ -436,11 +438,11 @@ const ArenaFight = () => {
                           </div>
                         </div>
 
-                        <div className="flex justify-center">
-                          <span className="text-2xl font-black text-pink-400 select-none shrink-0">VS</span>
+                        <div className="arena-fight-versus" aria-hidden="true">
+                          <span className="select-none text-2xl font-black text-pink-400">VS</span>
                         </div>
 
-                        <div className="flex justify-center">
+                        <div className="arena-fight-combatant">
                           <div ref={opponentCardRef} className={opponentFallen ? "card-fall-off" : ""}>
                             {activeFight?.opponent?.selectedCard ? (
                               <div className="arena-chosen-card-body">
