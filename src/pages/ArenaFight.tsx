@@ -64,6 +64,8 @@ const ArenaFight = () => {
   const [playerFallen, setPlayerFallen] = useState(false);
   const [opponentFallen, setOpponentFallen] = useState(false);
   const [autoBattle, setAutoBattle] = useState(false);
+  const [nextAutoFightAt, setNextAutoFightAt] = useState<number | null>(null);
+  const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const playerCardRef = useRef<HTMLDivElement | null>(null);
   const opponentCardRef = useRef<HTMLDivElement | null>(null);
   const floaterKey = useRef(0);
@@ -86,7 +88,15 @@ const ArenaFight = () => {
       window.clearTimeout(autoTimerRef.current);
       autoTimerRef.current = null;
     }
+    setNextAutoFightAt(null);
   }, []);
+
+  useEffect(() => {
+    if (nextAutoFightAt === null) return;
+    setCountdownNow(Date.now());
+    const timer = window.setInterval(() => setCountdownNow(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [nextAutoFightAt]);
 
   // On unmount — clear all timers
   useEffect(() => {
@@ -307,9 +317,11 @@ const ArenaFight = () => {
 
   // ---- User actions ----
 
-  const handleStartFightRef = useRef<() => Promise<void>>(async () => {});
+  const handleStartFightRef = useRef<(automatic?: boolean) => Promise<void>>(
+    async () => {},
+  );
 
-  const handleStartFight = async () => {
+  const handleStartFight = async (automatic = false) => {
     if (!token || starting) return;
     if (activeFight && !activeFight.isFinished) return;
 
@@ -325,6 +337,23 @@ const ArenaFight = () => {
       } catch { /* ignore */ }
       startSyncLoop();
     } catch (error) {
+      if (
+        automatic &&
+        error instanceof ArenaApiError &&
+        error.code === "ARENA_FIGHT_COOLDOWN"
+      ) {
+        const retryAfterMs = Math.max(error.retryAfterMs || 250, 250);
+        clearAutoTimer();
+        setNextAutoFightAt(Date.now() + retryAfterMs + 50);
+        autoTimerRef.current = window.setTimeout(() => {
+          autoTimerRef.current = null;
+          setNextAutoFightAt(null);
+          if (pageVisible.current) {
+            void handleStartFightRef.current(true);
+          }
+        }, retryAfterMs + 50);
+        return;
+      }
       setErrorMessage(normalizeArenaError(error));
     } finally {
       setStarting(false);
@@ -338,9 +367,11 @@ const ArenaFight = () => {
     const finished = activeFight?.isFinished;
     if (!autoBattle || !finished || !pageVisible.current) return;
     clearAutoTimer();
+    setNextAutoFightAt(Date.now() + 1500);
     autoTimerRef.current = window.setTimeout(() => {
       autoTimerRef.current = null;
-      void handleStartFightRef.current();
+      setNextAutoFightAt(null);
+      void handleStartFightRef.current(true);
     }, 1500);
     return () => clearAutoTimer();
   }, [autoBattle, activeFight?.isFinished, clearAutoTimer]);
@@ -349,6 +380,10 @@ const ArenaFight = () => {
 
   const fightInProgress = activeFight && !activeFight.isFinished;
   const fightFinished = activeFight?.isFinished;
+  const nextAutoFightSeconds =
+    nextAutoFightAt === null
+      ? null
+      : Math.max(0, Math.ceil((nextAutoFightAt - countdownNow) / 1000));
   const consoleLines: ArenaBattleConsoleEvent[] = activeFight?.battle?.console || [];
 
   const hpCurrent = activeFight
@@ -535,6 +570,14 @@ const ArenaFight = () => {
                         />
                         Auto
                       </label>
+                      {autoBattle && nextAutoFightSeconds !== null ? (
+                        <span
+                          className="ml-3 text-sm font-bold text-blue-600 dark:text-sky-200"
+                          aria-live="polite"
+                        >
+                          Next fight in {nextAutoFightSeconds}s
+                        </span>
+                      ) : null}
                     </div>
 
                     {errorMessage ? (
