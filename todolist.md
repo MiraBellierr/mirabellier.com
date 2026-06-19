@@ -14,6 +14,7 @@
 
 ### Visibility and tests
 
+- [ ] Add a minimalistic XP progress bar to the Arena home page.
 - [ ] Show card IV combat bonuses in the displayed Arena stat breakdown so players can verify that IVs are working.
 - [ ] Update the stale backend test assertion from `attacked` to the current attack log wording.
 - [ ] Add deterministic regression tests for every passive and consumable listed above.
