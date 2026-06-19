@@ -273,7 +273,7 @@ const ArenaSkillTree = () => {
                   <div className="space-y-5 p-3">
                     {branchChains.map((branch) => (
                       <section key={branch.id}>
-                        <h3 className="mb-3 text-center text-sm font-black uppercase tracking-[0.15em] text-blue-900">
+                        <h3 className="mb-3 text-center text-sm font-black uppercase tracking-[0.15em] text-blue-900 dark:text-sky-200">
                           {branch.name}
                         </h3>
                         <div className="grid gap-4 sm:grid-cols-3">
