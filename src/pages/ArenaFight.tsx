@@ -18,7 +18,6 @@ import {
   advanceFightTurn,
   fetchArenaProfile,
   fetchFightState,
-  skipFight,
   startPlaybackFight,
 } from "@/lib/arena-api";
 
@@ -56,37 +55,56 @@ const ArenaFight = () => {
   const [activeFight, setActiveFight] = useState<ArenaActiveFight | null>(null);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [skipping, setSkipping] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [floaters, setFloaters] = useState<DmgFloater[]>([]);
   const [playerFallen, setPlayerFallen] = useState(false);
   const [opponentFallen, setOpponentFallen] = useState(false);
+  const [autoBattle, setAutoBattle] = useState(false);
   const playerCardRef = useRef<HTMLDivElement | null>(null);
   const opponentCardRef = useRef<HTMLDivElement | null>(null);
   const floaterKey = useRef(0);
   const consoleRef = useRef<HTMLDivElement | null>(null);
 
-  const advanceTimerRef = useRef<number | null>(null);
   const syncTimerRef = useRef<number | null>(null);
   const lastCursor = useRef(0);
+  const autoTimerRef = useRef<number | null>(null);
+  const pageVisible = useRef(true);
 
   const clearTimers = useCallback(() => {
-    if (advanceTimerRef.current !== null) {
-      window.clearInterval(advanceTimerRef.current);
-      advanceTimerRef.current = null;
-    }
     if (syncTimerRef.current !== null) {
       window.clearInterval(syncTimerRef.current);
       syncTimerRef.current = null;
     }
   }, []);
 
-  // On unmount
+  const clearAutoTimer = useCallback(() => {
+    if (autoTimerRef.current !== null) {
+      window.clearTimeout(autoTimerRef.current);
+      autoTimerRef.current = null;
+    }
+  }, []);
+
+  // On unmount — clear all timers
   useEffect(() => {
-    return () => clearTimers();
-  }, [clearTimers]);
+    return () => {
+      clearTimers();
+      clearAutoTimer();
+    };
+  }, [clearTimers, clearAutoTimer]);
+
+  // Pause auto-battle when tab loses focus
+  useEffect(() => {
+    const onVisibility = () => {
+      pageVisible.current = document.visibilityState === "visible";
+      if (!pageVisible.current) {
+        clearAutoTimer();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [clearAutoTimer]);
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/fight",
@@ -120,10 +138,10 @@ const ArenaFight = () => {
         if (payload.activeFight) {
           setActiveFight(payload.activeFight);
           lastCursor.current = payload.activeFight.cursor;
-          if (!payload.activeFight.isFinished) {
-            startAdvanceLoop();
-            startSyncLoop();
-          }
+        }
+        // Always start polling — so other tabs pick up new fights
+        if (!payload.activeFight?.isFinished) {
+          startSyncLoop();
         }
       } catch (error) {
         if (cancelled) return;
@@ -220,77 +238,69 @@ const ArenaFight = () => {
     consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
   }, [activeFight?.turns.length, activeFight?.cursor]);
 
-  // ---- Advance + Sync loops ----
-
-  const doAdvance = useCallback(async () => {
-    if (!token || advancing) return;
-    setAdvancing(true);
-    try {
-      const updated = await advanceFightTurn(token);
-      const prev = lastCursor.current;
-      lastCursor.current = updated.cursor;
-      setActiveFight(updated);
-      if (updated.cursor > prev) {
-        triggerTurnEffects(prev, updated);
-      }
-      if (updated.isFinished) {
-        clearTimers();
-        // Refresh profile to get updated stats
-        try {
-          const refreshed = await fetchArenaProfile(token);
-          setProfile(refreshed);
-        } catch { /* ignore profile refresh errors */ }
-      }
-    } catch {
-      // Silently ignore — will retry on next tick
-    } finally {
-      setAdvancing(false);
-    }
-  }, [token, advancing, clearTimers, triggerTurnEffects]);
-
-  const startAdvanceLoop = useCallback(() => {
-    if (advanceTimerRef.current !== null) return;
-    advanceTimerRef.current = window.setInterval(() => {
-      void doAdvance();
-    }, 800);
-  }, [doAdvance]);
+  // ---- Sync loop (poll state + advance) ----
 
   const doSync = useCallback(async () => {
-    if (!token) return;
+    if (!token || advancing) return;
+
+    // Step 1: fetch current server state
+    setAdvancing(true);
     try {
       const { activeFight: state } = await fetchFightState(token);
       if (!state) {
-        clearTimers();
+        // No fight yet — keep polling, another tab might start one
         setActiveFight(null);
         return;
       }
+
       const prev = lastCursor.current;
+
+      // Step 2: if fight is still active, advance one turn on the server
+      if (!state.isFinished) {
+        const updated = await advanceFightTurn(token);
+        lastCursor.current = updated.cursor;
+        setActiveFight(updated);
+        if (updated.cursor > prev) {
+          triggerTurnEffects(prev, updated);
+        }
+        if (updated.isFinished) {
+          clearTimers();
+          try {
+            const refreshed = await fetchArenaProfile(token);
+            setProfile(refreshed);
+          } catch { /* ignore */ }
+        }
+        return;
+      }
+
+      // Fight already finished — just sync display
       if (state.cursor > prev) {
         lastCursor.current = state.cursor;
         setActiveFight(state);
         triggerTurnEffects(prev, state);
       }
-      if (state.isFinished) {
-        clearTimers();
-        setActiveFight(state);
-        try {
-          const refreshed = await fetchArenaProfile(token);
-          setProfile(refreshed);
-        } catch { /* ignore */ }
-      }
+      clearTimers();
+      try {
+        const refreshed = await fetchArenaProfile(token);
+        setProfile(refreshed);
+      } catch { /* ignore */ }
     } catch {
-      // ignore sync errors
+      // ignore — retry on next tick
+    } finally {
+      setAdvancing(false);
     }
-  }, [token, clearTimers, triggerTurnEffects]);
+  }, [token, advancing, clearTimers, triggerTurnEffects]);
 
   const startSyncLoop = useCallback(() => {
     if (syncTimerRef.current !== null) return;
     syncTimerRef.current = window.setInterval(() => {
       void doSync();
-    }, 2000);
+    }, 800);
   }, [doSync]);
 
   // ---- User actions ----
+
+  const handleStartFightRef = useRef<() => Promise<void>>(async () => {});
 
   const handleStartFight = async () => {
     if (!token || !turnstileToken || starting) return;
@@ -308,7 +318,6 @@ const ArenaFight = () => {
         const refreshed = await fetchArenaProfile(token);
         setProfile(refreshed);
       } catch { /* ignore */ }
-      startAdvanceLoop();
       startSyncLoop();
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
@@ -317,25 +326,19 @@ const ArenaFight = () => {
     }
   };
 
-  const handleSkip = async () => {
-    if (!token || skipping || !activeFight || activeFight.isFinished) return;
-    setSkipping(true);
-    try {
-      const fight = await skipFight(token);
-      setActiveFight(fight);
-      lastCursor.current = fight.cursor;
-      clearTimers();
-      // Refresh profile
-      try {
-        const refreshed = await fetchArenaProfile(token);
-        setProfile(refreshed);
-      } catch { /* ignore */ }
-    } catch (error) {
-      setErrorMessage(normalizeArenaError(error));
-    } finally {
-      setSkipping(false);
-    }
-  };
+  handleStartFightRef.current = handleStartFight;
+
+  // Auto-battle: restart when a fight finishes and auto is enabled
+  useEffect(() => {
+    const finished = activeFight?.isFinished;
+    if (!autoBattle || !finished || !pageVisible.current || !turnstileToken) return;
+    clearAutoTimer();
+    autoTimerRef.current = window.setTimeout(() => {
+      autoTimerRef.current = null;
+      void handleStartFightRef.current();
+    }, 1500);
+    return () => clearAutoTimer();
+  }, [autoBattle, activeFight?.isFinished, turnstileToken, clearAutoTimer]);
 
   // ---- Derived display state ----
 
@@ -485,14 +488,6 @@ const ArenaFight = () => {
                       </div>
                     ) : null}
 
-                    {/* Turn counter */}
-                    {activeFight ? (
-                      <p className="text-center text-xs text-slate-500">
-                        Turn {activeFight.cursor} / {activeFight.totalTurns}
-                        {fightInProgress ? " — playing..." : fightFinished ? " — finished" : ""}
-                      </p>
-                    ) : null}
-
                     {/* Result summary */}
                     {fightFinished ? (
                       <div className={`p-3 text-center text-sm font-semibold ${activeFight?.result === "win" ? "text-emerald-700" : "text-red-700"}`}>
@@ -520,17 +515,19 @@ const ArenaFight = () => {
                         </button>
                       ) : null}
 
-                      {/* Skip button — only while fight is in progress */}
-                      {fightInProgress ? (
-                        <button
-                          type="button"
-                          onClick={() => void handleSkip()}
-                          disabled={skipping}
-                          className="arena-redraw-button hover:animate-wiggle"
-                        >
-                          {skipping ? "[ Skipping... ]" : "[ Skip ]"}
-                        </button>
-                      ) : null}
+                    </div>
+
+                    {/* Auto checkbox */}
+                    <div className="flex justify-center">
+                      <label className="flex items-center gap-2 text-sm font-bold text-blue-800 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={autoBattle}
+                          onChange={(e) => setAutoBattle(e.target.checked)}
+                          className="accent-blue-600 w-4 h-4"
+                        />
+                        Auto
+                      </label>
                     </div>
 
                     {errorMessage ? (

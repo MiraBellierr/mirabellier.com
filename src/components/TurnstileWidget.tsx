@@ -75,13 +75,12 @@ export default function TurnstileWidget({
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || "";
   const isDev = import.meta.env.DEV;
 
-  // In development, emit a dummy token immediately so the Fight button works
-  // without needing the Cloudflare Turnstile widget to load / render.
-  // Also re-emits after each resetKey change (post-fight widget reset).
+  // In development, emit a dummy token so the Fight button works
+  // without needing the Cloudflare Turnstile widget.
   useEffect(() => {
     if (!isDev) return;
     onTokenChange("dev-bypass-token");
-  }, [isDev, onTokenChange, resetKey]);
+  }, [isDev, onTokenChange]);
 
   useEffect(() => {
     callbackRef.current = onTokenChange;
@@ -90,7 +89,7 @@ export default function TurnstileWidget({
   useEffect(() => {
     let cancelled = false;
     if (!siteKey || !containerRef.current) {
-      callbackRef.current(null);
+      if (!isDev) callbackRef.current(null);
       return;
     }
 
@@ -111,20 +110,25 @@ export default function TurnstileWidget({
 
     return () => {
       cancelled = true;
-      callbackRef.current(null);
+      if (!isDev) callbackRef.current(null);
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
       }
       widgetIdRef.current = null;
     };
-  }, [action, siteKey]);
+  }, [action, siteKey, isDev]);
 
   useEffect(() => {
-    callbackRef.current(null);
+    if (!isDev) callbackRef.current(null);
     if (widgetIdRef.current && window.turnstile) {
       window.turnstile.reset(widgetIdRef.current);
     }
-  }, [resetKey]);
+  }, [resetKey, isDev]);
+
+  // In dev mode, don't render the real widget — just a hidden placeholder.
+  if (isDev) {
+    return <div className="hidden" aria-hidden />;
+  }
 
   if (!siteKey) {
     return (
