@@ -500,13 +500,12 @@ export async function drawArenaCard(
 
 export async function runArenaFight(
   token: string,
-  turnstileToken: string,
 ): Promise<ArenaFightResponse> {
   const response = await fetch(joinApi("/arena/fight"), {
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({ turnstileToken }),
+    body: JSON.stringify({}),
   });
 
   if (!response.ok) {
@@ -661,13 +660,12 @@ export async function fetchArenaLeaderboard(
 
 export async function startPlaybackFight(
   token: string,
-  turnstileToken: string,
 ): Promise<ArenaActiveFight> {
   const response = await fetch(joinApi("/arena/fight/start"), {
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({ turnstileToken }),
+    body: JSON.stringify({}),
   });
 
   if (!response.ok) {

@@ -7,7 +7,6 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
-import TurnstileWidget from "@/components/TurnstileWidget";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -57,7 +56,6 @@ const ArenaFight = () => {
   const [starting, setStarting] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [floaters, setFloaters] = useState<DmgFloater[]>([]);
   const [playerFallen, setPlayerFallen] = useState(false);
   const [opponentFallen, setOpponentFallen] = useState(false);
@@ -134,12 +132,10 @@ const ArenaFight = () => {
         const payload = await fetchArenaProfile(token);
         if (cancelled) return;
         setProfile(payload);
-        // If there's an active fight, resume it
         if (payload.activeFight) {
           setActiveFight(payload.activeFight);
           lastCursor.current = payload.activeFight.cursor;
         }
-        // Always start polling — so other tabs pick up new fights
         if (!payload.activeFight?.isFinished) {
           startSyncLoop();
         }
@@ -183,10 +179,8 @@ const ArenaFight = () => {
     el.animate(keyframes, { duration: hard ? 600 : 450, easing: "ease-out" });
   };
 
-  // Detect new turns from cursor changes and spawn floaters/shakes
   const triggerTurnEffects = useCallback((prevCursor: number, fight: ArenaActiveFight) => {
     const turns = fight.turns || [];
-    // Only process the newly revealed turn(s)
     for (let i = prevCursor; i < fight.cursor; i++) {
       const turn = turns[i];
       if (!turn) continue;
@@ -243,19 +237,16 @@ const ArenaFight = () => {
   const doSync = useCallback(async () => {
     if (!token || advancing) return;
 
-    // Step 1: fetch current server state
     setAdvancing(true);
     try {
       const { activeFight: state } = await fetchFightState(token);
       if (!state) {
-        // No fight yet — keep polling, another tab might start one
         setActiveFight(null);
         return;
       }
 
       const prev = lastCursor.current;
 
-      // Step 2: if fight is still active, advance one turn on the server
       if (!state.isFinished) {
         const updated = await advanceFightTurn(token);
         lastCursor.current = updated.cursor;
@@ -273,7 +264,6 @@ const ArenaFight = () => {
         return;
       }
 
-      // Fight already finished — just sync display
       if (state.cursor > prev) {
         lastCursor.current = state.cursor;
         setActiveFight(state);
@@ -303,30 +293,22 @@ const ArenaFight = () => {
   const handleStartFightRef = useRef<() => Promise<void>>(async () => {});
 
   const handleStartFight = async () => {
-    if (!token || !turnstileToken || starting) return;
-    // If there's already an active fight, don't start a new one
+    if (!token || starting) return;
     if (activeFight && !activeFight.isFinished) return;
 
     setStarting(true);
     setErrorMessage(null);
     try {
-      const fight = await startPlaybackFight(token, turnstileToken);
+      const fight = await startPlaybackFight(token);
       setActiveFight(fight);
       lastCursor.current = fight.cursor;
-      // Refresh profile (the start endpoint already updates profile on server)
       try {
         const refreshed = await fetchArenaProfile(token);
         setProfile(refreshed);
       } catch { /* ignore */ }
       startSyncLoop();
     } catch (error) {
-      // If Turnstile token expired, clear it so the widget reappears
-      if (error instanceof ArenaApiError && (error.code === "TURNSTILE_INVALID" || error.code === "TURNSTILE_TOKEN_REQUIRED")) {
-        setTurnstileToken(null);
-        setErrorMessage("Verification expired — please re-verify below.");
-      } else {
-        setErrorMessage(normalizeArenaError(error));
-      }
+      setErrorMessage(normalizeArenaError(error));
     } finally {
       setStarting(false);
     }
@@ -337,14 +319,14 @@ const ArenaFight = () => {
   // Auto-battle: restart when a fight finishes and auto is enabled
   useEffect(() => {
     const finished = activeFight?.isFinished;
-    if (!autoBattle || !finished || !pageVisible.current || !turnstileToken) return;
+    if (!autoBattle || !finished || !pageVisible.current) return;
     clearAutoTimer();
     autoTimerRef.current = window.setTimeout(() => {
       autoTimerRef.current = null;
       void handleStartFightRef.current();
     }, 1500);
     return () => clearAutoTimer();
-  }, [autoBattle, activeFight?.isFinished, turnstileToken, clearAutoTimer]);
+  }, [autoBattle, activeFight?.isFinished, clearAutoTimer]);
 
   // ---- Derived display state ----
 
@@ -428,10 +410,8 @@ const ArenaFight = () => {
                   </div>
                 ) : (
                   <div className="space-y-5 mx-auto">
-                    {/* Card vs Card display */}
                     <div className="relative">
                       <div className="grid grid-cols-3 items-center gap-4">
-                        {/* Player card */}
                         <div className="flex justify-center">
                           <div ref={playerCardRef} className={playerFallen ? "card-fall-off" : ""}>
                             <div className="arena-chosen-card-body">
@@ -444,12 +424,10 @@ const ArenaFight = () => {
                           </div>
                         </div>
 
-                        {/* VS */}
                         <div className="flex justify-center">
                           <span className="text-2xl font-black text-pink-400 select-none shrink-0">VS</span>
                         </div>
 
-                        {/* Opponent card */}
                         <div className="flex justify-center">
                           <div ref={opponentCardRef} className={opponentFallen ? "card-fall-off" : ""}>
                             {activeFight?.opponent?.selectedCard ? (
@@ -474,7 +452,6 @@ const ArenaFight = () => {
                         </div>
                       </div>
 
-                      {/* Floating damage over cards */}
                       {floaters.map((f) => (
                         <span
                           key={f.key}
@@ -486,7 +463,6 @@ const ArenaFight = () => {
                       ))}
                     </div>
 
-                    {/* HP bars */}
                     {activeFight ? (
                       <div className="grid grid-cols-2 gap-3">
                         <HpBar current={hpCurrent.player} max={hpMax.player} label="Your HP" />
@@ -494,36 +470,29 @@ const ArenaFight = () => {
                       </div>
                     ) : null}
 
-                    {/* Result summary */}
                     {fightFinished ? (
                       <div className={`p-3 text-center text-sm font-semibold ${activeFight?.result === "win" ? "text-emerald-700" : "text-red-700"}`}>
                         {resultText}
                       </div>
                     ) : null}
 
-                    {/* Buttons */}
                     <div className="flex flex-wrap justify-center gap-2">
-                      {/* Fight / Start button */}
                       {!fightInProgress ? (
                         <button
                           type="button"
                           onClick={() => void handleStartFight()}
-                          disabled={starting || !turnstileToken || (!!activeFight && !activeFight.isFinished)}
+                          disabled={starting || (!!activeFight && !activeFight.isFinished)}
                           className="arena-redraw-button hover:animate-wiggle"
                         >
                           {starting
                             ? "[ Starting... ]"
-                            : !turnstileToken
-                              ? "[ Verify first ]"
-                              : fightFinished
-                                ? "[ Fight Again! ]"
-                                : "[ Fight! ]"}
+                            : fightFinished
+                              ? "[ Fight Again! ]"
+                              : "[ Fight! ]"}
                         </button>
                       ) : null}
-
                     </div>
 
-                    {/* Auto checkbox */}
                     <div className="flex justify-center">
                       <label className="flex items-center gap-2 text-sm font-bold text-blue-800 cursor-pointer select-none">
                         <input
@@ -572,16 +541,6 @@ const ArenaFight = () => {
                 </div>
               </div>
             )}
-
-            <div
-              className={turnstileToken ? "hidden" : undefined}
-              aria-hidden={turnstileToken ? "true" : undefined}
-            >
-              <TurnstileWidget
-                action="arena_fight"
-                onTokenChange={setTurnstileToken}
-              />
-            </div>
           </aside>
         </div>
       </div>
