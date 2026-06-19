@@ -469,13 +469,16 @@ const ArenaFight = () => {
               </div>
             )}
 
-            {!turnstileToken ? (
+            <div
+              className={turnstileToken ? "hidden" : undefined}
+              aria-hidden={turnstileToken ? "true" : undefined}
+            >
               <TurnstileWidget
                 action="arena_fight"
                 onTokenChange={setTurnstileToken}
                 resetKey={turnstileResetKey}
               />
-            ) : null}
+            </div>
           </aside>
         </div>
       </div>
