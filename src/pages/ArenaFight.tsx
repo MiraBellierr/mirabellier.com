@@ -60,7 +60,6 @@ const ArenaFight = () => {
   const [advancing, setAdvancing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [floaters, setFloaters] = useState<DmgFloater[]>([]);
   const [playerFallen, setPlayerFallen] = useState(false);
   const [opponentFallen, setOpponentFallen] = useState(false);
@@ -578,7 +577,6 @@ const ArenaFight = () => {
               <TurnstileWidget
                 action="arena_fight"
                 onTokenChange={setTurnstileToken}
-                resetKey={turnstileResetKey}
               />
             </div>
           </aside>
