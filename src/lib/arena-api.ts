@@ -726,3 +726,19 @@ export async function skipFight(
 
   return (await response.json()) as ArenaActiveFight;
 }
+
+export async function verifyArena(
+  token: string,
+  turnstileToken: string,
+): Promise<void> {
+  const response = await fetch(joinApi("/arena/verify"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ turnstileToken }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+}

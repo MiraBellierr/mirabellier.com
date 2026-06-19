@@ -7,6 +7,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import TurnstileWidget from "@/components/TurnstileWidget";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -18,6 +19,7 @@ import {
   fetchArenaProfile,
   fetchFightState,
   startPlaybackFight,
+  verifyArena,
 } from "@/lib/arena-api";
 
 function normalizeArenaError(error: unknown) {
@@ -56,6 +58,8 @@ const ArenaFight = () => {
   const [starting, setStarting] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [floaters, setFloaters] = useState<DmgFloater[]>([]);
   const [playerFallen, setPlayerFallen] = useState(false);
   const [opponentFallen, setOpponentFallen] = useState(false);
@@ -103,6 +107,14 @@ const ArenaFight = () => {
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [clearAutoTimer]);
+
+  // Page-load verification — verify Turnstile token once
+  useEffect(() => {
+    if (!token || !turnstileToken || verified) return;
+    verifyArena(token, turnstileToken)
+      .then(() => setVerified(true))
+      .catch(() => setTurnstileToken(null)); // reset widget on failure
+  }, [token, turnstileToken, verified]);
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/fight",
@@ -481,14 +493,16 @@ const ArenaFight = () => {
                         <button
                           type="button"
                           onClick={() => void handleStartFight()}
-                          disabled={starting || (!!activeFight && !activeFight.isFinished)}
+                          disabled={starting || !verified || (!!activeFight && !activeFight.isFinished)}
                           className="arena-redraw-button hover:animate-wiggle"
                         >
                           {starting
                             ? "[ Starting... ]"
-                            : fightFinished
-                              ? "[ Fight Again! ]"
-                              : "[ Fight! ]"}
+                            : !verified
+                              ? "[ Verify first ]"
+                              : fightFinished
+                                ? "[ Fight Again! ]"
+                                : "[ Fight! ]"}
                         </button>
                       ) : null}
                     </div>
@@ -541,6 +555,16 @@ const ArenaFight = () => {
                 </div>
               </div>
             )}
+
+            <div
+              className={verified ? "hidden" : undefined}
+              aria-hidden={verified ? "true" : undefined}
+            >
+              <TurnstileWidget
+                action="arena_fight"
+                onTokenChange={setTurnstileToken}
+              />
+            </div>
           </aside>
         </div>
       </div>
