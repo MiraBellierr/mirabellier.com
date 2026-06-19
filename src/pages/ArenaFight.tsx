@@ -444,31 +444,6 @@ const ArenaFight = () => {
           </main>
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">
-            <div
-              className={
-                turnstileToken
-                  ? "hidden"
-                  : "right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md"
-              }
-              aria-hidden={turnstileToken ? "true" : undefined}
-            >
-              <div className="space-y-3">
-                <div className="space-y-1 text-center">
-                  <h2 className="text-lg font-bold text-blue-700">
-                    human verification
-                  </h2>
-                  <p className="text-xs text-blue-500">
-                    Verify before starting each fight.
-                  </p>
-                </div>
-                <TurnstileWidget
-                  action="arena_fight"
-                  onTokenChange={setTurnstileToken}
-                  resetKey={turnstileResetKey}
-                />
-              </div>
-            </div>
-
             {fight ? (
               <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
                 <h2 className="text-center text-lg font-bold text-blue-700 mb-2">console</h2>
@@ -493,6 +468,14 @@ const ArenaFight = () => {
                 </div>
               </div>
             )}
+
+            {!turnstileToken ? (
+              <TurnstileWidget
+                action="arena_fight"
+                onTokenChange={setTurnstileToken}
+                resetKey={turnstileResetKey}
+              />
+            ) : null}
           </aside>
         </div>
       </div>
