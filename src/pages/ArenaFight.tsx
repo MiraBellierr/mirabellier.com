@@ -320,7 +320,13 @@ const ArenaFight = () => {
       } catch { /* ignore */ }
       startSyncLoop();
     } catch (error) {
-      setErrorMessage(normalizeArenaError(error));
+      // If Turnstile token expired, clear it so the widget reappears
+      if (error instanceof ArenaApiError && (error.code === "TURNSTILE_INVALID" || error.code === "TURNSTILE_TOKEN_REQUIRED")) {
+        setTurnstileToken(null);
+        setErrorMessage("Verification expired — please re-verify below.");
+      } else {
+        setErrorMessage(normalizeArenaError(error));
+      }
     } finally {
       setStarting(false);
     }
