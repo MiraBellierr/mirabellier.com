@@ -235,15 +235,23 @@ export function describePassive(passive: ArenaPassiveRule | null | undefined) {
 export function describeConsumableEffect(effect: ArenaConsumableRule | null | undefined) {
   if (!effect || typeof effect !== "object") return "";
   const kind = typeof effect.kind === "string" ? effect.kind : "";
-  if (kind === "exp_boost") return `+${toNumber(effect.pct)}% EXP for ${toNumber(effect.wins, 1)} win(s)`;
-  if (kind === "coin_boost") return `+${toNumber(effect.pct)}% coins for ${toNumber(effect.wins, 1)} win(s)`;
+  if (kind === "exp_boost") {
+    return `+${toNumber(effect.pct)}% EXP for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
+  }
+  if (kind === "coin_boost") {
+    return `+${toNumber(effect.pct)}% coins for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
+  }
   if (kind === "reroll_keep_higher") return "Reroll your own card once, keep higher rarity";
   if (kind === "streak_shield") return `Ignore ${toNumber(effect.charges, 1)} loss streak reset(s)`;
   if (kind === "upgrade_lowest_rarity") {
-    return `Upgrade your lowest own round rarity +1 (${toNumber(effect.charges, 1)} charge)`;
+    return `Upgrade your lowest own round rarity +1 for ${toNumber(effect.charges, 1)} fight(s)`;
   }
-  if (kind === "guarantee_ssr_plus") return "Guarantee at least one SSR+ own round card";
-  if (kind === "shield_fight_start") return `Fight start shield +${toNumber(effect.amount)}`;
+  if (kind === "guarantee_ssr_plus") {
+    return `Guarantee at least one SSR+ own round card for ${toNumber(effect.charges, 1)} fight(s)`;
+  }
+  if (kind === "shield_fight_start") {
+    return `Fight start shield +${toNumber(effect.amount)} for ${toNumber(effect.charges, 1)} fight(s)`;
+  }
   if (kind === "evade_next_fight") {
     return `+${toNumber(effect.pct)}% evade for next ${toNumber(effect.fights, 1)} fight(s)`;
   }
@@ -268,10 +276,10 @@ export function formatActiveEffects(shop: ArenaShopResponse) {
   const effects = shop.profile.effects;
   const rows: string[] = [];
   if (effects.expBoostWinsRemaining > 0 && effects.expBoostPct > 0) {
-    rows.push(`EXP boost +${effects.expBoostPct}% (${effects.expBoostWinsRemaining} win)`);
+    rows.push(`EXP boost +${effects.expBoostPct}% (${effects.expBoostWinsRemaining} fight)`);
   }
   if (effects.coinBoostWinsRemaining > 0 && effects.coinBoostPct > 0) {
-    rows.push(`Coin boost +${effects.coinBoostPct}% (${effects.coinBoostWinsRemaining} win)`);
+    rows.push(`Coin boost +${effects.coinBoostPct}% (${effects.coinBoostWinsRemaining} fight)`);
   }
   if (effects.rerollKeepHigherCharges > 0) rows.push(`Reroll keep higher x${effects.rerollKeepHigherCharges}`);
   if (effects.streakShieldCharges > 0) rows.push(`Streak shield x${effects.streakShieldCharges}`);

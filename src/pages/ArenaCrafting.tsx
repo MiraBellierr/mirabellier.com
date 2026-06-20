@@ -7,6 +7,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useConfirm } from "@/states/ConfirmContext";
 import { usePageSeo } from "@/lib/seo";
 import {
   type ArenaShopItem,
@@ -30,6 +31,7 @@ function flattenItems(shop: ArenaShopResponse | null) {
 const ArenaCrafting = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
+  const { confirm } = useConfirm();
   const [shop, setShop] = useState<ArenaShopResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -109,7 +111,36 @@ const ArenaCrafting = () => {
   );
 
   const handleCraft = async (recipeId: string) => {
-    if (!token) return;
+    if (!token || !shop) return;
+
+    const recipe = shop.recipes.find((candidate) => candidate.id === recipeId);
+    const outputItem = recipe ? itemById.get(recipe.output.itemId) : null;
+    const equippedItem =
+      outputItem?.type === "gear" && outputItem.slot
+        ? shop.equipped[outputItem.slot]
+        : null;
+
+    if (recipe && outputItem?.type === "gear" && outputItem.slot && equippedItem) {
+      const shouldReplace = await confirm({
+        title: `Replace equipped ${outputItem.slot}?`,
+        message: (
+          <div className="space-y-2">
+            <p>
+              Crafting <strong>{outputItem.name}</strong> will automatically equip it
+              and replace <strong>{equippedItem.name}</strong> in the{" "}
+              {outputItem.slot} slot.
+            </p>
+            <p className="text-sm">
+              {equippedItem.name} will remain in your inventory.
+            </p>
+          </div>
+        ),
+        confirmLabel: "Craft and replace",
+        cancelLabel: "Cancel",
+      });
+      if (!shouldReplace) return;
+    }
+
     setActioningId(recipeId);
     setErrorMessage(null);
     try {
@@ -154,6 +185,10 @@ const ArenaCrafting = () => {
                 <span className="font-bold">|</span>
                 <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
                   [ Shop ]
+                </Link>
+                <span className="font-bold">|</span>
+                <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
+                  [ Inventory ]
                 </Link>
                 <span className="font-bold">|</span>
                 <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
@@ -299,7 +334,7 @@ const ArenaCrafting = () => {
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">crafting info</h2>
                 <p>Craft gear and consumables with materials + coins.</p>
-                <p>Fight to gain drop materials, buy extras in shop.</p>
+                <p>Fight for tier 1–3 materials or buy materials from the shop.</p>
               </div>
             </div>
           </aside>

@@ -121,6 +121,10 @@ const ArenaLeaderboard = () => {
                   [ Craft ]
                 </Link>
                 <span className="font-bold">|</span>
+                <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
+                  [ Inventory ]
+                </Link>
+                <span className="font-bold">|</span>
                 <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
                   [ Collection ]
                 </Link>

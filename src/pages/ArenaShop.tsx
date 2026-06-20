@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -9,9 +10,13 @@ import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
+  type ArenaCard,
+  type ArenaCardShopResponse,
   type ArenaShopItem,
   type ArenaShopResponse,
   buyArenaItem,
+  buyArenaShopCard,
+  fetchArenaCardShop,
   fetchArenaShop,
   useArenaConsumable as activateArenaConsumable,
 } from "@/lib/arena-api";
@@ -28,13 +33,102 @@ function flattenItems(shop: ArenaShopResponse | null) {
   return shop.shop.flatMap((tier) => tier.items);
 }
 
+function formatCardIv(card: ArenaCard) {
+  return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · L ${card.iv.luck}`;
+}
+
+function CardRewardModal({
+  card,
+  onClose,
+}: {
+  card: ArenaCard;
+  onClose: () => void;
+}) {
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[230000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70"
+      onClick={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="card-reward-title"
+        className="card-border w-full max-w-sm rounded-2xl p-5 text-center shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-pink-500">
+              Card obtained
+            </p>
+            <h2
+              id="card-reward-title"
+              className="mt-1 text-2xl font-bold text-blue-700 dark:text-purple-100"
+            >
+              {card.title}
+            </h2>
+          </div>
+          <img
+            src={card.imageUrl}
+            alt={card.title}
+            className="mx-auto h-56 w-40 rounded-xl border-2 border-sky-200 object-cover shadow-lg dark:border-purple-400/50"
+          />
+          <div className="space-y-1 text-sm text-blue-700 dark:text-purple-100">
+            <p className="font-black">Rarity: {card.rarity}</p>
+            <p>IV {card.iv.total} · {formatCardIv(card)}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Added to your collection.
+            </p>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="arena-redraw-button hover:animate-wiggle"
+          >
+            [ nice! ]
+          </button>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
 const ArenaShop = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
   const [shop, setShop] = useState<ArenaShopResponse | null>(null);
+  const [cardShop, setCardShop] = useState<ArenaCardShopResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cardsLoading, setCardsLoading] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cardErrorMessage, setCardErrorMessage] = useState<string | null>(null);
+  const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/shop",
@@ -43,10 +137,28 @@ const ArenaShop = () => {
       "@context": "https://schema.org",
       "@type": "WebPage",
       name: "Arena Shop",
-      description: "Buy and use arena gear, materials, and consumables.",
+      description: "Buy arena character cards, materials, gear, and consumables.",
       url: "https://mirabellier.com/arena/shop",
     },
   });
+
+  const loadCardOffers = useCallback(async () => {
+    if (!token) {
+      setCardShop(null);
+      setCardErrorMessage(null);
+      return;
+    }
+
+    setCardsLoading(true);
+    setCardErrorMessage(null);
+    try {
+      setCardShop(await fetchArenaCardShop(token));
+    } catch (error) {
+      setCardErrorMessage(normalizeArenaError(error));
+    } finally {
+      setCardsLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +190,10 @@ const ArenaShop = () => {
     };
   }, [token]);
 
+  useEffect(() => {
+    void loadCardOffers();
+  }, [loadCardOffers]);
+
   const itemById = useMemo(() => {
     const map = new Map<string, ArenaShopItem>();
     flattenItems(shop).forEach((item) => {
@@ -93,6 +209,22 @@ const ArenaShop = () => {
     try {
       const payload = await buyArenaItem(token, itemId);
       setShop(payload.shop);
+      setCardShop((previous) => {
+        if (!previous) return previous;
+        const coins = payload.shop.profile.coins;
+        return {
+          ...previous,
+          profile: payload.shop.profile,
+          dailyOffers: previous.dailyOffers.map((offer) => ({
+            ...offer,
+            canBuy: !offer.sold && coins >= offer.price,
+          })),
+          randomOffer: {
+            ...previous.randomOffer,
+            canBuy: coins >= previous.randomOffer.price,
+          },
+        };
+      });
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
     } finally {
@@ -114,6 +246,53 @@ const ArenaShop = () => {
     }
   };
 
+  const handleCardBuy = async (
+    purchase:
+      | { kind: "daily"; offerId: string }
+      | { kind: "random" },
+  ) => {
+    if (!token) return;
+    const offerId = purchase.kind === "daily" ? purchase.offerId : "random-card";
+    setActioningId(`card:${offerId}`);
+    setCardErrorMessage(null);
+    try {
+      const payload = await buyArenaShopCard(token, purchase);
+      setCardShop(payload.cardShop);
+      setShop((previous) =>
+        previous
+          ? {
+              ...previous,
+              profile: payload.profile,
+              shop: previous.shop.map((tier) => ({
+                ...tier,
+                items: tier.items.map((item) => ({
+                  ...item,
+                  canBuy:
+                    item.canBuy &&
+                    payload.profile.coins >= item.price,
+                })),
+              })),
+              recipes: previous.recipes.map((recipe) => ({
+                ...recipe,
+                canCraft:
+                  recipe.canCraft &&
+                  payload.profile.coins >= recipe.coinCost,
+              })),
+            }
+          : previous,
+      );
+      setObtainedCard(payload.card);
+    } catch (error) {
+      setCardErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const closeCardModal = useCallback(() => {
+    setObtainedCard(null);
+  }, []);
+
   const materialEntries = Object.entries(shop?.profile.materialInventory || {}).filter(
     ([, quantity]) => Number(quantity || 0) > 0,
   );
@@ -132,9 +311,9 @@ const ArenaShop = () => {
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4">
               <div className="">
-                <h2 className="text-4xl font-bold text-blue-900">Material Shop {`>^. .^<`}</h2>
+                <h2 className="text-4xl font-bold text-blue-900">Arena Shop {`>^. .^<`}</h2>
                 <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
-                  <span className="text-pink-300">✿</span> Here are some materials you can use to craft!{" "}
+                  <span className="text-pink-300">✿</span> Find cards, materials, and battle supplies!{" "}
                   <span className="text-pink-300">✿</span>
                 </p>
               </div>
@@ -150,6 +329,10 @@ const ArenaShop = () => {
                 <span className="font-bold">|</span>
                 <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
                   [ Craft ]
+                </Link>
+                <span className="font-bold">|</span>
+                <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
+                  [ Inventory ]
                 </Link>
                 <span className="font-bold">|</span>
                 <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
@@ -176,7 +359,145 @@ const ArenaShop = () => {
                 <p className="text-blue-500">Loading shop...</p>
               ) : shop ? (
                 <div className="space-y-4 ">
-                  <div className="gap-2 border-t p-2 border-b border-sky-500 text-sm font-bold">
+                  <section
+                    aria-labelledby="arena-card-shop-title"
+                    className="space-y-3 py-3"
+                  >
+                    <div className="flex flex-wrap items-end justify-between gap-2">
+                      <div>
+                        <h3
+                          id="arena-card-shop-title"
+                          className="text-xl font-bold text-blue-700 dark:text-purple-100"
+                        >
+                          Cards
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                          Five shared cards refresh every day. Each card costs 1,000 coins.
+                        </p>
+                      </div>
+                      {cardShop ? (
+                        <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
+                          Refreshes {new Date(cardShop.nextRefreshAt).toLocaleString()}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {cardsLoading && !cardShop ? (
+                      <p className="text-sm text-blue-500">Preparing today&apos;s cards...</p>
+                    ) : null}
+
+                    {cardErrorMessage ? (
+                      <div className="space-y-2">
+                        <ArenaErrorNotice message={cardErrorMessage} />
+                        <button
+                          type="button"
+                          onClick={() => void loadCardOffers()}
+                          disabled={cardsLoading}
+                          className="arena-redraw-button hover:animate-wiggle"
+                        >
+                          {cardsLoading ? "[ retrying... ]" : "[ retry cards ]"}
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {cardShop ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {cardShop.dailyOffers.map((offer) => {
+                          const isBuying =
+                            actioningId === `card:${offer.offerId}`;
+                          return (
+                            <article
+                              key={offer.offerId}
+                              className="flex gap-3 rounded-xl p-3"
+                            >
+                              <img
+                                src={offer.card.imageUrl}
+                                alt={offer.card.title}
+                                className="h-28 w-20 shrink-0 rounded-lg border border-sky-200 object-cover shadow-sm dark:border-purple-400/40"
+                                loading="lazy"
+                              />
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-blue-700 dark:text-purple-100">
+                                    {offer.card.title}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleCardBuy({
+                                        kind: "daily",
+                                        offerId: offer.offerId,
+                                      })
+                                    }
+                                    disabled={
+                                      offer.sold ||
+                                      !offer.canBuy ||
+                                      isBuying
+                                    }
+                                    className="arena-redraw-button hover:animate-wiggle"
+                                  >
+                                    {offer.sold
+                                      ? "[ sold ]"
+                                      : isBuying
+                                        ? "[ buying... ]"
+                                        : "[ buy ]"}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-slate-700 dark:text-slate-200">
+                                  Rarity: {offer.card.rarity} · IV {offer.card.iv.total}
+                                </p>
+                                <p className="text-xs text-slate-600 dark:text-slate-300">
+                                  {formatCardIv(offer.card)}
+                                </p>
+                                <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
+                                  {offer.price.toLocaleString()} coins
+                                </p>
+                              </div>
+                            </article>
+                          );
+                        })}
+
+                        <article className="flex min-h-36 gap-3 rounded-xl p-3">
+                          <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-white/60 text-4xl font-black text-pink-500 shadow-sm dark:border-purple-400/60 dark:bg-slate-950/40">
+                            ?
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-blue-700 dark:text-purple-100">
+                                Random Card
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleCardBuy({ kind: "random" })
+                                }
+                                disabled={
+                                  !cardShop.randomOffer.canBuy ||
+                                  actioningId === "card:random-card"
+                                }
+                                className="arena-redraw-button hover:animate-wiggle"
+                              >
+                                {actioningId === "card:random-card"
+                                  ? "[ drawing... ]"
+                                  : "[ buy ]"}
+                              </button>
+                            </div>
+                            <p className="text-xs text-slate-700 dark:text-slate-200">
+                              Receive one random character card.
+                            </p>
+                            <p className="text-xs text-slate-600 dark:text-slate-300">
+                              Always available · duplicates possible
+                            </p>
+                            <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
+                              {cardShop.randomOffer.price.toLocaleString()} coins
+                            </p>
+                          </div>
+                        </article>
+                      </div>
+                    ) : null}
+                  </section>
+
+                  <div className="gap-2 p-2 text-sm font-bold">
                     <div className="text-sm pt-2">
                       <p className="text-lg font-semibold underline">Materials</p>
                     </div>
@@ -259,9 +580,6 @@ const ArenaShop = () => {
                                   {item.acquisition === "craft" && item.recipeId ? (
                                     <p className="text-xs text-slate-700">Craft in /arena/crafting</p>
                                   ) : null}
-                                  {item.acquisition === "drop" ? (
-                                    <p className="text-xs text-slate-700">Drop source: battle rewards</p>
-                                  ) : null}
                                   {item.stats ? <p className="text-xs text-blue-600">{formatStats(item.stats)}</p> : null}
                                   {item.passive ? (
                                     <p className="text-xs text-blue-600">{describePassive(item.passive)}</p>
@@ -300,6 +618,8 @@ const ArenaShop = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">shop info</h2>
+                <p>Five shared character cards refresh daily at midnight UTC.</p>
+                <p>Daily cards can be bought once per account; random cards stay available.</p>
                 <p>Buy base items and materials here.</p>
                 <p>Craft recipes are now in the dedicated crafting page.</p>
                 <p>Equip one weapon, armor, and charm to activate passives.</p>
@@ -309,6 +629,9 @@ const ArenaShop = () => {
         </div>
       </div>
       <Footer />
+      {obtainedCard ? (
+        <CardRewardModal card={obtainedCard} onClose={closeCardModal} />
+      ) : null}
     </div>
   );
 };

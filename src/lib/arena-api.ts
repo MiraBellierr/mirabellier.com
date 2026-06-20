@@ -174,12 +174,21 @@ export type ArenaBattleTurn = {
   damage: number;
   playerHp: number;
   opponentHp: number;
+  playerShield?: number;
+  opponentShield?: number;
 };
 
 export type ArenaBattleConsoleEvent = {
   line: string;
   playerHp: number;
   opponentHp: number;
+};
+
+export type ArenaMaterialReward = {
+  itemId: string;
+  itemName?: string;
+  tier?: string;
+  quantity: number;
 };
 
 export type ArenaBattleState = {
@@ -231,7 +240,7 @@ export type ArenaFightResponse = {
     coins: number;
     rarityCoinReward: number;
     levelsGained: number;
-    materialDrops?: Array<{ itemId: string; quantity: number }>;
+    materialDrops?: ArenaMaterialReward[];
   };
   effectUsage: {
     usedRerollKeepHigher: boolean;
@@ -250,6 +259,7 @@ export type ArenaFightResponse = {
 export type ArenaActiveFightBattle = {
   maxHp: { player: number; opponent: number };
   currentHp: { player: number; opponent: number };
+  currentShield?: { player: number; opponent: number };
   console: ArenaBattleConsoleEvent[];
 };
 
@@ -275,6 +285,13 @@ export type ArenaActiveFight = {
   battle: ArenaActiveFightBattle;
   turns: ArenaBattleTurn[];
   score: { player: number; opponent: number };
+  rewards?: {
+    xp: number;
+    coins: number;
+    rarityCoinReward?: number;
+    levelsGained?: number;
+    materialDrops: ArenaMaterialReward[];
+  } | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -371,6 +388,35 @@ export type ArenaShopResponse = {
     armor: ArenaEquippedItem | null;
     charm: ArenaEquippedItem | null;
   };
+};
+
+export type ArenaCardShopDailyOffer = {
+  offerId: string;
+  card: ArenaCard;
+  price: number;
+  sold: boolean;
+  canBuy: boolean;
+};
+
+export type ArenaCardShopResponse = {
+  offerDate: string;
+  nextRefreshAt: string;
+  price: number;
+  profile: ArenaProfile;
+  dailyOffers: ArenaCardShopDailyOffer[];
+  randomOffer: {
+    offerId: "random-card";
+    price: number;
+    canBuy: boolean;
+  };
+};
+
+export type ArenaCardShopPurchaseResponse = {
+  kind: "daily" | "random";
+  purchasedOfferId: string;
+  card: ArenaCard;
+  profile: ArenaProfile;
+  cardShop: ArenaCardShopResponse;
 };
 
 export type ArenaShopRecipe = {
@@ -681,6 +727,44 @@ export async function fetchArenaShop(token: string): Promise<ArenaShopResponse> 
   return (await response.json()) as ArenaShopResponse;
 }
 
+export async function fetchArenaCardShop(
+  token: string,
+): Promise<ArenaCardShopResponse> {
+  const response = await fetch(joinApi("/arena/shop/cards"), {
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaCardShopResponse;
+}
+
+export async function buyArenaShopCard(
+  token: string,
+  purchase:
+    | { kind: "daily"; offerId: string }
+    | { kind: "random" },
+): Promise<ArenaCardShopPurchaseResponse> {
+  const response = await fetch(joinApi("/arena/shop/cards/buy"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify(purchase),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaCardShopPurchaseResponse;
+}
+
 export async function buyArenaItem(
   token: string,
   itemId: string,
@@ -721,6 +805,32 @@ export async function useArenaConsumable(
   return (await response.json()) as {
     activatedItemId: string;
     effects: ArenaProfile["effects"];
+    shop: ArenaShopResponse;
+  };
+}
+
+export async function equipArenaItem(
+  token: string,
+  itemId: string,
+): Promise<{
+  equippedItemId: string;
+  slot: "weapon" | "armor" | "charm";
+  shop: ArenaShopResponse;
+}> {
+  const response = await fetch(joinApi("/arena/shop/equip"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ itemId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as {
+    equippedItemId: string;
+    slot: "weapon" | "armor" | "charm";
     shop: ArenaShopResponse;
   };
 }

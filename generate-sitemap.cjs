@@ -35,6 +35,7 @@ const STATIC_ROUTES = [
   },
   { path: "/quotes", priority: "0.8", changefreq: "daily" },
   { path: "/blog", priority: "0.9", changefreq: "daily" },
+  { path: "/arena/inventory", priority: "0.5", changefreq: "monthly" },
   { path: "/arena/skill-tree", priority: "0.5", changefreq: "monthly" },
 ];
 

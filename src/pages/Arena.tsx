@@ -174,6 +174,10 @@ const Arena = () => {
                         [ Craft ]
                       </Link>
                       <span className="font-bold">|</span>
+                      <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
+                        [ Inventory ]
+                      </Link>
+                      <span className="font-bold">|</span>
                       <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
                         [ Leaderboard ]
                       </Link>
