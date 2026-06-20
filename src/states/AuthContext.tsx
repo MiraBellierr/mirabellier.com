@@ -6,7 +6,6 @@ import type { AuthUserPermissions, AuthUserRole } from "@/lib/user-permissions";
 type User = {
   id: string;
   username: string;
-  discordId?: string;
   avatar?: string | null;
   banner?: string | null;
   bio?: string | null;

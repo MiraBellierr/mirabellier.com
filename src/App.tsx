@@ -37,6 +37,8 @@ const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 const CursorManager = lazy(() => import("./parts/CursorManager"));
 const InteractiveUiChrome = lazy(() => import("./parts/InteractiveUiChrome"));
 
@@ -128,6 +130,8 @@ function App() {
       <Route path="/settings" element={<Settings />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/profile/:username" element={<Profile />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
     </Routes>
   );
 

@@ -44,6 +44,8 @@ const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/settings", title: "Settings" },
   { path: "/profile", title: "Profile" },
   { path: "/profile/:username", title: "Profile" },
+  { path: "/privacy", title: "Privacy Policy" },
+  { path: "/terms", title: "Terms of Service" },
 ];
 
 function resolveHeaderTitle(pathname: string): string {

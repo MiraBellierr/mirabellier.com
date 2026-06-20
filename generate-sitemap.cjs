@@ -15,7 +15,9 @@ const http = require("http");
 const https = require("https");
 
 const API_BASE = process.env.VITE_API_BASE || "https://api.mirabellier.com/v1";
-const WEBSITE_BASE = process.env.WEBSITE_BASE || "https://mirabellier.com";
+const WEBSITE_BASE = (
+  process.env.WEBSITE_BASE || "https://mirabellier.com"
+).replace(/\/+$/, "");
 const OUTPUT_PATH = path.join(__dirname, "public", "sitemap.xml");
 const BACKEND_DIR = path.join(__dirname, "mirabellier-backend");
 
@@ -35,6 +37,8 @@ const STATIC_ROUTES = [
   },
   { path: "/quotes", priority: "0.8", changefreq: "daily" },
   { path: "/blog", priority: "0.9", changefreq: "daily" },
+  { path: "/privacy", priority: "0.4", changefreq: "yearly" },
+  { path: "/terms", priority: "0.4", changefreq: "yearly" },
   { path: "/arena/inventory", priority: "0.5", changefreq: "monthly" },
   { path: "/arena/skill-tree", priority: "0.5", changefreq: "monthly" },
 ];
@@ -165,7 +169,7 @@ function getPostUrl(post) {
 
 function getPostLastmod(post) {
   const source = post.updatedAt || post.createdAt;
-  return source ? new Date(source).toISOString().split("T")[0] : undefined;
+  return formatSitemapDate(source);
 }
 
 function getQuestionArchiveUrl(entry) {
@@ -174,7 +178,28 @@ function getQuestionArchiveUrl(entry) {
 
 function getQuestionArchiveLastmod(entry) {
   const source = entry.updatedAt || entry.createdAt;
-  return source ? new Date(source).toISOString().split("T")[0] : undefined;
+  return formatSitemapDate(source);
+}
+
+function formatSitemapDate(value) {
+  if (!value) return undefined;
+
+  const normalized = String(value).trim();
+  const isoDate = normalized.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoDate) {
+    return `${isoDate[1]}-${isoDate[2]}-${isoDate[3]}`;
+  }
+
+  const dayFirstDate = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (dayFirstDate) {
+    const [, day, month, year] = dayFirstDate;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime())
+    ? undefined
+    : parsed.toISOString().split("T")[0];
 }
 
 function readExistingBlogEntries() {
@@ -252,6 +277,8 @@ function loadEntriesFromLocalBackend() {
   }
 
   try {
+    process.env.WEBSITE_BASE = WEBSITE_BASE;
+
     if (fs.existsSync(backendDotenvPath)) {
       require(backendDotenvPath).config({ path: backendEnvPath });
     }
@@ -293,57 +320,60 @@ async function main() {
           changefreq: route.changefreq,
         });
       }
-
-      try {
-        console.log("Fetching blog posts...");
-        const posts = await fetchFromAPI("/posts");
-        if (Array.isArray(posts)) {
-          posts.forEach((post) => {
-            entries.push({
-              url: getPostUrl(post),
-              lastmod: getPostLastmod(post),
-              priority: "0.7",
-              changefreq: "monthly",
-            });
-          });
-          console.log(`  Added ${posts.length} blog posts`);
-        }
-      } catch (error) {
-        const existingBlogEntries = readExistingBlogEntries();
-        existingBlogEntries.forEach((entry) => entries.push(entry));
-        console.warn(
-          `  Could not fetch blog posts: ${error.message}. Continuing with ${existingBlogEntries.length} preserved blog URLs...`,
-        );
-      }
-
-      try {
-        console.log("Fetching question archive...");
-        const archiveEntries = await fetchFromAPI("/question-of-the-day/archive");
-        if (Array.isArray(archiveEntries)) {
-          archiveEntries.forEach((entry) => {
-            if (!entry?.recordedDate) {
-              return;
-            }
-
-            entries.push({
-              url: getQuestionArchiveUrl(entry),
-              lastmod: getQuestionArchiveLastmod(entry),
-              priority: "0.6",
-              changefreq: "monthly",
-            });
-          });
-          console.log(`  Added ${archiveEntries.length} archived question days`);
-        }
-      } catch (error) {
-        const existingArchiveEntries = readExistingQuestionArchiveEntries();
-        existingArchiveEntries.forEach((entry) => entries.push(entry));
-        console.warn(
-          `  Could not fetch question archive: ${error.message}. Continuing with ${existingArchiveEntries.length} preserved archive URLs...`,
-        );
-      }
     }
 
-    const sitemap = generateSiteMap(entries);
+    try {
+      console.log("Fetching blog posts...");
+      const posts = await fetchFromAPI("/posts");
+      if (Array.isArray(posts)) {
+        posts.forEach((post) => {
+          entries.push({
+            url: getPostUrl(post),
+            lastmod: getPostLastmod(post),
+            priority: "0.7",
+            changefreq: "monthly",
+          });
+        });
+        console.log(`  Added ${posts.length} blog posts`);
+      }
+    } catch (error) {
+      const existingBlogEntries = readExistingBlogEntries();
+      existingBlogEntries.forEach((entry) => entries.push(entry));
+      console.warn(
+        `  Could not fetch blog posts: ${error.message}. Continuing with ${existingBlogEntries.length} preserved blog URLs...`,
+      );
+    }
+
+    try {
+      console.log("Fetching question archive...");
+      const archiveEntries = await fetchFromAPI("/question-of-the-day/archive");
+      if (Array.isArray(archiveEntries)) {
+        archiveEntries.forEach((entry) => {
+          if (!entry?.recordedDate) {
+            return;
+          }
+
+          entries.push({
+            url: getQuestionArchiveUrl(entry),
+            lastmod: getQuestionArchiveLastmod(entry),
+            priority: "0.6",
+            changefreq: "monthly",
+          });
+        });
+        console.log(`  Added ${archiveEntries.length} archived question days`);
+      }
+    } catch (error) {
+      const existingArchiveEntries = readExistingQuestionArchiveEntries();
+      existingArchiveEntries.forEach((entry) => entries.push(entry));
+      console.warn(
+        `  Could not fetch question archive: ${error.message}. Continuing with ${existingArchiveEntries.length} preserved archive URLs...`,
+      );
+    }
+
+    const deduplicatedEntries = Array.from(
+      new Map(entries.map((entry) => [entry.url, entry])).values(),
+    );
+    const sitemap = generateSiteMap(deduplicatedEntries);
     const publicDir = path.join(__dirname, "public");
 
     if (!fs.existsSync(publicDir)) {
@@ -352,7 +382,7 @@ async function main() {
 
     fs.writeFileSync(OUTPUT_PATH, sitemap, "utf-8");
     console.log("Sitemap generated successfully.");
-    console.log(`  Total URLs: ${entries.length}`);
+    console.log(`  Total URLs: ${deduplicatedEntries.length}`);
     console.log(`  Output: ${OUTPUT_PATH}`);
   } catch (error) {
     console.error("Error generating sitemap:", error);
