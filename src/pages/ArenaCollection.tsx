@@ -25,7 +25,24 @@ function formatIvBlock(stats: { power: number; guard: number; speed: number; luc
   return `P ${stats.power} | G ${stats.guard} | S ${stats.speed} | L ${stats.luck}`;
 }
 
-type CollectionSort = "collection" | "iv-desc" | "iv-asc";
+type CollectionSort =
+  | "collection"
+  | "rarity-desc"
+  | "rarity-asc"
+  | "iv-desc"
+  | "iv-asc";
+
+const RARITY_RANK: Record<string, number> = {
+  C: 0,
+  R: 1,
+  SR: 2,
+  SSR: 3,
+  UR: 4,
+};
+
+function rarityRank(rarity: string) {
+  return RARITY_RANK[rarity.toUpperCase()] ?? -1;
+}
 
 const ArenaCollection = () => {
   const auth = useOptionalAuth();
@@ -115,6 +132,12 @@ const ArenaCollection = () => {
   });
 
   const sortedCards = [...filteredCards].sort((left, right) => {
+    if (sort === "rarity-desc") {
+      return rarityRank(right.rarity) - rarityRank(left.rarity);
+    }
+    if (sort === "rarity-asc") {
+      return rarityRank(left.rarity) - rarityRank(right.rarity);
+    }
     if (sort === "iv-desc") return right.iv.total - left.iv.total;
     if (sort === "iv-asc") return left.iv.total - right.iv.total;
     return 0;
@@ -211,6 +234,8 @@ const ArenaCollection = () => {
                         className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
                       >
                         <option value="collection">Collection order</option>
+                        <option value="rarity-desc">Rarity: highest first</option>
+                        <option value="rarity-asc">Rarity: lowest first</option>
                         <option value="iv-desc">IV: highest first</option>
                         <option value="iv-asc">IV: lowest first</option>
                       </select>
