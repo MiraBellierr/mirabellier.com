@@ -27,10 +27,10 @@ function formatIvBlock(stats: { power: number; guard: number; speed: number; luc
 
 type CollectionSort =
   | "recent"
-  | "RH"
-  | "RL"
-  | "IH"
-  | "IL";
+  | "rarity-desc"
+  | "rarity-asc"
+  | "iv-desc"
+  | "iv-asc";
 
 const ArenaCollection = () => {
   const auth = useOptionalAuth();
@@ -186,7 +186,7 @@ const ArenaCollection = () => {
                         onChange={(event) => { setSort(event.target.value as CollectionSort); setPage(1); }}
                         className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
                       >
-                        <option value="collection">Collection order</option>
+                        <option value="recent">Collection order</option>
                         <option value="rarity-desc">Rarity: highest first</option>
                         <option value="rarity-asc">Rarity: lowest first</option>
                         <option value="iv-desc">IV: highest first</option>
