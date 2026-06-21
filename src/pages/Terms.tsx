@@ -163,7 +163,7 @@ const sections: LegalSection[] = [
     content: (
       <p>
         The site may use or link to Discord, Cloudflare, GitHub, Ko-fi, Patreon,
-        MyAnimeList, Jikan, media hosts, and other services. Mira does not
+        MyAnimeList, media hosts, and other services. Mira does not
         control their availability, content, security, or practices and is not
         responsible for losses caused by your use of them. Review their terms
         before providing information or making a payment.

@@ -496,36 +496,6 @@ export class ArenaApiError extends Error {
   }
 }
 
-let jikanHealthRequest: Promise<void> | null = null;
-
-async function checkJikanHealth(): Promise<void> {
-  try {
-    const response = await fetch(joinApi("/arena/jikan-health"), {
-      cache: "no-store",
-    });
-
-    if (response.status >= 400 && response.status < 600) {
-      throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
-        status: response.status,
-        code: "JIKAN_MAINTENANCE",
-      });
-    }
-  } catch (error) {
-    if (error instanceof ArenaApiError) throw error;
-    throw new ArenaApiError("Arena is in maintenance. Please try again later.", {
-      status: 503,
-      code: "JIKAN_MAINTENANCE",
-    });
-  }
-}
-
-async function ensureJikanHealth(): Promise<void> {
-  jikanHealthRequest ||= checkJikanHealth().finally(() => {
-    jikanHealthRequest = null;
-  });
-  await jikanHealthRequest;
-}
-
 function normalizeProfile(value: unknown): ArenaProfile {
   return value as ArenaProfile;
 }
@@ -638,8 +608,6 @@ export async function resetArenaSkillTree(
 export async function drawArenaCard(
   token: string,
 ): Promise<{ card: ArenaCard; profile: ArenaProfile }> {
-  await ensureJikanHealth();
-
   const response = await fetch(joinApi("/arena/draw-card"), {
     method: "POST",
     credentials: "include",
