@@ -533,8 +533,101 @@ export class ArenaApiError extends Error {
   }
 }
 
+const DEFAULT_ELO_RATING = 1000;
+const ELO_PROVISIONAL_MATCHES = 20;
+
+function toFiniteNumber(value: unknown, fallback: number) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 function normalizeProfile(value: unknown): ArenaProfile {
-  return value as ArenaProfile;
+  const profile = value as ArenaProfile;
+  const eloMatches = Math.max(0, toFiniteNumber(profile?.eloMatches, 0));
+  const eloRating = Math.max(
+    100,
+    toFiniteNumber(profile?.eloRating, DEFAULT_ELO_RATING),
+  );
+
+  return {
+    ...profile,
+    eloRating,
+    eloMatches,
+    peakElo: Math.max(
+      eloRating,
+      toFiniteNumber(profile?.peakElo, eloRating),
+    ),
+    eloProvisional:
+      typeof profile?.eloProvisional === "boolean"
+        ? profile.eloProvisional
+        : eloMatches < ELO_PROVISIONAL_MATCHES,
+  };
+}
+
+function normalizeFightOpponent<T extends ArenaFightResponse["opponent"]>(
+  opponent: T,
+): T {
+  if (!opponent || opponent.isNpc) {
+    return {
+      ...opponent,
+      eloRating: null,
+      eloMatches: 0,
+      eloProvisional: false,
+    };
+  }
+
+  const eloMatches = Math.max(0, toFiniteNumber(opponent.eloMatches, 0));
+  return {
+    ...opponent,
+    eloRating: Math.max(
+      100,
+      toFiniteNumber(opponent.eloRating, DEFAULT_ELO_RATING),
+    ),
+    eloMatches,
+    eloProvisional:
+      typeof opponent.eloProvisional === "boolean"
+        ? opponent.eloProvisional
+        : eloMatches < ELO_PROVISIONAL_MATCHES,
+  };
+}
+
+function normalizeActiveFight(value: unknown): ArenaActiveFight {
+  const fight = value as ArenaActiveFight;
+  return {
+    ...fight,
+    opponent: normalizeFightOpponent(fight.opponent),
+  };
+}
+
+function normalizeLeaderboard(
+  value: unknown,
+  requestedMetric: ArenaMetric,
+): ArenaLeaderboardResponse {
+  const board = value as ArenaLeaderboardResponse;
+  return {
+    ...board,
+    metric: requestedMetric,
+    entries: (board.entries || []).map((entry) => {
+      const eloMatches = Math.max(0, toFiniteNumber(entry.eloMatches, 0));
+      const eloRating = Math.max(
+        100,
+        toFiniteNumber(entry.eloRating, DEFAULT_ELO_RATING),
+      );
+      return {
+        ...entry,
+        eloRating,
+        eloMatches,
+        peakElo: Math.max(
+          eloRating,
+          toFiniteNumber(entry.peakElo, eloRating),
+        ),
+        eloProvisional:
+          typeof entry.eloProvisional === "boolean"
+            ? entry.eloProvisional
+            : eloMatches < ELO_PROVISIONAL_MATCHES,
+      };
+    }),
+  };
 }
 
 async function readApiError(response: Response): Promise<ArenaApiError> {
@@ -702,7 +795,14 @@ export async function drawArenaCard(
     throw await readApiError(response);
   }
 
-  return (await response.json()) as { card: ArenaCard; profile: ArenaProfile };
+  const payload = (await response.json()) as {
+    card: ArenaCard;
+    profile: ArenaProfile;
+  };
+  return {
+    ...payload,
+    profile: normalizeProfile(payload.profile),
+  };
 }
 
 export async function runArenaFight(
@@ -719,7 +819,12 @@ export async function runArenaFight(
     throw await readApiError(response);
   }
 
-  return (await response.json()) as ArenaFightResponse;
+  const payload = (await response.json()) as ArenaFightResponse;
+  return {
+    ...payload,
+    opponent: normalizeFightOpponent(payload.opponent),
+    profile: normalizeProfile(payload.profile),
+  };
 }
 
 export async function fetchArenaCollection(
@@ -926,7 +1031,7 @@ export async function fetchArenaLeaderboard(
     throw await readApiError(response);
   }
 
-  return (await response.json()) as ArenaLeaderboardResponse;
+  return normalizeLeaderboard(await response.json(), metric);
 }
 
 export async function startPlaybackFight(
@@ -943,7 +1048,7 @@ export async function startPlaybackFight(
     throw await readApiError(response);
   }
 
-  return (await response.json()) as ArenaActiveFight;
+  return normalizeActiveFight(await response.json());
 }
 
 export async function fetchFightState(
@@ -961,7 +1066,14 @@ export async function fetchFightState(
     throw await readApiError(response);
   }
 
-  return (await response.json()) as { activeFight: ArenaActiveFight | null };
+  const payload = (await response.json()) as {
+    activeFight: ArenaActiveFight | null;
+  };
+  return {
+    activeFight: payload.activeFight
+      ? normalizeActiveFight(payload.activeFight)
+      : null,
+  };
 }
 
 export async function advanceFightTurn(
@@ -978,7 +1090,7 @@ export async function advanceFightTurn(
     throw await readApiError(response);
   }
 
-  return (await response.json()) as ArenaActiveFight;
+  return normalizeActiveFight(await response.json());
 }
 
 export async function skipFight(
@@ -995,7 +1107,7 @@ export async function skipFight(
     throw await readApiError(response);
   }
 
-  return (await response.json()) as ArenaActiveFight;
+  return normalizeActiveFight(await response.json());
 }
 
 export async function verifyArena(
