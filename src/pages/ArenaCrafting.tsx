@@ -330,8 +330,8 @@ const ArenaCrafting = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">crafting info</h2>
-                <p>Craft gear and consumables with materials + coins.</p>
-                <p>Fight for tier 1–3 materials or buy materials from the shop.</p>
+                <p>Use the tabs to switch between gear and consumable recipes.</p>
+                <p>Each recipe costs coins to craft.</p>
               </div>
             </div>
           </aside>

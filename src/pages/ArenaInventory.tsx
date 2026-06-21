@@ -399,9 +399,8 @@ const ArenaInventory = () => {
                 <h2 className="text-center text-lg font-bold text-blue-700">
                   inventory info
                 </h2>
-                <p>Equip any gear you already own.</p>
-                <p>Use consumables directly from your bag.</p>
-                <p>Materials are spent when crafting recipes.</p>
+                <p>Use the tabs to filter gear, consumables, or view all.</p>
+                <p>Equip gear and use consumables directly from your bag.</p>
               </div>
             </div>
           </aside>

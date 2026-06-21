@@ -31,6 +31,8 @@ function normalizeArenaError(error: unknown) {
   return "Arena request failed.";
 }
 
+const PER_PAGE = 10;
+
 const ArenaLeaderboard = () => {
   const [activeMetric, setActiveMetric] = useState<ArenaMetric>("elo");
   const [leaderboards, setLeaderboards] = useState<
@@ -38,6 +40,7 @@ const ArenaLeaderboard = () => {
   >({});
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/leaderboard",
@@ -50,6 +53,10 @@ const ArenaLeaderboard = () => {
       url: "https://mirabellier.com/arena/leaderboard",
     },
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeMetric]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +92,11 @@ const ArenaLeaderboard = () => {
   }, []);
 
   const board = leaderboards[activeMetric];
+
+  const totalPages = board ? Math.ceil(board.entries.length / PER_PAGE) : 0;
+  const pagedEntries = board
+    ? board.entries.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+    : [];
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -155,11 +167,12 @@ const ArenaLeaderboard = () => {
               {loading && !board ? (
                 <p className="text-blue-500">Loading leaderboard...</p>
               ) : board ? (
+                <>
                 <ol className="space-y-1">
-                  {board.entries.length === 0 ? (
+                  {pagedEntries.length === 0 ? (
                     <p className="text-sm text-blue-500">No entries yet.</p>
                   ) : (
-                    board.entries.map((entry) => (
+                    pagedEntries.map((entry) => (
                       <li
                         key={`${activeMetric}-${entry.user.id}`}
                         className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
@@ -206,6 +219,31 @@ const ArenaLeaderboard = () => {
                     ))
                   )}
                 </ol>
+
+                {totalPages > 1 ? (
+                  <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="arena-redraw-button hover:animate-wiggle disabled:opacity-40"
+                    >
+                      [ « prev ]
+                    </button>
+                    <span className="text-sm font-semibold text-blue-700">
+                      {page} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="arena-redraw-button hover:animate-wiggle disabled:opacity-40"
+                    >
+                      [ next » ]
+                    </button>
+                  </div>
+                ) : null}
+                </>
               ) : null}
 
               {errorMessage ? (

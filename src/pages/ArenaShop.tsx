@@ -635,9 +635,9 @@ const ArenaShop = () => {
                 <h2 className="text-center text-lg font-bold text-blue-700">shop info</h2>
                 <p>Ten shared character cards refresh daily at midnight UTC.</p>
                 <p>Daily cards can be bought once per account; random cards stay available.</p>
-                <p>Buy base items and materials here.</p>
-                <p>Craft recipes are now in the dedicated crafting page.</p>
-                <p>Equip one weapon, armor, and charm to activate passives.</p>
+                <p>Buy gear and consumables here. Use the tabs to browse.</p>
+                <p>Craft recipes are in the dedicated crafting page.</p>
+                <p>Equip gear from your inventory to activate passives.</p>
               </div>
             </div>
           </aside>
