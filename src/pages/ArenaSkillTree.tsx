@@ -219,6 +219,10 @@ const ArenaSkillTree = () => {
                 <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
                   [ Collection ]
                 </Link>
+                <span className="font-bold">|</span>
+                <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
+                  [ Market ]
+                </Link>
               </div>
 
               {tree ? (
