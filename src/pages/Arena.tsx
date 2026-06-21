@@ -47,6 +47,7 @@ const Arena = () => {
   const [drawing, setDrawing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updates, setUpdates] = useState<ArenaUpdate[]>([]);
+  const [expandedUpdates, setExpandedUpdates] = useState<Set<string>>(new Set());
   const showingDrawMaintenance = isMaintenanceMessage(errorMessage);
   const xpBlocksFilled = profile
     ? Math.min(10, Math.max(0, Math.round(Number(profile.xpProgress || 0) * 10)))
@@ -157,22 +158,22 @@ const Arena = () => {
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="arena-draw-duel">
               {!token ? (
-                <div className="rounded-[28px] border-2 border-amber-200 bg-white/90 p-6 text-center text-amber-800 shadow-xl">
+                <div className="rounded-[28px] border-2 border-amber-200 bg-white/90 p-6 text-center text-amber-800 shadow-xl dark:border-amber-700 dark:bg-slate-900/90 dark:text-amber-200">
                   <p className="font-semibold">Login is required to play Arena.</p>
                   <Link to="/login" className="mt-2 inline-block font-bold underline">
                     go to login
                   </Link>
                 </div>
               ) : loading && !profile ? (
-                <div className="rounded-[28px] border-2 border-blue-200 bg-white/90 p-6 text-center font-bold text-blue-500 shadow-xl">
+                <div className="rounded-[28px] border-2 border-blue-200 bg-white/90 p-6 text-center font-bold text-blue-500 shadow-xl dark:border-purple-400/30 dark:bg-slate-900/90 dark:text-purple-300">
                   Loading arena profile...
                 </div>
               ) : profile ? (
-                <div className="arena-duel-panel relative mx-auto max-w-2xl overflow-hidden p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4">
+                <div className="arena-duel-panel relative mx-auto max-w-2xl overflow-hidden p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4 dark:bg-slate-900/80">
                   <div className="relative space-y-4">
                     <div className="">
-                        <h2 className="text-4xl font-bold text-blue-900">Champione Information {`>^. .^<`}</h2>
-                      <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                        <h2 className="text-4xl font-bold text-blue-900 dark:text-purple-100">Champione Information {`>^. .^<`}</h2>
+                      <p className="mt-2 text-sm font-black text-blue-800 sm:text-base dark:text-purple-200">
                         <span className="text-pink-300">✿</span> Draw cards, pick your fighter, and duel!{" "}
                         <span className="text-pink-300">✿</span>
                       </p>
@@ -209,10 +210,10 @@ const Arena = () => {
                     </div>
 
                     {profile.activeFight && !profile.activeFight.isFinished ? (
-                      <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-center">
+                      <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-center dark:border-amber-600 dark:bg-amber-950">
                         <Link
                           to="/arena/fight"
-                          className="text-sm font-bold text-blue-600 underline hover:text-blue-800"
+                          className="text-sm font-bold text-blue-600 underline hover:text-blue-800 dark:text-purple-300 dark:hover:text-purple-100"
                         >
                           Fight in progress — resume →
                         </Link>
@@ -235,43 +236,43 @@ const Arena = () => {
                       <div>
                         <div className="arena-chosen-card-heading">
                           <div className="min-w-0 flex-1">
-                            <p className="pb-2 break-words text-center text-2xl font-black leading-tight text-blue-900 sm:text-left">
+                            <p className="pb-2 break-words text-center text-2xl font-black leading-tight text-blue-900 sm:text-left dark:text-purple-100">
                               {profile.selectedCard?.title || "No card yet"} ({profile.selectedCard?.rarity || "-"}){" "}
-                              <span className="whitespace-nowrap text-base text-blue-600">
+                              <span className="whitespace-nowrap text-base text-blue-600 dark:text-purple-300">
                                 · Level {profile.level}
                               </span>
                             </p>
                           </div>
                         </div>
-                        <div className="border-t-2 border-dotted border-sky-200" />
+                        <div className="border-t-2 border-dotted border-sky-200 dark:border-purple-400/30" />
 
-                        <div className="text-md pt-1 pb-1">
+                        <div className="text-md pt-1 pb-1 text-blue-900 dark:text-purple-100">
                         <div className="text-sm">
                           {/* <p className="text-lg font-semibold underline">Card Stats (Total)</p> */}
                         </div>
                         <div className="text-sm">
                           <span>✦ Health:</span> <b>{profile.stats.total.hp}</b>{" "}
-                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.hp})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.hp})</span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Power:</span> <b>{profile.stats.total.power}</b>{" "}
-                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.power})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.power})</span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>{" "}
-                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.guard})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.guard})</span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>{" "}
-                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.speed})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.speed})</span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Luck:</span> <b>{profile.stats.total.luck}</b>{" "}
-                          <span className="text-xs text-sky-600">(IV +{profile.stats.card.luck})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.luck})</span>
                         </div>
                       </div>
 
-                      <div className=" gap-2 border-t border-sky-100 text-sm font-bold">
+                      <div className=" gap-2 border-t border-sky-100 text-sm font-bold dark:border-purple-400/20 text-blue-900 dark:text-purple-100">
                         <div className="text-sm">
                         <p className="text-lg font-semibold underline">Gears</p>
                         </div>
@@ -279,35 +280,35 @@ const Arena = () => {
                         <p><span className="font-normal">✦ Armor:</span> {profile.equipment.armor?.name || "none"}</p>
                         <p><span className="font-normal">✦   Charm:</span> {profile.equipment.charm?.name || "none"}</p>
 
-                        <div className="arena-draw-count-row border-t border-sky-100 pt-1 pb-1 text-sm font-semibold text-blue-950">
+                        <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
                           <span className="mr-1 items-center justify-center text-md">
                             Coins:
                           </span>
                           {" "}
-                          <span className="font-black text-blue-600">
+                          <span className="font-black text-blue-600 dark:text-purple-300">
                             {profile.coins} 🪙
                           </span>
                         </div>
 
-                        <div className="arena-draw-count-row border-t border-sky-100 pt-1 pb-1 text-sm font-semibold text-blue-950">
+                        <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
                           <span className="mr-1">ELO:</span>
-                          <span className="font-black text-blue-600">
+                          <span className="font-black text-blue-600 dark:text-purple-300">
                             {profile.eloRating}
                             {profile.eloProvisional ? " (provisional)" : ""}
                           </span>
                         </div>
 
-                        <div className="py-2 text-xs font-semibold text-blue-950">
+                        <div className="py-2 text-xs font-semibold text-blue-950 dark:text-purple-200">
                           XP: {profile.xp}/{profile.xpToNext}{" "}
                           <span
-                            className="whitespace-nowrap tracking-wider text-blue-600"
+                            className="whitespace-nowrap tracking-wider text-blue-600 dark:text-purple-300"
                             aria-label={`${profile.xp} of ${profile.xpToNext} experience`}
                           >
                             {xpBlocks}
                           </span>
                         </div>
 
-                        <div className="arena-draw-count-row border-t border-sky-100 pt-2 text-sm font-semibold text-blue-950">
+                        <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-2 text-sm font-semibold text-blue-950 dark:text-purple-200">
                           <span className="mr-1 items-center justify-center text-md">
                             Draws left today:
                           </span>
@@ -371,39 +372,58 @@ const Arena = () => {
           </main>
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">
-            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
-              <div className="space-y-3 text-sm text-blue-600">
-                <h2 className="text-center text-lg font-bold text-blue-700">
+            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-slate-800 dark:opacity-95">
+              <div className="space-y-3 text-sm text-blue-600 dark:text-purple-200">
+                <h2 className="text-center text-lg font-bold text-blue-700 dark:text-purple-100">
                   arena updates
                 </h2>
                 {updates.length ? (
                   <ol className="space-y-3">
-                    {updates.map((update, index) => (
-                      <li
-                        key={update.id}
-                        className={index > 0 ? "border-t border-blue-200 pt-3" : ""}
-                      >
-                        <h3 className="font-bold text-blue-700">{update.title}</h3>
-                        <p className="mt-1 whitespace-pre-wrap text-xs text-blue-600">
-                          {update.body}
-                        </p>
-                        <time
-                          className="mt-1 block text-[11px] text-blue-400"
-                          dateTime={update.createdAt}
+                    {updates.map((update, index) => {
+                      const isExpanded = expandedUpdates.has(update.id);
+                      return (
+                        <li
+                          key={update.id}
+                          className={index > 0 ? "border-t border-blue-200 pt-3 dark:border-purple-400/20" : ""}
                         >
-                          {new Date(update.createdAt).toLocaleDateString()}
-                        </time>
-                      </li>
-                    ))}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedUpdates((prev) => {
+                                const next = new Set(prev);
+                                isExpanded ? next.delete(update.id) : next.add(update.id);
+                                return next;
+                              })
+                            }
+                            className="w-full text-left font-bold text-blue-700 dark:text-purple-100"
+                          >
+                            {isExpanded ? "▾" : "▸"} {update.title}
+                          </button>
+                          {isExpanded ? (
+                            <>
+                              <p className="mt-1 whitespace-pre-wrap text-xs text-blue-600 dark:text-purple-300">
+                                {update.body}
+                              </p>
+                              <time
+                                className="mt-1 block text-[11px] text-blue-400 dark:text-purple-400"
+                                dateTime={update.createdAt}
+                              >
+                                {new Date(update.createdAt).toLocaleDateString()}
+                              </time>
+                            </>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ol>
                 ) : (
-                  <p className="text-xs text-blue-500">No updates posted yet.</p>
+                  <p className="text-xs text-blue-500 dark:text-purple-400">No updates posted yet.</p>
                 )}
               </div>
             </div>
-            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
-              <div className="space-y-3 text-sm text-blue-600">
-                <h2 className="text-center text-lg font-bold text-blue-700">arena flow</h2>
+            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-slate-800 dark:opacity-95">
+              <div className="space-y-3 text-sm text-blue-600 dark:text-purple-200">
+                <h2 className="text-center text-lg font-bold text-blue-700 dark:text-purple-100">arena flow</h2>
                 <p>1) Draw up to {profile?.dailyDrawLimit || 10} cards per day.</p>
                 <p>2) Use your card in fights.</p>
                 <p>3) Buy gear in shop and climb leaderboards.</p>
