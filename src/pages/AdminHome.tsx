@@ -58,6 +58,13 @@ function AdminNotice({
 
 const adminTools = [
   {
+    title: "Arena Updates",
+    description:
+      "Publish and remove short updates shown in the right-side panel on Arena home.",
+    to: "/admin/arena-updates",
+    action: "Open Arena updates",
+  },
+  {
     title: "Question of the Day",
     description:
       "Queue upcoming prompts, moderate answers from the public pages, and check the recent archive.",

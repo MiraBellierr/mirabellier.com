@@ -37,6 +37,21 @@ function formatCardIv(card: ArenaCard) {
   return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · L ${card.iv.luck}`;
 }
 
+function formatOfferCountdown(endsAt: string, nowMs: number) {
+  const remainingSeconds = Math.max(
+    0,
+    Math.ceil((Date.parse(endsAt) - nowMs) / 1000),
+  );
+  const days = Math.floor(remainingSeconds / 86400);
+  const hours = Math.floor((remainingSeconds % 86400) / 3600);
+  const minutes = Math.floor((remainingSeconds % 3600) / 60);
+  const seconds = remainingSeconds % 60;
+
+  if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  return `${minutes}m ${seconds}s`;
+}
+
 function CardRewardModal({
   card,
   onClose,
@@ -128,6 +143,7 @@ const ArenaShop = () => {
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cardErrorMessage, setCardErrorMessage] = useState<string | null>(null);
+  const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
 
   usePageSeo({
@@ -194,6 +210,33 @@ const ArenaShop = () => {
     void loadCardOffers();
   }, [loadCardOffers]);
 
+  useEffect(() => {
+    const endsAt = cardShop?.randomOffer?.endsAt;
+    if (!endsAt) return;
+    const remainingMs = Date.parse(endsAt) - Date.now();
+    if (remainingMs <= 0) {
+      setCardShop((previous) =>
+        previous ? { ...previous, randomOffer: null } : previous,
+      );
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setCardShop((previous) =>
+        previous ? { ...previous, randomOffer: null } : previous,
+      );
+    }, remainingMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [cardShop?.randomOffer?.endsAt]);
+
+  useEffect(() => {
+    if (!cardShop?.randomOffer?.endsAt) return;
+    setCountdownNow(Date.now());
+    const intervalId = window.setInterval(() => {
+      setCountdownNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [cardShop?.randomOffer?.endsAt]);
+
   const itemById = useMemo(() => {
     const map = new Map<string, ArenaShopItem>();
     flattenItems(shop).forEach((item) => {
@@ -219,10 +262,12 @@ const ArenaShop = () => {
             ...offer,
             canBuy: !offer.sold && coins >= offer.price,
           })),
-          randomOffer: {
-            ...previous.randomOffer,
-            canBuy: coins >= previous.randomOffer.price,
-          },
+          randomOffer: previous.randomOffer
+            ? {
+                ...previous.randomOffer,
+                canBuy: coins >= previous.randomOffer.price,
+              }
+            : null,
         };
       });
     } catch (error) {
@@ -458,6 +503,7 @@ const ArenaShop = () => {
                           );
                         })}
 
+                        {cardShop.randomOffer ? (
                         <article className="flex min-h-36 gap-3 rounded-xl p-3">
                           <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-white/60 text-4xl font-black text-pink-500 shadow-sm dark:border-purple-400/60 dark:bg-slate-950/40">
                             ?
@@ -487,13 +533,19 @@ const ArenaShop = () => {
                               Receive one random character card.
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
-                              Always available · duplicates possible
+                              Leaves in{" "}
+                              {formatOfferCountdown(
+                                cardShop.randomOffer.endsAt,
+                                countdownNow,
+                              )}{" "}
+                              · duplicates possible
                             </p>
                             <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
                               {cardShop.randomOffer.price.toLocaleString()} coins
                             </p>
                           </div>
                         </article>
+                        ) : null}
                       </div>
                     ) : null}
                   </section>

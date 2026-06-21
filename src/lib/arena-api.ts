@@ -3,6 +3,14 @@ import { shouldSendBearerToken } from "@/lib/auth-session";
 
 export type ArenaMetric = "level" | "win_rate" | "rich";
 
+export type ArenaUpdate = {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ArenaStatsBlock = {
   hp: number;
   power: number;
@@ -408,7 +416,8 @@ export type ArenaCardShopResponse = {
     offerId: "random-card";
     price: number;
     canBuy: boolean;
-  };
+    endsAt: string;
+  } | null;
 };
 
 export type ArenaCardShopPurchaseResponse = {
@@ -551,6 +560,52 @@ export async function fetchArenaProfile(token: string): Promise<ArenaProfile> {
   }
 
   return normalizeProfile(await response.json());
+}
+
+export async function fetchArenaUpdates(limit = 5): Promise<ArenaUpdate[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const response = await fetch(joinApi(`/arena/updates?${params.toString()}`), {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+  const payload = (await response.json()) as { updates: ArenaUpdate[] };
+  return payload.updates;
+}
+
+export async function createArenaUpdate(
+  token: string,
+  input: { title: string; body: string },
+): Promise<ArenaUpdate> {
+  const response = await fetch(joinApi("/arena/updates"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+  const payload = (await response.json()) as { update: ArenaUpdate };
+  return payload.update;
+}
+
+export async function deleteArenaUpdate(
+  token: string,
+  updateId: string,
+): Promise<void> {
+  const response = await fetch(
+    joinApi(`/arena/updates/${encodeURIComponent(updateId)}`),
+    {
+      method: "DELETE",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
 }
 
 export async function fetchArenaSkillTree(

@@ -27,6 +27,7 @@ const QuestionOfTheDay = lazy(() => import("./pages/QuestionOfTheDay"));
 const QuestionArchive = lazy(() => import("./pages/QuestionArchive"));
 const QuestionArchiveDay = lazy(() => import("./pages/QuestionArchiveDay"));
 const AdminHome = lazy(() => import("./pages/AdminHome"));
+const AdminArenaUpdates = lazy(() => import("./pages/AdminArenaUpdates"));
 const AdminQuestionOfTheDay = lazy(
   () => import("./pages/AdminQuestionOfTheDay"),
 );
@@ -119,6 +120,7 @@ function App() {
       <Route path="/blog/:slug" element={<BlogPost />} />
       <Route path="/blog/edit" element={<BlogEdit />} />
       <Route path="/admin" element={<AdminHome />} />
+      <Route path="/admin/arena-updates" element={<AdminArenaUpdates />} />
       <Route
         path="/admin/question-of-the-day"
         element={<AdminQuestionOfTheDay />}

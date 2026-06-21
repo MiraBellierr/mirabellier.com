@@ -12,8 +12,10 @@ import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
   type ArenaProfile,
+  type ArenaUpdate,
   drawArenaCard,
   fetchArenaProfile,
+  fetchArenaUpdates,
 } from "@/lib/arena-api";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
 
@@ -44,6 +46,7 @@ const Arena = () => {
   const [loading, setLoading] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [updates, setUpdates] = useState<ArenaUpdate[]>([]);
   const showingDrawMaintenance = isMaintenanceMessage(errorMessage);
   const xpBlocksFilled = profile
     ? Math.min(10, Math.max(0, Math.round(Number(profile.xpProgress || 0) * 10)))
@@ -61,6 +64,20 @@ const Arena = () => {
       url: "https://mirabellier.com/arena",
     },
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchArenaUpdates(5)
+      .then((payload) => {
+        if (!cancelled) setUpdates(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setUpdates([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -346,6 +363,36 @@ const Arena = () => {
           </main>
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">
+            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
+              <div className="space-y-3 text-sm text-blue-600">
+                <h2 className="text-center text-lg font-bold text-blue-700">
+                  arena updates
+                </h2>
+                {updates.length ? (
+                  <ol className="space-y-3">
+                    {updates.map((update, index) => (
+                      <li
+                        key={update.id}
+                        className={index > 0 ? "border-t border-blue-200 pt-3" : ""}
+                      >
+                        <h3 className="font-bold text-blue-700">{update.title}</h3>
+                        <p className="mt-1 whitespace-pre-wrap text-xs text-blue-600">
+                          {update.body}
+                        </p>
+                        <time
+                          className="mt-1 block text-[11px] text-blue-400"
+                          dateTime={update.createdAt}
+                        >
+                          {new Date(update.createdAt).toLocaleDateString()}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="text-xs text-blue-500">No updates posted yet.</p>
+                )}
+              </div>
+            </div>
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-3 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">arena flow</h2>
