@@ -330,7 +330,11 @@ export type ArenaActiveFight = {
 export type ArenaCollectionResponse = {
   profile: ArenaProfile;
   cards: ArenaCard[];
-  limit: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
+  total: number;
+  sort: string;
 };
 
 export type ArenaSelectCollectionCardResponse = {
@@ -475,7 +479,10 @@ export type ArenaShopRecipe = {
 
 export type ArenaLeaderboardResponse = {
   metric: ArenaMetric;
-  limit: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
+  total: number;
   entries: Array<{
     rank: number;
     user: {
@@ -829,11 +836,12 @@ export async function runArenaFight(
 
 export async function fetchArenaCollection(
   token: string,
-  limit = 200,
+  options: { page?: number; perPage?: number; sort?: string } = {},
 ): Promise<ArenaCollectionResponse> {
-  const params = new URLSearchParams({
-    limit: String(limit),
-  });
+  const params = new URLSearchParams();
+  if (options.page) params.set("page", String(options.page));
+  if (options.perPage) params.set("perPage", String(options.perPage));
+  if (options.sort) params.set("sort", options.sort);
   const response = await fetch(joinApi(`/arena/collection?${params.toString()}`), {
     credentials: "include",
     headers: shouldSendBearerToken(token)
@@ -1017,12 +1025,11 @@ export async function craftArenaRecipe(
 
 export async function fetchArenaLeaderboard(
   metric: ArenaMetric,
-  limit = 50,
+  options: { page?: number; perPage?: number } = {},
 ): Promise<ArenaLeaderboardResponse> {
-  const params = new URLSearchParams({
-    metric,
-    limit: String(limit),
-  });
+  const params = new URLSearchParams({ metric });
+  if (options.page) params.set("page", String(options.page));
+  if (options.perPage) params.set("perPage", String(options.perPage));
   const response = await fetch(joinApi(`/arena/leaderboard?${params.toString()}`), {
     cache: "no-store",
   });

@@ -60,23 +60,16 @@ const ArenaLeaderboard = () => {
 
   useEffect(() => {
     let cancelled = false;
-    const loadBoards = async () => {
+    const loadBoard = async () => {
       setLoading(true);
       setErrorMessage(null);
       try {
-        const [eloBoard, levelBoard, winRateBoard, richBoard] = await Promise.all([
-          fetchArenaLeaderboard("elo"),
-          fetchArenaLeaderboard("level"),
-          fetchArenaLeaderboard("win_rate"),
-          fetchArenaLeaderboard("rich"),
-        ]);
-        if (cancelled) return;
-        setLeaderboards({
-          elo: eloBoard,
-          level: levelBoard,
-          win_rate: winRateBoard,
-          rich: richBoard,
+        const board = await fetchArenaLeaderboard(activeMetric, {
+          page,
+          perPage: PER_PAGE,
         });
+        if (cancelled) return;
+        setLeaderboards((prev) => ({ ...prev, [activeMetric]: board }));
       } catch (error) {
         if (cancelled) return;
         setErrorMessage(normalizeArenaError(error));
@@ -85,18 +78,16 @@ const ArenaLeaderboard = () => {
       }
     };
 
-    void loadBoards();
+    void loadBoard();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeMetric, page]);
 
   const board = leaderboards[activeMetric];
 
-  const totalPages = board ? Math.ceil(board.entries.length / PER_PAGE) : 0;
-  const pagedEntries = board
-    ? board.entries.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-    : [];
+  const entries = board?.entries || [];
+  const totalPages = board?.totalPages || 1;
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -169,10 +160,10 @@ const ArenaLeaderboard = () => {
               ) : board ? (
                 <>
                 <ol className="space-y-1">
-                  {pagedEntries.length === 0 ? (
+                  {entries.length === 0 ? (
                     <p className="text-sm text-blue-500">No entries yet.</p>
                   ) : (
-                    pagedEntries.map((entry) => (
+                    entries.map((entry) => (
                       <li
                         key={`${activeMetric}-${entry.user.id}`}
                         className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"

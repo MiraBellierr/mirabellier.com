@@ -32,23 +32,12 @@ type CollectionSort =
   | "iv-desc"
   | "iv-asc";
 
-const RARITY_RANK: Record<string, number> = {
-  C: 0,
-  R: 1,
-  SR: 2,
-  SSR: 3,
-  UR: 4,
-};
-
-function rarityRank(rarity: string) {
-  return RARITY_RANK[rarity.toUpperCase()] ?? -1;
-}
-
 const ArenaCollection = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
   const [collection, setCollection] = useState<ArenaCollectionResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<CollectionSort>("collection");
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
@@ -79,7 +68,10 @@ const ArenaCollection = () => {
       setLoading(true);
       setErrorMessage(null);
       try {
-        const payload = await fetchArenaCollection(token, 300);
+        const serverSort = sort === "rarity-desc" || sort === "rarity-asc" ? sort : undefined;
+        const payload = await fetchArenaCollection(token, {
+          page, perPage: 10, sort: serverSort,
+        });
         if (cancelled) return;
         setCollection(payload);
       } catch (error) {
@@ -94,7 +86,7 @@ const ArenaCollection = () => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, page, sort]);
 
   const handleSelectCard = async (cardInstanceId: string) => {
     if (!token) return;
@@ -116,11 +108,8 @@ const ArenaCollection = () => {
     }
   };
 
-  const PAGE_SIZE = 10;
-  const [page, setPage] = useState(1);
-
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredCards = (collection?.cards || []).filter((card) => {
+  const searchFilteredCards = (collection?.cards || []).filter((card) => {
     if (!normalizedQuery) return true;
     const ivText = `${card.iv.power} ${card.iv.guard} ${card.iv.speed} ${card.iv.luck} ${card.iv.total}`;
     return (
@@ -131,20 +120,16 @@ const ArenaCollection = () => {
     );
   });
 
-  const sortedCards = [...filteredCards].sort((left, right) => {
-    if (sort === "rarity-desc") {
-      return rarityRank(right.rarity) - rarityRank(left.rarity);
-    }
-    if (sort === "rarity-asc") {
-      return rarityRank(left.rarity) - rarityRank(right.rarity);
-    }
-    if (sort === "iv-desc") return right.iv.total - left.iv.total;
-    if (sort === "iv-asc") return left.iv.total - right.iv.total;
-    return 0;
-  });
+  const cards =
+    sort === "iv-desc" || sort === "iv-asc"
+      ? [...searchFilteredCards].sort((left, right) =>
+          sort === "iv-desc"
+            ? right.iv.total - left.iv.total
+            : left.iv.total - right.iv.total,
+        )
+      : searchFilteredCards;
 
-  const totalPages = Math.max(1, Math.ceil(sortedCards.length / PAGE_SIZE));
-  const paginatedCards = sortedCards.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = collection?.totalPages || 1;
 
   // Reset to page 1 when search changes
   const handleSearch = (value: string) => {
@@ -221,7 +206,7 @@ const ArenaCollection = () => {
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-blue-600">
-                      Cards collected: {collection.cards.length}
+                      Cards collected: {collection.total}
                     </p>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <label htmlFor="collection-sort" className="sr-only">
@@ -249,13 +234,13 @@ const ArenaCollection = () => {
                       />
                     </div>
                   </div>
-                  {normalizedQuery ? (
+                   {normalizedQuery ? (
                     <p className="text-xs text-slate-600">
-                      Found: {filteredCards.length}
+                      Found: {searchFilteredCards.length}
                     </p>
                   ) : null}
                   <ol className="space-y-1">
-                    {paginatedCards.map((card) => {
+                    {cards.map((card) => {
                       const isSelected =
                         collection.profile.selectedCard?.cardInstanceId === card.cardInstanceId;
                       return (
@@ -301,7 +286,7 @@ const ArenaCollection = () => {
                       );
                     })}
                   </ol>
-                  {filteredCards.length === 0 ? (
+                   {cards.length === 0 ? (
                     <p className="text-sm text-slate-600">No cards match your search.</p>
                   ) : null}
 
