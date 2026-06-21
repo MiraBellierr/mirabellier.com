@@ -406,8 +406,7 @@ export type ArenaCardShopResponse = {
   dailyOffers: ArenaCardShopDailyOffer[];
   randomOffer: {
     offerId: "random-card";
-    minPrice: number;
-    maxPrice: number;
+    price: number;
     canBuy: boolean;
   };
 };

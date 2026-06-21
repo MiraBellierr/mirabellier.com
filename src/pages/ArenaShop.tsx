@@ -221,7 +221,7 @@ const ArenaShop = () => {
           })),
           randomOffer: {
             ...previous.randomOffer,
-            canBuy: coins >= previous.randomOffer.minPrice,
+            canBuy: coins >= previous.randomOffer.price,
           },
         };
       });
@@ -490,8 +490,7 @@ const ArenaShop = () => {
                               Always available · duplicates possible
                             </p>
                             <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
-                              {cardShop.randomOffer.minPrice.toLocaleString()}–
-                              {cardShop.randomOffer.maxPrice.toLocaleString()} coins · based on rarity
+                              {cardShop.randomOffer.price.toLocaleString()} coins
                             </p>
                           </div>
                         </article>
