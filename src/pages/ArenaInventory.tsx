@@ -100,7 +100,7 @@ const ArenaInventory = () => {
       flattenItems(shop)
         .filter((item) => item.ownedQuantity > 0 && item.type !== "instant")
         .sort((left, right) => {
-          const typeOrder = { gear: 0, consumable: 1, instant: 3 };
+          const typeOrder = { gear: 0, consumable: 1, material: 2, instant: 3 };
           return (
             typeOrder[left.type] - typeOrder[right.type] ||
             left.tier.localeCompare(right.tier) ||
