@@ -417,7 +417,7 @@ const ArenaShop = () => {
                           Cards
                         </h3>
                         <p className="text-xs text-slate-600 dark:text-slate-300">
-                          Five shared cards refresh every day. Prices: C 50 · R 100 · SR
+                          Ten shared cards refresh every day. Prices: C 50 · R 100 · SR
                           1,000 · SSR 5,000 · UR 10,000 coins.
                         </p>
                       </div>
@@ -671,7 +671,7 @@ const ArenaShop = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">shop info</h2>
-                <p>Five shared character cards refresh daily at midnight UTC.</p>
+                <p>Ten shared character cards refresh daily at midnight UTC.</p>
                 <p>Daily cards can be bought once per account; random cards stay available.</p>
                 <p>Buy base items and materials here.</p>
                 <p>Craft recipes are now in the dedicated crafting page.</p>
