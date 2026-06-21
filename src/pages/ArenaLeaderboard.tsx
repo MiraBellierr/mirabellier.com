@@ -15,6 +15,7 @@ import {
 } from "@/lib/arena-api";
 
 const METRICS: Array<{ id: ArenaMetric; label: string }> = [
+  { id: "elo", label: "ELO" },
   { id: "level", label: "level" },
   { id: "win_rate", label: "win rate" },
   { id: "rich", label: "rich" },
@@ -31,7 +32,7 @@ function normalizeArenaError(error: unknown) {
 }
 
 const ArenaLeaderboard = () => {
-  const [activeMetric, setActiveMetric] = useState<ArenaMetric>("level");
+  const [activeMetric, setActiveMetric] = useState<ArenaMetric>("elo");
   const [leaderboards, setLeaderboards] = useState<
     Partial<Record<ArenaMetric, ArenaLeaderboardResponse>>
   >({});
@@ -45,7 +46,7 @@ const ArenaLeaderboard = () => {
       "@context": "https://schema.org",
       "@type": "WebPage",
       name: "Arena Leaderboards",
-      description: "Level, win-rate, and rich all-time rankings.",
+      description: "ELO, level, win-rate, and rich all-time rankings.",
       url: "https://mirabellier.com/arena/leaderboard",
     },
   });
@@ -56,13 +57,15 @@ const ArenaLeaderboard = () => {
       setLoading(true);
       setErrorMessage(null);
       try {
-        const [levelBoard, winRateBoard, richBoard] = await Promise.all([
+        const [eloBoard, levelBoard, winRateBoard, richBoard] = await Promise.all([
+          fetchArenaLeaderboard("elo"),
           fetchArenaLeaderboard("level"),
           fetchArenaLeaderboard("win_rate"),
           fetchArenaLeaderboard("rich"),
         ]);
         if (cancelled) return;
         setLeaderboards({
+          elo: eloBoard,
           level: levelBoard,
           win_rate: winRateBoard,
           rich: richBoard,
@@ -99,7 +102,7 @@ const ArenaLeaderboard = () => {
               <div className="">
                 <h2 className="text-4xl font-bold text-blue-900">Leaderboards {`>^. .^<`}</h2>
                 <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
-                  <span className="text-pink-300">✿</span> Top trainers ranked by level, win rate, and wealth!{" "}
+                  <span className="text-pink-300">✿</span> Top trainers ranked by ELO, level, win rate, and wealth!{" "}
                   <span className="text-pink-300">✿</span>
                 </p>
               </div>
@@ -176,7 +179,13 @@ const ArenaLeaderboard = () => {
                             <p className="font-bold text-blue-700">
                               #{entry.rank} {entry.user.username}
                             </p>
-                            {activeMetric === "level" ? (
+                            {activeMetric === "elo" ? (
+                              <p className="text-xs text-slate-600">
+                                ELO {entry.eloRating} · Peak {entry.peakElo} ·{" "}
+                                {entry.eloMatches} rated fights
+                                {entry.eloProvisional ? " · provisional" : ""}
+                              </p>
+                            ) : activeMetric === "level" ? (
                               <p className="text-xs text-slate-600">
                                 Lv {entry.level} · {entry.xp} XP · {formatPercent(entry.xpProgress)} to next
                               </p>
@@ -207,6 +216,8 @@ const ArenaLeaderboard = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">rank rules</h2>
+                <p>ELO board ranks rating, rated fights, then peak ELO.</p>
+                <p>Ratings are provisional for the first 20 rated fights.</p>
                 <p>Level board ranks by level then XP progress.</p>
                 <p>Win-rate board requires at least 50 fights.</p>
                 <p>Rich board ranks by coins and lifetime earnings.</p>

@@ -1,7 +1,7 @@
 import { joinApi } from "@/lib/config";
 import { shouldSendBearerToken } from "@/lib/auth-session";
 
-export type ArenaMetric = "level" | "win_rate" | "rich";
+export type ArenaMetric = "level" | "win_rate" | "rich" | "elo";
 
 export type ArenaUpdate = {
   id: string;
@@ -104,6 +104,10 @@ export type ArenaProfile = {
   totalFights: number;
   winRate: number;
   winStreak: number;
+  eloRating: number;
+  eloMatches: number;
+  peakElo: number;
+  eloProvisional: boolean;
   stats: {
     base: ArenaStatsBlock;
     equipment: ArenaStatsBlock;
@@ -199,6 +203,17 @@ export type ArenaMaterialReward = {
   quantity: number;
 };
 
+export type ArenaEloResult = {
+  rated: boolean;
+  kFactor: number;
+  playerBefore: number;
+  playerAfter: number;
+  playerDelta: number;
+  opponentBefore: number | null;
+  opponentAfter: number | null;
+  opponentDelta: number;
+};
+
 export type ArenaBattleState = {
   maxHp: {
     player: number;
@@ -229,6 +244,9 @@ export type ArenaFightResponse = {
     displayName: string;
     isNpc: boolean;
     level: number;
+    eloRating: number | null;
+    eloMatches: number;
+    eloProvisional: boolean;
     stats: ArenaStatsBlock;
     equipment: {
       weapon: ArenaEquippedItem | null;
@@ -249,6 +267,7 @@ export type ArenaFightResponse = {
     rarityCoinReward: number;
     levelsGained: number;
     materialDrops?: ArenaMaterialReward[];
+    elo: ArenaEloResult;
   };
   effectUsage: {
     usedRerollKeepHigher: boolean;
@@ -282,6 +301,9 @@ export type ArenaActiveFight = {
     displayName: string;
     isNpc: boolean;
     level: number;
+    eloRating: number | null;
+    eloMatches: number;
+    eloProvisional: boolean;
     stats: ArenaStatsBlock;
     equipment: {
       weapon: ArenaEquippedItem | null;
@@ -299,6 +321,7 @@ export type ArenaActiveFight = {
     rarityCoinReward?: number;
     levelsGained?: number;
     materialDrops: ArenaMaterialReward[];
+    elo?: ArenaEloResult | null;
   } | null;
   createdAt: string;
   updatedAt: string;
@@ -470,6 +493,10 @@ export type ArenaLeaderboardResponse = {
     winRate: number;
     coins: number;
     lifetimeCoinsEarned: number;
+    eloRating: number;
+    eloMatches: number;
+    peakElo: number;
+    eloProvisional: boolean;
     updatedAt: string | null;
   }>;
 };

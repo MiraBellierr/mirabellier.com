@@ -60,7 +60,7 @@ const Arena = () => {
       "@type": "WebPage",
       name: "Character Card Arena Hub",
       description:
-        "Draw up to five character cards per day, view your IV card stats, and open fight/shop/leaderboard pages.",
+        "Draw up to ten character cards per day, view your IV card stats, and open fight/shop/leaderboard pages.",
       url: "https://mirabellier.com/arena",
     },
   });
@@ -289,6 +289,14 @@ const Arena = () => {
                           </span>
                         </div>
 
+                        <div className="arena-draw-count-row border-t border-sky-100 pt-1 pb-1 text-sm font-semibold text-blue-950">
+                          <span className="mr-1">ELO:</span>
+                          <span className="font-black text-blue-600">
+                            {profile.eloRating}
+                            {profile.eloProvisional ? " (provisional)" : ""}
+                          </span>
+                        </div>
+
                         <div className="py-2 text-xs font-semibold text-blue-950">
                           XP: {profile.xp}/{profile.xpToNext}{" "}
                           <span
@@ -396,7 +404,7 @@ const Arena = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-3 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">arena flow</h2>
-                <p>1) Draw up to 5 cards per day.</p>
+                <p>1) Draw up to {profile?.dailyDrawLimit || 10} cards per day.</p>
                 <p>2) Use your card in fights.</p>
                 <p>3) Buy gear in shop and climb leaderboards.</p>
               </div>

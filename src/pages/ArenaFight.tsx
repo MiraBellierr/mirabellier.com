@@ -514,6 +514,12 @@ const ArenaFight = () => {
                                 ) : null}
                               </div>
                             </div>
+                            {profile ? (
+                              <p className="mt-1 text-center text-xs text-slate-500">
+                                ELO {profile.eloRating}
+                                {profile.eloProvisional ? " · provisional" : ""}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
 
@@ -538,7 +544,14 @@ const ArenaFight = () => {
                             )}
                             {activeFight?.opponent ? (
                               <p className="text-xs text-slate-500 mt-1 text-center">
-                                {activeFight.opponent.displayName}{activeFight.opponent.isNpc ? " (NPC)" : ""}
+                                {activeFight.opponent.displayName}
+                                {activeFight.opponent.isNpc
+                                  ? " · NPC · unrated"
+                                  : ` · ELO ${activeFight.opponent.eloRating}${
+                                      activeFight.opponent.eloProvisional
+                                        ? " · provisional"
+                                        : ""
+                                    }`}
                               </p>
                             ) : null}
                           </div>
@@ -580,19 +593,15 @@ const ArenaFight = () => {
                           +{activeFight?.rewards?.xp ?? 0} EXP · +
                           {activeFight?.rewards?.coins ?? 0} coins
                         </p>
-                        {activeFight?.rewards?.materialDrops.length ? (
-                          <p className="mt-1 text-xs font-bold text-blue-600 dark:text-sky-200">
-                            Materials:{" "}
-                            {activeFight.rewards.materialDrops
-                              .map(
-                                (drop) =>
-                                  `${drop.itemName || drop.itemId} x${drop.quantity}`,
-                              )
-                              .join(" · ")}
+                        {activeFight?.rewards?.elo?.rated ? (
+                          <p className="mt-1 text-xs font-bold text-purple-600 dark:text-purple-200">
+                            ELO {activeFight.rewards.elo.playerDelta >= 0 ? "+" : ""}
+                            {activeFight.rewards.elo.playerDelta} ·{" "}
+                            {activeFight.rewards.elo.playerAfter}
                           </p>
                         ) : (
                           <p className="mt-1 text-xs font-normal text-slate-500 dark:text-slate-300">
-                            No materials found this fight.
+                            Unrated NPC fight
                           </p>
                         )}
                       </div>
