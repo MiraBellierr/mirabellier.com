@@ -401,12 +401,13 @@ export type ArenaCardShopDailyOffer = {
 export type ArenaCardShopResponse = {
   offerDate: string;
   nextRefreshAt: string;
-  price: number;
+  prices: Record<"C" | "R" | "SR" | "SSR" | "UR", number>;
   profile: ArenaProfile;
   dailyOffers: ArenaCardShopDailyOffer[];
   randomOffer: {
     offerId: "random-card";
-    price: number;
+    minPrice: number;
+    maxPrice: number;
     canBuy: boolean;
   };
 };
@@ -414,6 +415,7 @@ export type ArenaCardShopResponse = {
 export type ArenaCardShopPurchaseResponse = {
   kind: "daily" | "random";
   purchasedOfferId: string;
+  pricePaid: number;
   card: ArenaCard;
   profile: ArenaProfile;
   cardShop: ArenaCardShopResponse;

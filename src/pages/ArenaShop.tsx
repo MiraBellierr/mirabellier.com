@@ -221,7 +221,7 @@ const ArenaShop = () => {
           })),
           randomOffer: {
             ...previous.randomOffer,
-            canBuy: coins >= previous.randomOffer.price,
+            canBuy: coins >= previous.randomOffer.minPrice,
           },
         };
       });
@@ -372,7 +372,8 @@ const ArenaShop = () => {
                           Cards
                         </h3>
                         <p className="text-xs text-slate-600 dark:text-slate-300">
-                          Five shared cards refresh every day. Each card costs 1,000 coins.
+                          Five shared cards refresh every day. Prices: C 50 · R 100 · SR
+                          1,000 · SSR 5,000 · UR 10,000 coins.
                         </p>
                       </div>
                       {cardShop ? (
@@ -489,7 +490,8 @@ const ArenaShop = () => {
                               Always available · duplicates possible
                             </p>
                             <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
-                              {cardShop.randomOffer.price.toLocaleString()} coins
+                              {cardShop.randomOffer.minPrice.toLocaleString()}–
+                              {cardShop.randomOffer.maxPrice.toLocaleString()} coins · based on rarity
                             </p>
                           </div>
                         </article>
