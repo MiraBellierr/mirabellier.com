@@ -128,6 +128,8 @@ export type ArenaProfile = {
     expBoostWinsRemaining: number;
     coinBoostPct: number;
     coinBoostWinsRemaining: number;
+    drawBonusChancePct: number;
+    drawBonusChanceWinsRemaining: number;
     rerollKeepHigherCharges: number;
     streakShieldCharges: number;
     upgradeLowestRarityCharges: number;

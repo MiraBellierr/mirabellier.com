@@ -3,6 +3,7 @@ import type {
   ArenaConsumableRule,
   ArenaPassiveAction,
   ArenaPassiveRule,
+  ArenaProfile,
   ArenaShopItem,
   ArenaShopResponse,
 } from "@/lib/arena-api";
@@ -244,7 +245,12 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
   if (kind === "draw_bonus_chance") {
     return `${toNumber(effect.pct)}% chance to draw a free card per win for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
   }
-  if (kind === "reroll_keep_higher") return "Reroll your own card once, keep higher rarity";
+  if (kind === "reroll_keep_higher") {
+    const rCharges = toNumber(effect.charges, 1);
+    return rCharges > 1
+      ? `Reroll your own card once, keep higher rarity (${rCharges} charge${rCharges > 1 ? "s" : ""})`
+      : "Reroll your own card once, keep higher rarity";
+  }
   if (kind === "streak_shield") return `Ignore ${toNumber(effect.charges, 1)} loss streak reset(s)`;
   if (kind === "upgrade_lowest_rarity") {
     return `Upgrade your lowest own round rarity +1 for ${toNumber(effect.charges, 1)} fight(s)`;
@@ -259,12 +265,17 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
     return `+${toNumber(effect.pct)}% evade for next ${toNumber(effect.fights, 1)} fight(s)`;
   }
   if (kind === "first_hit_true_damage") {
-    return `First successful hit deals +${toNumber(effect.value)} true damage`;
+    return `First successful hit deals +${toNumber(effect.value)} true damage (${toNumber(effect.charges, 1)} charge)`;
   }
   if (kind === "bonus_vs_higher_rarity") {
     return `+${toNumber(effect.pct)}% damage vs higher rarity (${toNumber(effect.charges, 1)} charge)`;
   }
-  if (kind === "cooldown_bypass") return "Bypass fight cooldown once";
+  if (kind === "cooldown_bypass") {
+    const cCharges = toNumber(effect.charges, 1);
+    return cCharges > 1
+      ? `Bypass fight cooldown (${cCharges} charge${cCharges > 1 ? "s" : ""})`
+      : "Bypass fight cooldown once";
+  }
   if (kind === "double_passive_trigger") {
     return `Double passive trigger chance for ${toNumber(effect.fights, 1)} fight(s)`;
   }
@@ -275,8 +286,8 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
   return kind || "Consumable effect";
 }
 
-export function formatActiveEffects(shop: ArenaShopResponse) {
-  const effects = shop.profile.effects;
+export function formatActiveEffects(source: ArenaShopResponse | ArenaProfile) {
+  const effects = "profile" in source ? source.profile.effects : source.effects;
   const rows: string[] = [];
   if (effects.expBoostWinsRemaining > 0 && effects.expBoostPct > 0) {
     rows.push(`EXP boost +${effects.expBoostPct}% (${effects.expBoostWinsRemaining} fight)`);
@@ -284,14 +295,19 @@ export function formatActiveEffects(shop: ArenaShopResponse) {
   if (effects.coinBoostWinsRemaining > 0 && effects.coinBoostPct > 0) {
     rows.push(`Coin boost +${effects.coinBoostPct}% (${effects.coinBoostWinsRemaining} fight)`);
   }
+  if (effects.drawBonusChanceWinsRemaining > 0 && effects.drawBonusChancePct > 0) {
+    rows.push(
+      `Draw bonus +${effects.drawBonusChancePct}% (${effects.drawBonusChanceWinsRemaining} fight)`,
+    );
+  }
   if (effects.rerollKeepHigherCharges > 0) rows.push(`Reroll keep higher x${effects.rerollKeepHigherCharges}`);
   if (effects.streakShieldCharges > 0) rows.push(`Streak shield x${effects.streakShieldCharges}`);
   if (effects.upgradeLowestRarityCharges > 0) {
-    rows.push(`Upgrade lowest rarity x${effects.upgradeLowestRarityCharges}`);
+    rows.push(`Upgrade lowest rarity (${effects.upgradeLowestRarityCharges} fight)`);
   }
-  if (effects.guaranteeSsrPlusCharges > 0) rows.push(`Guarantee SSR+ x${effects.guaranteeSsrPlusCharges}`);
+  if (effects.guaranteeSsrPlusCharges > 0) rows.push(`Guarantee SSR+ (${effects.guaranteeSsrPlusCharges} fight)`);
   if (effects.fightStartShieldCharges > 0) {
-    rows.push(`Fight start shield ${effects.fightStartShieldAmount} x${effects.fightStartShieldCharges}`);
+    rows.push(`Fight start shield +${effects.fightStartShieldAmount} (${effects.fightStartShieldCharges} fight)`);
   }
   if (effects.evadeBoostFightsRemaining > 0 && effects.evadeBoostPct > 0) {
     rows.push(`Evade boost +${effects.evadeBoostPct}% (${effects.evadeBoostFightsRemaining} fight)`);

@@ -21,6 +21,7 @@ import {
   startPlaybackFight,
   verifyArena,
 } from "@/lib/arena-api";
+import { formatActiveEffects } from "@/lib/arena-shop-ui";
 
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;
@@ -484,6 +485,17 @@ const ArenaFight = () => {
                     [ Skill Tree ]
                   </Link>
                 </div>
+
+                {profile ? (
+                  (() => {
+                    const effects = formatActiveEffects(profile);
+                    return effects.length > 0 ? (
+                      <div className="pt-2 text-center text-xs text-blue-700 dark:text-purple-200">
+                        {effects.join(" · ")}
+                      </div>
+                    ) : null;
+                  })()
+                ) : null}
 
                 {!token ? (
                   <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">

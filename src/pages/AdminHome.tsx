@@ -78,6 +78,13 @@ const adminTools = [
     to: "/admin/shrines",
     action: "Open shrine admin",
   },
+  {
+    title: "User Management",
+    description:
+      "Add coins or cards to a user for testing — look up by username, grant currency, or draw cards.",
+    to: "/admin/users",
+    action: "Open user admin",
+  },
 ];
 
 const AdminHome = () => {

@@ -563,6 +563,7 @@ h6 {
 .dark input[type="text"],
 .dark input[type="email"],
 .dark input[type="password"],
+.dark input[type="number"],
 .dark textarea {
   color: #ffffff !important;
   background-color: rgb(31, 41, 55) !important;

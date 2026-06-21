@@ -33,6 +33,7 @@ const AdminQuestionOfTheDay = lazy(
 );
 const AdminShrines = lazy(() => import("./pages/AdminShrines"));
 const AdminShrinePreview = lazy(() => import("./pages/AdminShrinePreview"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const ShrineEntry = lazy(() => import("./pages/ShrineEntry"));
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -127,6 +128,7 @@ function App() {
       />
       <Route path="/admin/shrines" element={<AdminShrines />} />
       <Route path="/admin/shrines/preview" element={<AdminShrinePreview />} />
+      <Route path="/admin/users" element={<AdminUsers />} />
       <Route path="/login" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/settings" element={<Settings />} />
