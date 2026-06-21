@@ -26,11 +26,11 @@ function formatIvBlock(stats: { power: number; guard: number; speed: number; luc
 }
 
 type CollectionSort =
-  | "collection"
-  | "rarity-desc"
-  | "rarity-asc"
-  | "iv-desc"
-  | "iv-asc";
+  | "recent"
+  | "RH"
+  | "RL"
+  | "IH"
+  | "IL";
 
 const ArenaCollection = () => {
   const auth = useOptionalAuth();
@@ -39,7 +39,7 @@ const ArenaCollection = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<CollectionSort>("collection");
+  const [sort, setSort] = useState<CollectionSort>("recent");
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -68,9 +68,8 @@ const ArenaCollection = () => {
       setLoading(true);
       setErrorMessage(null);
       try {
-        const serverSort = sort === "rarity-desc" || sort === "rarity-asc" ? sort : undefined;
         const payload = await fetchArenaCollection(token, {
-          page, perPage: 10, sort: serverSort,
+          page, perPage: 10, sort, search: query || undefined,
         });
         if (cancelled) return;
         setCollection(payload);
@@ -86,7 +85,7 @@ const ArenaCollection = () => {
     return () => {
       cancelled = true;
     };
-  }, [token, page, sort]);
+  }, [token, page, sort, query]);
 
   const handleSelectCard = async (cardInstanceId: string) => {
     if (!token) return;
@@ -108,39 +107,8 @@ const ArenaCollection = () => {
     }
   };
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const searchFilteredCards = (collection?.cards || []).filter((card) => {
-    if (!normalizedQuery) return true;
-    const ivText = `${card.iv.power} ${card.iv.guard} ${card.iv.speed} ${card.iv.luck} ${card.iv.total}`;
-    return (
-      card.title.toLowerCase().includes(normalizedQuery) ||
-      card.rarity.toLowerCase().includes(normalizedQuery) ||
-      String(card.malId).includes(normalizedQuery) ||
-      ivText.includes(normalizedQuery)
-    );
-  });
-
-  const cards =
-    sort === "iv-desc" || sort === "iv-asc"
-      ? [...searchFilteredCards].sort((left, right) =>
-          sort === "iv-desc"
-            ? right.iv.total - left.iv.total
-            : left.iv.total - right.iv.total,
-        )
-      : searchFilteredCards;
-
+  const cards = collection?.cards || [];
   const totalPages = collection?.totalPages || 1;
-
-  // Reset to page 1 when search changes
-  const handleSearch = (value: string) => {
-    setQuery(value);
-    setPage(1);
-  };
-
-  const handleSort = (value: CollectionSort) => {
-    setSort(value);
-    setPage(1);
-  };
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -215,7 +183,7 @@ const ArenaCollection = () => {
                       <select
                         id="collection-sort"
                         value={sort}
-                        onChange={(event) => handleSort(event.target.value as CollectionSort)}
+                        onChange={(event) => { setSort(event.target.value as CollectionSort); setPage(1); }}
                         className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
                       >
                         <option value="collection">Collection order</option>
@@ -228,17 +196,13 @@ const ArenaCollection = () => {
                         id="collection-search"
                         type="search"
                         value={query}
-                        onChange={(event) => handleSearch(event.target.value)}
-                        placeholder="Search by name, rarity, id, iv..."
+                        onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+                        placeholder="Lelouch Lamperouge..."
                         className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
                       />
                     </div>
                   </div>
-                   {normalizedQuery ? (
-                    <p className="text-xs text-slate-600">
-                      Found: {searchFilteredCards.length}
-                    </p>
-                  ) : null}
+
                   <ol className="space-y-1">
                     {cards.map((card) => {
                       const isSelected =

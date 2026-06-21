@@ -836,12 +836,13 @@ export async function runArenaFight(
 
 export async function fetchArenaCollection(
   token: string,
-  options: { page?: number; perPage?: number; sort?: string } = {},
+  options: { page?: number; perPage?: number; sort?: string; search?: string } = {},
 ): Promise<ArenaCollectionResponse> {
   const params = new URLSearchParams();
   if (options.page) params.set("page", String(options.page));
   if (options.perPage) params.set("perPage", String(options.perPage));
   if (options.sort) params.set("sort", options.sort);
+  if (options.search) params.set("search", options.search);
   const response = await fetch(joinApi(`/arena/collection?${params.toString()}`), {
     credentials: "include",
     headers: shouldSendBearerToken(token)

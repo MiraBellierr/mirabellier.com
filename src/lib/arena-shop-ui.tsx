@@ -241,6 +241,9 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
   if (kind === "coin_boost") {
     return `+${toNumber(effect.pct)}% coins for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
   }
+  if (kind === "draw_bonus_chance") {
+    return `${toNumber(effect.pct)}% chance to draw a free card per win for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
+  }
   if (kind === "reroll_keep_higher") return "Reroll your own card once, keep higher rarity";
   if (kind === "streak_shield") return `Ignore ${toNumber(effect.charges, 1)} loss streak reset(s)`;
   if (kind === "upgrade_lowest_rarity") {
