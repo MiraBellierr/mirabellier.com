@@ -391,7 +391,8 @@ const Arena = () => {
                             onClick={() =>
                               setExpandedUpdates((prev) => {
                                 const next = new Set(prev);
-                                isExpanded ? next.delete(update.id) : next.add(update.id);
+                                if (isExpanded) next.delete(update.id);
+                                else next.add(update.id);
                                 return next;
                               })
                             }
