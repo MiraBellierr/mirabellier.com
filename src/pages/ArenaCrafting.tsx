@@ -36,16 +36,7 @@ const ArenaCrafting = () => {
   const [loading, setLoading] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [expandedRecipes, setExpandedRecipes] = useState(new Set<string>());
-
-  const toggleExpanded = (recipeId: string) => {
-    setExpandedRecipes((prev) => {
-      const next = new Set(prev);
-      if (next.has(recipeId)) next.delete(recipeId);
-      else next.add(recipeId);
-      return next;
-    });
-  };
+  const [itemTypeTab, setItemTypeTab] = useState<"gear" | "consumable">("gear");
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/crafting",
@@ -106,9 +97,17 @@ const ArenaCrafting = () => {
     return [...map.entries()].map(([tier, recipes]) => ({ tier, recipes }));
   }, [shop]);
 
-  const materialEntries = Object.entries(shop?.profile.materialInventory || {}).filter(
-    ([, quantity]) => Number(quantity || 0) > 0,
-  );
+  const filteredRecipesByTier = useMemo(() => {
+    return recipesByTier
+      .map((tierBlock) => ({
+        ...tierBlock,
+        recipes: tierBlock.recipes.filter((recipe) => {
+          const outputItem = itemById.get(recipe.output.itemId);
+          return outputItem?.type === itemTypeTab;
+        }),
+      }))
+      .filter((tierBlock) => tierBlock.recipes.length > 0);
+  }, [recipesByTier, itemById, itemTypeTab]);
 
   const handleCraft = async (recipeId: string) => {
     if (!token || !shop) return;
@@ -216,19 +215,7 @@ const ArenaCrafting = () => {
               ) : shop ? (
                 <div className="space-y-4">
 
-                  <div className="gap-2 border-t p-2 border-b border-sky-500 text-sm font-bold">
-                    <div className="text-sm pt-2">
-                      <p className="text-lg font-semibold underline">Materials</p>
-                    </div>
-                    {materialEntries.length > 0 ? (
-                      materialEntries.map(([itemId, qty]) => (
-                        <p key={itemId}>
-                          <span className="font-normal">✦ {itemById.get(itemId)?.name || itemId}</span> x{qty}
-                        </p>
-                      ))
-                    ) : (
-                      <p><span className="font-normal">✦ none</span></p>
-                    )}
+                   <div className="gap-2 border-t p-2 border-b border-sky-500 text-sm font-bold">
 
                     <div className="arena-draw-count-row pt-1 pb-1 text-sm font-semibold text-blue-950">
                       <span className="mr-1 items-center justify-center text-md">
@@ -248,8 +235,25 @@ const ArenaCrafting = () => {
                     </div>
                   </div>
 
+                  <div className="flex flex-wrap gap-2 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setItemTypeTab("gear")}
+                      className="arena-redraw-button hover:animate-wiggle"
+                    >
+                      {itemTypeTab === "gear" ? "[ » gears « ]" : "[ gears ]"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setItemTypeTab("consumable")}
+                      className="arena-redraw-button hover:animate-wiggle"
+                    >
+                      {itemTypeTab === "consumable" ? "[ » consumables « ]" : "[ consumables ]"}
+                    </button>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {recipesByTier.map((tierBlock) => {
+                  {filteredRecipesByTier.map((tierBlock) => {
                     if (tierBlock.recipes.length === 0) return null;
 
                     return (
@@ -271,6 +275,15 @@ const ArenaCrafting = () => {
                                   <div className="flex items-center gap-2">
                                     <p className="font-semibold text-blue-700">
                                       {recipe.output.itemName || recipe.output.itemId}
+                                      {outputItem?.slot ? (
+                                        <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium uppercase text-blue-600 dark:bg-purple-900/40 dark:text-purple-300">
+                                          {outputItem.slot}
+                                        </span>
+                                      ) : outputItem?.type === "consumable" ? (
+                                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                          consumable
+                                        </span>
+                                      ) : null}
                                     </p>
                                     <button
                                       type="button"
@@ -281,25 +294,9 @@ const ArenaCrafting = () => {
                                       {isCrafting ? "[ crafting... ]" : "[ craft ]"}
                                     </button>
                                   </div>
-                                  <p className="text-xs text-slate-600">
-                                    Fee {recipe.coinCost} coins
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                                    Fee {recipe.coinCost.toLocaleString()} coins
                                   </p>
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleExpanded(recipe.id)}
-                                    className="text-xs"
-                                  >
-                                    Materials needed {expandedRecipes.has(recipe.id) ? "▲" : "▼"}
-                                  </button>
-                                  {expandedRecipes.has(recipe.id) ? (
-                                    <div className="text-xs text-slate-600 space-y-0.5">
-                                      {recipe.inputs.map((input) => (
-                                        <p key={input.itemId}>
-                                          ✦ {input.itemName || input.itemId} {input.owned || 0}/{input.required}
-                                        </p>
-                                      ))}
-                                    </div>
-                                  ) : null}
                                   {outputItem?.stats ? (
                                     <p className="text-xs text-blue-600">{formatStats(outputItem.stats)}</p>
                                   ) : null}

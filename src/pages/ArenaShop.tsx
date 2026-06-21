@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
@@ -12,7 +12,6 @@ import { usePageSeo } from "@/lib/seo";
 import {
   type ArenaCard,
   type ArenaCardShopResponse,
-  type ArenaShopItem,
   type ArenaShopResponse,
   buyArenaItem,
   buyArenaShopCard,
@@ -27,11 +26,6 @@ import {
   formatStats,
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
-
-function flattenItems(shop: ArenaShopResponse | null) {
-  if (!shop) return [] as ArenaShopItem[];
-  return shop.shop.flatMap((tier) => tier.items);
-}
 
 function formatCardIv(card: ArenaCard) {
   return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · L ${card.iv.luck}`;
@@ -237,14 +231,6 @@ const ArenaShop = () => {
     return () => window.clearInterval(intervalId);
   }, [cardShop?.randomOffer?.endsAt]);
 
-  const itemById = useMemo(() => {
-    const map = new Map<string, ArenaShopItem>();
-    flattenItems(shop).forEach((item) => {
-      map.set(item.id, item);
-    });
-    return map;
-  }, [shop]);
-
   const handleBuy = async (itemId: string) => {
     if (!token) return;
     setActioningId(`buy:${itemId}`);
@@ -338,9 +324,6 @@ const ArenaShop = () => {
     setObtainedCard(null);
   }, []);
 
-  const materialEntries = Object.entries(shop?.profile.materialInventory || {}).filter(
-    ([, quantity]) => Number(quantity || 0) > 0,
-  );
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -404,6 +387,10 @@ const ArenaShop = () => {
                 <p className="text-blue-500">Loading shop...</p>
               ) : shop ? (
                 <div className="space-y-4 ">
+                  <div className="arena-draw-count-rowpt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
+                    <span className="mr-1 items-center justify-center text-md">Coins:</span>{" "}
+                    <span className="font-black text-blue-600 dark:text-purple-300">{shop.profile.coins} 🪙</span>
+                  </div>
                   <section
                     aria-labelledby="arena-card-shop-title"
                     className="space-y-3 py-3"
@@ -549,31 +536,6 @@ const ArenaShop = () => {
                       </div>
                     ) : null}
                   </section>
-
-                  <div className="gap-2 p-2 text-sm font-bold">
-                    <div className="text-sm pt-2">
-                      <p className="text-lg font-semibold underline">Materials</p>
-                    </div>
-                    {materialEntries.length > 0 ? (
-                      materialEntries.map(([itemId, qty]) => (
-                        <p key={itemId}>
-                          <span className="font-normal">✦ {itemById.get(itemId)?.name || itemId}</span> x{qty}
-                        </p>
-                      ))
-                    ) : (
-                      <p><span className="font-normal">✦ none</span></p>
-                    )}
-
-                    <div className="arena-draw-count-rowpt-1 pb-1 text-sm font-semibold text-blue-950">
-                      <span className="mr-1 items-center justify-center text-md">
-                        Coins:
-                      </span>
-                      {" "}
-                      <span className="font-black text-blue-600">
-                        {shop.profile.coins} 🪙
-                      </span>
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {shop.shop.map((tierBlock) => {

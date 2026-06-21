@@ -137,7 +137,7 @@ const ArenaLeaderboard = () => {
                 </Link>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3">
+              <div className="flex flex-wrap gap-2">
                 {METRICS.map((metric) => (
                   <button
                     key={metric.id}
@@ -145,7 +145,9 @@ const ArenaLeaderboard = () => {
                     onClick={() => setActiveMetric(metric.id)}
                     className="arena-redraw-button hover:animate-wiggle"
                   >
-                    {metric.id === activeMetric ? `» ${metric.label} «` : metric.label}
+                    {metric.id === activeMetric
+                      ? `[ » ${metric.label} « ]`
+                      : `[ ${metric.label} ]`}
                   </button>
                 ))}
               </div>

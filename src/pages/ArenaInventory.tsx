@@ -25,13 +25,12 @@ import {
 import { usePageSeo } from "@/lib/seo";
 import { useConfirm } from "@/states/ConfirmContext";
 
-type InventoryFilter = "all" | "gear" | "consumable" | "material";
+type InventoryFilter = "all" | "gear" | "consumable";
 
 const FILTERS: Array<{ id: InventoryFilter; label: string }> = [
   { id: "all", label: "All" },
   { id: "gear", label: "Gear" },
   { id: "consumable", label: "Consumables" },
-  { id: "material", label: "Materials" },
 ];
 
 function flattenItems(shop: ArenaShopResponse | null) {
@@ -42,7 +41,6 @@ function flattenItems(shop: ArenaShopResponse | null) {
 function typeLabel(type: ArenaShopItem["type"]) {
   if (type === "gear") return "Gear";
   if (type === "consumable") return "Consumables";
-  if (type === "material") return "Materials";
   return "Other";
 }
 
@@ -102,7 +100,7 @@ const ArenaInventory = () => {
       flattenItems(shop)
         .filter((item) => item.ownedQuantity > 0 && item.type !== "instant")
         .sort((left, right) => {
-          const typeOrder = { gear: 0, consumable: 1, material: 2, instant: 3 };
+          const typeOrder = { gear: 0, consumable: 1, instant: 3 };
           return (
             typeOrder[left.type] - typeOrder[right.type] ||
             left.tier.localeCompare(right.tier) ||
