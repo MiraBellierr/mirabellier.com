@@ -1,6 +1,12 @@
 import type { CSSProperties } from "react";
 
 import type { ArenaCard } from "@/lib/arena-api";
+import fireIcon from "@/assets/elements/fire.png";
+import waterIcon from "@/assets/elements/water.png";
+import earthIcon from "@/assets/elements/earth.png";
+import windIcon from "@/assets/elements/wind.png";
+import lightIcon from "@/assets/elements/light.png";
+import darkIcon from "@/assets/elements/dark.png";
 
 type ArenaPortraitCardSize = "compact" | "full";
 
@@ -20,6 +26,26 @@ type RarityVisual = {
   badge: string;
   accent: string;
 };
+
+type ElementVisual = {
+  label: string;
+  color: string;
+  icon: string;
+};
+
+const ELEMENT_VISUALS: Record<string, ElementVisual> = {
+  Fire:   { label: "Fire",   color: "#e74c3c", icon: fireIcon },
+  Water:  { label: "Water",  color: "#3498db", icon: waterIcon },
+  Earth:  { label: "Earth",  color: "#27ae60", icon: earthIcon },
+  Wind:   { label: "Wind",   color: "#2ecc71", icon: windIcon },
+  Light:  { label: "Light",  color: "#f1c40f", icon: lightIcon },
+  Dark:   { label: "Dark",   color: "#8e44ad", icon: darkIcon },
+};
+
+function normalizeElement(element: string | null | undefined): ElementVisual | null {
+  if (!element) return null;
+  return ELEMENT_VISUALS[element] ?? null;
+}
 
 const RARITY_VISUALS: Record<RarityVisual["key"], RarityVisual> = {
   C: {
@@ -73,20 +99,14 @@ function normalizeRarity(rarity: string | null | undefined): RarityVisual {
   return RARITY_VISUALS.C;
 }
 
-function normalizeLevel(level: number | null | undefined) {
-  if (!Number.isFinite(level)) return "--";
-  return String(Math.max(1, Math.floor(Number(level)))).padStart(2, "0");
-}
-
 const ArenaPortraitCard = ({
   card,
-  level,
   size = "full",
   showIvLine = true,
   className = "",
 }: ArenaPortraitCardProps) => {
   const visual = normalizeRarity(card.rarity);
-  const levelLabel = normalizeLevel(level);
+  const element = normalizeElement(card.element);
   const stars = "\u2605".repeat(visual.stars);
   const rootStyle: CSSProperties = {
     "--arena-card-frame": visual.frame,
@@ -117,12 +137,21 @@ const ArenaPortraitCard = ({
         </div>
 
         <div className="arena-portrait-card__bottom">
+          {element ? (
+            <div className="arena-portrait-card__bottom-element">
+              <img
+                className="arena-portrait-card__element-img"
+                src={element.icon}
+                alt=""
+                draggable={false}
+              />
+            </div>
+          ) : null}
           <p className="arena-portrait-card__name">{card.title}</p>
           <div className="arena-portrait-card__meta">
             <span className="arena-portrait-card__stars" aria-label={`${visual.stars} stars`}>
               {stars}
             </span>
-            <span className="arena-portrait-card__level">LV {levelLabel}</span>
           </div>
           {showIvLine ? (
             <p className="arena-portrait-card__iv">
