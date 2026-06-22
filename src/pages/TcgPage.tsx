@@ -13,6 +13,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
+import ConfirmDialog from "@/parts/ConfirmDialog";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -455,6 +456,7 @@ const TcgPage = () => {
   const [aiActionText, setAiActionText] = useState<string | null>(null);
   const [queueState, setQueueState] = useState<"idle" | "searching" | "matched">("idle");
   const queuePollRef = useRef<number | null>(null);
+  const [showStagingModal, setShowStagingModal] = useState(true);
 
   function showError(msg: string) {
     setErrorMessage(msg);
@@ -656,6 +658,17 @@ const TcgPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
+      {/* Staging modal */}
+      {showStagingModal ? (
+        <ConfirmDialog
+          title="Staging Area"
+          message={<>You are on the <strong>staging stage</strong> of the website. Expect bugs, broken features, and unfinished content.<br /><br />Contact <span className="font-semibold text-pink-600">Mira</span> if you encounter any bugs.</>}
+          confirmLabel="I Understand"
+          cancelLabel="Go Back"
+          onConfirm={() => setShowStagingModal(false)}
+          onCancel={() => window.history.back()}
+        />
+      ) : null}
       <Header />
       <div className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: "var(--page-bg)" }}>
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-2 p-2 sm:gap-4 sm:p-4 lg:flex-row">
@@ -703,10 +716,11 @@ const TcgPage = () => {
                             <div className="flex items-center gap-1">
                               <span className="text-[0.55rem] font-semibold text-slate-500">elements:</span>
                               {elementPool.map((el) => (
-                                <span
+                                <img
                                   key={el}
-                                  className="inline-block w-3 h-3 rounded-full border border-white/30"
-                                  style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }}
+                                  alt={el}
+                                  src={ELEMENT_ICONS[el]}
+                                  className="w-4 h-4 drop-shadow-sm"
                                   title={el}
                                 />
                               ))}
