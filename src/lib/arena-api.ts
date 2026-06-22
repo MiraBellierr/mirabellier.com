@@ -791,6 +791,17 @@ export type TcgGameState = {
   mode?: string;
   aiActions?: string[] | null;
   turnStartedAt?: number | null;
+  lastAttackResult?: {
+    damage: number;
+    elementEffective: string | null;
+    elementAttacker: string | null;
+    ko: boolean;
+    defenderHp: number;
+    defenderMaxHp: number;
+    attackerKey: string;
+    defenderKey: string;
+    attackId?: number;
+  } | null;
 };
 
 export type TcgQueueStatus = {
@@ -878,7 +889,7 @@ export async function submitTcgAction(
   token: string,
   gameId: string,
   action: { type: string; cardId?: string; slot?: string },
-): Promise<{ ok: boolean; attackResult?: { damage: number; elementEffective: string | null; elementAttacker: string | null; ko: boolean; defenderHp: number; defenderMaxHp: number } | null; aiActions?: string[] | null }> {
+): Promise<{ ok: boolean; attackResult?: { damage: number; elementEffective: string | null; elementAttacker: string | null; ko: boolean; defenderHp: number; defenderMaxHp: number; attackerKey: string; defenderKey: string; attackId?: number } | null; aiActions?: string[] | null }> {
   const response = await fetch(joinApi(`/tcg/game/${gameId}/action`), {
     method: "POST",
     credentials: "include",
@@ -887,7 +898,7 @@ export async function submitTcgAction(
     cache: "no-store",
   });
   if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as { ok: boolean; attackResult?: { damage: number; elementEffective: string | null; elementAttacker: string | null; ko: boolean; defenderHp: number; defenderMaxHp: number } | null };
+  return (await response.json()) as { ok: boolean; attackResult?: { damage: number; elementEffective: string | null; elementAttacker: string | null; ko: boolean; defenderHp: number; defenderMaxHp: number; attackerKey: string; defenderKey: string; attackId?: number } | null };
 }
 
 export async function fetchArenaSkillTree(

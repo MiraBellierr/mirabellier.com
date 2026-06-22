@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import fireIcon from "@/assets/elements/fire.png";
@@ -86,13 +87,97 @@ function saveElementPool(elements: string[]) {
   localStorage.setItem("tcg_element_pool", JSON.stringify(elements));
 }
 
-function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onDragStart }: {
+function CardDetailTooltip({ detail }: {
+  detail: { card: ArenaCard; top: number; left: number } | null;
+}) {
+  if (!detail) return null;
+  const card = detail.card;
+  const el = (card as Record<string, unknown>).element as string | undefined;
+  const tcgCard = card as TcgCard;
+  const iv = card.iv;
+  const hp = tcgCard.currentHp ?? tcgCard.maxHp;
+  const maxHp = tcgCard.maxHp;
+  const assigned = tcgCard.assignedElements || [];
+  const atk = iv ? Math.floor((iv.power ?? 0) + (iv.speed ?? 0)) : null;
+  const def = iv ? Math.floor((iv.guard ?? 0) * 0.75) : null;
+  const hpEst = iv ? Math.max(25, Math.floor(40 + (iv.guard ?? 0) * 1 + ((iv.power ?? 0) + (iv.speed ?? 0)) * 0.1)) : null;
+
+  return createPortal(
+    <div
+      className="fixed pointer-events-none"
+      style={{
+        left: Math.min(detail.left, window.innerWidth - 230),
+        top: detail.top - 12,
+        transform: "translate(-50%, -100%)",
+        zIndex: 230001,
+      }}
+    >
+      <div className="bg-slate-900 text-white text-[0.6rem] rounded-xl p-3 shadow-2xl w-52 space-y-1.5">
+        <p className="font-bold text-sm truncate">{card.title}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          {el ? (
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white flex items-center gap-1" style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }}>
+              <img src={ELEMENT_ICONS[el] || ""} alt={el} className="w-3 h-3 object-contain" />
+              {el}
+            </span>
+          ) : null}
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white opacity-70" style={{ backgroundColor: (el ? ELEMENT_COLORS[el] : undefined) || "#888" }}>
+            {card.rarity || "?"}
+          </span>
+        </div>
+        {hp !== undefined ? (
+          <div className="flex items-center gap-2">
+            <span className="text-red-300 font-bold">HP:</span>
+            <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-red-500 to-green-500 transition-all"
+                style={{ width: `${maxHp ? Math.max(0, Math.min(100, (hp / maxHp) * 100)) : 100}%` }}
+              />
+            </div>
+            <span className="text-red-300 font-bold">{hp}{maxHp ? `/${maxHp}` : ""}</span>
+          </div>
+        ) : null}
+        {assigned.length > 0 ? (
+          <div className="flex items-center gap-1">
+            <span className="text-amber-300 font-bold">Elements:</span>
+            {assigned.map((ael, i) => (
+              <img key={i} src={ELEMENT_ICONS[ael] || ""} alt={ael} className="w-3.5 h-3.5" title={ael} />
+            ))}
+            <span className="text-amber-300 text-[0.55rem]">(×{assigned.length})</span>
+          </div>
+        ) : null}
+        {iv ? (
+          <>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-slate-300">
+              <span>Power: {iv.power ?? 0}</span>
+              <span>Guard: {iv.guard ?? 0}</span>
+              <span>Speed: {iv.speed ?? 0}</span>
+              <span>Luck: {iv.luck ?? 0}</span>
+            </div>
+            <p className="text-slate-400">IV Total: {iv.total ?? 0}</p>
+          </>
+        ) : null}
+        {atk != null && def != null ? (
+          <p className="text-slate-400">ATK: ~{atk} · DEF: ~{def}</p>
+        ) : null}
+        {hpEst != null && maxHp == null ? (
+          <p className="text-emerald-400">Est. HP: ~{hpEst}</p>
+        ) : null}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onDragStart, onMouseEnter, onMouseLeave }: {
   card: TcgCard | ArenaCard | null;
   size?: "sm" | "md" | "lg";
   onClick?: () => void;
   highlighted?: boolean;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
+  onMouseEnter?: (e: React.MouseEvent) => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
 }) {
   if (!card) {
     const dims = size === "lg" ? "w-24 h-32" : size === "md" ? "w-16 h-20" : "w-12 h-16";
@@ -119,12 +204,14 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onD
 
   return (
     <div
-      className={`${dims} rounded-lg border-2 flex-shrink-0 relative overflow-hidden cursor-pointer transition hover:animate-wiggle ${
+      className={`${dims} rounded-lg border-2 flex-shrink-0 relative overflow-hidden cursor-pointer ${
         highlighted ? "border-yellow-400 shadow-lg shadow-yellow-200 scale-105" : "border-slate-400 hover:border-blue-400"
       }`}
       onClick={onClick}
       draggable={draggable}
       onDragStart={onDragStart}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       title={`${card.title}${el ? ` · ${el}` : ""}`}
     >
       <img src={card.imageUrl} alt={card.title} className="w-full h-full object-cover" draggable={false} />
@@ -163,13 +250,16 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onD
   );
 }
 
-function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attackFloaters }: {
+function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attackFloaters, boardKey, onCardHover, onCardHoverLeave }: {
   board: TcgPlayerState | null;
   isTurn: boolean;
   onAction?: (action: { type: string; cardId?: string; slot?: string }) => void;
   mirror?: boolean;
   shakeOpponentCard?: boolean;
   attackFloaters?: { key: number; dmg: number; elLabel: string | null; elColor: string | null }[];
+  boardKey?: string;
+  onCardHover?: (card: ArenaCard | TcgCard, e: React.MouseEvent) => void;
+  onCardHoverLeave?: () => void;
 }) {
   if (!board) return null;
   const attackerClasses = [
@@ -180,6 +270,8 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
   return (
     <div className={`flex items-center gap-2 ${mirror ? "flex-col-reverse" : "flex-col"}`}>
       <div className={attackerClasses}
+        data-board-key={boardKey || ""}
+        data-slot="attacker"
         onDragOver={(e) => {
           const atk = e.dataTransfer.types.length > 0; // accept if has any data
           if (isTurn || atk) e.preventDefault();
@@ -224,6 +316,8 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
               e.dataTransfer.effectAllowed = "move";
             }
           }}
+          onMouseEnter={(e) => { if (board.board.attacker && onCardHover) onCardHover(board.board.attacker, e); }}
+          onMouseLeave={onCardHoverLeave}
         />
         {!board.board.attacker && isTurn ? (
           <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-emerald-500 pointer-events-none">drop</span>
@@ -276,6 +370,8 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
                   e.dataTransfer.effectAllowed = "move";
                 }
               }}
+              onMouseEnter={(e) => { if (card && onCardHover) onCardHover(card, e); }}
+              onMouseLeave={onCardHoverLeave}
             />
             {!card && isTurn ? (
               <span className="absolute inset-0 flex items-center justify-center text-[0.55rem] font-bold text-emerald-500 pointer-events-none">drop</span>
@@ -287,11 +383,13 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
   );
 }
 
-function BoardHand({ board, isTurn, mirror, onAction }: {
+function BoardHand({ board, isTurn, mirror, onAction, onCardHover, onCardHoverLeave }: {
   board: TcgPlayerState | null;
   isTurn: boolean;
   mirror?: boolean;
   onAction?: (action: { type: string }) => void;
+  onCardHover?: (card: ArenaCard | TcgCard, e: React.MouseEvent) => void;
+  onCardHoverLeave?: () => void;
 }) {
   if (!board) return null;
   const cards = mirror ? [...board.hand].reverse() : board.hand;
@@ -328,6 +426,8 @@ function BoardHand({ board, isTurn, mirror, onAction }: {
                 e.dataTransfer.setData("cardId", cid);
                 e.dataTransfer.effectAllowed = "move";
               }}
+              onMouseEnter={(e) => onCardHover?.(card, e)}
+              onMouseLeave={onCardHoverLeave}
             />
           );
         })}
@@ -336,11 +436,13 @@ function BoardHand({ board, isTurn, mirror, onAction }: {
   );
 }
 
-function BoardPiles({ board, isTurn, onAction, turn }: {
+function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLeave }: {
   board: TcgPlayerState | null;
   isTurn?: boolean;
   onAction?: (action: { type: string }) => void;
   turn?: number;
+  onCardHover?: (card: ArenaCard | TcgCard, e: React.MouseEvent) => void;
+  onCardHoverLeave?: () => void;
 }) {
   if (!board) return null;
   const deck = board.fullDeck || [];
@@ -377,7 +479,7 @@ function BoardPiles({ board, isTurn, onAction, turn }: {
             }}
           >
             {drawCards.length > 0 ? (
-              <CardThumbnail card={drawCards[0]} size="md" />
+              <CardThumbnail card={drawCards[0]} size="md" onMouseEnter={(e) => onCardHover?.(drawCards[0], e)} onMouseLeave={onCardHoverLeave} />
             ) : (
               <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center shadow-inner">
                 <span className="text-[0.65rem] font-bold text-slate-600">{board.drawPile.length}</span>
@@ -409,12 +511,13 @@ function BoardPiles({ board, isTurn, onAction, turn }: {
 }
 
 function CountdownTimer({ startMs }: { startMs: number }) {
-  const [left, setLeft] = useState(30);
+  const TURN_SECONDS = 180;
+  const [left, setLeft] = useState(TURN_SECONDS);
   const startRef = useRef(startMs);
 
   useEffect(() => {
     startRef.current = startMs;
-    setLeft(30);
+    setLeft(TURN_SECONDS);
   }, [startMs]);
 
   useEffect(() => {
@@ -422,7 +525,7 @@ function CountdownTimer({ startMs }: { startMs: number }) {
     const update = () => {
       if (!active) return;
       const elapsed = (Date.now() - startRef.current) / 1000;
-      const remaining = Math.max(0, Math.ceil(30 - elapsed));
+      const remaining = Math.max(0, Math.ceil(TURN_SECONDS - elapsed));
       setLeft(remaining);
       if (remaining > 0) setTimeout(update, 250);
     };
@@ -432,7 +535,7 @@ function CountdownTimer({ startMs }: { startMs: number }) {
 
   if (left <= 0) return null;
   return (
-    <p className={`text-center text-sm font-bold ${left <= 10 ? "text-red-600 animate-pulse" : "text-slate-500"}`}>
+    <p className={`text-center text-sm font-bold ${left <= 30 ? "text-red-600 animate-pulse" : "text-slate-500"}`}>
       ⏱ {left}s
     </p>
   );
@@ -473,11 +576,33 @@ const TcgPage = () => {
   const [attackFloaters, setAttackFloaters] = useState<{ key: number; dmg: number; elLabel: string | null; elColor: string | null }[]>([]);
   const [shakeOpponent, setShakeOpponent] = useState(false);
   const floaterKeyRef = useRef(0);
+  const [projectile, setProjectile] = useState<{ key: number; fromBoard: string; toBoard: string; fromX: number; fromY: number; toX: number; toY: number } | null>(null);
+  const projectileKeyRef = useRef(0);
+  const lastAttackIdRef = useRef<number | null>(null);
 
   function spawnAttackFloat(dmg: number, elLabel: string | null, elColor: string | null) {
     const key = floaterKeyRef.current++;
     setAttackFloaters((prev) => [...prev, { key, dmg, elLabel, elColor }]);
     setTimeout(() => setAttackFloaters((prev) => prev.filter((f) => f.key !== key)), 1800);
+  }
+
+  function spawnProjectile(fromBoard: string, toBoard: string) {
+    const fromEl = document.querySelector(`[data-board-key="${fromBoard}"][data-slot="attacker"]`);
+    const toEl = document.querySelector(`[data-board-key="${toBoard}"][data-slot="attacker"]`);
+    if (!fromEl || !toEl) return;
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
+    const key = projectileKeyRef.current++;
+    setProjectile({
+      key,
+      fromBoard,
+      toBoard,
+      fromX: fromRect.left + fromRect.width / 2,
+      fromY: fromRect.top + fromRect.height / 2,
+      toX: toRect.left + toRect.width / 2,
+      toY: toRect.top + toRect.height / 2,
+    });
+    setTimeout(() => setProjectile((prev) => (prev?.key === key ? null : prev)), 500);
   }
 
   usePageSeo({
@@ -602,6 +727,18 @@ const TcgPage = () => {
       try {
         const state = await fetchTcgGameState(token, gameId);
         if (cancelled) return;
+        // Detect opponent attack from polling (deduplicated via attackId)
+        if (state.lastAttackResult && state.lastAttackResult.attackerKey !== myKey && state.lastAttackResult.attackId !== lastAttackIdRef.current) {
+          const ar = state.lastAttackResult;
+          lastAttackIdRef.current = ar.attackId ?? null;
+          const elColor = ar.elementEffective === "super-effective"
+            ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
+            : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
+          spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor);
+          setShakeOpponent(true);
+          setTimeout(() => setShakeOpponent(false), 500);
+          spawnProjectile(ar.attackerKey, ar.defenderKey);
+        }
         setGameState(state);
       } catch (err) {
         if (!cancelled) showError(normalizeArenaError(err));
@@ -622,6 +759,16 @@ const TcgPage = () => {
     });
   };
 
+  const onCardHover = useCallback((card: ArenaCard | TcgCard, e: React.MouseEvent) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setHoverDetail((prev) => {
+      // Skip re-render if same card already shown
+      if (prev && (prev.card as Record<string, unknown>).malId === (card as Record<string, unknown>).malId) return prev;
+      return { card, top: r.top, left: r.left + r.width / 2 };
+    });
+  }, []);
+  const onCardHoverLeave = useCallback(() => setHoverDetail(null), []);
+
   const handleAction = async (action: { type: string; cardId?: string; slot?: string }) => {
     if (!token || !gameId || actionPending) return;
     setActionPending(true); setErrorMessage(null);
@@ -635,6 +782,7 @@ const TcgPage = () => {
         spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor);
         setShakeOpponent(true);
         setTimeout(() => setShakeOpponent(false), 500);
+        spawnProjectile(ar.attackerKey, ar.defenderKey);
       }
       const state = await fetchTcgGameState(token, gameId);
       setGameState(state);
@@ -677,6 +825,24 @@ const TcgPage = () => {
           </div>
           <main className="w-full space-y-2 p-2 sm:p-4 lg:w-3/5">
             <section className="card-border space-y-3 sm:space-y-4 bg-white/60 p-3 sm:p-4">
+              {/* Projectile overlay */}
+              {projectile ? (
+                <div
+                  key={projectile.key}
+                  className="animate-projectile-fly"
+                  style={{
+                    '--proj-from-x': `${projectile.fromX}px`,
+                    '--proj-from-y': `${projectile.fromY}px`,
+                    '--proj-to-x': `${projectile.toX}px`,
+                    '--proj-to-y': `${projectile.toY}px`,
+                  } as React.CSSProperties}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 shadow-[0_0_12px_rgba(251,191,36,0.8)]"
+                    style={{ marginLeft: -8, marginTop: -8 }}
+                  />
+                </div>
+              ) : null}
               <h2 className="text-2xl sm:text-4xl font-bold text-blue-900">TCG Showdown</h2>
 
               {!token ? (
@@ -843,37 +1009,6 @@ const TcgPage = () => {
                             })}
                         </div>
                       )}
-                      {/* Fixed hover tooltip */}
-                      {hoverDetail ? (
-                        <div
-                          className="fixed z-50 pointer-events-none"
-                          style={{
-                            left: Math.min(hoverDetail.left, window.innerWidth - 200),
-                            top: hoverDetail.top - 12,
-                            transform: "translate(-50%, -100%)",
-                          }}
-                        >
-                          <div className="bg-slate-900 text-white text-[0.6rem] rounded-xl p-3 shadow-2xl w-48 space-y-1.5">
-                            <p className="font-bold text-sm truncate">{hoverDetail.card.title}</p>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: ELEMENT_COLORS[hoverDetail.card.element || ""] || "#888" }}>
-                                {hoverDetail.card.element || "?"}
-                              </span>
-                              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white opacity-70" style={{ backgroundColor: (hoverDetail.card.element ? ELEMENT_COLORS[hoverDetail.card.element] : undefined) || "#888" }}>
-                                {hoverDetail.card.rarity}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-slate-300">
-                              <span>Power: {hoverDetail.card.iv?.power ?? 0}</span>
-                              <span>Guard: {hoverDetail.card.iv?.guard ?? 0}</span>
-                              <span>Speed: {hoverDetail.card.iv?.speed ?? 0}</span>
-                              <span>Luck: {hoverDetail.card.iv?.luck ?? 0}</span>
-                            </div>
-                            <p className="text-slate-400">IV Total: {hoverDetail.card.iv?.total ?? 0}</p>
-                            <p className="text-emerald-400">HP: ~{hoverDetail.card.iv ? Math.max(25, 40 + Math.floor((hoverDetail.card.iv.guard || 0) * 1) + Math.floor(((hoverDetail.card.iv.power || 0) + (hoverDetail.card.iv.speed || 0)) * 0.1)) : "?"}</p>
-                          </div>
-                        </div>
-                      ) : null}
                       <div className="flex gap-2 justify-center">
                         {selectedDeck.size > 0 ? (
                           <button
@@ -1028,20 +1163,23 @@ const TcgPage = () => {
                                     )}
                                   </div>
                                   <div>
-                                    <BoardHand board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} mirror onAction={gameState.solo ? handleAction : undefined} />
+                                    <BoardHand board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} mirror onAction={gameState.solo ? handleAction : undefined} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                                     <div className="mt-4">
                                       <PlayerBoard
                                         board={oppBoard}
                                         isTurn={gameState.solo && gameState.currentPlayer === "p2"}
-                                      onAction={gameState.solo ? handleAction : undefined}
+                                      onAction={handleAction}
                                       mirror
+                                      boardKey={oppKey}
                                       shakeOpponentCard={shakeOpponent}
-                                      attackFloaters={gameState.currentPlayer === "p1" ? attackFloaters : []}
+                                      attackFloaters={attackFloaters}
+                                      onCardHover={onCardHover}
+                                      onCardHoverLeave={onCardHoverLeave}
                                     />
                                     </div>
                                   </div>
                                   <div className="absolute top-0 right-full mr-2">
-                                      <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} />
+                                      <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                                   </div>
                                 </div>
                               </div>
@@ -1068,20 +1206,23 @@ const TcgPage = () => {
                               </div>
                                   <div className="mx-auto w-fit relative">
                                     <div>
-                                      <div className="flex flex-col-reverse items-center gap-2">
-                                        <CardThumbnail card={oppBoard?.board.attacker ?? null} size="lg" />
-                                        <div className="flex gap-3 justify-center">
-                                          {(oppBoard?.board.support ?? [null, null, null]).map((card, i) => (
-                                            <CardThumbnail key={`opp-s-${i}`} card={card} size="md" />
-                                          ))}
-                                        </div>
-                                      </div>
+                                      <PlayerBoard
+                                        board={oppBoard}
+                                        isTurn={false}
+                                        onAction={handleAction}
+                                        mirror
+                                        boardKey={oppKey}
+                                        shakeOpponentCard={shakeOpponent}
+                                        attackFloaters={attackFloaters}
+                                        onCardHover={onCardHover}
+                                        onCardHoverLeave={onCardHoverLeave}
+                                      />
                                       <p className="text-xs text-slate-400 mt-1 text-center">
                                         Hand: {oppBoard?.hand.length ?? 0}
                                       </p>
                                     </div>
                                     <div className="absolute top-0 right-full mr-2">
-                                    <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} />
+                                    <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                                   </div>
                               </div>
                             </div>
@@ -1158,12 +1299,15 @@ const TcgPage = () => {
                                   board={myBoard}
                                   isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn}
                                   onAction={handleAction}
-                                  attackFloaters={gameState.currentPlayer === "p2" ? attackFloaters : []}
+                                  boardKey={myKey}
+                                  attackFloaters={attackFloaters}
+                                  onCardHover={onCardHover}
+                                  onCardHoverLeave={onCardHoverLeave}
                                 />
-                                <BoardHand board={myBoard} isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn} onAction={handleAction} />
+                                <BoardHand board={myBoard} isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn} onAction={handleAction} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                               </div>
                               <div className="absolute top-0 left-full ml-2">
-                                <BoardPiles board={myBoard} isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn} onAction={handleAction} turn={gameState.turn} />
+                                <BoardPiles board={myBoard} isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn} onAction={handleAction} turn={gameState.turn} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                               </div>
                             </div>
                           </div>
@@ -1214,6 +1358,8 @@ const TcgPage = () => {
                 </div>
               ) : null}
             </section>
+            {/* Hover tooltip rendered via portal to document.body — escapes .card-border CSS stacking */}
+            <CardDetailTooltip detail={hoverDetail} />
             <Divider />
           </main>
 

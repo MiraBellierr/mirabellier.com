@@ -1731,6 +1731,19 @@ h6 {
   animation: float-up 1.8s ease-out forwards;
 }
 
+/* TCG projectile */
+@keyframes projectile-fly {
+  0% { left: var(--proj-from-x); top: var(--proj-from-y); opacity: 1; }
+  100% { left: var(--proj-to-x); top: var(--proj-to-y); opacity: 0; }
+}
+
+.animate-projectile-fly {
+  animation: projectile-fly 0.4s ease-out forwards;
+  position: fixed;
+  z-index: 99998;
+  pointer-events: none;
+}
+
 /* TCG board protection */
 .select-none {
   -webkit-touch-callout: none;
