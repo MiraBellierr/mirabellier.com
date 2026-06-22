@@ -90,6 +90,7 @@ export type ArenaCard = {
   rarity: string;
   iv: ArenaCardIv;
   drawnAt: string | null;
+  element?: string | null;
 };
 
 export type ArenaProfile = {
@@ -190,6 +191,8 @@ export type ArenaBattleTurn = {
   opponentHp: number;
   playerShield?: number;
   opponentShield?: number;
+  elementEffective?: string | null;
+  elementAttacker?: string | null;
 };
 
 export type ArenaBattleConsoleEvent = {
@@ -337,6 +340,7 @@ export type ArenaCollectionResponse = {
   totalPages: number;
   total: number;
   sort: string;
+  element?: string;
 };
 
 export type ArenaSelectCollectionCardResponse = {
@@ -838,13 +842,14 @@ export async function runArenaFight(
 
 export async function fetchArenaCollection(
   token: string,
-  options: { page?: number; perPage?: number; sort?: string; search?: string } = {},
+  options: { page?: number; perPage?: number; sort?: string; search?: string; element?: string } = {},
 ): Promise<ArenaCollectionResponse> {
   const params = new URLSearchParams();
   if (options.page) params.set("page", String(options.page));
   if (options.perPage) params.set("perPage", String(options.perPage));
   if (options.sort) params.set("sort", options.sort);
   if (options.search) params.set("search", options.search);
+  if (options.element) params.set("element", options.element);
   const response = await fetch(joinApi(`/arena/collection?${params.toString()}`), {
     credentials: "include",
     headers: shouldSendBearerToken(token)

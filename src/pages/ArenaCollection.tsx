@@ -15,6 +15,17 @@ import {
   selectArenaCollectionCard,
 } from "@/lib/arena-api";
 
+const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
+
+const ELEMENT_COLORS: Record<string, string> = {
+  Fire: "#e74c3c",
+  Water: "#3498db",
+  Earth: "#27ae60",
+  Wind: "#2ecc71",
+  Light: "#f1c40f",
+  Dark: "#8e44ad",
+};
+
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;
   if (error instanceof Error) return error.message;
@@ -40,6 +51,7 @@ const ArenaCollection = () => {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<CollectionSort>("recent");
+  const [elementFilter, setElementFilter] = useState("");
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -69,7 +81,7 @@ const ArenaCollection = () => {
       setErrorMessage(null);
       try {
         const payload = await fetchArenaCollection(token, {
-          page, perPage: 10, sort, search: query || undefined,
+          page, perPage: 10, sort, search: query || undefined, element: elementFilter || undefined,
         });
         if (cancelled) return;
         setCollection(payload);
@@ -85,7 +97,7 @@ const ArenaCollection = () => {
     return () => {
       cancelled = true;
     };
-  }, [token, page, sort, query]);
+  }, [token, page, sort, query, elementFilter]);
 
   const handleSelectCard = async (cardInstanceId: string) => {
     if (!token) return;
@@ -203,6 +215,31 @@ const ArenaCollection = () => {
                     </div>
                   </div>
 
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-500 mr-1">element:</span>
+                    {ELEMENTS.map((el) => {
+                      const active = elementFilter === el;
+                      return (
+                        <button
+                          key={el}
+                          type="button"
+                          onClick={() => {
+                            setElementFilter(active ? "" : el);
+                            setPage(1);
+                          }}
+                          style={{
+                            backgroundColor: active ? ELEMENT_COLORS[el] : "transparent",
+                            borderColor: ELEMENT_COLORS[el],
+                            color: active ? "#fff" : ELEMENT_COLORS[el],
+                          }}
+                          className="text-xs font-bold px-2 py-0.5 rounded-full border transition"
+                        >
+                          {el}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <ol className="space-y-1">
                     {cards.map((card) => {
                       const isSelected =
@@ -220,7 +257,17 @@ const ArenaCollection = () => {
                               loading="lazy"
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="font-bold text-blue-700 text-sm">{card.title}</p>
+                              <p className="font-bold text-blue-700 text-sm">
+                                {card.title}
+                                {card.element ? (
+                                  <span
+                                    className="inline-block ml-1 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white align-middle"
+                                    style={{ backgroundColor: ELEMENT_COLORS[card.element] || "#888" }}
+                                  >
+                                    {card.element}
+                                  </span>
+                                ) : null}
+                              </p>
                               <p className="text-xs text-slate-700">Rarity: {card.rarity} · IV: {card.iv.total}</p>
                               <p className="text-xs text-slate-500">{formatIvBlock(card.iv)}</p>
                               {isSelected ? (

@@ -23,6 +23,24 @@ import {
 } from "@/lib/arena-api";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
 
+const ELEMENT_COLORS: Record<string, string> = {
+  Fire: "#e74c3c",
+  Water: "#3498db",
+  Earth: "#27ae60",
+  Wind: "#2ecc71",
+  Light: "#f1c40f",
+  Dark: "#8e44ad",
+};
+
+const WEAKNESS_ROWS = [
+  { element: "Fire", beats: "Earth", color: ELEMENT_COLORS.Fire, beatsColor: ELEMENT_COLORS.Earth },
+  { element: "Water", beats: "Fire", color: ELEMENT_COLORS.Water, beatsColor: ELEMENT_COLORS.Fire },
+  { element: "Earth", beats: "Water", color: ELEMENT_COLORS.Earth, beatsColor: ELEMENT_COLORS.Water },
+  { element: "Wind", beats: "Light", color: ELEMENT_COLORS.Wind, beatsColor: ELEMENT_COLORS.Light },
+  { element: "Light", beats: "Dark", color: ELEMENT_COLORS.Light, beatsColor: ELEMENT_COLORS.Dark },
+  { element: "Dark", beats: "Wind", color: ELEMENT_COLORS.Dark, beatsColor: ELEMENT_COLORS.Wind },
+];
+
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;
   if (error instanceof Error) return error.message;
@@ -30,6 +48,7 @@ function normalizeArenaError(error: unknown) {
 }
 
 type DmgFloater = { key: number; value: number; crit: boolean; x: number; y: number };
+type ElemFloater = { key: number; label: string; color: string; x: number; y: number };
 
 function HpBar({
   current,
@@ -89,6 +108,7 @@ const ArenaFight = () => {
   const [verified, setVerified] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [floaters, setFloaters] = useState<DmgFloater[]>([]);
+  const [elemFloaters, setElemFloaters] = useState<ElemFloater[]>([]);
   const [playerFallen, setPlayerFallen] = useState(false);
   const [opponentFallen, setOpponentFallen] = useState(false);
   const [autoBattle, setAutoBattle] = useState(false);
@@ -252,14 +272,26 @@ const ArenaFight = () => {
       }
 
       const dmg = Number(turn.damage) || 0;
-      if (dmg <= 0) continue;
+      if (dmg > 0) {
+        const isCrit = Boolean(turn.critical);
+        const key = floaterKey.current++;
+        const fx = isPlayerDefender ? 8 + Math.random() * 28 : 64 + Math.random() * 28;
+        setFloaters((prev) => [...prev, { key, value: dmg, crit: isCrit, x: fx, y: 20 + Math.random() * 40 }]);
+        setTimeout(() => setFloaters((prev) => prev.filter((f) => f.key !== key)), 1800);
+        shakeCard(isPlayerDefender ? playerCardRef : opponentCardRef, isCrit);
+      }
 
-      const isCrit = Boolean(turn.critical);
-      const key = floaterKey.current++;
-      const fx = isPlayerDefender ? 8 + Math.random() * 28 : 64 + Math.random() * 28;
-      setFloaters((prev) => [...prev, { key, value: dmg, crit: isCrit, x: fx, y: 20 + Math.random() * 40 }]);
-      setTimeout(() => setFloaters((prev) => prev.filter((f) => f.key !== key)), 1800);
-      shakeCard(isPlayerDefender ? playerCardRef : opponentCardRef, isCrit);
+      if (turn.elementEffective) {
+        const ek = floaterKey.current++;
+        const ex = isPlayerDefender ? 10 + Math.random() * 24 : 66 + Math.random() * 24;
+        const isEffective = turn.elementEffective === "super-effective";
+        const label = isEffective ? "Super Effective" : "Weak...";
+        const color = turn.elementAttacker && ELEMENT_COLORS[turn.elementAttacker]
+          ? ELEMENT_COLORS[turn.elementAttacker]
+          : isEffective ? "#ffbe0b" : "#94a3b8";
+        setElemFloaters((prev) => [...prev, { key: ek, label, color, x: ex, y: 10 + Math.random() * 30 }]);
+        setTimeout(() => setElemFloaters((prev) => prev.filter((f) => f.key !== ek)), 1600);
+      }
     }
   }, []);
 
@@ -276,6 +308,7 @@ const ArenaFight = () => {
   useEffect(() => {
     if (!activeFight || activeFight.cursor > 0) return;
     setFloaters([]);
+    setElemFloaters([]);
     setPlayerFallen(false);
     setOpponentFallen(false);
     lastCursor.current = 0;
@@ -579,6 +612,15 @@ const ArenaFight = () => {
                           {f.value === 0 ? "MISS!" : f.crit ? `CRIT ${f.value}!` : `-${f.value}`}
                         </span>
                       ))}
+                      {elemFloaters.map((f) => (
+                        <span
+                          key={f.key}
+                          className="elem-float"
+                          style={{ left: `${f.x}%`, top: `${f.y}%`, color: f.color, textShadow: `0 0 10px ${f.color}, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.6)` }}
+                        >
+                          {f.label}
+                        </span>
+                      ))}
                     </div>
 
                     {activeFight ? (
@@ -701,6 +743,29 @@ const ArenaFight = () => {
                 </div>
               </div>
             )}
+
+            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
+              <h2 className="text-center text-lg font-bold text-blue-700 mb-2">weakness chart</h2>
+              <div className="space-y-1 text-xs">
+                {WEAKNESS_ROWS.map((row) => (
+                  <div key={row.element} className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block w-14 px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]"
+                      style={{ backgroundColor: row.color }}
+                    >
+                      {row.element}
+                    </span>
+                    <span className="text-slate-500">beats</span>
+                    <span
+                      className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]"
+                      style={{ backgroundColor: row.beatsColor }}
+                    >
+                      {row.beats}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div
               className={verified ? "hidden" : undefined}
