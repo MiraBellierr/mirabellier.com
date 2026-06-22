@@ -786,6 +786,7 @@ export type TcgGameState = {
   } | null;
   lastAction?: string;
   currentPlayer?: string;
+  elementPools?: Record<string, string[]> | null;
   solo?: boolean;
   mode?: string;
   aiActions?: string[] | null;

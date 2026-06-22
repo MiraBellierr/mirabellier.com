@@ -166,7 +166,7 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onD
 function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attackFloaters }: {
   board: TcgPlayerState | null;
   isTurn: boolean;
-  onAction: (action: { type: string; cardId?: string; slot?: string }) => void;
+  onAction?: (action: { type: string; cardId?: string; slot?: string }) => void;
   mirror?: boolean;
   shakeOpponentCard?: boolean;
   attackFloaters?: { key: number; dmg: number; elLabel: string | null; elColor: string | null }[];
@@ -191,13 +191,13 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
             const atk = e.dataTransfer.getData("attack") || e.dataTransfer.getData("text/plain");
             const promoteSlot = e.dataTransfer.getData("promote");
             if (promoteSlot && !board.board.attacker && isTurn) {
-              onAction({ type: "promote", slot: promoteSlot });
+              onAction?.({ type: "promote", slot: promoteSlot });
             } else if ((atk === "1" || atk === "tcg-attack") && board.board.attacker && !isTurn) {
-              onAction({ type: "attack" });
+              onAction?.({ type: "attack" });
             } else if (el && board.board.attacker && isTurn) {
-            onAction({ type: "assign", slot: "attacker" });
+            onAction?.({ type: "assign", slot: "attacker" });
             } else if (cid && !board.board.attacker && isTurn && board.board.support.every((s) => !s)) {
-              onAction({ type: "place", cardId: cid, slot: "attacker" });
+              onAction?.({ type: "place", cardId: cid, slot: "attacker" });
           }
         }}
       >
@@ -257,11 +257,11 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
               const el = e.dataTransfer.getData("element");
               const atk = e.dataTransfer.getData("attack") || e.dataTransfer.getData("text/plain");
               if ((atk === "1" || atk === "tcg-attack") && card) {
-                onAction({ type: "switch", slot: `support_${i}` });
+                onAction?.({ type: "switch", slot: `support_${i}` });
               } else if (el && card) {
-                onAction({ type: "assign", slot: `support_${i}` });
+                onAction?.({ type: "assign", slot: `support_${i}` });
               } else if (cid && !card) {
-                onAction({ type: "place", cardId: cid, slot: `support_${i}` });
+                onAction?.({ type: "place", cardId: cid, slot: `support_${i}` });
               }
             }}
             >
@@ -578,7 +578,7 @@ const TcgPage = () => {
         if (status.matched && status.gameId) {
           setQueueState("matched");
           const deckCards = eligibleCards.filter((c) => selectedDeck.has(toCardId(c)));
-          await submitTcgDeck(token, status.gameId, deckCards);
+          await submitTcgDeck(token, status.gameId, deckCards, elementPool);
           setGameId(status.gameId);
           localStorage.setItem("tcg_active_game", status.gameId);
           setTab("match");
@@ -969,16 +969,27 @@ const TcgPage = () => {
                                 <span className={gameState.currentPlayer === "p2" ? "text-blue-700" : "text-slate-500"}>
                                   P2{gameState.currentPlayer === "p2" ? " (active)" : ""}{gameState.mode === "ai" ? " 🤖" : ""}
                                 </span>
-                                {" · Score: "}{gameState.p2Score}{" · Elements: "}
+                                {" · Score: "}{gameState.p2Score}
+                              </p>
+                              {gameState.elementPools?.[oppKey] && gameState.elementPools[oppKey].length > 0 ? (
+                                <div className="flex items-center justify-center gap-1 mb-1">
+                                  <span className="text-[0.5rem] text-slate-400">pool:</span>
+                                  {gameState.elementPools[oppKey].map((el) => (
+                                    <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />
+                                  ))}
+                                </div>
+                              ) : null}
+                              <div className="flex items-center justify-center gap-1 mb-2">
+                                <span className="text-[0.5rem] text-slate-400">active:</span>
                                 {oppBoard && oppBoard.elementPool.length > 0
                                   ? oppBoard.elementPool.map((el, i) => (
-                                      <span key={i} className="inline-block w-3 h-3 rounded-full border border-white/30 align-middle" style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }} title={el} />
+                                      <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />
                                     ))
-                                  : <span className="text-slate-400">none</span>}
-                              </p>
+                                  : <span className="text-slate-400 text-[0.65rem]">none</span>}
+                              </div>
                                 <div className="mx-auto w-fit relative">
                                   <div className="absolute top-0 left-full ml-2">
-                                    {oppBoard && oppBoard.elementPool.length > 0 && gameState.currentPlayer === "p2" ? (
+                                    {oppBoard && oppBoard.elementPool.length > 0 && gameState.solo && gameState.currentPlayer === "p2" ? (
                                       (() => {
                                         const el = oppBoard.elementPool[0];
                                         const hasMatch = (!!oppBoard.board.attacker && oppBoard.board.attacker.element === el) || oppBoard.board.support.some((s) => s && s.element === el);
@@ -1017,12 +1028,12 @@ const TcgPage = () => {
                                     )}
                                   </div>
                                   <div>
-                                    <BoardHand board={oppBoard} isTurn={gameState.currentPlayer === "p2"} mirror onAction={handleAction} />
+                                    <BoardHand board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} mirror onAction={gameState.solo ? handleAction : undefined} />
                                     <div className="mt-4">
                                       <PlayerBoard
                                         board={oppBoard}
-                                        isTurn={gameState.currentPlayer === "p2"}
-                                      onAction={handleAction}
+                                        isTurn={gameState.solo && gameState.currentPlayer === "p2"}
+                                      onAction={gameState.solo ? handleAction : undefined}
                                       mirror
                                       shakeOpponentCard={shakeOpponent}
                                       attackFloaters={gameState.currentPlayer === "p1" ? attackFloaters : []}
@@ -1030,20 +1041,31 @@ const TcgPage = () => {
                                     </div>
                                   </div>
                                   <div className="absolute top-0 right-full mr-2">
-                                    <BoardPiles board={oppBoard} isTurn={gameState.currentPlayer === "p2"} onAction={handleAction} turn={gameState.turn} />
+                                      <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} />
                                   </div>
                                 </div>
                               </div>
                           ) : (
                             <div className="border border-slate-200 rounded-lg p-2 sm:p-3 bg-slate-50">
-                              <p className="text-xs font-bold text-slate-500 mb-2 text-center">
-                                {gameState?.opponentName || "Opponent"} · Score: {gameState?.p2Score ?? gameState?.player2Score ?? 0} · Elements:{" "}
+                              <p className="text-xs font-bold text-slate-500 mb-1 text-center">
+                                {gameState?.opponentName || "Opponent"} · Score: {gameState?.p2Score ?? gameState?.player2Score ?? 0}
+                              </p>
+                              {gameState.elementPools?.[oppKey] && gameState.elementPools[oppKey].length > 0 ? (
+                                <div className="flex items-center justify-center gap-1 mb-1">
+                                  <span className="text-[0.5rem] text-slate-400">pool:</span>
+                                  {gameState.elementPools[oppKey].map((el) => (
+                                    <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />
+                                  ))}
+                                </div>
+                              ) : null}
+                              <div className="flex items-center justify-center gap-1 mb-2">
+                                <span className="text-[0.5rem] text-slate-400">active:</span>
                                 {oppBoard && oppBoard.elementPool.length > 0
                                   ? oppBoard.elementPool.map((el, i) => (
-                                      <span key={i} className="inline-block w-3 h-3 rounded-full border border-white/30 align-middle" style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }} title={el} />
+                                      <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />
                                     ))
-                                  : <span className="text-slate-400">none</span>}
-                              </p>
+                                  : <span className="text-slate-400 text-[0.65rem]">none</span>}
+                              </div>
                                   <div className="mx-auto w-fit relative">
                                     <div>
                                       <div className="flex flex-col-reverse items-center gap-2">
@@ -1059,7 +1081,7 @@ const TcgPage = () => {
                                       </p>
                                     </div>
                                     <div className="absolute top-0 right-full mr-2">
-                                      <BoardPiles board={oppBoard} isTurn={gameState.currentPlayer === "p2"} onAction={handleAction} turn={gameState.turn} />
+                                    <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} />
                                   </div>
                               </div>
                             </div>
@@ -1073,13 +1095,24 @@ const TcgPage = () => {
                                   P1{gameState.currentPlayer === "p1" ? " (active)" : ""}
                                 </span>
                               ) : "You"}
-                              {" · Score: "}{gameState.p1Score}{" · Elements: "}
+                              {" · Score: "}{gameState.p1Score}
+                            </p>
+                            {gameState.elementPools?.[myKey] && gameState.elementPools[myKey].length > 0 ? (
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <span className="text-[0.5rem] text-slate-400">pool:</span>
+                                {gameState.elementPools[myKey].map((el) => (
+                                  <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />
+                                ))}
+                              </div>
+                            ) : null}
+                            <div className="flex items-center justify-center gap-1 mb-2">
+                              <span className="text-[0.5rem] text-slate-400">active:</span>
                               {myBoard && myBoard.elementPool.length > 0
                                 ? myBoard.elementPool.map((el, i) => (
-                                    <span key={i} className="inline-block w-3 h-3 rounded-full border border-white/30 align-middle" style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }} title={el} />
+                                    <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />
                                   ))
-                                : <span className="text-slate-400">none</span>}
-                            </p>
+                                : <span className="text-slate-400 text-[0.65rem]">none</span>}
+                            </div>
                             <div className="mx-auto w-fit relative">
                               <div className="absolute top-0 right-full mr-2">
                                 {myBoard && myBoard.elementPool.length > 0 && (gameState.solo ? gameState.currentPlayer === "p1" : gameState?.myTurn) ? (
