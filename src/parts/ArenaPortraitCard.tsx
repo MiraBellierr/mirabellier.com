@@ -99,14 +99,21 @@ function normalizeRarity(rarity: string | null | undefined): RarityVisual {
   return RARITY_VISUALS.C;
 }
 
+function normalizeLevel(level: number | null | undefined) {
+  if (!Number.isFinite(level)) return "--";
+  return String(Math.max(1, Math.floor(Number(level)))).padStart(2, "0");
+}
+
 const ArenaPortraitCard = ({
   card,
+  level,
   size = "full",
   showIvLine = true,
   className = "",
 }: ArenaPortraitCardProps) => {
   const visual = normalizeRarity(card.rarity);
   const element = normalizeElement(card.element);
+  const levelLabel = normalizeLevel(level);
   const stars = "\u2605".repeat(visual.stars);
   const rootStyle: CSSProperties = {
     "--arena-card-frame": visual.frame,
@@ -150,21 +157,12 @@ const ArenaPortraitCard = ({
         </div>
 
         <div className="arena-portrait-card__bottom">
-          {element ? (
-            <div className="arena-portrait-card__bottom-element">
-              <img
-                className="arena-portrait-card__element-img"
-                src={element.icon}
-                alt=""
-                draggable={false}
-              />
-            </div>
-          ) : null}
           <p className="arena-portrait-card__name">{card.title}</p>
           <div className="arena-portrait-card__meta">
             <span className="arena-portrait-card__stars" aria-label={`${visual.stars} stars`}>
               {stars}
             </span>
+            <span className="arena-portrait-card__level">LV {levelLabel}</span>
           </div>
           {showIvLine ? (
             <p className="arena-portrait-card__iv">
