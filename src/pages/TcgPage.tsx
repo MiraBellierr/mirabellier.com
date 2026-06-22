@@ -409,17 +409,24 @@ function BoardPiles({ board, isTurn, onAction, turn }: {
 
 function CountdownTimer({ startMs }: { startMs: number }) {
   const [left, setLeft] = useState(30);
+  const startRef = useRef(startMs);
 
   useEffect(() => {
+    startRef.current = startMs;
+    setLeft(30);
+  }, [startMs]);
+
+  useEffect(() => {
+    let active = true;
     const update = () => {
-      const elapsed = (Date.now() - startMs) / 1000;
+      if (!active) return;
+      const elapsed = (Date.now() - startRef.current) / 1000;
       const remaining = Math.max(0, Math.ceil(30 - elapsed));
       setLeft(remaining);
-      if (remaining <= 0) return;
-      return setTimeout(update, 200);
+      if (remaining > 0) setTimeout(update, 250);
     };
-    const timer = setTimeout(update, 200);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(update, 250);
+    return () => { active = false; clearTimeout(timer); };
   }, [startMs]);
 
   if (left <= 0) return null;
@@ -540,7 +547,7 @@ const TcgPage = () => {
       const result = await joinTcgQueue(token);
       if (result.matched && result.gameId) {
         setQueueState("matched");
-        await submitTcgDeck(token, result.gameId, deckCards);
+        await submitTcgDeck(token, result.gameId, deckCards, elementPool);
         setGameId(result.gameId);
         localStorage.setItem("tcg_active_game", result.gameId);
         setTab("match");
@@ -689,9 +696,22 @@ const TcgPage = () => {
                       {/* Selected deck — horizontal scroll */}
                       {selectedDeck.size > 0 ? (
                         <div className="border border-blue-200 rounded-xl bg-blue-50/60 p-3">
-                          <p className="text-xs font-bold text-blue-700 mb-2">
-                            Your Deck ({selectedDeck.size}/{DECK_SIZE})
-                          </p>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-bold text-blue-700">
+                              Your Deck ({selectedDeck.size}/{DECK_SIZE})
+                            </p>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[0.55rem] font-semibold text-slate-500">elements:</span>
+                              {elementPool.map((el) => (
+                                <span
+                                  key={el}
+                                  className="inline-block w-3 h-3 rounded-full border border-white/30"
+                                  style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }}
+                                  title={el}
+                                />
+                              ))}
+                            </div>
+                          </div>
                           <div className="flex gap-3 overflow-x-auto pb-2 select-none" onContextMenu={(e) => e.preventDefault()}>
                             {eligibleCards
                               .filter((card) => selectedDeck.has(toCardId(card)))
@@ -714,6 +734,36 @@ const TcgPage = () => {
                           </div>
                         </div>
                       ) : null}
+
+                      {/* Element spawn selector — choose which elements appear during match */}
+                      <div className="flex flex-wrap items-center gap-2 bg-amber-50/60 border border-amber-200 rounded-lg p-2">
+                        <span className="text-xs font-bold text-amber-700">⚡ Elements to spawn:</span>
+                        {Object.keys(ELEMENT_COLORS).map((el) => {
+                          const active = elementPool.includes(el);
+                          return (
+                            <button
+                              key={el}
+                              type="button"
+                              onClick={() => {
+                                const next = active
+                                  ? elementPool.filter((e) => e !== el)
+                                  : [...elementPool, el];
+                                if (next.length === 0) return;
+                                setElementPool(next);
+                                saveElementPool(next);
+                              }}
+                              style={{
+                                backgroundColor: active ? ELEMENT_COLORS[el] : "transparent",
+                                borderColor: ELEMENT_COLORS[el],
+                                color: active ? "#fff" : ELEMENT_COLORS[el],
+                              }}
+                              className="text-xs font-bold px-2.5 py-1 rounded-full border-2 transition hover:scale-105"
+                            >
+                              {el}
+                            </button>
+                          );
+                        })}
+                      </div>
 
                       {/* Search + Element Filter */}
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -810,37 +860,6 @@ const TcgPage = () => {
                           </div>
                         </div>
                       ) : null}
-                      <div className="flex gap-2 justify-center">
-                        {/* Element pool selector */}
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold text-slate-500">spawn:</span>
-                          {Object.keys(ELEMENT_COLORS).map((el) => {
-                            const active = elementPool.includes(el);
-                            return (
-                              <button
-                                key={el}
-                                type="button"
-                                onClick={() => {
-                                  const next = active
-                                    ? elementPool.filter((e) => e !== el)
-                                    : [...elementPool, el];
-                                  if (next.length === 0) return;
-                                  setElementPool(next);
-                                  saveElementPool(next);
-                                }}
-                                style={{
-                                  backgroundColor: active ? ELEMENT_COLORS[el] : "transparent",
-                                  borderColor: ELEMENT_COLORS[el],
-                                  color: active ? "#fff" : ELEMENT_COLORS[el],
-                                }}
-                                className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full border transition"
-                              >
-                                {el.charAt(0)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
                       <div className="flex gap-2 justify-center">
                         {selectedDeck.size > 0 ? (
                           <button

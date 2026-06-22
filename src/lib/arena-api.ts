@@ -851,12 +851,12 @@ export async function checkTcgQueue(token: string): Promise<TcgQueueStatus> {
   return (await response.json()) as TcgQueueStatus;
 }
 
-export async function submitTcgDeck(token: string, gameId: string, cards: ArenaCard[]): Promise<{ ok: boolean; waiting?: boolean }> {
+export async function submitTcgDeck(token: string, gameId: string, cards: ArenaCard[], elementPool?: string[]): Promise<{ ok: boolean; waiting?: boolean }> {
   const response = await fetch(joinApi(`/tcg/game/${gameId}/deck`), {
     method: "POST",
     credentials: "include",
     headers: { ...makeAuthHeaders(token), "Content-Type": "application/json" },
-    body: JSON.stringify({ cards }),
+    body: JSON.stringify({ cards, elementPool: elementPool ?? null }),
     cache: "no-store",
   });
   if (!response.ok) throw await readApiError(response);
