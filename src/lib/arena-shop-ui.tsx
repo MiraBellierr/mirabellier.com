@@ -286,6 +286,52 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
   return kind || "Consumable effect";
 }
 
+export function getConsumableChargeValue(effect: ArenaConsumableRule | null | undefined) {
+  if (!effect || typeof effect !== "object") return 0;
+  const kind = typeof effect.kind === "string" ? effect.kind : "";
+  switch (kind) {
+    case "exp_boost":
+    case "coin_boost":
+    case "draw_bonus_chance":
+      return toNumber(effect.fights ?? effect.wins, 0);
+    case "evade_next_fight":
+    case "double_passive_trigger":
+      return toNumber(effect.fights, 0);
+    case "reroll_keep_higher":
+    case "streak_shield":
+    case "upgrade_lowest_rarity":
+    case "guarantee_ssr_plus":
+    case "shield_fight_start":
+    case "first_hit_true_damage":
+    case "bonus_vs_higher_rarity":
+    case "cooldown_bypass":
+    case "restore_consumable_charge":
+      return toNumber(effect.charges, 0);
+    default:
+      return 0;
+  }
+}
+
+export function getEffectFieldForKind(kind: string) {
+  switch (kind) {
+    case "exp_boost":         return "expBoostWinsRemaining" as const;
+    case "coin_boost":        return "coinBoostWinsRemaining" as const;
+    case "draw_bonus_chance": return "drawBonusChanceWinsRemaining" as const;
+    case "reroll_keep_higher":    return "rerollKeepHigherCharges" as const;
+    case "streak_shield":         return "streakShieldCharges" as const;
+    case "upgrade_lowest_rarity": return "upgradeLowestRarityCharges" as const;
+    case "guarantee_ssr_plus":    return "guaranteeSsrPlusCharges" as const;
+    case "shield_fight_start":    return "fightStartShieldCharges" as const;
+    case "evade_next_fight":      return "evadeBoostFightsRemaining" as const;
+    case "first_hit_true_damage": return "firstHitTrueDamageCharges" as const;
+    case "bonus_vs_higher_rarity": return "higherRarityDamageBonusPctCharges" as const;
+    case "cooldown_bypass":       return "gateKeyCharges" as const;
+    case "double_passive_trigger": return "doublePassiveTriggerFightsRemaining" as const;
+    case "restore_consumable_charge": return null;
+    default: return null;
+  }
+}
+
 export function formatActiveEffects(source: ArenaShopResponse | ArenaProfile) {
   const effects = "profile" in source ? source.profile.effects : source.effects;
   const rows: string[] = [];

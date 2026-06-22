@@ -12,6 +12,7 @@ import { usePageSeo } from "@/lib/seo";
 import {
   type ArenaCard,
   type ArenaCardShopResponse,
+  type ArenaShopItem,
   type ArenaShopResponse,
   buyArenaItem,
   buyArenaShopCard,
@@ -24,8 +25,11 @@ import {
   describeConsumableEffect,
   describePassive,
   formatStats,
+  getConsumableChargeValue,
+  getEffectFieldForKind,
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
+import { useConfirm } from "@/states/ConfirmContext";
 
 function formatCardIv(card: ArenaCard) {
   return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · L ${card.iv.luck}`;
@@ -130,6 +134,7 @@ function CardRewardModal({
 const ArenaShop = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
+  const { confirm } = useConfirm();
   const [shop, setShop] = useState<ArenaShopResponse | null>(null);
   const [cardShop, setCardShop] = useState<ArenaCardShopResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -263,12 +268,43 @@ const ArenaShop = () => {
     }
   };
 
-  const handleUse = async (itemId: string) => {
-    if (!token) return;
-    setActioningId(`use:${itemId}`);
+  const handleUse = async (item: ArenaShopItem) => {
+    if (!token || !shop) return;
+
+    const effect = item.consumableEffect;
+    if (effect) {
+      const kind = typeof effect.kind === "string" ? effect.kind : "";
+      const charges = getConsumableChargeValue(effect);
+      const field = getEffectFieldForKind(kind);
+      if (field && charges > 0) {
+        const current =
+          Number(shop.profile.effects[field as keyof typeof shop.profile.effects]) || 0;
+        const cap = charges * 2;
+        if (current + charges >= cap) {
+          const desc = describeConsumableEffect(effect);
+          const confirmed = await confirm({
+            title: `Use ${item.name}?`,
+            message: (
+              <div className="space-y-2">
+                <p>{desc}</p>
+                <p className="text-sm text-amber-700">
+                  You already have {current} charge{current !== 1 ? "s" : ""}{" "}
+                  (cap: {cap}). Using this will be partially wasted.
+                </p>
+              </div>
+            ),
+            confirmLabel: "Use anyway",
+            cancelLabel: "Cancel",
+          });
+          if (!confirmed) return;
+        }
+      }
+    }
+
+    setActioningId(`use:${item.id}`);
     setErrorMessage(null);
     try {
-      const payload = await activateArenaConsumable(token, itemId);
+      const payload = await activateArenaConsumable(token, item.id);
       setShop(payload.shop);
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
@@ -580,7 +616,7 @@ const ArenaShop = () => {
                                       {item.type === "consumable" ? (
                                         <button
                                           type="button"
-                                          onClick={() => void handleUse(item.id)}
+                                           onClick={() => void handleUse(item)}
                                           disabled={item.ownedQuantity <= 0 || isUsing}
                                           className="arena-redraw-button hover:animate-wiggle"
                                         >

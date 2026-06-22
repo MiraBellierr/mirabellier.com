@@ -20,6 +20,8 @@ import {
   describePassive,
   formatActiveEffects,
   formatStats,
+  getConsumableChargeValue,
+  getEffectFieldForKind,
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
 import { usePageSeo } from "@/lib/seo";
@@ -133,7 +135,40 @@ const ArenaInventory = () => {
   }, [visibleItems]);
 
   const handleUse = async (item: ArenaShopItem) => {
-    if (!token) return;
+    if (!token || !shop) return;
+
+    const effect = item.consumableEffect;
+    if (effect) {
+      const kind = typeof effect.kind === "string" ? effect.kind : "";
+      const charges = getConsumableChargeValue(effect);
+      const field = getEffectFieldForKind(kind);
+      if (field && charges > 0) {
+        const current =
+          Number(shop.profile.effects[field as keyof typeof shop.profile.effects]) || 0;
+        const cap = charges * 2;
+        if (current + charges >= cap) {
+          const desc = describeConsumableEffect(effect);
+          const confirmed = await confirm({
+            title: `Use ${item.name}?`,
+            message: (
+              <div className="space-y-2">
+                <p>
+                  {desc}
+                </p>
+                <p className="text-sm text-amber-700">
+                  You already have {current} charge{current !== 1 ? "s" : ""}{" "}
+                  (cap: {cap}). Using this will be partially wasted.
+                </p>
+              </div>
+            ),
+            confirmLabel: "Use anyway",
+            cancelLabel: "Cancel",
+          });
+          if (!confirmed) return;
+        }
+      }
+    }
+
     setActioningId(`use:${item.id}`);
     setErrorMessage(null);
     try {
