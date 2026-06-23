@@ -49,7 +49,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/ws": {
-        target: `http://localhost:${process.env.BACKEND_PORT || process.env.PORT || "5000"}`,
+        target: `http://localhost:${process.env.BACKEND_PORT || process.env.PORT || "3000"}`,
         ws: true,
       },
     },
