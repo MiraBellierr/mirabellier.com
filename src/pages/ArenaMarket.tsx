@@ -83,6 +83,7 @@ const ArenaMarket = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [cardSearch, setCardSearch] = useState("");
+  const [cardSearchResults, setCardSearchResults] = useState<ArenaCard[]>([]);
   const [cardDropdownOpen, setCardDropdownOpen] = useState(false);
   const [cardHighlight, setCardHighlight] = useState(-1);
   const cardDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -173,8 +174,10 @@ const ArenaMarket = () => {
     () =>
       collection?.cards.find(
         (card) => card.cardInstanceId === selectedCardId,
+      ) || cardSearchResults.find(
+        (card) => card.cardInstanceId === selectedCardId,
       ) || null,
-    [collection, selectedCardId],
+    [collection, selectedCardId, cardSearchResults],
   );
 
   useEffect(() => {
@@ -196,18 +199,30 @@ const ArenaMarket = () => {
   }, [token, selectedCard]);
 
   const cardSuggestions = useMemo(() => {
-    const search = cardSearch.trim().toLowerCase();
-    if (!search || !collection) return [] as ArenaCard[];
-    return collection.cards.filter((card) => {
-      const ivText = `${card.iv.power} ${card.iv.guard} ${card.iv.speed} ${card.iv.luck} ${card.iv.total}`;
-      return (
-        card.title.toLowerCase().includes(search) ||
-        card.rarity.toLowerCase().includes(search) ||
-        String(card.malId).includes(search) ||
-        ivText.includes(search)
-      );
-    });
-  }, [cardSearch, collection]);
+    if (!cardSearch.trim()) return [] as ArenaCard[];
+    return cardSearchResults;
+  }, [cardSearch, cardSearchResults]);
+
+  // Server-side card search for listing (debounced)
+  useEffect(() => {
+    if (!token) return;
+    const query = cardSearch.trim();
+    if (!query) {
+      setCardSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    const timeout = window.setTimeout(async () => {
+      try {
+        const result = await fetchArenaCollection(token, { perPage: 30, search: query });
+        if (!cancelled) setCardSearchResults(result.cards);
+      } catch {
+        if (!cancelled) setCardSearchResults([]);
+      }
+    }, 300);
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardSearch, token]);
 
   const MINE_PAGE_SIZE = 10;
   const mineTotalPages = Math.max(1, Math.ceil((mine?.listings.length || 0) / MINE_PAGE_SIZE));
@@ -810,7 +825,7 @@ const ArenaMarket = () => {
                                 placeholder="search to list your card"
                                 className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
                               />
-                              {cardDropdownOpen && cardSuggestions.length > 0 ? (
+                              {cardDropdownOpen && cardSearch.trim() && cardSuggestions.length > 0 ? (
                                 <ul className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-blue-200 bg-white shadow-lg dark:border-purple-400/40 dark:bg-slate-800">
                                   {cardSuggestions.map((card, index) => (
                                     <li key={card.cardInstanceId || index}>
