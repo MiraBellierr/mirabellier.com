@@ -7,18 +7,18 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import ArenaSubNav from "@/parts/ArenaSubNav";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useWebSocket } from "@/states/WebSocketProvider";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
   type ArenaActiveFight,
   type ArenaBattleConsoleEvent,
   type ArenaProfile,
-  advanceFightTurn,
   fetchArenaProfile,
-  fetchFightState,
-  startPlaybackFight,
   verifyArena,
 } from "@/lib/arena-api";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
@@ -98,12 +98,12 @@ function HpBar({
 const ArenaFight = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
+  const ws = useWebSocket();
 
   const [profile, setProfile] = useState<ArenaProfile | null>(null);
   const [activeFight, setActiveFight] = useState<ArenaActiveFight | null>(null);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [advancing, setAdvancing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [verified, setVerified] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -119,15 +119,22 @@ const ArenaFight = () => {
   const floaterKey = useRef(0);
   const consoleRef = useRef<HTMLDivElement | null>(null);
 
-  const syncTimerRef = useRef<number | null>(null);
   const lastCursor = useRef(0);
+  const needsResumeRef = useRef(false);
   const autoTimerRef = useRef<number | null>(null);
+  const advanceTimerRef = useRef<number | null>(null);
+  const resumeRetryRef = useRef<number | null>(null);
   const pageVisible = useRef(true);
+  const advanceLockRef = useRef(false);
+  const startPendingRef = useRef(false);
+  const isAutoStartRef = useRef(false);
 
-  const clearTimers = useCallback(() => {
-    if (syncTimerRef.current !== null) {
-      window.clearInterval(syncTimerRef.current);
-      syncTimerRef.current = null;
+  const TURN_ADVANCE_DELAY_MS = 800;
+
+  const clearAdvanceTimer = useCallback(() => {
+    if (advanceTimerRef.current !== null) {
+      window.clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
     }
   }, []);
 
@@ -149,10 +156,10 @@ const ArenaFight = () => {
   // On unmount — clear all timers
   useEffect(() => {
     return () => {
-      clearTimers();
       clearAutoTimer();
+      clearAdvanceTimer();
     };
-  }, [clearTimers, clearAutoTimer]);
+  }, [clearAutoTimer, clearAdvanceTimer]);
 
   // Pause auto-battle when tab loses focus
   useEffect(() => {
@@ -210,9 +217,9 @@ const ArenaFight = () => {
         if (payload.activeFight) {
           setActiveFight(payload.activeFight);
           lastCursor.current = payload.activeFight.cursor;
-        }
-        if (!payload.activeFight?.isFinished) {
-          startSyncLoop();
+          if (!payload.activeFight.isFinished) {
+            needsResumeRef.current = true;
+          }
         }
       } catch (error) {
         if (cancelled) return;
@@ -314,114 +321,147 @@ const ArenaFight = () => {
     lastCursor.current = 0;
   }, [activeFight?.fightId]);
 
+  // Resume fight loop when returning to an in-progress fight
+  useEffect(() => {
+    if (!activeFight || activeFight.isFinished || !needsResumeRef.current) return;
+    needsResumeRef.current = false;
+
+    const tryResume = () => {
+      if (advanceLockRef.current) {
+        // Still waiting for previous advance response — retry
+        resumeRetryRef.current = window.setTimeout(tryResume, 500);
+        return;
+      }
+      advanceLockRef.current = true;
+      ws.send({ type: "arena:fight:advance" });
+    };
+
+    tryResume();
+
+    return () => {
+      if (resumeRetryRef.current !== null) {
+        window.clearTimeout(resumeRetryRef.current);
+        resumeRetryRef.current = null;
+      }
+    };
+  }, [activeFight?.fightId, ws]);
+
   // Auto-scroll console
   useEffect(() => {
     if (!consoleRef.current) return;
     consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
   }, [activeFight?.turns.length, activeFight?.cursor]);
 
-  // ---- Sync loop (poll state + advance) ----
+  // ---- WebSocket event handlers ----
 
-  const doSync = useCallback(async () => {
-    if (!token || advancing) return;
-
-    setAdvancing(true);
-    try {
-      const { activeFight: state } = await fetchFightState(token);
-      if (!state) {
-        setActiveFight(null);
-        return;
-      }
-
-      const prev = lastCursor.current;
-
-      if (!state.isFinished) {
-        const updated = await advanceFightTurn(token);
-        lastCursor.current = updated.cursor;
-        setActiveFight(updated);
-        if (updated.cursor > prev) {
-          triggerTurnEffects(prev, updated);
-        }
-        if (updated.isFinished) {
-          clearTimers();
-          try {
-            const refreshed = await fetchArenaProfile(token);
-            setProfile(refreshed);
-          } catch { /* ignore */ }
-        }
-        return;
-      }
-
-      if (state.cursor > prev) {
-        lastCursor.current = state.cursor;
-        setActiveFight(state);
-        triggerTurnEffects(prev, state);
-      }
-      clearTimers();
-      try {
-        const refreshed = await fetchArenaProfile(token);
-        setProfile(refreshed);
-      } catch { /* ignore */ }
-    } catch {
-      // ignore — retry on next tick
-    } finally {
-      setAdvancing(false);
+  const processFightState = useCallback((state: ArenaActiveFight) => {
+    const prev = lastCursor.current;
+    lastCursor.current = state.cursor;
+    setActiveFight(state);
+    if (state.cursor > prev) {
+      triggerTurnEffects(prev, state);
     }
-  }, [token, advancing, clearTimers, triggerTurnEffects]);
+    return state;
+  }, [triggerTurnEffects]);
 
-  const startSyncLoop = useCallback(() => {
-    if (syncTimerRef.current !== null) return;
-    syncTimerRef.current = window.setInterval(() => {
-      void doSync();
-    }, 800);
-  }, [doSync]);
+  useWebSocketEvent("arena:fight:turn", (data) => {
+    const state = data as ArenaActiveFight;
+    advanceLockRef.current = false;
+
+    if (startPendingRef.current) {
+      startPendingRef.current = false;
+      setStarting(false);
+    }
+
+    processFightState(state);
+
+    if (!state.isFinished) {
+      clearAdvanceTimer();
+      advanceTimerRef.current = window.setTimeout(() => {
+        advanceTimerRef.current = null;
+        sendAdvance();
+      }, TURN_ADVANCE_DELAY_MS);
+    } else {
+      clearAdvanceTimer();
+      fetchArenaProfile(token!).then(setProfile).catch(() => {});
+    }
+  });
+
+  useWebSocketEvent("arena:fight:finished", (data) => {
+    const state = data as ArenaActiveFight;
+    advanceLockRef.current = false;
+
+    if (startPendingRef.current) {
+      startPendingRef.current = false;
+      setStarting(false);
+    }
+
+    processFightState(state);
+    fetchArenaProfile(token!).then(setProfile).catch(() => {});
+  });
+
+  useWebSocketEvent("arena:fight:error", (data) => {
+    advanceLockRef.current = false;
+
+    if (startPendingRef.current) {
+      startPendingRef.current = false;
+      setStarting(false);
+    }
+
+    const err = data as { code?: string; message?: string; retryAfterMs?: number };
+
+    if (err.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
+      const retryAfterMs = Math.max(err.retryAfterMs || 250, 250);
+      clearAutoTimer();
+      setNextAutoFightAt(Date.now() + retryAfterMs + 50);
+      autoTimerRef.current = window.setTimeout(() => {
+        autoTimerRef.current = null;
+        setNextAutoFightAt(null);
+        if (pageVisible.current) {
+          void handleStartFightRef.current(true);
+        }
+      }, retryAfterMs + 50);
+      return;
+    }
+
+    setErrorMessage(err.message || "Arena fight error");
+  });
+
+  // ---- WS action helpers ----
+
+  const sendAdvance = useCallback(() => {
+    if (advanceLockRef.current) return;
+    advanceLockRef.current = true;
+    ws.send({ type: "arena:fight:advance" });
+  }, [ws]);
 
   // ---- User actions ----
 
-  const handleStartFightRef = useRef<(automatic?: boolean) => Promise<void>>(
-    async () => {},
-  );
+  const handleStartFightRef = useRef<(automatic?: boolean) => void>(() => {});
 
-  const handleStartFight = async (automatic = false) => {
+  const handleStartFight = useCallback((automatic = false) => {
     if (!token || starting) return;
     if (activeFight && !activeFight.isFinished) return;
 
+    needsResumeRef.current = false;
     setStarting(true);
     setErrorMessage(null);
-    try {
-      const fight = await startPlaybackFight(token);
-      setActiveFight(fight);
-      lastCursor.current = fight.cursor;
-      try {
-        const refreshed = await fetchArenaProfile(token);
-        setProfile(refreshed);
-      } catch { /* ignore */ }
-      startSyncLoop();
-    } catch (error) {
-      if (
-        automatic &&
-        error instanceof ArenaApiError &&
-        error.code === "ARENA_FIGHT_COOLDOWN"
-      ) {
-        const retryAfterMs = Math.max(error.retryAfterMs || 250, 250);
-        clearAutoTimer();
-        setNextAutoFightAt(Date.now() + retryAfterMs + 50);
-        autoTimerRef.current = window.setTimeout(() => {
-          autoTimerRef.current = null;
-          setNextAutoFightAt(null);
-          if (pageVisible.current) {
-            void handleStartFightRef.current(true);
-          }
-        }, retryAfterMs + 50);
-        return;
-      }
-      setErrorMessage(normalizeArenaError(error));
-    } finally {
-      setStarting(false);
-    }
-  };
+    startPendingRef.current = true;
+    isAutoStartRef.current = automatic;
+    advanceLockRef.current = true;
+    ws.send({ type: "arena:fight:start" });
+  }, [token, starting, activeFight, ws]);
 
   handleStartFightRef.current = handleStartFight;
+
+  const handleSkip = useCallback(() => {
+    if (advanceLockRef.current) return;
+    advanceLockRef.current = true;
+    ws.send({ type: "arena:fight:skip" });
+  }, [ws]);
+
+  const handleSkipRef = useRef(handleSkip);
+  handleSkipRef.current = handleSkip;
 
   // Auto-battle: restart when a fight finishes and auto is enabled
   useEffect(() => {
@@ -489,39 +529,7 @@ const ArenaFight = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 border-b border-sky-100 pb-3 pt-3">
-                  <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
-                    [ Arena Home ]
-                  </Link>
-                  <span className="hidden font-bold sm:inline">|</span>
-                  <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
-                    [ Shop ]
-                  </Link>
-                  <span className="hidden font-bold sm:inline">|</span>
-                  <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
-                    [ Craft ]
-                  </Link>
-                  <span className="hidden font-bold sm:inline">|</span>
-                  <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
-                    [ Inventory ]
-                  </Link>
-                  <span className="hidden font-bold sm:inline">|</span>
-                  <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
-                    [ Leaderboard ]
-                  </Link>
-                  <span className="hidden font-bold sm:inline">|</span>
-                  <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
-                    [ Collection ]
-                  </Link>
-                  <span className="hidden font-bold sm:inline">|</span>
-                  <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
-                    [ Market ]
-                  </Link>
-                  <span className="hidden font-bold sm:inline">|</span>
-                  <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
-                    [ Skill Tree ]
-                  </Link>
-                </div>
+                <ArenaSubNav />
 
                 {profile ? (
                   (() => {

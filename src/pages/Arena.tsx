@@ -7,6 +7,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import ArenaSubNav from "@/parts/ArenaSubNav";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -179,39 +180,7 @@ const Arena = () => {
                       </p>
                     </div>
 
-                      <div className="flex flex-wrap justify-center gap-3">
-                      <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
-                        [ Fight ]
-                      </Link>
-                      <span className="font-bold">|</span>
-                      <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
-                        [ Shop ]
-                      </Link>
-                      <span className="font-bold">|</span>
-                      <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
-                        [ Craft ]
-                      </Link>
-                      <span className="font-bold">|</span>
-                      <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
-                        [ Inventory ]
-                      </Link>
-                      <span className="font-bold">|</span>
-                      <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
-                        [ Leaderboard ]
-                      </Link>
-                      <span className="font-bold">|</span>
-                      <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
-                        [ Collection ]
-                      </Link>
-                      <span className="font-bold">|</span>
-                      <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
-                        [ Market ]
-                      </Link>
-                      <span className="font-bold">|</span>
-                      <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
-                        [ Skill Tree ]
-                      </Link>
-                    </div>
+                      <ArenaSubNav />
 
                     {profile.activeFight && !profile.activeFight.isFinished ? (
                       <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-center dark:border-amber-600 dark:bg-amber-950">

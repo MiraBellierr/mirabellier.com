@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
 
 import fireIcon from "@/assets/elements/fire.png";
 import waterIcon from "@/assets/elements/water.png";
@@ -27,7 +28,6 @@ import {
   startTcgSoloGame,
   joinTcgQueue,
   leaveTcgQueue,
-  checkTcgQueue,
   submitTcgDeck,
   fetchTcgGameState,
   submitTcgAction,
@@ -559,8 +559,16 @@ const TcgPage = () => {
   const [errorState, setErrorState] = useState<"hidden" | "pending" | "entering" | "visible" | "leaving">("hidden");
   const [aiActionText, setAiActionText] = useState<string | null>(null);
   const [queueState, setQueueState] = useState<"idle" | "searching" | "matched">("idle");
-  const queuePollRef = useRef<number | null>(null);
   const [showStagingModal, setShowStagingModal] = useState(true);
+
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+  const eligibleCardsRef = useRef(eligibleCards);
+  eligibleCardsRef.current = eligibleCards;
+  const selectedDeckRef = useRef(selectedDeck);
+  selectedDeckRef.current = selectedDeck;
+  const elementPoolRef = useRef(elementPool);
+  elementPoolRef.current = elementPool;
 
   function showError(msg: string) {
     setErrorMessage(msg);
@@ -693,67 +701,56 @@ const TcgPage = () => {
     if (!token) return;
     try { await leaveTcgQueue(token); } catch { /* ignore */ }
     setQueueState("idle");
-    if (queuePollRef.current) clearInterval(queuePollRef.current);
   };
 
-  // ── Queue Polling ──
-  useEffect(() => {
-    if (queueState !== "searching" || !token) return;
-    const poll = async () => {
-      try {
-        const status = await checkTcgQueue(token);
-        if (status.matched && status.gameId) {
-          setQueueState("matched");
-          const deckCards = eligibleCards.filter((c) => selectedDeck.has(toCardId(c)));
-          await submitTcgDeck(token, status.gameId, deckCards, elementPool);
-          setGameId(status.gameId);
-          localStorage.setItem("tcg_active_game", status.gameId);
-          setTab("match");
-          const state = await fetchTcgGameState(token, status.gameId);
-          setGameState(state);
-        } else if (!status.inQueue) {
-          setQueueState("idle");
-        }
-      } catch { /* ignore */ }
-    };
-    poll();
-    queuePollRef.current = window.setInterval(poll, 2000);
-    return () => { if (queuePollRef.current) clearInterval(queuePollRef.current); };
-  }, [queueState, token, eligibleCards, selectedDeck]);
+  // ── WebSocket: queue matched ──
+  const handleQueueMatched = useCallback(async (data: unknown) => {
+    const { gameId: matchedGameId } = data as { gameId: string };
+    const t = tokenRef.current;
+    if (!t || queueState !== "searching") return;
+    setQueueState("matched");
+    const deckCards = eligibleCardsRef.current.filter((c) => selectedDeckRef.current.has(toCardId(c)));
+    await submitTcgDeck(t, matchedGameId, deckCards, elementPoolRef.current);
+    setGameId(matchedGameId);
+    localStorage.setItem("tcg_active_game", matchedGameId);
+    setTab("match");
+    const state = await fetchTcgGameState(t, matchedGameId);
+    setGameState(state);
+  }, [queueState]);
 
-  // ── Game State Polling ──
-  useEffect(() => {
-    if (!gameId || !token) return;
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const state = await fetchTcgGameState(token, gameId);
-        if (cancelled) return;
-        // Detect opponent attack from polling (deduplicated via attackId)
-        const currentKey = state.solo ? "p1" : (state.playerKey || "p1");
-        if (state.lastAttackResult && state.lastAttackResult.attackerKey !== currentKey) {
-          const ar = state.lastAttackResult;
-          const dedupKey = (ar.attackId ?? `${ar.attackerKey}|${ar.damage}|${ar.defenderHp}|${ar.ko}`).toString();
-          if (dedupKey !== lastAttackDedupRef.current) {
-            const elColor = ar.elementEffective === "super-effective"
-              ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
-              : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
-            spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor, ar.defenderKey);
-            setShakePlayer(true);
-            setTimeout(() => setShakePlayer(false), 500);
-            lastAttackDedupRef.current = dedupKey;
-            spawnProjectile(ar.attackerKey, ar.defenderKey);
-          }
-        }
-        setGameState(state);
-      } catch (err) {
-        if (!cancelled) showError(normalizeArenaError(err));
+  useWebSocketEvent("tcg:queue:matched", handleQueueMatched);
+
+  // ── WebSocket: game state ──
+  const handleGameState = useCallback((data: unknown) => {
+    const state = data as TcgGameState;
+    if (!state?.board) return;
+    const currentKey = state.solo ? "p1" : (state.playerKey || "p1");
+    if (state.lastAttackResult && state.lastAttackResult.attackerKey !== currentKey) {
+      const ar = state.lastAttackResult;
+      const dedupKey = (ar.attackId ?? `${ar.attackerKey}|${ar.damage}|${ar.defenderHp}|${ar.ko}`).toString();
+      if (dedupKey !== lastAttackDedupRef.current) {
+        const elColor = ar.elementEffective === "super-effective"
+          ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
+          : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
+        spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor, ar.defenderKey);
+        setShakePlayer(true);
+        setTimeout(() => setShakePlayer(false), 500);
+        lastAttackDedupRef.current = dedupKey;
+        spawnProjectile(ar.attackerKey, ar.defenderKey);
       }
-    };
-    poll();
-    const interval = setInterval(poll, 500);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [gameId, token]);
+    }
+    setGameState(state);
+  }, []);
+
+  useWebSocketEvent("tcg:game:state", handleGameState);
+
+  // ── WebSocket: game finished ──
+  const handleGameFinished = useCallback((data: unknown) => {
+    const { winner, p1Score, p2Score } = data as { winner: string; p1Score: number; p2Score: number; gameId: string };
+    setGameState((prev) => prev ? { ...prev, winner, p1Score, p2Score, phase: "finished" as const } : null);
+  }, []);
+
+  useWebSocketEvent("tcg:game:finished", handleGameFinished);
 
   const handleToggleCard = (cardId: string) => {
     setSelectedDeck((prev) => {

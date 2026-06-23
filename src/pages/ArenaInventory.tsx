@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import ArenaSubNav from "@/parts/ArenaSubNav";
 import Divider from "@/parts/Divider";
 import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
@@ -247,39 +248,7 @@ const ArenaInventory = () => {
                 </p>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 border-b border-sky-100 pb-3">
-                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
-                  [ Arena Home ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
-                  [ Fight ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
-                  [ Shop ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
-                  [ Craft ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
-                  [ Leaderboard ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
-                  [ Collection ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
-                  [ Market ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
-                  [ Skill Tree ]
-                </Link>
-              </div>
+              <ArenaSubNav />
 
               {!token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">

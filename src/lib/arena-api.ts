@@ -146,6 +146,24 @@ export type ArenaProfile = {
     higherRarityDamageBonusPct: number;
     gateKeyCharges: number;
     doublePassiveTriggerFightsRemaining: number;
+    damageBoostPct: number;
+    damageBoostFightsRemaining: number;
+    speedBoostPct: number;
+    speedBoostFightsRemaining: number;
+    deathSaveCharges: number;
+    statSteroidPct: number;
+    statSteroidFightsRemaining: number;
+    matchRarityCharges: number;
+    vampiricHealPct: number;
+    vampiricHealFightsRemaining: number;
+    critChanceBoostPct: number;
+    critChanceBoostFightsRemaining: number;
+    guardBoostPct: number;
+    guardBoostFightsRemaining: number;
+    firstAttackDoubleCharges: number;
+    ivBoostCharges: number;
+    selfReviveHpThresholdPct: number;
+    selfReviveCharges: number;
   };
   equipment: {
     weapon: ArenaEquippedItem | null;
@@ -799,6 +817,416 @@ export async function deleteArenaUpdate(
   if (!response.ok) {
     throw await readApiError(response);
   }
+}
+
+// ---------------------------------------------------------------------------
+//  Notifications
+// ---------------------------------------------------------------------------
+
+export async function fetchArenaNotifications(
+  token: string,
+  options: { page?: number; limit?: number } = {},
+): Promise<{ notifications: ArenaNotification[]; page: number; limit: number; total: number; totalPages: number }> {
+  const params = new URLSearchParams();
+  if (options.page) params.set("page", String(options.page));
+  if (options.limit) params.set("limit", String(options.limit));
+  const response = await fetch(joinApi(`/arena/notifications?${params.toString()}`), {
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { notifications: ArenaNotification[]; page: number; limit: number; total: number; totalPages: number };
+}
+
+export async function fetchArenaUnreadCount(
+  token: string,
+): Promise<number> {
+  const response = await fetch(joinApi("/arena/notifications/unread-count"), {
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  const payload = (await response.json()) as { count: number };
+  return payload.count;
+}
+
+export async function markArenaNotificationRead(
+  token: string,
+  notificationId: string,
+): Promise<void> {
+  const response = await fetch(
+    joinApi(`/arena/notifications/${encodeURIComponent(notificationId)}/read`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+}
+
+export async function markAllArenaNotificationsRead(
+  token: string,
+): Promise<void> {
+  const response = await fetch(joinApi("/arena/notifications/read-all"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+  });
+  if (!response.ok) throw await readApiError(response);
+}
+
+// ---------------------------------------------------------------------------
+//  Trade types
+// ---------------------------------------------------------------------------
+
+export type ArenaTradeUser = {
+  id: string;
+  username: string;
+  avatar: string | null;
+};
+
+export type ArenaTradeListing = {
+  id: string;
+  userId: string;
+  username: string;
+  avatar: string | null;
+  card: ArenaCard;
+  wantedRarity: string | null;
+  wantedElement: string | null;
+  note: string | null;
+  status: string;
+  hasActiveSession: boolean;
+  hasPendingRequest: boolean;
+  createdAt: string;
+};
+
+export type ArenaTradeListingsResponse = {
+  profile: ArenaProfile;
+  listings: ArenaTradeListing[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type ArenaTradeRequest = {
+  id: string;
+  askerId: string;
+  askerUsername: string;
+  askerAvatar: string | null;
+  responderId: string;
+  status: string;
+  createdAt: string;
+};
+
+export type ArenaTradeSession = {
+  id: string;
+  askerId: string;
+  askerUsername: string;
+  responderId: string;
+  responderUsername: string;
+  askerCard: ArenaCard | null;
+  responderCard: ArenaCard | null;
+  askerConfirmed: boolean;
+  responderConfirmed: boolean;
+  status: string;
+  createdAt: string;
+};
+
+export type ArenaNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  metadata: string | null;
+  isRead: boolean;
+  createdAt: string;
+};
+
+// ---------------------------------------------------------------------------
+//  Trade API functions
+// ---------------------------------------------------------------------------
+
+export async function searchArenaTradeUsers(
+  token: string,
+  query: string,
+): Promise<ArenaTradeUser[]> {
+  const params = new URLSearchParams({ q: query });
+  const response = await fetch(joinApi(`/arena/trade/users?${params.toString()}`), {
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  const payload = (await response.json()) as { users: ArenaTradeUser[] };
+  return payload.users;
+}
+
+export async function fetchArenaTradeListings(
+  token: string,
+  options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    wantedRarity?: string;
+    wantedElement?: string;
+  } = {},
+): Promise<ArenaTradeListingsResponse> {
+  const params = new URLSearchParams();
+  if (options.page) params.set("page", String(options.page));
+  if (options.limit) params.set("limit", String(options.limit));
+  if (options.search) params.set("search", options.search);
+  if (options.wantedRarity) params.set("wantedRarity", options.wantedRarity);
+  if (options.wantedElement) params.set("wantedElement", options.wantedElement);
+  const response = await fetch(joinApi(`/arena/trade/listings?${params.toString()}`), {
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeListingsResponse;
+}
+
+export async function fetchMyArenaTradeListings(
+  token: string,
+): Promise<ArenaTradeListingsResponse> {
+  const response = await fetch(joinApi("/arena/trade/listings/mine"), {
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeListingsResponse;
+}
+
+export async function createArenaTradeListing(
+  token: string,
+  input: {
+    cardInstanceId: string;
+    wantedRarity?: string;
+    wantedElement?: string;
+    note?: string;
+  },
+): Promise<{ listing: ArenaTradeListing; profile: ArenaProfile }> {
+  const response = await fetch(joinApi("/arena/trade/listings"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { listing: ArenaTradeListing; profile: ArenaProfile };
+}
+
+export async function cancelArenaTradeListing(
+  token: string,
+  listingId: string,
+): Promise<{ listing: ArenaTradeListing; profile: ArenaProfile }> {
+  const response = await fetch(
+    joinApi(`/arena/trade/listings/${encodeURIComponent(listingId)}/cancel`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { listing: ArenaTradeListing; profile: ArenaProfile };
+}
+
+export async function sendArenaTradeRequest(
+  token: string,
+  responderId: string,
+  cardInstanceId?: string,
+): Promise<{ requestId: string }> {
+  const response = await fetch(joinApi("/arena/trade/request"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ responderId, cardInstanceId }),
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { requestId: string };
+}
+
+export async function fetchIncomingArenaTradeRequests(
+  token: string,
+): Promise<ArenaTradeRequest[]> {
+  const response = await fetch(joinApi("/arena/trade/requests/incoming"), {
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  const payload = (await response.json()) as { requests: ArenaTradeRequest[] };
+  return payload.requests;
+}
+
+export async function acceptArenaTradeRequest(
+  token: string,
+  requestId: string,
+): Promise<{ askerCard?: ArenaCard; responderCard?: ArenaCard; sessionId?: string }> {
+  const response = await fetch(
+    joinApi(`/arena/trade/requests/${encodeURIComponent(requestId)}/accept`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { askerCard?: ArenaCard; responderCard?: ArenaCard; sessionId?: string };
+}
+
+export async function denyArenaTradeRequest(
+  token: string,
+  requestId: string,
+): Promise<{ status: string }> {
+  const response = await fetch(
+    joinApi(`/arena/trade/requests/${encodeURIComponent(requestId)}/deny`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { status: string };
+}
+
+export async function cancelArenaTradeRequest(
+  token: string,
+  requestId: string,
+): Promise<{ status: string }> {
+  const response = await fetch(
+    joinApi(`/arena/trade/requests/${encodeURIComponent(requestId)}/cancel`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { status: string };
+}
+
+export async function fetchArenaTradeRequestStatus(
+  token: string,
+  requestId: string,
+): Promise<{ id: string; askerId: string; responderId: string; status: string; createdAt: string; sessionId: string | null }> {
+  const response = await fetch(
+    joinApi(`/arena/trade/request/${encodeURIComponent(requestId)}`),
+    {
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { id: string; askerId: string; responderId: string; status: string; createdAt: string; sessionId: string | null };
+}
+
+export async function fetchArenaTradeSession(
+  token: string,
+  sessionId: string,
+): Promise<ArenaTradeSession | null> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}`),
+    {
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  const payload = (await response.json()) as { session: ArenaTradeSession | null };
+  return payload.session;
+}
+
+export async function offerCardInArenaTrade(
+  token: string,
+  sessionId: string,
+  cardInstanceId: string,
+): Promise<ArenaTradeSession> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/offer-card`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+      body: JSON.stringify({ cardInstanceId }),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeSession;
+}
+
+export async function removeCardFromArenaTrade(
+  token: string,
+  sessionId: string,
+): Promise<ArenaTradeSession> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/remove-card`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeSession;
+}
+
+export async function confirmArenaTrade(
+  token: string,
+  sessionId: string,
+): Promise<ArenaTradeSession> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/confirm`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeSession;
+}
+
+export async function unconfirmArenaTrade(
+  token: string,
+  sessionId: string,
+): Promise<ArenaTradeSession> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/unconfirm`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeSession;
+}
+
+export async function cancelArenaTradeSession(
+  token: string,
+  sessionId: string,
+): Promise<{ status: string }> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/cancel`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { status: string };
 }
 
 // ── TCG (Trading Card Game) ────────────────────────────

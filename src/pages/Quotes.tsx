@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
@@ -6,6 +6,7 @@ import Divider from "../parts/Divider";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
 import { joinApi } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
 
 type QuoteEntry = {
   key: string;
@@ -35,23 +36,9 @@ type QuotePayload = {
 
 const DEFAULT_DESCRIPTION =
   "Daily quotes across love, art, nature, humor, and more.";
-const STALE_QUOTE_RETRY_MS = 60 * 1000;
 
 function getCurrentUtcRecordedDate(date = new Date()) {
   return date.toISOString().slice(0, 10);
-}
-
-function getDelayUntilNextUtcMidnight(now = new Date()) {
-  const next = new Date(now);
-  next.setUTCHours(24, 0, 0, 0);
-  return Math.max(next.getTime() - now.getTime(), 1000);
-}
-
-function isCurrentUtcQuotePayload(
-  payload: QuotePayload | null,
-  recordedDate: string,
-) {
-  return !!payload && payload.recordedDate === recordedDate && !payload.stale;
 }
 
 const Quotes = () => {
@@ -97,32 +84,15 @@ const Quotes = () => {
     return (await response.json()) as QuotePayload;
   };
 
+  const runRef = useRef<((signal: AbortSignal) => Promise<void>) | null>(null);
+
+  useWebSocketEvent("quotes:new-day", () => {
+    runRef.current?.(new AbortController().signal);
+  });
+
   useEffect(() => {
     const initialController = new AbortController();
-    let scheduledController: AbortController | null = null;
-    let midnightRefreshTimer: number | null = null;
-    let staleRetryTimer: number | null = null;
     let disposed = false;
-
-    const clearStaleRetry = () => {
-      if (staleRetryTimer !== null) {
-        window.clearTimeout(staleRetryTimer);
-        staleRetryTimer = null;
-      }
-    };
-
-    const scheduleStaleRetry = () => {
-      if (disposed || staleRetryTimer !== null) {
-        return;
-      }
-
-      staleRetryTimer = window.setTimeout(async () => {
-        staleRetryTimer = null;
-        scheduledController?.abort();
-        scheduledController = new AbortController();
-        await run(scheduledController.signal);
-      }, STALE_QUOTE_RETRY_MS);
-    };
 
     const run = async (signal: AbortSignal, showLoading = false) => {
       if (showLoading) {
@@ -135,18 +105,12 @@ const Quotes = () => {
         if (!signal.aborted && !disposed) {
           setError(null);
           setData(payload);
-          if (isCurrentUtcQuotePayload(payload, currentRecordedDate)) {
-            clearStaleRetry();
-          } else {
-            scheduleStaleRetry();
-          }
         }
       } catch (err) {
         if (signal.aborted || disposed) {
           return;
         }
         setError(err instanceof Error ? err.message : "Failed to load quotes");
-        scheduleStaleRetry();
       } finally {
         if (showLoading && !signal.aborted && !disposed) {
           setLoading(false);
@@ -154,28 +118,12 @@ const Quotes = () => {
       }
     };
 
-    const scheduleRefresh = () => {
-      midnightRefreshTimer = window.setTimeout(async () => {
-        scheduledController?.abort();
-        scheduledController = new AbortController();
-        await run(scheduledController.signal);
-        if (!disposed) {
-          scheduleRefresh();
-        }
-      }, getDelayUntilNextUtcMidnight());
-    };
-
+    runRef.current = run;
     run(initialController.signal, true);
-    scheduleRefresh();
 
     return () => {
       disposed = true;
       initialController.abort();
-      scheduledController?.abort();
-      clearStaleRetry();
-      if (midnightRefreshTimer !== null) {
-        window.clearTimeout(midnightRefreshTimer);
-      }
     };
   }, []);
 

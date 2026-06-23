@@ -10,6 +10,7 @@ import AsyncStateCard from "@/components/AsyncStateCard";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { resolveAsset } from "@/lib/blog-utils";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -32,12 +33,6 @@ import { useConfirm } from "@/states/ConfirmContext";
 
 const QUESTION_DESCRIPTION =
   "Answer one public question each UTC day, then browse the archive of past prompts and answers.";
-
-function getDelayUntilNextUtcMidnight(now = new Date()) {
-  const next = new Date(now);
-  next.setUTCHours(24, 0, 0, 0);
-  return Math.max(next.getTime() - now.getTime(), 1000);
-}
 
 function getQuestionAnswerTimestamp(value: string) {
   const parsed = Date.parse(value);
@@ -76,15 +71,9 @@ const QuestionOfTheDay = () => {
     },
   });
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setRefreshTick((value) => value + 1);
-    }, getDelayUntilNextUtcMidnight());
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [refreshTick]);
+  useWebSocketEvent("qotd:new-day", () => {
+    setRefreshTick((t) => t + 1);
+  });
 
   useEffect(() => {
     let cancelled = false;
