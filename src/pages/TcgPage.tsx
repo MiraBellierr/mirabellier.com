@@ -250,13 +250,14 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onD
   );
 }
 
-function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attackFloaters, boardKey, onCardHover, onCardHoverLeave }: {
+function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shakePlayerCard, attackFloaters, boardKey, onCardHover, onCardHoverLeave }: {
   board: TcgPlayerState | null;
   isTurn: boolean;
   onAction?: (action: { type: string; cardId?: string; slot?: string }) => void;
   mirror?: boolean;
   shakeOpponentCard?: boolean;
-  attackFloaters?: { key: number; dmg: number; elLabel: string | null; elColor: string | null }[];
+  shakePlayerCard?: boolean;
+  attackFloaters?: { key: number; dmg: number; elLabel: string | null; elColor: string | null; defenderKey: string }[];
   boardKey?: string;
   onCardHover?: (card: ArenaCard | TcgCard, e: React.MouseEvent) => void;
   onCardHoverLeave?: () => void;
@@ -265,7 +266,7 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
   const attackerClasses = [
     "relative",
     !board.board.attacker && isTurn ? "border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/50" : "",
-    mirror && shakeOpponentCard ? "card-shake" : "",
+    (mirror ? shakeOpponentCard : shakePlayerCard) ? "card-shake" : "",
   ].filter(Boolean).join(" ");
   return (
     <div className={`flex items-center gap-2 ${mirror ? "flex-col-reverse" : "flex-col"}`}>
@@ -323,7 +324,7 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, attac
           <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-emerald-500 pointer-events-none">drop</span>
         ) : null}
         {attackFloaters && attackFloaters.length > 0 ? (
-          attackFloaters.map((f) => (
+          attackFloaters.filter((f) => f.defenderKey === (boardKey || "")).map((f) => (
             <div key={f.key} className="absolute inset-0 z-50 pointer-events-none flex flex-col items-center justify-center animate-float-up">
               <span className="text-lg font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ textShadow: "0 0 6px rgba(255,80,120,0.9), 0 0 2px #000" }}>
                 -{f.dmg}
@@ -573,16 +574,17 @@ const TcgPage = () => {
   }
   const [loading, setLoading] = useState(false);
   const [actionPending, setActionPending] = useState(false);
-  const [attackFloaters, setAttackFloaters] = useState<{ key: number; dmg: number; elLabel: string | null; elColor: string | null }[]>([]);
+  const [attackFloaters, setAttackFloaters] = useState<{ key: number; dmg: number; elLabel: string | null; elColor: string | null; defenderKey: string }[]>([]);
   const [shakeOpponent, setShakeOpponent] = useState(false);
+  const [shakePlayer, setShakePlayer] = useState(false);
   const floaterKeyRef = useRef(0);
   const [projectile, setProjectile] = useState<{ key: number; fromBoard: string; toBoard: string; fromX: number; fromY: number; toX: number; toY: number } | null>(null);
   const projectileKeyRef = useRef(0);
-  const lastAttackIdRef = useRef<number | null>(null);
+  const lastAttackDedupRef = useRef<string | null>(null);
 
-  function spawnAttackFloat(dmg: number, elLabel: string | null, elColor: string | null) {
+  function spawnAttackFloat(dmg: number, elLabel: string | null, elColor: string | null, defenderKey: string) {
     const key = floaterKeyRef.current++;
-    setAttackFloaters((prev) => [...prev, { key, dmg, elLabel, elColor }]);
+    setAttackFloaters((prev) => [...prev, { key, dmg, elLabel, elColor, defenderKey }]);
     setTimeout(() => setAttackFloaters((prev) => prev.filter((f) => f.key !== key)), 1800);
   }
 
@@ -728,16 +730,20 @@ const TcgPage = () => {
         const state = await fetchTcgGameState(token, gameId);
         if (cancelled) return;
         // Detect opponent attack from polling (deduplicated via attackId)
-        if (state.lastAttackResult && state.lastAttackResult.attackerKey !== myKey && state.lastAttackResult.attackId !== lastAttackIdRef.current) {
+        const currentKey = state.solo ? "p1" : (state.playerKey || "p1");
+        if (state.lastAttackResult && state.lastAttackResult.attackerKey !== currentKey) {
           const ar = state.lastAttackResult;
-          lastAttackIdRef.current = ar.attackId ?? null;
-          const elColor = ar.elementEffective === "super-effective"
-            ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
-            : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
-          spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor);
-          setShakeOpponent(true);
-          setTimeout(() => setShakeOpponent(false), 500);
-          spawnProjectile(ar.attackerKey, ar.defenderKey);
+          const dedupKey = (ar.attackId ?? `${ar.attackerKey}|${ar.damage}|${ar.defenderHp}|${ar.ko}`).toString();
+          if (dedupKey !== lastAttackDedupRef.current) {
+            const elColor = ar.elementEffective === "super-effective"
+              ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
+              : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
+            spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor, ar.defenderKey);
+            setShakePlayer(true);
+            setTimeout(() => setShakePlayer(false), 500);
+            lastAttackDedupRef.current = dedupKey;
+            spawnProjectile(ar.attackerKey, ar.defenderKey);
+          }
         }
         setGameState(state);
       } catch (err) {
@@ -745,7 +751,7 @@ const TcgPage = () => {
       }
     };
     poll();
-    const interval = setInterval(poll, 1500);
+    const interval = setInterval(poll, 500);
     return () => { cancelled = true; clearInterval(interval); };
   }, [gameId, token]);
 
@@ -774,17 +780,36 @@ const TcgPage = () => {
     setActionPending(true); setErrorMessage(null);
     try {
       const result = await submitTcgAction(token, gameId, action);
-      if (result.attackResult) {
+      if (result.attackResult && result.attackResult.attackerKey === myKey) {
         const ar = result.attackResult;
-        const elColor = ar.elementEffective === "super-effective"
-          ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
-          : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
-        spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor);
-        setShakeOpponent(true);
-        setTimeout(() => setShakeOpponent(false), 500);
-        spawnProjectile(ar.attackerKey, ar.defenderKey);
+        const dedupKey = (ar.attackId ?? `${ar.attackerKey}|${ar.damage}|${ar.defenderHp}|${ar.ko}`).toString();
+        if (dedupKey !== lastAttackDedupRef.current) {
+          const elColor = ar.elementEffective === "super-effective"
+            ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
+            : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
+          spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor, ar.defenderKey);
+          setShakeOpponent(true);
+          setTimeout(() => setShakeOpponent(false), 500);
+          spawnProjectile(ar.attackerKey, ar.defenderKey);
+          lastAttackDedupRef.current = dedupKey;
+        }
       }
       const state = await fetchTcgGameState(token, gameId);
+      // Immediately animate any opponent attack we haven't seen yet
+      if (state.lastAttackResult && state.lastAttackResult.attackerKey !== myKey) {
+        const ar = state.lastAttackResult;
+        const dedupKey = (ar.attackId ?? `${ar.attackerKey}|${ar.damage}|${ar.defenderHp}|${ar.ko}`).toString();
+        if (dedupKey !== lastAttackDedupRef.current) {
+          const elColor = ar.elementEffective === "super-effective"
+            ? (ar.elementAttacker ? ELEMENT_COLORS[ar.elementAttacker] : null)
+            : ar.elementEffective === "not-very-effective" ? "#94a3b8" : null;
+          spawnAttackFloat(ar.damage, ar.elementEffective === "super-effective" ? "Super Effective" : ar.elementEffective === "not-very-effective" ? "Weak..." : null, elColor, ar.defenderKey);
+          setShakePlayer(true);
+          setTimeout(() => setShakePlayer(false), 500);
+          spawnProjectile(ar.attackerKey, ar.defenderKey);
+          lastAttackDedupRef.current = dedupKey;
+        }
+      }
       setGameState(state);
       // Show AI actions with 1s delay between each
       if (result.aiActions && result.aiActions.length > 0) {
@@ -1300,6 +1325,7 @@ const TcgPage = () => {
                                   isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn}
                                   onAction={handleAction}
                                   boardKey={myKey}
+                                  shakePlayerCard={shakePlayer}
                                   attackFloaters={attackFloaters}
                                   onCardHover={onCardHover}
                                   onCardHoverLeave={onCardHoverLeave}
