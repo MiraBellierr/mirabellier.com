@@ -146,6 +146,24 @@ export type ArenaProfile = {
     higherRarityDamageBonusPct: number;
     gateKeyCharges: number;
     doublePassiveTriggerFightsRemaining: number;
+    damageBoostPct: number;
+    damageBoostFightsRemaining: number;
+    speedBoostPct: number;
+    speedBoostFightsRemaining: number;
+    deathSaveCharges: number;
+    statSteroidPct: number;
+    statSteroidFightsRemaining: number;
+    matchRarityCharges: number;
+    vampiricHealPct: number;
+    vampiricHealFightsRemaining: number;
+    critChanceBoostPct: number;
+    critChanceBoostFightsRemaining: number;
+    guardBoostPct: number;
+    guardBoostFightsRemaining: number;
+    firstAttackDoubleCharges: number;
+    ivBoostCharges: number;
+    selfReviveHpThresholdPct: number;
+    selfReviveCharges: number;
   };
   equipment: {
     weapon: ArenaEquippedItem | null;

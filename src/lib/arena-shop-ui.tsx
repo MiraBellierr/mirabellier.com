@@ -236,28 +236,49 @@ export function describePassive(passive: ArenaPassiveRule | null | undefined) {
 export function describeConsumableEffect(effect: ArenaConsumableRule | null | undefined) {
   if (!effect || typeof effect !== "object") return "";
   const kind = typeof effect.kind === "string" ? effect.kind : "";
-  if (kind === "exp_boost") {
-    return `+${toNumber(effect.pct)}% EXP for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
+  if (kind === "damage_boost") {
+    return `+${toNumber(effect.pct)}% damage for ${toNumber(effect.fights, 1)} fight(s)`;
   }
-  if (kind === "coin_boost") {
-    return `+${toNumber(effect.pct)}% coins for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
+  if (kind === "speed_boost") {
+    return `+${toNumber(effect.pct)}% speed for ${toNumber(effect.fights, 1)} fight(s)`;
   }
-  if (kind === "draw_bonus_chance") {
-    return `${toNumber(effect.pct)}% chance to draw a free card per win for ${toNumber(effect.fights ?? effect.wins, 1)} fight(s)`;
+  if (kind === "death_save") {
+    return `Survive KO with 1 HP (${toNumber(effect.charges, 1)} charge)`;
   }
-  if (kind === "reroll_keep_higher") {
-    const rCharges = toNumber(effect.charges, 1);
-    return rCharges > 1
-      ? `Reroll your own card once, keep higher rarity (${rCharges} charge${rCharges > 1 ? "s" : ""})`
-      : "Reroll your own card once, keep higher rarity";
+  if (kind === "stat_steroid") {
+    return `+${toNumber(effect.pct)}% all combat stats for ${toNumber(effect.fights, 1)} fight(s)`;
+  }
+  if (kind === "match_rarity") {
+    const mCharges = toNumber(effect.charges, 1);
+    return mCharges > 1
+      ? `Match opponent's rarity if higher (${mCharges} charge${mCharges > 1 ? "s" : ""})`
+      : "Match opponent's rarity if higher";
+  }
+  if (kind === "vampiric_heal") {
+    return `Heal ${toNumber(effect.pct)}% of damage dealt for ${toNumber(effect.fights, 1)} fight(s)`;
+  }
+  if (kind === "crit_chance") {
+    return `+${toNumber(effect.pct)}% crit strike chance for ${toNumber(effect.fights, 1)} fight(s)`;
+  }
+  if (kind === "guard_boost") {
+    return `+${toNumber(effect.pct)}% guard for ${toNumber(effect.fights, 1)} fight(s)`;
+  }
+  if (kind === "first_attack_double") {
+    const fCharges = toNumber(effect.charges, 1);
+    return fCharges > 1
+      ? `First attack deals double damage (${fCharges} charge${fCharges > 1 ? "s" : ""})`
+      : "First attack deals double damage";
+  }
+  if (kind === "iv_boost") {
+    const iCharges = toNumber(effect.charges, 1);
+    return iCharges > 1
+      ? `+${toNumber(effect.total)} total IV to selected card (${iCharges} charge${iCharges > 1 ? "s" : ""})`
+      : `+${toNumber(effect.total)} total IV to selected card`;
+  }
+  if (kind === "self_revive") {
+    return `Restore full HP when below ${toNumber(effect.hpPct)}% HP (${toNumber(effect.charges, 1)} charge)`;
   }
   if (kind === "streak_shield") return `Ignore ${toNumber(effect.charges, 1)} loss streak reset(s)`;
-  if (kind === "upgrade_lowest_rarity") {
-    return `Upgrade your lowest own round rarity +1 for ${toNumber(effect.charges, 1)} fight(s)`;
-  }
-  if (kind === "guarantee_ssr_plus") {
-    return `Guarantee at least one SSR+ own round card for ${toNumber(effect.charges, 1)} fight(s)`;
-  }
   if (kind === "shield_fight_start") {
     return `Fight start shield +${toNumber(effect.amount)} for ${toNumber(effect.charges, 1)} fight(s)`;
   }
@@ -269,12 +290,6 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
   }
   if (kind === "bonus_vs_higher_rarity") {
     return `+${toNumber(effect.pct)}% damage vs higher rarity (${toNumber(effect.charges, 1)} charge)`;
-  }
-  if (kind === "cooldown_bypass") {
-    const cCharges = toNumber(effect.charges, 1);
-    return cCharges > 1
-      ? `Bypass fight cooldown (${cCharges} charge${cCharges > 1 ? "s" : ""})`
-      : "Bypass fight cooldown once";
   }
   if (kind === "double_passive_trigger") {
     return `Double passive trigger chance for ${toNumber(effect.fights, 1)} fight(s)`;
@@ -290,21 +305,24 @@ export function getConsumableChargeValue(effect: ArenaConsumableRule | null | un
   if (!effect || typeof effect !== "object") return 0;
   const kind = typeof effect.kind === "string" ? effect.kind : "";
   switch (kind) {
-    case "exp_boost":
-    case "coin_boost":
-    case "draw_bonus_chance":
-      return toNumber(effect.fights ?? effect.wins, 0);
-    case "evade_next_fight":
+    case "damage_boost":
+    case "speed_boost":
+    case "stat_steroid":
     case "double_passive_trigger":
+    case "evade_next_fight":
+    case "vampiric_heal":
+    case "crit_chance":
+    case "guard_boost":
       return toNumber(effect.fights, 0);
-    case "reroll_keep_higher":
+    case "death_save":
+    case "match_rarity":
     case "streak_shield":
-    case "upgrade_lowest_rarity":
-    case "guarantee_ssr_plus":
     case "shield_fight_start":
     case "first_hit_true_damage":
     case "bonus_vs_higher_rarity":
-    case "cooldown_bypass":
+    case "first_attack_double":
+    case "iv_boost":
+    case "self_revive":
     case "restore_consumable_charge":
       return toNumber(effect.charges, 0);
     default:
@@ -314,19 +332,23 @@ export function getConsumableChargeValue(effect: ArenaConsumableRule | null | un
 
 export function getEffectFieldForKind(kind: string) {
   switch (kind) {
-    case "exp_boost":         return "expBoostWinsRemaining" as const;
-    case "coin_boost":        return "coinBoostWinsRemaining" as const;
-    case "draw_bonus_chance": return "drawBonusChanceWinsRemaining" as const;
-    case "reroll_keep_higher":    return "rerollKeepHigherCharges" as const;
-    case "streak_shield":         return "streakShieldCharges" as const;
-    case "upgrade_lowest_rarity": return "upgradeLowestRarityCharges" as const;
-    case "guarantee_ssr_plus":    return "guaranteeSsrPlusCharges" as const;
-    case "shield_fight_start":    return "fightStartShieldCharges" as const;
+    case "damage_boost":          return "damageBoostFightsRemaining" as const;
+    case "speed_boost":           return "speedBoostFightsRemaining" as const;
+    case "stat_steroid":          return "statSteroidFightsRemaining" as const;
     case "evade_next_fight":      return "evadeBoostFightsRemaining" as const;
+    case "vampiric_heal":         return "vampiricHealFightsRemaining" as const;
+    case "crit_chance":           return "critChanceBoostFightsRemaining" as const;
+    case "guard_boost":           return "guardBoostFightsRemaining" as const;
+    case "double_passive_trigger": return "doublePassiveTriggerFightsRemaining" as const;
+    case "death_save":            return "deathSaveCharges" as const;
+    case "match_rarity":          return "matchRarityCharges" as const;
+    case "streak_shield":         return "streakShieldCharges" as const;
+    case "shield_fight_start":    return "fightStartShieldCharges" as const;
     case "first_hit_true_damage": return "firstHitTrueDamageCharges" as const;
     case "bonus_vs_higher_rarity": return "higherRarityDamageBonusPctCharges" as const;
-    case "cooldown_bypass":       return "gateKeyCharges" as const;
-    case "double_passive_trigger": return "doublePassiveTriggerFightsRemaining" as const;
+    case "first_attack_double":   return "firstAttackDoubleCharges" as const;
+    case "iv_boost":              return "ivBoostCharges" as const;
+    case "self_revive":           return "selfReviveCharges" as const;
     case "restore_consumable_charge": return null;
     default: return null;
   }
@@ -362,11 +384,32 @@ export function formatActiveEffects(source: ArenaShopResponse | ArenaProfile) {
     rows.push(`First hit true damage +${effects.firstHitTrueDamageValue} x${effects.firstHitTrueDamageCharges}`);
   }
   if (effects.higherRarityDamageBonusPctCharges > 0 && effects.higherRarityDamageBonusPct > 0) {
-    rows.push(
-      `Higher rarity bonus +${effects.higherRarityDamageBonusPct}% x${effects.higherRarityDamageBonusPctCharges}`,
-    );
+    rows.push(`Higher rarity bonus +${effects.higherRarityDamageBonusPct}% x${effects.higherRarityDamageBonusPctCharges}`);
   }
-  if (effects.gateKeyCharges > 0) rows.push(`Gate key cooldown bypass x${effects.gateKeyCharges}`);
+  if (effects.damageBoostFightsRemaining > 0 && effects.damageBoostPct > 0) {
+    rows.push(`Damage boost +${effects.damageBoostPct}% (${effects.damageBoostFightsRemaining} fight)`);
+  }
+  if (effects.speedBoostFightsRemaining > 0 && effects.speedBoostPct > 0) {
+    rows.push(`Speed boost +${effects.speedBoostPct}% (${effects.speedBoostFightsRemaining} fight)`);
+  }
+  if (effects.deathSaveCharges > 0) rows.push(`Death save x${effects.deathSaveCharges}`);
+  if (effects.statSteroidFightsRemaining > 0 && effects.statSteroidPct > 0) {
+    rows.push(`Stat steroid +${effects.statSteroidPct}% (${effects.statSteroidFightsRemaining} fight)`);
+  }
+  if (effects.matchRarityCharges > 0) rows.push(`Match rarity x${effects.matchRarityCharges}`);
+  if (effects.vampiricHealFightsRemaining > 0 && effects.vampiricHealPct > 0) {
+    rows.push(`Vampiric heal +${effects.vampiricHealPct}% (${effects.vampiricHealFightsRemaining} fight)`);
+  }
+  if (effects.critChanceBoostFightsRemaining > 0 && effects.critChanceBoostPct > 0) {
+    rows.push(`Crit boost +${effects.critChanceBoostPct}% (${effects.critChanceBoostFightsRemaining} fight)`);
+  }
+  if (effects.guardBoostFightsRemaining > 0 && effects.guardBoostPct > 0) {
+    rows.push(`Guard boost +${effects.guardBoostPct}% (${effects.guardBoostFightsRemaining} fight)`);
+  }
+  if (effects.firstAttackDoubleCharges > 0) rows.push(`First attack double x${effects.firstAttackDoubleCharges}`);
+  if (effects.selfReviveCharges > 0 && effects.selfReviveHpThresholdPct > 0) {
+    rows.push(`Self revive at ${effects.selfReviveHpThresholdPct}% HP x${effects.selfReviveCharges}`);
+  }
   if (effects.doublePassiveTriggerFightsRemaining > 0) {
     rows.push(`Double passive trigger (${effects.doublePassiveTriggerFightsRemaining} fight)`);
   }
