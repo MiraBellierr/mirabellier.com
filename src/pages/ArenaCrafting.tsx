@@ -8,7 +8,6 @@ import Divider from "@/parts/Divider";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
-import { useConfirm } from "@/states/ConfirmContext";
 import { usePageSeo } from "@/lib/seo";
 import {
   type ArenaShopItem,
@@ -32,12 +31,10 @@ function flattenItems(shop: ArenaShopResponse | null) {
 const ArenaCrafting = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
-  const { confirm } = useConfirm();
   const [shop, setShop] = useState<ArenaShopResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [itemTypeTab, setItemTypeTab] = useState<"gear" | "consumable">("gear");
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/crafting",
@@ -104,42 +101,17 @@ const ArenaCrafting = () => {
         ...tierBlock,
         recipes: tierBlock.recipes.filter((recipe) => {
           const outputItem = itemById.get(recipe.output.itemId);
-          return outputItem?.type === itemTypeTab;
+          return outputItem?.type === "consumable";
         }),
       }))
       .filter((tierBlock) => tierBlock.recipes.length > 0);
-  }, [recipesByTier, itemById, itemTypeTab]);
+  }, [recipesByTier, itemById]);
 
   const handleCraft = async (recipeId: string) => {
     if (!token || !shop) return;
 
     const recipe = shop.recipes.find((candidate) => candidate.id === recipeId);
-    const outputItem = recipe ? itemById.get(recipe.output.itemId) : null;
-    const equippedItem =
-      outputItem?.type === "gear" && outputItem.slot
-        ? shop.equipped[outputItem.slot]
-        : null;
-
-    if (recipe && outputItem?.type === "gear" && outputItem.slot && equippedItem) {
-      const shouldReplace = await confirm({
-        title: `Replace equipped ${outputItem.slot}?`,
-        message: (
-          <div className="space-y-2">
-            <p>
-              Crafting <strong>{outputItem.name}</strong> will automatically equip it
-              and replace <strong>{equippedItem.name}</strong> in the{" "}
-              {outputItem.slot} slot.
-            </p>
-            <p className="text-sm">
-              {equippedItem.name} will remain in your inventory.
-            </p>
-          </div>
-        ),
-        confirmLabel: "Craft and replace",
-        cancelLabel: "Cancel",
-      });
-      if (!shouldReplace) return;
-    }
+    if (!recipe) return;
 
     setActioningId(recipeId);
     setErrorMessage(null);
@@ -169,7 +141,7 @@ const ArenaCrafting = () => {
               <div className="">
                 <h2 className="text-4xl font-bold text-blue-900">Crafting Workshop {`>^. .^<`}</h2>
                 <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
-                  <span className="text-pink-300">✿</span> Craft gear and consumables from collected materials!{" "}
+                  <span className="text-pink-300">✿</span> Craft consumables from collected materials!{" "}
                   <span className="text-pink-300">✿</span>
                 </p>
               </div>
@@ -201,28 +173,21 @@ const ArenaCrafting = () => {
                     </div>
 
                     <div className=" pt-1 pb-1 text-sm font-bold">
-                      <p className="text-lg font-semibold underline pb-1">Gears</p>
-                      <p><span className="font-normal">✦ Weapon:</span> {shop.equipped.weapon?.name || "none"}</p>
-                      <p><span className="font-normal">✦ Armor:</span> {shop.equipped.armor?.name || "none"}</p>
-                      <p><span className="font-normal">✦ Charm:</span> {shop.equipped.charm?.name || "none"}</p>
+                      <p className="text-lg font-semibold underline pb-1">Equipment</p>
+                      <p><span className="font-normal">✦ Weapon:</span> {shop.equipped.weapon
+                        ? `${shop.equipped.weapon.mainStatType} ${shop.equipped.weapon.mainStatValue}`
+                        : "none"}</p>
+                      <p><span className="font-normal">✦ Armor:</span> {shop.equipped.armor
+                        ? `${shop.equipped.armor.mainStatType} ${shop.equipped.armor.mainStatValue}`
+                        : "none"}</p>
+                      <p><span className="font-normal">✦ Charm:</span> {shop.equipped.charm
+                        ? `${shop.equipped.charm.mainStatType} ${shop.equipped.charm.mainStatValue}`
+                        : "none"}</p>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 py-2">
-                    <button
-                      type="button"
-                      onClick={() => setItemTypeTab("gear")}
-                      className="arena-redraw-button hover:animate-wiggle"
-                    >
-                      {itemTypeTab === "gear" ? "[ » gears « ]" : "[ gears ]"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setItemTypeTab("consumable")}
-                      className="arena-redraw-button hover:animate-wiggle"
-                    >
-                      {itemTypeTab === "consumable" ? "[ » consumables « ]" : "[ consumables ]"}
-                    </button>
+                    <span className="font-bold text-blue-700 text-sm">Consumables</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -303,8 +268,7 @@ const ArenaCrafting = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">crafting info</h2>
-                <p>Use the tabs to switch between gear and consumable recipes.</p>
-                <p>Each recipe costs coins to craft.</p>
+                <p>Each consumable recipe costs coins to craft from materials.</p>
               </div>
             </div>
           </aside>

@@ -15,6 +15,7 @@ import {
   type ArenaCardShopResponse,
   type ArenaShopItem,
   type ArenaShopResponse,
+  type ArenaSubStat,
   buyArenaItem,
   buyArenaShopCard,
   fetchArenaCardShop,
@@ -132,6 +133,100 @@ function CardRewardModal({
   );
 }
 
+function EquipmentRewardModal({
+  piece,
+  shopItem,
+  onClose,
+}: {
+  piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] };
+  shopItem: ArenaShopItem;
+  onClose: () => void;
+}) {
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  const MAIN_LABELS: Record<string, string> = { power: "Power", guard: "Guard", critRate: "Crit Rate", critDmg: "Crit DMG" };
+  const SUB_LABELS: Record<string, string> = {
+    hp: "HP", power: "P", guard: "G", speed: "S", luck: "L",
+    hpPct: "HP%", dmgPct: "DMG%", defendPct: "DEF%",
+    crit: "CRIT", critDmg: "CDMG",
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[230000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70"
+      onClick={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="equip-reward-title"
+        className="card-border w-full max-w-sm rounded-2xl p-5 text-center shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-pink-500">
+              Congratulations!
+            </p>
+            <h2
+              id="equip-reward-title"
+              className="mt-1 text-2xl font-bold text-blue-700 dark:text-purple-100"
+            >
+              You got a {shopItem.name}!
+            </h2>
+          </div>
+          <div className="flex justify-center">
+            <ArenaItemSprite item={shopItem} className="h-14 w-14" />
+          </div>
+          <div className="space-y-2 text-sm text-blue-700 dark:text-purple-100">
+            <p className="font-black text-lg">
+              {MAIN_LABELS[piece.mainStatType] || piece.mainStatType} {piece.mainStatValue}
+            </p>
+            <div className="space-y-0.5 text-xs text-blue-600 dark:text-purple-200">
+              {piece.subStats.map((s, i) => (
+                <p key={i}>⊹ {SUB_LABELS[s.type] || s.type} +{s.value} ⊹</p>
+              ))}
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Added to your inventory.
+            </p>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="arena-redraw-button hover:animate-wiggle"
+          >
+            [ nice! ]
+          </button>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
 const ArenaShop = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
@@ -145,6 +240,7 @@ const ArenaShop = () => {
   const [cardErrorMessage, setCardErrorMessage] = useState<string | null>(null);
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
+  const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; shopItem: ArenaShopItem } | null>(null);
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/shop",
@@ -238,7 +334,30 @@ const ArenaShop = () => {
   }, [cardShop?.randomOffer?.endsAt]);
 
   const handleBuy = async (itemId: string) => {
-    if (!token) return;
+    if (!token || !shop) return;
+
+    const item = shop.equipment?.find((i) => i.id === itemId)
+      || shop.shop.flatMap((t) => t.items).find((i) => i.id === itemId);
+    if (!item) return;
+
+    if (item.type === "gear") {
+      const confirmed = await confirm({
+        title: `Buy ${item.name}?`,
+        message: (
+          <div className="space-y-2">
+            <p>Purchase a random-rolled <strong>{item.name}</strong> for{" "}
+              <strong>{item.price.toLocaleString()} coins</strong>?</p>
+            <p className="text-sm text-slate-500">
+              Stats are randomised on purchase.
+            </p>
+          </div>
+        ),
+        confirmLabel: "Buy",
+        cancelLabel: "Cancel",
+      });
+      if (!confirmed) return;
+    }
+
     setActioningId(`buy:${itemId}`);
     setErrorMessage(null);
     try {
@@ -262,6 +381,12 @@ const ArenaShop = () => {
             : null,
         };
       });
+      if (payload.rolledPiece) {
+        setObtainedPiece({
+          piece: payload.rolledPiece,
+          shopItem: item,
+        });
+      }
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
     } finally {
@@ -361,6 +486,10 @@ const ArenaShop = () => {
     setObtainedCard(null);
   }, []);
 
+  const closeEquipModal = useCallback(() => {
+    setObtainedPiece(null);
+  }, []);
+
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -413,8 +542,7 @@ const ArenaShop = () => {
                           Cards
                         </h3>
                         <p className="text-xs text-slate-600 dark:text-slate-300">
-                          Ten shared cards refresh every day. Prices: C 50 · R 100 · SR
-                          1,000 · SSR 5,000 · UR 10,000 coins.
+                          Five cards spawn every day.
                         </p>
                       </div>
                       {cardShop ? (
@@ -546,6 +674,47 @@ const ArenaShop = () => {
                     ) : null}
                   </section>
 
+                  {shop.equipment && shop.equipment.length > 0 ? (
+                    <section className="space-y-2">
+                      <h3 className="font-bold text-blue-700 dark:text-white">Equipment</h3>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {shop.equipment.map((item) => {
+                          const isBuying = actioningId === `buy:${item.id}`;
+                          return (
+                            <article
+                              key={item.id}
+                              className="flex gap-3 rounded-xl p-3"
+                            >
+                              <ArenaItemSprite item={item} />
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-blue-700 dark:text-purple-100">{item.name}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleBuy(item.id)}
+                                    disabled={!item.canBuy || isBuying}
+                                    className="arena-redraw-button hover:animate-wiggle shrink-0"
+                                  >
+                                    {isBuying ? "[ buying... ]" : "[ buy ]"}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-slate-700 dark:text-slate-200">
+                                  {item.mainStat?.type === "random"
+                                    ? "Crit Rate or Crit DMG"
+                                    : `${item.mainStat?.type} ${item.mainStat?.min}–${item.mainStat?.max}`}
+                                  {" "}· 4 random sub-stats
+                                </p>
+                                <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
+                                  {item.price.toLocaleString()} coins
+                                </p>
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {shop.shop.map((tierBlock) => {
                     const visibleItems = tierBlock.items.filter(
@@ -642,7 +811,7 @@ const ArenaShop = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">shop info</h2>
-                <p>Ten shared character cards refresh daily at midnight UTC.</p>
+                <p>Five character cards spawn daily at midnight UTC.</p>
                 <p>Daily cards can be bought once per account; random cards stay available.</p>
                 <p>Buy gear and consumables here. Use the tabs to browse.</p>
                 <p>Craft recipes are in the dedicated crafting page.</p>
@@ -655,6 +824,13 @@ const ArenaShop = () => {
       <Footer />
       {obtainedCard ? (
         <CardRewardModal card={obtainedCard} onClose={closeCardModal} />
+      ) : null}
+      {obtainedPiece ? (
+        <EquipmentRewardModal
+          piece={obtainedPiece.piece}
+          shopItem={obtainedPiece.shopItem}
+          onClose={closeEquipModal}
+        />
       ) : null}
     </div>
   );

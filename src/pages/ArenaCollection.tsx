@@ -14,7 +14,9 @@ import {
   type ArenaCollectionResponse,
   fetchArenaCollection,
   selectArenaCollectionCard,
+  toggleArenaCollectionCardFavorite,
 } from "@/lib/arena-api";
+import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 
 const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
 
@@ -33,16 +35,17 @@ function normalizeArenaError(error: unknown) {
   return "Arena request failed.";
 }
 
-function formatIvBlock(stats: { power: number; guard: number; speed: number; luck: number }) {
-  return `P ${stats.power} | G ${stats.guard} | S ${stats.speed} | L ${stats.luck}`;
-}
 
 type CollectionSort =
   | "recent"
   | "rarity-desc"
   | "rarity-asc"
   | "iv-desc"
-  | "iv-asc";
+  | "iv-asc"
+  | "power-desc"
+  | "guard-desc"
+  | "speed-desc"
+  | "luck-desc";
 
 const ArenaCollection = () => {
   const auth = useOptionalAuth();
@@ -54,6 +57,7 @@ const ArenaCollection = () => {
   const [sort, setSort] = useState<CollectionSort>("recent");
   const [elementFilter, setElementFilter] = useState("");
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
+  const [togglingFavoriteId, setTogglingFavoriteId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   usePageSeo({
@@ -82,7 +86,7 @@ const ArenaCollection = () => {
       setErrorMessage(null);
       try {
         const payload = await fetchArenaCollection(token, {
-          page, perPage: 10, sort, search: query || undefined, element: elementFilter || undefined,
+          page, perPage: 12, sort, search: query || undefined, element: elementFilter || undefined,
         });
         if (cancelled) return;
         setCollection(payload);
@@ -117,6 +121,39 @@ const ArenaCollection = () => {
       setErrorMessage(normalizeArenaError(error));
     } finally {
       setSelectingCardId(null);
+    }
+  };
+
+  const handleToggleFavorite = async (cardInstanceId: string, current: boolean) => {
+    if (!token || !cardInstanceId || !collection) return;
+    setTogglingFavoriteId(cardInstanceId);
+
+    // Optimistic update
+    setCollection((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        cards: prev.cards.map((c) =>
+          c.cardInstanceId === cardInstanceId ? { ...c, isFavorite: !current } : c,
+        ),
+      };
+    });
+
+    try {
+      await toggleArenaCollectionCardFavorite(token, cardInstanceId);
+    } catch {
+      // Revert on error
+      setCollection((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          cards: prev.cards.map((c) =>
+            c.cardInstanceId === cardInstanceId ? { ...c, isFavorite: current } : c,
+          ),
+        };
+      });
+    } finally {
+      setTogglingFavoriteId(null);
     }
   };
 
@@ -176,6 +213,10 @@ const ArenaCollection = () => {
                         <option value="rarity-asc">Rarity: lowest first</option>
                         <option value="iv-desc">IV: highest first</option>
                         <option value="iv-asc">IV: lowest first</option>
+                        <option value="power-desc">Power: highest first</option>
+                        <option value="guard-desc">Guard: highest first</option>
+                        <option value="speed-desc">Speed: highest first</option>
+                        <option value="luck-desc">Luck: highest first</option>
                       </select>
                       <input
                         id="collection-search"
@@ -213,63 +254,58 @@ const ArenaCollection = () => {
                     })}
                   </div>
 
-                  <ol className="space-y-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {cards.map((card) => {
                       const isSelected =
                         collection.profile.selectedCard?.cardInstanceId === card.cardInstanceId;
                       return (
-                        <li
+                        <div
                           key={card.cardInstanceId || `${card.malId}-${card.drawnAt || "card"}`}
-                          className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
+                          className="flex flex-col items-center space-y-1"
                         >
-                          <article className="flex items-start gap-3">
-                            <img
-                              src={card.imageUrl}
-                              alt={card.title}
-                              className="h-16 w-12 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
-                              loading="lazy"
+                          <div className="relative group cursor-pointer" onClick={() => { if (card.cardInstanceId) { void handleToggleFavorite(card.cardInstanceId!, !!card.isFavorite); } }}>
+                            <ArenaPortraitCard
+                              card={card}
+                              size="compact"
+                              showIvLine={true}
                             />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-blue-700 text-sm">
-                                {card.title}
-                                {card.element ? (
-                                  <span
-                                    className="inline-block ml-1 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white align-middle"
-                                    style={{ backgroundColor: ELEMENT_COLORS[card.element] || "#888" }}
-                                  >
-                                    {card.element}
-                                  </span>
-                                ) : null}
-                              </p>
-                              <p className="text-xs text-slate-700">Rarity: {card.rarity} · IV: {card.iv.total}</p>
-                              <p className="text-xs text-slate-500">{formatIvBlock(card.iv)}</p>
-                              {isSelected ? (
-                                <p className="text-xs font-semibold text-pink-600">currently selected</p>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    card.cardInstanceId
-                                      ? void handleSelectCard(card.cardInstanceId)
-                                      : undefined
-                                  }
-                                  disabled={
-                                    !card.cardInstanceId ||
-                                    selectingCardId === card.cardInstanceId
-                                  }
-                                  className="arena-redraw-button hover:animate-wiggle text-xs"
-                                >
-                                  {selectingCardId === card.cardInstanceId
-                                    ? "[ choosing... ]"
-                                    : "[ choose card ]"}
-                                </button>
-                              )}
-                            </div>
-                          </article>
-                        </li>
+                            {card.cardInstanceId ? (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); void handleToggleFavorite(card.cardInstanceId!, !!card.isFavorite); }}
+                                disabled={togglingFavoriteId === card.cardInstanceId}
+                                className={`absolute top-1 right-2 z-10 text-base transition disabled:opacity-50 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)] ${card.isFavorite ? "text-pink-400" : "text-white/70 opacity-0 group-hover:opacity-100"}`}
+                                title={card.isFavorite ? "Remove favorite" : "Mark as favorite"}
+                              >
+                                {card.isFavorite ? "♥" : "♡"}
+                              </button>
+                            ) : null}
+                          </div>
+                          {isSelected ? (
+                            <span className="text-xs font-semibold text-pink-600">selected</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                card.cardInstanceId
+                                  ? void handleSelectCard(card.cardInstanceId)
+                                  : undefined
+                              }
+                              disabled={
+                                !card.cardInstanceId ||
+                                selectingCardId === card.cardInstanceId
+                              }
+                              className="arena-redraw-button hover:animate-wiggle text-xs"
+                            >
+                              {selectingCardId === card.cardInstanceId
+                                ? "[ choosing... ]"
+                                : "[ choose card ]"}
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
-                  </ol>
+                  </div>
                    {cards.length === 0 ? (
                     <p className="text-sm text-slate-600">No cards match your search.</p>
                   ) : null}

@@ -225,23 +225,59 @@ const Arena = () => {
                         </div>
                         <div className="text-sm">
                           <span>✦ Health:</span> <b>{profile.stats.total.hp}</b>{" "}
-                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.hp})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">
+                            {(profile.equipmentPct?.hpPct || 0) > 0
+                              ? `(+${profile.equipmentPct?.hpPct || 0}% equip → ${Math.floor(profile.stats.total.hp * (1 + (profile.equipmentPct?.hpPct || 0) / 100))})`
+                              : `(${profile.stats.equipment.hp > 0 ? `equip +${profile.stats.equipment.hp}, ` : ""}IV +${profile.stats.card.hp})`}
+                          </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Power:</span> <b>{profile.stats.total.power}</b>{" "}
-                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.power})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">
+                            ({profile.stats.equipment.power > 0 ? `equip +${profile.stats.equipment.power}, ` : ""}IV +{profile.stats.card.power})
+                          </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>{" "}
-                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.guard})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">
+                            ({profile.stats.equipment.guard > 0 ? `equip +${profile.stats.equipment.guard}, ` : ""}IV +{profile.stats.card.guard})
+                          </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>{" "}
-                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.speed})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">
+                            ({profile.stats.equipment.speed > 0 ? `equip +${profile.stats.equipment.speed}, ` : ""}IV +{profile.stats.card.speed})
+                          </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Luck:</span> <b>{profile.stats.total.luck}</b>{" "}
-                          <span className="text-xs text-sky-600 dark:text-purple-300">(IV +{profile.stats.card.luck})</span>
+                          <span className="text-xs text-sky-600 dark:text-purple-300">
+                            ({profile.stats.equipment.luck > 0 ? `equip +${profile.stats.equipment.luck}, ` : ""}IV +{profile.stats.card.luck})
+                          </span>
+                        </div>
+                        {(profile.equipmentPct?.dmgPct || profile.equipmentPct?.defendPct) ? (
+                          <div className="border-t border-dotted border-sky-100 dark:border-purple-400/20 my-1" />
+                        ) : null}
+                        {(profile.equipmentPct?.dmgPct || 0) > 0 ? (
+                          <div className="text-sm">
+                            <span>✦ DMG Bonus:</span>{" "}
+                            <b className="text-amber-600">+{profile.equipmentPct?.dmgPct || 0}%</b>
+                          </div>
+                        ) : null}
+                        {(profile.equipmentPct?.defendPct || 0) > 0 ? (
+                          <div className="text-sm">
+                            <span>✦ DEF Bonus:</span>{" "}
+                            <b className="text-sky-600">+{profile.equipmentPct?.defendPct || 0}%</b>
+                          </div>
+                        ) : null}
+                        <div className="border-t border-dotted border-sky-100 dark:border-purple-400/20 my-1" />
+                        <div className="text-sm">
+                          <span>✦ Crate:</span>{" "}
+                          <b>{(5 + profile.stats.total.luck * 0.35 + (profile.effects.critChanceBoostPct || 0) + (profile.equipmentPct?.critChancePct || 0)).toFixed(1)}%</b>
+                        </div>
+                        <div className="text-sm">
+                          <span>✦ Cdmg:</span>{" "}
+                          <b>{50 + (profile.equipmentPct?.critDmgPct || 0)}%</b>
                         </div>
                       </div>
 
@@ -249,9 +285,15 @@ const Arena = () => {
                         <div className="text-sm">
                         <p className="text-lg font-semibold underline">Gears</p>
                         </div>
-                        <p><span className="font-normal">✦ Weapon:</span> {profile.equipment.weapon?.name || "none"}</p>
-                        <p><span className="font-normal">✦ Armor:</span> {profile.equipment.armor?.name || "none"}</p>
-                        <p><span className="font-normal">✦   Charm:</span> {profile.equipment.charm?.name || "none"}</p>
+                        <p><span className="font-normal">✦ Weapon:</span> {profile.equipment.weapon
+                          ? `${profile.equipment.weapon.mainStatType} ${profile.equipment.weapon.mainStatValue}`
+                          : "none"}</p>
+                        <p><span className="font-normal">✦ Armor:</span> {profile.equipment.armor
+                          ? `${profile.equipment.armor.mainStatType} ${profile.equipment.armor.mainStatValue}`
+                          : "none"}</p>
+                        <p><span className="font-normal">✦   Charm:</span> {profile.equipment.charm
+                          ? `${profile.equipment.charm.mainStatType} ${profile.equipment.charm.mainStatValue}`
+                          : "none"}</p>
 
                         <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
                           <span className="mr-1 items-center justify-center text-md">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -127,6 +127,19 @@ const ArenaFight = () => {
   const resumeRetryRef = useRef<number | null>(null);
   const pageVisible = useRef(true);
   const advanceLockRef = useRef(false);
+
+  const boostedIv = useMemo(() => {
+    if (!profile?.selectedCard?.iv || !profile.effects?.ivBoostCharges || profile.effects.ivBoostCharges <= 0) return null;
+    const base = profile.selectedCard.iv;
+    const iv = { power: base.power, guard: base.guard, speed: base.speed, luck: base.luck, total: base.total };
+    const stats = ["power", "guard", "speed", "luck"] as const;
+    for (let i = 0; i < 5; i++) {
+      const stat = stats[Math.floor(Math.random() * stats.length)];
+      iv[stat] = Math.min(iv[stat] + 1, 31);
+    }
+    iv.total = iv.power + iv.guard + iv.speed + iv.luck;
+    return iv;
+  }, [profile?.selectedCard?.iv, profile?.effects?.ivBoostCharges]);
   const startPendingRef = useRef(false);
   const isAutoStartRef = useRef(false);
 
@@ -590,7 +603,7 @@ const ArenaFight = () => {
                             <div className="arena-chosen-card-body">
                               <div className="arena-card-portrait-slot">
                                 {profile?.selectedCard ? (
-                                  <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" />
+                                  <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" boostedIv={boostedIv} />
                                 ) : null}
                               </div>
                             </div>

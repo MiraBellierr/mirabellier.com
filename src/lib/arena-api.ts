@@ -19,6 +19,29 @@ export type ArenaStatsBlock = {
   luck: number;
 };
 
+export type ArenaPctStats = {
+  hpPct: number;
+  dmgPct: number;
+  defendPct: number;
+  critChancePct: number;
+  critDmgPct: number;
+};
+
+export type ArenaSubStat = {
+  type: string;
+  value: number;
+};
+
+export type ArenaEquipmentPiece = {
+  id: string;
+  slot: "weapon" | "armor" | "charm";
+  mainStatType: string;
+  mainStatValue: number;
+  subStats: ArenaSubStat[];
+  equipped: boolean;
+  createdAt: string | null;
+};
+
 export type ArenaSpriteRef = {
   sheet: "game.png";
   row: number;
@@ -91,6 +114,7 @@ export type ArenaCard = {
   iv: ArenaCardIv;
   drawnAt: string | null;
   element?: string | null;
+  isFavorite?: boolean;
 };
 
 export type ArenaProfile = {
@@ -170,6 +194,8 @@ export type ArenaProfile = {
     armor: ArenaEquippedItem | null;
     charm: ArenaEquippedItem | null;
   };
+  equipmentPct?: ArenaPctStats;
+  equipmentPieces?: ArenaEquipmentPiece[];
   activePassives?: ArenaPassiveRule[];
   skillTree?: {
     earnedPoints: number;
@@ -187,12 +213,12 @@ export type ArenaProfile = {
 };
 
 export type ArenaEquippedItem = {
-  itemId: string;
-  name: string;
+  id: string;
   slot: "weapon" | "armor" | "charm";
-  tier: string;
-  stats: Partial<ArenaStatsBlock>;
-  equippedAt: string | null;
+  mainStatType: string;
+  mainStatValue: number;
+  subStats: ArenaSubStat[];
+  createdAt: string | null;
 };
 
 export type ArenaBattleTurn = {
@@ -472,7 +498,7 @@ export type ArenaSkillTreeResponse = {
 export type ArenaShopItem = {
   id: string;
   name: string;
-  tier: string;
+  tier: string | null;
   unlockLevel: number;
   price: number;
   type: "gear" | "consumable" | "material" | "instant";
@@ -483,6 +509,12 @@ export type ArenaShopItem = {
   consumableEffect?: ArenaConsumableRule | null;
   sprite?: ArenaSpriteRef;
   recipeId?: string | null;
+  mainStat?: {
+    type: string;
+    min?: number;
+    max?: number;
+    options?: { type: string; min: number; max: number }[];
+  };
   ownedQuantity: number;
   isOwned: boolean;
   isEquipped: boolean;
@@ -500,6 +532,7 @@ export type ArenaShopTier = {
 export type ArenaShopResponse = {
   catalogVersion: string;
   profile: ArenaProfile;
+  equipment: ArenaShopItem[];
   shop: ArenaShopTier[];
   recipes: ArenaShopRecipe[];
   equipped: {
@@ -1531,6 +1564,24 @@ export async function selectArenaCollectionCard(
   return (await response.json()) as ArenaSelectCollectionCardResponse;
 }
 
+export async function toggleArenaCollectionCardFavorite(
+  token: string,
+  cardInstanceId: string,
+): Promise<{ cardInstanceId: string; isFavorite: boolean }> {
+  const response = await fetch(joinApi("/arena/collection/toggle-favorite"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ cardInstanceId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as { cardInstanceId: string; isFavorite: boolean };
+}
+
 export async function fetchArenaMarketListings(
   token: string,
   filters: {
@@ -1730,7 +1781,7 @@ export async function buyArenaShopCard(
 export async function buyArenaItem(
   token: string,
   itemId: string,
-): Promise<{ purchasedItemId: string; appliedInstantly: boolean; shop: ArenaShopResponse }> {
+): Promise<{ purchasedItemId: string; appliedInstantly: boolean; rolledPieceId: string | null; rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] } | null; shop: ArenaShopResponse }> {
   const response = await fetch(joinApi("/arena/shop/buy"), {
     method: "POST",
     credentials: "include",
@@ -1745,6 +1796,8 @@ export async function buyArenaItem(
   return (await response.json()) as {
     purchasedItemId: string;
     appliedInstantly: boolean;
+    rolledPieceId: string | null;
+    rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] } | null;
     shop: ArenaShopResponse;
   };
 }
@@ -1773,9 +1826,9 @@ export async function useArenaConsumable(
 
 export async function equipArenaItem(
   token: string,
-  itemId: string,
+  pieceId: string,
 ): Promise<{
-  equippedItemId: string;
+  equippedPieceId: string;
   slot: "weapon" | "armor" | "charm";
   shop: ArenaShopResponse;
 }> {
@@ -1783,7 +1836,7 @@ export async function equipArenaItem(
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({ itemId }),
+    body: JSON.stringify({ pieceId }),
   });
 
   if (!response.ok) {
@@ -1791,10 +1844,28 @@ export async function equipArenaItem(
   }
 
   return (await response.json()) as {
-    equippedItemId: string;
+    equippedPieceId: string;
     slot: "weapon" | "armor" | "charm";
     shop: ArenaShopResponse;
   };
+}
+
+export async function unequipArenaSlot(
+  token: string,
+  slot: string,
+): Promise<{ success: boolean; slot: string }> {
+  const response = await fetch(joinApi("/arena/shop/unequip"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ slot }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as { success: boolean; slot: string };
 }
 
 export async function craftArenaRecipe(

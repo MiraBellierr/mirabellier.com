@@ -9,6 +9,7 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import {
+  type ArenaEquipmentPiece,
   type ArenaShopItem,
   type ArenaShopResponse,
   equipArenaItem,
@@ -18,9 +19,7 @@ import {
 import {
   ArenaItemSprite,
   describeConsumableEffect,
-  describePassive,
   formatActiveEffects,
-  formatStats,
   getConsumableChargeValue,
   getEffectFieldForKind,
   normalizeArenaError,
@@ -28,23 +27,74 @@ import {
 import { usePageSeo } from "@/lib/seo";
 import { useConfirm } from "@/states/ConfirmContext";
 
-type InventoryFilter = "all" | "gear" | "consumable";
+type InventoryTab = "weapon" | "armor" | "charm" | "consumable";
 
-const FILTERS: Array<{ id: InventoryFilter; label: string }> = [
-  { id: "all", label: "All" },
-  { id: "gear", label: "Gear" },
+const TABS: Array<{ id: InventoryTab; label: string }> = [
+  { id: "weapon", label: "Weapons" },
+  { id: "armor", label: "Armour" },
+  { id: "charm", label: "Charms" },
   { id: "consumable", label: "Consumables" },
 ];
+
+const SUB_STAT_LABELS: Record<string, string> = {
+  hp: "HP",
+  power: "P",
+  guard: "G",
+  speed: "S",
+  luck: "L",
+  hpPct: "HP%",
+  dmgPct: "DMG%",
+  defendPct: "DEF%",
+  crit: "CRIT",
+  critDmg: "CDMG",
+};
+
+const MAIN_STAT_LABELS: Record<string, string> = {
+  power: "Power",
+  guard: "Guard",
+  critRate: "Crit Rate",
+  critDmg: "Crit DMG",
+};
+
+const SLOT_TO_ITEM_ID: Record<string, string> = {
+  weapon: "weapon_roll",
+  armor: "armour_roll",
+  charm: "charm_roll",
+};
+
+const SLOT_LABELS: Record<string, string> = {
+  weapon: "Weapon",
+  armor: "Armour",
+  charm: "Charm",
+};
+
+function slotSpriteItem(slot: string): ArenaShopItem {
+  return {
+    id: SLOT_TO_ITEM_ID[slot] || slot,
+    name: SLOT_LABELS[slot] || slot,
+    tier: null,
+    unlockLevel: 1,
+    price: 0,
+    type: "gear",
+    ownedQuantity: 0,
+    isOwned: false,
+    isEquipped: false,
+    unlocked: true,
+    canBuy: false,
+  };
+}
+
+function pieceSummary(piece: ArenaEquipmentPiece) {
+  const main = `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} ${piece.mainStatValue}`;
+  const subs = piece.subStats
+    .map((s) => `${SUB_STAT_LABELS[s.type] || s.type} +${s.value}`)
+    .join(" · ");
+  return `${main} · ${subs}`;
+}
 
 function flattenItems(shop: ArenaShopResponse | null) {
   if (!shop) return [] as ArenaShopItem[];
   return shop.shop.flatMap((tier) => tier.items);
-}
-
-function typeLabel(type: ArenaShopItem["type"]) {
-  if (type === "gear") return "Gear";
-  if (type === "consumable") return "Consumables";
-  return "Other";
 }
 
 const ArenaInventory = () => {
@@ -55,8 +105,9 @@ const ArenaInventory = () => {
   const [loading, setLoading] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [filter, setFilter] = useState<InventoryFilter>("all");
-  const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<InventoryTab>("weapon");
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 20;
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/inventory",
@@ -98,42 +149,45 @@ const ArenaInventory = () => {
     };
   }, [token]);
 
-  const ownedItems = useMemo(
-    () =>
-      flattenItems(shop)
-        .filter((item) => item.ownedQuantity > 0 && item.type !== "instant")
-        .sort((left, right) => {
-          const typeOrder = { gear: 0, consumable: 1, material: 2, instant: 3 };
-          return (
-            typeOrder[left.type] - typeOrder[right.type] ||
-            left.tier.localeCompare(right.tier) ||
-            left.name.localeCompare(right.name)
-          );
-        }),
+  const pieces = useMemo(
+    () => shop?.profile?.equipmentPieces || [],
     [shop],
   );
 
-  const visibleItems = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return ownedItems.filter((item) => {
-      if (filter !== "all" && item.type !== filter) return false;
-      if (!normalizedQuery) return true;
-      return (
-        item.name.toLowerCase().includes(normalizedQuery) ||
-        item.tier.toLowerCase().includes(normalizedQuery) ||
-        item.slot?.includes(normalizedQuery)
-      );
-    });
-  }, [filter, ownedItems, query]);
+  const consumables = useMemo(
+    () =>
+      flattenItems(shop)
+        .filter((item) => item.ownedQuantity > 0 && item.type === "consumable")
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [shop],
+  );
 
-  const groupedItems = useMemo(() => {
-    const groups = new Map<string, ArenaShopItem[]>();
-    visibleItems.forEach((item) => {
-      const label = typeLabel(item.type);
-      groups.set(label, [...(groups.get(label) || []), item]);
-    });
-    return [...groups.entries()];
-  }, [visibleItems]);
+  const visiblePieces = useMemo(
+    () => {
+      const filtered = pieces.filter((p) => p.slot === tab);
+      const start = (page - 1) * PER_PAGE;
+      return { items: filtered.slice(start, start + PER_PAGE), total: filtered.length };
+    },
+    [pieces, tab, page],
+  );
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visiblePieces.total / PER_PAGE)),
+    [visiblePieces.total],
+  );
+
+  const handleTabChange = (newTab: InventoryTab) => {
+    setTab(newTab);
+    setPage(1);
+  };
+
+  const equippedPieceIdBySlot = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (shop?.equipped?.weapon?.id) map.weapon = shop.equipped.weapon.id;
+    if (shop?.equipped?.armor?.id) map.armor = shop.equipped.armor.id;
+    if (shop?.equipped?.charm?.id) map.charm = shop.equipped.charm.id;
+    return map;
+  }, [shop]);
 
   const handleUse = async (item: ArenaShopItem) => {
     if (!token || !shop) return;
@@ -153,9 +207,7 @@ const ArenaInventory = () => {
             title: `Use ${item.name}?`,
             message: (
               <div className="space-y-2">
-                <p>
-                  {desc}
-                </p>
+                <p>{desc}</p>
                 <p className="text-sm text-amber-700">
                   You already have {current} charge{current !== 1 ? "s" : ""}{" "}
                   (cap: {cap}). Using this will be partially wasted.
@@ -182,33 +234,22 @@ const ArenaInventory = () => {
     }
   };
 
-  const handleEquip = async (item: ArenaShopItem) => {
-    if (!token || !shop || !item.slot || item.isEquipped) return;
-    const equippedItem = shop.equipped[item.slot];
-    if (equippedItem) {
+  const handleEquipPiece = async (piece: ArenaEquipmentPiece) => {
+    if (!token || !shop || piece.equipped) return;
+    if (equippedPieceIdBySlot[piece.slot]) {
       const shouldReplace = await confirm({
-        title: `Replace equipped ${item.slot}?`,
-        message: (
-          <div className="space-y-2">
-            <p>
-              Equip <strong>{item.name}</strong> and replace{" "}
-              <strong>{equippedItem.name}</strong>?
-            </p>
-            <p className="text-sm">
-              {equippedItem.name} will remain in your inventory.
-            </p>
-          </div>
-        ),
+        title: `Replace equipped ${piece.slot}?`,
+        message: "The currently equipped gear will be unequipped.",
         confirmLabel: "Equip gear",
         cancelLabel: "Cancel",
       });
       if (!shouldReplace) return;
     }
 
-    setActioningId(`equip:${item.id}`);
+    setActioningId(`equip:${piece.id}`);
     setErrorMessage(null);
     try {
-      const payload = await equipArenaItem(token, item.id);
+      const payload = await equipArenaItem(token, piece.id);
       setShop(payload.shop);
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
@@ -218,10 +259,6 @@ const ArenaInventory = () => {
   };
 
   const activeEffects = shop ? formatActiveEffects(shop) : [];
-  const totalQuantity = ownedItems.reduce(
-    (total, item) => total + item.ownedQuantity,
-    0,
-  );
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -265,14 +302,19 @@ const ArenaInventory = () => {
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <p className="text-lg font-semibold underline">Equipped Gear</p>
-                        <p>✦ Weapon: {shop.equipped.weapon?.name || "none"}</p>
-                        <p>✦ Armor: {shop.equipped.armor?.name || "none"}</p>
-                        <p>✦ Charm: {shop.equipped.charm?.name || "none"}</p>
+                        <p>✦ Weapon: {shop.equipped.weapon
+                          ? pieceSummary(shop.equipped.weapon as unknown as ArenaEquipmentPiece)
+                          : "none"}</p>
+                        <p>✦ Armour: {shop.equipped.armor
+                          ? pieceSummary(shop.equipped.armor as unknown as ArenaEquipmentPiece)
+                          : "none"}</p>
+                        <p>✦ Charm: {shop.equipped.charm
+                          ? pieceSummary(shop.equipped.charm as unknown as ArenaEquipmentPiece)
+                          : "none"}</p>
                       </div>
                       <div>
                         <p className="text-lg font-semibold underline">Bag Summary</p>
-                        <p>✦ Unique items: {ownedItems.length}</p>
-                        <p>✦ Total quantity: {totalQuantity}</p>
+                        <p>✦ Equipment pieces: {pieces.length}</p>
                         <p>✦ Coins: {shop.profile.coins.toLocaleString()} 🪙</p>
                       </div>
                     </div>
@@ -284,114 +326,136 @@ const ArenaInventory = () => {
                     ) : null}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap gap-2">
-                      {FILTERS.map((entry) => (
-                        <button
-                          key={entry.id}
-                          type="button"
-                          onClick={() => setFilter(entry.id)}
-                          className="arena-redraw-button hover:animate-wiggle"
-                        >
-                          {filter === entry.id
-                            ? `[ » ${entry.label} « ]`
-                            : `[ ${entry.label} ]`}
-                        </button>
-                      ))}
-                    </div>
-                    <label htmlFor="inventory-search" className="sr-only">
-                      Search inventory
-                    </label>
-                    <input
-                      id="inventory-search"
-                      type="search"
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search inventory..."
-                      className="w-full rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 sm:w-48"
-                    />
+                  <div className="flex flex-wrap gap-2">
+                    {TABS.map((entry) => (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        onClick={() => handleTabChange(entry.id)}
+                        className="arena-redraw-button hover:animate-wiggle"
+                      >
+                        {tab === entry.id
+                          ? `[ » ${entry.label} « ]`
+                          : `[ ${entry.label} ]`}
+                      </button>
+                    ))}
                   </div>
 
-                  {groupedItems.length > 0 ? (
-                    <div className="space-y-5">
-                      {groupedItems.map(([groupName, items]) => (
-                        <section key={groupName}>
-                          <h3 className="mb-2 border-b border-sky-200 pb-1 text-lg font-bold text-blue-700">
-                            {groupName}
-                          </h3>
-                          <ol className="grid gap-3 sm:grid-cols-2">
-                            {items.map((item) => {
-                              const isUsing = actioningId === `use:${item.id}`;
-                              const isEquipping = actioningId === `equip:${item.id}`;
-                              return (
-                                <li key={item.id} className="py-2">
-                                  <article className="flex items-start gap-3">
-                                    <ArenaItemSprite item={item} className="h-10 w-10" />
-                                    <div className="min-w-0 flex-1 space-y-1">
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <p className="font-bold text-blue-700">{item.name}</p>
-                                        {item.isEquipped ? (
-                                          <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-black uppercase text-pink-700 dark:bg-pink-400/20 dark:text-pink-200 dark:ring-1 dark:ring-inset dark:ring-pink-300/40">
-                                            equipped
-                                          </span>
-                                        ) : null}
-                                        {item.type === "gear" && !item.isEquipped ? (
-                                          <button
-                                            type="button"
-                                            onClick={() => void handleEquip(item)}
-                                            disabled={actioningId !== null}
-                                            className="arena-redraw-button hover:animate-wiggle"
-                                          >
-                                            {isEquipping ? "[ equipping... ]" : "[ equip ]"}
-                                          </button>
-                                        ) : null}
-                                        {item.type === "consumable" ? (
-                                          <button
-                                            type="button"
-                                            onClick={() => void handleUse(item)}
-                                            disabled={actioningId !== null}
-                                            className="arena-redraw-button hover:animate-wiggle"
-                                          >
-                                            {isUsing ? "[ using... ]" : "[ use ]"}
-                                          </button>
-                                        ) : null}
-                                      </div>
-                                      <p className="text-xs text-slate-600">
-                                        {item.tier}
-                                        {item.slot ? ` · ${item.slot}` : ""}
-                                        {" · "}Owned: {item.ownedQuantity}
-                                      </p>
-                                      {item.stats ? (
-                                        <p className="text-xs text-blue-600">
-                                          {formatStats(item.stats)}
-                                        </p>
-                                      ) : null}
-                                      {item.passive ? (
-                                        <p className="text-xs text-blue-600">
-                                          {describePassive(item.passive)}
-                                        </p>
-                                      ) : null}
-                                      {item.consumableEffect ? (
-                                        <p className="text-xs text-blue-600">
-                                          {describeConsumableEffect(item.consumableEffect)}
-                                        </p>
-                                      ) : null}
-                                    </div>
-                                  </article>
-                                </li>
-                              );
-                            })}
-                          </ol>
-                        </section>
-                      ))}
+                  {tab === "consumable" ? (
+                    consumables.length > 0 ? (
+                      <ol className="grid gap-3 sm:grid-cols-2">
+                        {consumables.map((item) => {
+                          const isUsing = actioningId === `use:${item.id}`;
+                          return (
+                            <li key={item.id} className="py-2">
+                              <article className="flex items-start gap-3">
+                                <ArenaItemSprite item={item} className="h-10 w-10" />
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-bold text-blue-700">{item.name}</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUse(item)}
+                                      disabled={actioningId !== null}
+                                      className="arena-redraw-button hover:animate-wiggle"
+                                    >
+                                      {isUsing ? "[ using... ]" : "[ use ]"}
+                                    </button>
+                                  </div>
+                                  <p className="text-xs text-slate-600">
+                                    {item.tier} · Owned: {item.ownedQuantity}
+                                  </p>
+                                  {item.consumableEffect ? (
+                                    <p className="text-xs text-blue-600">
+                                      {describeConsumableEffect(item.consumableEffect)}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </article>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    ) : (
+                      <p className="text-sm text-slate-500">No consumables.</p>
+                    )
+                  ) : (
+                    visiblePieces.items.length > 0 ? (
+                      <div className="space-y-3">
+                        <ol className="grid gap-3 sm:grid-cols-2">
+                          {visiblePieces.items.map((piece) => {
+                          const isEquipping = actioningId === `equip:${piece.id}`;
+                          return (
+                            <li key={piece.id} className="py-2">
+                              <article className="flex items-start gap-3">
+                                <ArenaItemSprite item={slotSpriteItem(piece.slot)} className="h-10 w-10" />
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-bold text-blue-700">
+                                      {MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType}{" "}
+                                      {piece.mainStatValue}
+                                    </p>
+                                    {piece.equipped ? (
+                                      <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-black uppercase text-pink-700 dark:bg-pink-400/20 dark:text-pink-200 dark:ring-1 dark:ring-inset dark:ring-pink-300/40">
+                                        equipped
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleEquipPiece(piece)}
+                                        disabled={actioningId !== null}
+                                        className="arena-redraw-button hover:animate-wiggle"
+                                      >
+                                        {isEquipping ? "[ equipping... ]" : "[ equip ]"}
+                                      </button>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-slate-600">
+                                    {piece.slot}
+                                  </p>
+                                  <p className="text-xs text-blue-600">
+                                    {piece.subStats
+                                      .map((s) => `${SUB_STAT_LABELS[s.type] || s.type} +${s.value}`)
+                                      .join(" · ")}
+                                  </p>
+                                </div>
+                              </article>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                      {totalPages > 1 ? (
+                        <div className="flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={page <= 1}
+                            className="arena-redraw-button hover:animate-wiggle"
+                          >
+                            [ « prev ]
+                          </button>
+                          <span className="text-xs text-slate-600">
+                            Page {page} of {totalPages} · {visiblePieces.total} total
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={page >= totalPages}
+                            className="arena-redraw-button hover:animate-wiggle"
+                          >
+                            [ next » ]
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-700">
-                      <p>No items match this view.</p>
+                      <p>No {TABS.find((t) => t.id === tab)?.label.toLowerCase()} yet.</p>
                       <Link to="/arena/shop" className="mt-2 inline-block font-bold underline">
                         Visit the shop
                       </Link>
                     </div>
+                    )
                   )}
                 </div>
               ) : null}
@@ -407,7 +471,7 @@ const ArenaInventory = () => {
                 <h2 className="text-center text-lg font-bold text-blue-700">
                   inventory info
                 </h2>
-                <p>Use the tabs to filter gear, consumables, or view all.</p>
+                <p>Use the tabs to browse weapons, armour, charms, or consumables.</p>
                 <p>Equip gear and use consumables directly from your bag.</p>
               </div>
             </div>

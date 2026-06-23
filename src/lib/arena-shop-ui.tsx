@@ -76,6 +76,10 @@ const ITEM_SPRITE_NAME_BY_ID: Record<string, string> = {
   verdant_gem: "green_orb",
   pale_gem: "diamond",
   lunar_gem: "blue_orb",
+  weapon_roll: "steel_sword",
+  armour_roll: "tower_shield",
+  charm_roll: "crimson_coil_charm",
+  exp_tome: "tan_book",
 };
 
 function getSpriteLoader(spriteName: string) {
@@ -275,6 +279,9 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
       ? `+${toNumber(effect.total)} total IV to selected card (${iCharges} charge${iCharges > 1 ? "s" : ""})`
       : `+${toNumber(effect.total)} total IV to selected card`;
   }
+  if (kind === "exp_boost") {
+    return `+${toNumber(effect.pct)}% EXP gain for ${toNumber(effect.fights, 1)} fight(s)`;
+  }
   if (kind === "self_revive") {
     return `Restore full HP when below ${toNumber(effect.hpPct)}% HP (${toNumber(effect.charges, 1)} charge)`;
   }
@@ -313,6 +320,7 @@ export function getConsumableChargeValue(effect: ArenaConsumableRule | null | un
     case "vampiric_heal":
     case "crit_chance":
     case "guard_boost":
+    case "exp_boost":
       return toNumber(effect.fights, 0);
     case "death_save":
     case "match_rarity":
@@ -339,6 +347,7 @@ export function getEffectFieldForKind(kind: string) {
     case "vampiric_heal":         return "vampiricHealFightsRemaining" as const;
     case "crit_chance":           return "critChanceBoostFightsRemaining" as const;
     case "guard_boost":           return "guardBoostFightsRemaining" as const;
+    case "exp_boost":             return "expBoostWinsRemaining" as const;
     case "double_passive_trigger": return "doublePassiveTriggerFightsRemaining" as const;
     case "death_save":            return "deathSaveCharges" as const;
     case "match_rarity":          return "matchRarityCharges" as const;

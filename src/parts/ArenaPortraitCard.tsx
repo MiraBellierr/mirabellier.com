@@ -16,6 +16,7 @@ type ArenaPortraitCardProps = {
   size?: ArenaPortraitCardSize;
   showIvLine?: boolean;
   className?: string;
+  boostedIv?: { power: number; guard: number; speed: number; luck: number; total: number } | null;
 };
 
 type RarityVisual = {
@@ -110,6 +111,7 @@ const ArenaPortraitCard = ({
   size = "full",
   showIvLine = true,
   className = "",
+  boostedIv,
 }: ArenaPortraitCardProps) => {
   const visual = normalizeRarity(card.rarity);
   const element = normalizeElement(card.element);
@@ -166,7 +168,24 @@ const ArenaPortraitCard = ({
           </div>
           {showIvLine ? (
             <p className="arena-portrait-card__iv">
-              IV {card.iv.total} | P {card.iv.power} G {card.iv.guard} S {card.iv.speed} L {card.iv.luck}
+              {boostedIv
+                ? (
+                  <>
+                    IV {card.iv.total}{" "}
+                    <span className="text-amber-500">(+{boostedIv.total - card.iv.total} → {boostedIv.total})</span>
+                    {" | "}P {card.iv.power}{" "}
+                    <span className="text-amber-500">(+{boostedIv.power - card.iv.power})</span>
+                    {" "}G {card.iv.guard}{" "}
+                    <span className="text-amber-500">(+{boostedIv.guard - card.iv.guard})</span>
+                    {" "}S {card.iv.speed}{" "}
+                    <span className="text-amber-500">(+{boostedIv.speed - card.iv.speed})</span>
+                    {" "}L {card.iv.luck}{" "}
+                    <span className="text-amber-500">(+{boostedIv.luck - card.iv.luck})</span>
+                  </>
+                )
+                : (
+                  `IV ${card.iv.total} | P ${card.iv.power} G ${card.iv.guard} S ${card.iv.speed} L ${card.iv.luck}`
+                )}
             </p>
           ) : null}
         </div>
