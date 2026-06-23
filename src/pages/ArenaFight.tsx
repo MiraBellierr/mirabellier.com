@@ -514,6 +514,10 @@ const ArenaFight = () => {
                     [ Collection ]
                   </Link>
                   <span className="hidden font-bold sm:inline">|</span>
+                  <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
+                    [ Market ]
+                  </Link>
+                  <span className="hidden font-bold sm:inline">|</span>
                   <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
                     [ Skill Tree ]
                   </Link>

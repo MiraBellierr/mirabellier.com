@@ -204,6 +204,10 @@ const Arena = () => {
                         [ Collection ]
                       </Link>
                       <span className="font-bold">|</span>
+                      <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
+                        [ Market ]
+                      </Link>
+                      <span className="font-bold">|</span>
                       <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
                         [ Skill Tree ]
                       </Link>
