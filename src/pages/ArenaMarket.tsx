@@ -93,7 +93,7 @@ const ArenaMarket = () => {
   const loadOwnedData = async (currentToken: string) => {
     const [minePayload, collectionPayload] = await Promise.all([
       fetchMyArenaMarketListings(currentToken),
-      fetchArenaCollection(currentToken, 500),
+      fetchArenaCollection(currentToken, { perPage: 500 }),
     ]);
     setMine(minePayload);
     setCollection(collectionPayload);
@@ -129,7 +129,7 @@ const ArenaMarket = () => {
     Promise.all([
       fetchArenaMarketListings(token, { page: 1, limit: 20, sort: "newest" }),
       fetchMyArenaMarketListings(token),
-      fetchArenaCollection(token, 500),
+      fetchArenaCollection(token, { perPage: 500 }),
     ])
       .then(([marketPayload, minePayload, collectionPayload]) => {
         if (cancelled) return;
