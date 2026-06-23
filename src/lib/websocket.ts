@@ -26,7 +26,7 @@ function resolveWsUrl(): string {
 
   const apiUrl = new URL(API_BASE);
   const protocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${apiUrl.host}/ws`;
+  return `${protocol}//${apiUrl.host}/v1/ws`;
 }
 
 async function fetchWsToken(): Promise<string> {
