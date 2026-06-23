@@ -1868,6 +1868,24 @@ export async function unequipArenaSlot(
   return (await response.json()) as { success: boolean; slot: string };
 }
 
+export async function fodderArenaPiece(
+  token: string,
+  pieceId: string,
+): Promise<{ fodderPieceId: string; coinsGained: number }> {
+  const response = await fetch(joinApi("/arena/shop/fodder"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ pieceId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as { fodderPieceId: string; coinsGained: number };
+}
+
 export async function craftArenaRecipe(
   token: string,
   recipeId: string,

@@ -14,6 +14,8 @@ import {
   type ArenaShopResponse,
   equipArenaItem,
   fetchArenaShop,
+  fodderArenaPiece,
+  unequipArenaSlot,
   useArenaConsumable as activateArenaConsumable,
 } from "@/lib/arena-api";
 import {
@@ -258,6 +260,44 @@ const ArenaInventory = () => {
     }
   };
 
+  const handleUnequip = async (slot: string) => {
+    if (!token) return;
+    setActioningId(`unequip:${slot}`);
+    setErrorMessage(null);
+    try {
+      await unequipArenaSlot(token, slot);
+      const refreshed = await fetchArenaShop(token);
+      setShop(refreshed);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleFodder = async (piece: ArenaEquipmentPiece) => {
+    if (!token || piece.equipped) return;
+    const confirmed = await confirm({
+      title: "Fodder equipment?",
+      message: `Remove this ${piece.slot} for 500 coins? This cannot be undone.`,
+      confirmLabel: "Fodder",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
+
+    setActioningId(`fodder:${piece.id}`);
+    setErrorMessage(null);
+    try {
+      await fodderArenaPiece(token, piece.id);
+      const refreshed = await fetchArenaShop(token);
+      setShop(refreshed);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   const activeEffects = shop ? formatActiveEffects(shop) : [];
 
   return (
@@ -304,13 +344,25 @@ const ArenaInventory = () => {
                         <p className="text-lg font-semibold underline">Equipped Gear</p>
                         <p>✦ Weapon: {shop.equipped.weapon
                           ? pieceSummary(shop.equipped.weapon as unknown as ArenaEquipmentPiece)
-                          : "none"}</p>
+                          : "none"}{" "}
+                          {shop.equipped.weapon ? (
+                            <button type="button" onClick={() => void handleUnequip("weapon")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
+                          ) : null}
+                        </p>
                         <p>✦ Armour: {shop.equipped.armor
                           ? pieceSummary(shop.equipped.armor as unknown as ArenaEquipmentPiece)
-                          : "none"}</p>
+                          : "none"}{" "}
+                          {shop.equipped.armor ? (
+                            <button type="button" onClick={() => void handleUnequip("armor")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
+                          ) : null}
+                        </p>
                         <p>✦ Charm: {shop.equipped.charm
                           ? pieceSummary(shop.equipped.charm as unknown as ArenaEquipmentPiece)
-                          : "none"}</p>
+                          : "none"}{" "}
+                          {shop.equipped.charm ? (
+                            <button type="button" onClick={() => void handleUnequip("charm")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
+                          ) : null}
+                        </p>
                       </div>
                       <div>
                         <p className="text-lg font-semibold underline">Bag Summary</p>
@@ -400,14 +452,24 @@ const ArenaInventory = () => {
                                         equipped
                                       </span>
                                     ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleEquipPiece(piece)}
-                                        disabled={actioningId !== null}
-                                        className="arena-redraw-button hover:animate-wiggle"
-                                      >
-                                        {isEquipping ? "[ equipping... ]" : "[ equip ]"}
-                                      </button>
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleEquipPiece(piece)}
+                                          disabled={actioningId !== null}
+                                          className="arena-redraw-button hover:animate-wiggle"
+                                        >
+                                          {isEquipping ? "[ equipping... ]" : "[ equip ]"}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleFodder(piece)}
+                                          disabled={actioningId !== null}
+                                          className="arena-redraw-button hover:animate-wiggle"
+                                        >
+                                          [ fodder +500 ]
+                                        </button>
+                                      </>
                                     )}
                                   </div>
                                   <p className="text-xs text-slate-600">
