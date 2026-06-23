@@ -115,6 +115,7 @@ export type ArenaCard = {
   drawnAt: string | null;
   element?: string | null;
   isFavorite?: boolean;
+  from?: string | null;
 };
 
 export type ArenaProfile = {

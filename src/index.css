@@ -898,6 +898,18 @@ h6 {
   overflow: hidden;
 }
 
+.arena-portrait-card__from {
+  margin: 0;
+  color: #c9c0b0;
+  font-size: 0.44rem;
+  line-height: 1.2;
+  font-weight: 400;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .arena-portrait-card__meta {
   margin-top: 0.18rem;
   display: flex;
@@ -1171,7 +1183,7 @@ h6 {
 .arena-chosen-card-body {
   display: grid;
   grid-template-columns: minmax(188px, 205px) minmax(0, 1fr);
-  align-items: stretch;
+  align-items: start;
   column-gap: 1.15rem;
 }
 

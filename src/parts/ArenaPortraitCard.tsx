@@ -160,6 +160,9 @@ const ArenaPortraitCard = ({
 
         <div className="arena-portrait-card__bottom">
           <p className="arena-portrait-card__name">{card.title}</p>
+          {card.from ? (
+            <p className="arena-portrait-card__from">{card.from}</p>
+          ) : null}
           <div className="arena-portrait-card__meta">
             <span className="arena-portrait-card__stars" aria-label={`${visual.stars} stars`}>
               {stars}
