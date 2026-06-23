@@ -123,6 +123,7 @@ const ArenaFight = () => {
   const needsResumeRef = useRef(false);
   const autoTimerRef = useRef<number | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
+  const safetyTimerRef = useRef<number | null>(null);
   const resumeRetryRef = useRef<number | null>(null);
   const pageVisible = useRef(true);
   const advanceLockRef = useRef(false);
@@ -135,6 +136,13 @@ const ArenaFight = () => {
     if (advanceTimerRef.current !== null) {
       window.clearTimeout(advanceTimerRef.current);
       advanceTimerRef.current = null;
+    }
+  }, []);
+
+  const clearSafetyTimer = useCallback(() => {
+    if (safetyTimerRef.current !== null) {
+      window.clearTimeout(safetyTimerRef.current);
+      safetyTimerRef.current = null;
     }
   }, []);
 
@@ -158,8 +166,9 @@ const ArenaFight = () => {
     return () => {
       clearAutoTimer();
       clearAdvanceTimer();
+      clearSafetyTimer();
     };
-  }, [clearAutoTimer, clearAdvanceTimer]);
+  }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
 
   // Pause auto-battle when tab loses focus
   useEffect(() => {
@@ -326,9 +335,14 @@ const ArenaFight = () => {
     if (!activeFight || activeFight.isFinished || !needsResumeRef.current) return;
     needsResumeRef.current = false;
 
+    let attempts = 0;
     const tryResume = () => {
       if (advanceLockRef.current) {
-        // Still waiting for previous advance response — retry
+        if (attempts >= 20) {
+          advanceLockRef.current = false;
+          attempts = 0;
+        }
+        attempts++;
         resumeRetryRef.current = window.setTimeout(tryResume, 500);
         return;
       }
@@ -367,6 +381,7 @@ const ArenaFight = () => {
   useWebSocketEvent("arena:fight:turn", (data) => {
     const state = data as ArenaActiveFight;
     advanceLockRef.current = false;
+    clearSafetyTimer();
 
     if (startPendingRef.current) {
       startPendingRef.current = false;
@@ -390,6 +405,7 @@ const ArenaFight = () => {
   useWebSocketEvent("arena:fight:finished", (data) => {
     const state = data as ArenaActiveFight;
     advanceLockRef.current = false;
+    clearSafetyTimer();
 
     if (startPendingRef.current) {
       startPendingRef.current = false;
@@ -402,6 +418,7 @@ const ArenaFight = () => {
 
   useWebSocketEvent("arena:fight:error", (data) => {
     advanceLockRef.current = false;
+    clearSafetyTimer();
 
     if (startPendingRef.current) {
       startPendingRef.current = false;
@@ -433,7 +450,13 @@ const ArenaFight = () => {
     if (advanceLockRef.current) return;
     advanceLockRef.current = true;
     ws.send({ type: "arena:fight:advance" });
-  }, [ws]);
+    clearSafetyTimer();
+    safetyTimerRef.current = window.setTimeout(() => {
+      safetyTimerRef.current = null;
+      advanceLockRef.current = false;
+      sendAdvance();
+    }, 10000);
+  }, [ws, clearSafetyTimer]);
 
   // ---- User actions ----
 
