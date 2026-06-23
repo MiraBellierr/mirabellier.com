@@ -114,6 +114,7 @@ This frontend expects a working API at `VITE_API_BASE`. Backend setup lives in [
 - `/arena/crafting` - arena crafting page
 - `/arena/leaderboard` - arena leaderboard page
 - `/arena/collection` - arena collection page
+- `/arena/market` - player card marketplace
 - `/arena/skill-tree` - arena skill tree page
 - `/shrine` - shrine hub
 - `/shrine/kanna` - Kanna shrine page

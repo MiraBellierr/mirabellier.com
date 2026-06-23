@@ -40,6 +40,7 @@ const STATIC_ROUTES = [
   { path: "/privacy", priority: "0.4", changefreq: "yearly" },
   { path: "/terms", priority: "0.4", changefreq: "yearly" },
   { path: "/arena/inventory", priority: "0.5", changefreq: "monthly" },
+  { path: "/arena/market", priority: "0.5", changefreq: "daily" },
   { path: "/arena/skill-tree", priority: "0.5", changefreq: "monthly" },
 ];
 
