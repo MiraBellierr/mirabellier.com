@@ -6,6 +6,8 @@ import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
 import { usePageSeo } from "@/lib/seo";
+import { useWebSocket } from "@/states/WebSocketProvider";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
   AnimeFeedApiError,
   fetchCurrentlyWatchingAnime,
@@ -83,6 +85,7 @@ function formatAnimeDetails(item: CurrentlyWatchingAnimeItem) {
 }
 
 const Anime = () => {
+  const ws = useWebSocket();
   const [data, setData] = useState<CurrentlyWatchingAnimePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AnimeFeedApiError | null>(null);
@@ -99,14 +102,48 @@ const Anime = () => {
     },
   });
 
+  useWebSocketEvent("anime:currently-watching", (raw) => {
+    const payload = raw as Record<string, unknown>;
+
+    if (
+      payload.code === "MAL_UNAVAILABLE" ||
+      payload.code === "MAL_CONFIG_MISSING"
+    ) {
+      setError(
+        new AnimeFeedApiError(
+          typeof payload.message === "string"
+            ? payload.message
+            : "Failed to load currently watching anime",
+          { code: payload.code as string },
+        ),
+      );
+      return;
+    }
+
+    setData(payload as unknown as CurrentlyWatchingAnimePayload);
+    setError(null);
+  });
+
   useEffect(() => {
     let cancelled = false;
 
-    const loadAnime = async (showLoading = false) => {
-      if (showLoading) {
-        setLoading(true);
-      }
+    const loadAnime = () => {
+      ws.send({ type: "anime:subscribe" });
+    };
 
+    const intervalId = window.setInterval(() => {
+      loadAnime();
+    }, ANIME_REFRESH_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadAnime();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    void (async () => {
       try {
         const payload = await fetchCurrentlyWatchingAnime();
         if (cancelled) {
@@ -131,32 +168,20 @@ const Anime = () => {
 
         setError(nextError);
       } finally {
-        if (showLoading && !cancelled) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
-    };
+    })();
 
-    const intervalId = window.setInterval(() => {
-      void loadAnime();
-    }, ANIME_REFRESH_INTERVAL_MS);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        void loadAnime();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    void loadAnime(true);
+    ws.send({ type: "anime:subscribe" });
 
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [ws]);
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">

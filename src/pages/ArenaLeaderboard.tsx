@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import ArenaSubNav from "@/parts/ArenaSubNav";
 import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
@@ -110,39 +110,7 @@ const ArenaLeaderboard = () => {
                 </p>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 pb-3 border-b border-sky-100">
-                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
-                  [ Arena Home ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
-                  [ Fight ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
-                  [ Shop ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
-                  [ Craft ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
-                  [ Inventory ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
-                  [ Collection ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
-                  [ Market ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
-                  [ Skill Tree ]
-                </Link>
-              </div>
+              <ArenaSubNav />
 
               <div className="flex flex-wrap gap-2">
                 {METRICS.map((metric) => (

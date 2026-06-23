@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { API_BASE } from "@/lib/config";
+
 import home from "../assets/icons/img1-24.webp";
 import about from "../assets/icons/img2-24.webp";
 import blog from "../assets/icons/img3-24.webp";
@@ -139,6 +140,7 @@ const Navigation = () => {
   const avatarSrc = getAvatarSrc(auth?.user?.avatar);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+
   const activeNavItem = navSections
     .flatMap((section) => section.items)
     .find((item) => item.isActive(location.pathname));
@@ -147,6 +149,8 @@ const Navigation = () => {
     setMobileNavOpen(false);
     setAccountMenuOpen(false);
   }, [location.pathname]);
+
+
 
   return (
     <aside className="site-display nav-shell mb-auto w-full overflow-hidden rounded-xl border border-blue-300 bg-blue-100 shadow-md opacity-90">
@@ -196,34 +200,37 @@ const Navigation = () => {
                   const active = item.isActive(location.pathname);
 
                   return (
-                    <div
-                      key={item.label}
-                      className="flex items-center justify-center gap-2"
-                    >
-                      <img
-                        className="h-4 w-4"
-                        src={item.icon}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                      <Link
-                        aria-current={active ? "page" : undefined}
-                        className={`text-center text-sm font-bold hover:animate-wiggle hover:underline ${
-                          active
-                            ? "text-blue-700 dark:text-purple-100"
-                            : "text-blue-500 dark:text-purple-200"
-                        }`}
-                        to={item.to}
+                    <>
+                      <div
+                        key={item.label}
+                        className="flex items-center justify-center gap-2"
                       >
-                        {active ? `[${item.label}]` : item.label}
-                      </Link>
-                      <img
-                        className="h-4 w-4"
-                        src={item.icon}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                    </div>
+                        <img
+                          className="h-4 w-4"
+                          src={item.icon}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                        <Link
+                          aria-current={active ? "page" : undefined}
+                          className={`text-center text-sm font-bold hover:animate-wiggle hover:underline ${
+                            active
+                              ? "text-blue-700 dark:text-purple-100"
+                              : "text-blue-500 dark:text-purple-200"
+                          }`}
+                          to={item.to}
+                        >
+                          {active ? `[${item.label}]` : item.label}
+                        </Link>
+                        <img
+                          className="h-4 w-4"
+                          src={item.icon}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </div>
+
+                    </>
                   );
                 })}
               </div>

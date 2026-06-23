@@ -3,11 +3,14 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
+import ArenaSubNav from "@/parts/ArenaSubNav";
 import Divider from "@/parts/Divider";
 import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
   ArenaApiError,
   type ArenaCard,
@@ -86,6 +89,15 @@ const ArenaMarket = () => {
   const [cardSearchResults, setCardSearchResults] = useState<ArenaCard[]>([]);
   const [cardDropdownOpen, setCardDropdownOpen] = useState(false);
   const [cardHighlight, setCardHighlight] = useState(-1);
+  const [hoverCard, setHoverCard] = useState<{ x: number; y: number; card: ArenaCard } | null>(null);
+
+  const handleCardMouseEnter = (card: ArenaCard, e: React.MouseEvent) => {
+    setHoverCard({ x: e.clientX, y: e.clientY, card });
+  };
+  const handleCardMouseMove = (e: React.MouseEvent) => {
+    setHoverCard((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+  };
+  const handleCardMouseLeave = () => setHoverCard(null);
   const cardDropdownRef = useRef<HTMLDivElement | null>(null);
 
   usePageSeo({
@@ -170,6 +182,13 @@ const ArenaMarket = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, query, rarity, ivBand, sort, page]);
 
+  useWebSocketEvent("arena:market:changed", () => {
+    if (token) {
+      void loadMarket(token);
+      void loadOwnedData(token);
+    }
+  });
+
   const selectedCard = useMemo(
     () =>
       collection?.cards.find(
@@ -221,7 +240,7 @@ const ArenaMarket = () => {
       }
     }, 300);
     return () => { cancelled = true; window.clearTimeout(timeout); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [cardSearch, token]);
 
   const MINE_PAGE_SIZE = 10;
@@ -429,9 +448,12 @@ const ArenaMarket = () => {
             {paginatedMineListings.map((listing) => (
               <tr
                 key={listing.listingId}
-                className="border-b border-blue-50 last:border-b-0 dark:border-purple-400/10"
-              >
-                <td className="py-2 pr-2 group relative">
+                  onMouseEnter={(e) => handleCardMouseEnter(listing.card, e)}
+                  onMouseMove={handleCardMouseMove}
+                  onMouseLeave={handleCardMouseLeave}
+                  className="border-b border-blue-50 last:border-b-0 dark:border-purple-400/10"
+                >
+                  <td className="py-2 pr-2 relative">
                   <div className="flex items-center gap-2">
                     <img
                       src={listing.card.imageUrl}
@@ -449,10 +471,6 @@ const ArenaMarket = () => {
                         {listing.card.element}
                       </span>
                     ) : null}
-                  </div>
-                  <div className="pointer-events-none absolute left-0 bottom-full z-40 mb-1 hidden whitespace-nowrap rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs shadow-lg group-hover:block dark:border-purple-400/40 dark:bg-slate-800">
-                    <p className="font-bold text-blue-700 dark:text-purple-100">{listing.card.rarity} · IV {listing.card.iv.total}</p>
-                    <p className="text-slate-600 dark:text-slate-300">P {listing.card.iv.power} · G {listing.card.iv.guard} · S {listing.card.iv.speed} · L {listing.card.iv.luck}</p>
                   </div>
                 </td>
                 <td className="py-2 px-2 text-slate-600 dark:text-slate-300">
@@ -518,39 +536,7 @@ const ArenaMarket = () => {
                 </p>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 border-b border-sky-100 pb-3 dark:border-purple-400/20">
-                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
-                  [ Arena Home ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
-                  [ Fight ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
-                  [ Shop ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
-                  [ Craft ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
-                  [ Inventory ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
-                  [ Leaderboard ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
-                  [ Collection ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/skill-tree" className="arena-redraw-button hover:animate-wiggle">
-                  [ Skill Tree ]
-                </Link>
-              </div>
+              <ArenaSubNav />
 
               {!token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
@@ -677,9 +663,11 @@ const ArenaMarket = () => {
                               {market.listings.map((listing) => (
                                 <tr
                                   key={listing.listingId}
+                                  onMouseEnter={(e) => handleCardMouseEnter(listing.card, e)}
+                                  onMouseLeave={handleCardMouseLeave}
                                   className="border-b border-blue-50 last:border-b-0 dark:border-purple-400/10"
                                 >
-                                  <td className="py-2 pr-2 group relative">
+                                  <td className="py-2 pr-2 relative">
                                     <div className="flex items-center gap-2">
                                       <img
                                         src={listing.card.imageUrl}
@@ -697,10 +685,6 @@ const ArenaMarket = () => {
                                           {listing.card.element}
                                         </span>
                                       ) : null}
-                                    </div>
-                                    <div className="pointer-events-none absolute left-0 bottom-full z-40 mb-1 hidden whitespace-nowrap rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs shadow-lg group-hover:block dark:border-purple-400/40 dark:bg-slate-800">
-                                      <p className="font-bold text-blue-700 dark:text-purple-100">{listing.card.rarity} · IV {listing.card.iv.total}</p>
-                                      <p className="text-slate-600 dark:text-slate-300">P {listing.card.iv.power} · G {listing.card.iv.guard} · S {listing.card.iv.speed} · L {listing.card.iv.luck}</p>
                                     </div>
                                   </td>
                                   <td className="py-2 px-2 text-slate-600 dark:text-slate-300">
@@ -990,6 +974,21 @@ const ArenaMarket = () => {
                   </div>
                 </div>
               </section>
+            </div>,
+            document.body,
+          )
+            : null}
+      {hoverCard
+        ? createPortal(
+            <div
+              className="pointer-events-none fixed"
+              style={{
+                left: Math.min(hoverCard.x + 16, window.innerWidth - 170),
+                top: Math.min(hoverCard.y + 16, window.innerHeight - 260),
+                zIndex: 230001,
+              }}
+            >
+              <ArenaPortraitCard card={hoverCard.card} size="full" showIvLine />
             </div>,
             document.body,
           )

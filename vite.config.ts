@@ -46,6 +46,14 @@ function bundleBudgetPlugin(): Plugin {
 export default defineConfig({
   plugins: [react(), bundleBudgetPlugin()],
   base: "/",
+  server: {
+    proxy: {
+      "/ws": {
+        target: "http://localhost:3000",
+        ws: true,
+      },
+    },
+  },
   optimizeDeps: {
     // Force pre-bundling to dedupe React instances
     include: ["react", "react-dom", "react-router-dom"],

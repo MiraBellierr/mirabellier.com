@@ -6,6 +6,7 @@ import {
 import { Link } from "react-router-dom";
 
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
+import ArenaSubNav from "@/parts/ArenaSubNav";
 import Divider from "@/parts/Divider";
 import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
@@ -191,39 +192,7 @@ const ArenaSkillTree = () => {
                 </p>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 pb-3">
-                <Link to="/arena" className="arena-redraw-button hover:animate-wiggle">
-                  [ Arena Home ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/fight" className="arena-redraw-button hover:animate-wiggle">
-                  [ Fight ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/shop" className="arena-redraw-button hover:animate-wiggle">
-                  [ Shop ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/crafting" className="arena-redraw-button hover:animate-wiggle">
-                  [ Craft ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/inventory" className="arena-redraw-button hover:animate-wiggle">
-                  [ Inventory ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/leaderboard" className="arena-redraw-button hover:animate-wiggle">
-                  [ Leaderboard ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/collection" className="arena-redraw-button hover:animate-wiggle">
-                  [ Collection ]
-                </Link>
-                <span className="font-bold">|</span>
-                <Link to="/arena/market" className="arena-redraw-button hover:animate-wiggle">
-                  [ Market ]
-                </Link>
-              </div>
+              <ArenaSubNav />
 
               {tree ? (
                 <div className="border-y border-sky-500 p-2 text-sm font-bold text-blue-950">
