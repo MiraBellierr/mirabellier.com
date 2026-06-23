@@ -94,7 +94,8 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         to: "/arena",
         icon: NAV_ICON_ARENA,
         isActive: (pathname) =>
-          pathname === "/arena" || pathname.startsWith("/arena/"),
+          pathname === "/arena" || pathname.startsWith("/arena/") ||
+          pathname === "/ar" || pathname.startsWith("/ar/"),
       },
       {
         label: "guestbook",
