@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -373,12 +373,6 @@ const ArenaFight = () => {
     };
   }, [activeFight?.fightId, ws]);
 
-  // Auto-scroll console
-  useEffect(() => {
-    if (!consoleRef.current) return;
-    consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
-  }, [activeFight?.turns.length, activeFight?.cursor]);
-
   // ---- WebSocket event handlers ----
 
   const processFightState = useCallback((state: ArenaActiveFight) => {
@@ -522,6 +516,16 @@ const ArenaFight = () => {
       ? null
       : Math.max(0, Math.ceil((nextAutoFightAt - countdownNow) / 1000));
   const consoleLines: ArenaBattleConsoleEvent[] = activeFight?.battle?.console || [];
+
+  // Auto-scroll console
+  useLayoutEffect(() => {
+    const el = consoleRef.current;
+    if (!el) return;
+    const timer = setTimeout(() => {
+      el.scrollTop = el.scrollHeight;
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [consoleLines.length]);
 
   const hpCurrent = activeFight
     ? activeFight.battle.currentHp
