@@ -1,6 +1,6 @@
 import { API_BASE } from "./config";
 
-type ConnectionState = "connecting" | "connected" | "disconnected";
+export type ConnectionState = "connecting" | "connected" | "disconnected";
 
 type EventCallback = (data: unknown) => void;
 
@@ -13,6 +13,7 @@ export interface WebSocketClient {
   send(data: Record<string, unknown>): void;
   on(type: string, callback: EventCallback): () => void;
   off(type: string, callback: EventCallback): void;
+  onStateChange(callback: (state: ConnectionState) => void): () => void;
   close(): void;
 }
 
@@ -149,6 +150,13 @@ export function createWebSocketClient(): WebSocketClient {
         cbs.delete(callback);
         if (cbs.size === 0) listeners.delete(type);
       }
+    },
+
+    onStateChange(callback: (state: ConnectionState) => void): () => void {
+      stateListeners.add(callback);
+      return () => {
+        stateListeners.delete(callback);
+      };
     },
 
     close() {

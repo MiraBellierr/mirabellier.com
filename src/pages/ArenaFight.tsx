@@ -13,12 +13,14 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useWebSocket } from "@/states/WebSocketProvider";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { usePageSeo } from "@/lib/seo";
+import type { ConnectionState } from "@/lib/websocket";
 import {
   ArenaApiError,
   type ArenaActiveFight,
   type ArenaBattleConsoleEvent,
   type ArenaProfile,
   fetchArenaProfile,
+  fetchFightState,
   verifyArena,
 } from "@/lib/arena-api";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
@@ -127,6 +129,7 @@ const ArenaFight = () => {
   const resumeRetryRef = useRef<number | null>(null);
   const pageVisible = useRef(true);
   const advanceLockRef = useRef(false);
+  const playedTurnIndices = useRef(new Set<number>());
 
   const boostedIv = useMemo(() => {
     if (!profile?.selectedCard?.iv || !profile.effects?.ivBoostCharges || profile.effects.ivBoostCharges <= 0) return null;
@@ -183,17 +186,21 @@ const ArenaFight = () => {
     };
   }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
 
-  // Pause auto-battle when tab loses focus
+  // Pause auto-battle when tab loses focus; resume advance chain on foreground
   useEffect(() => {
     const onVisibility = () => {
+      const wasVisible = pageVisible.current;
       pageVisible.current = document.visibilityState === "visible";
       if (!pageVisible.current) {
         clearAutoTimer();
+      } else if (!wasVisible && activeFight && !activeFight.isFinished && !advanceLockRef.current) {
+        advanceLockRef.current = true;
+        ws.send({ type: "arena:fight:advance" });
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [clearAutoTimer]);
+  }, [clearAutoTimer, ws, activeFight]);
 
   // Page-load verification — verify Turnstile token once
   useEffect(() => {
@@ -285,7 +292,10 @@ const ArenaFight = () => {
 
   const triggerTurnEffects = useCallback((prevCursor: number, fight: ArenaActiveFight) => {
     const turns = fight.turns || [];
+    const seen = playedTurnIndices.current;
     for (let i = prevCursor; i < fight.cursor; i++) {
+      if (seen.has(i)) continue;
+      seen.add(i);
       const turn = turns[i];
       if (!turn) continue;
 
@@ -341,6 +351,7 @@ const ArenaFight = () => {
     setPlayerFallen(false);
     setOpponentFallen(false);
     lastCursor.current = 0;
+    playedTurnIndices.current.clear();
   }, [activeFight?.fightId]);
 
   // Resume fight loop when returning to an in-progress fight
@@ -384,6 +395,29 @@ const ArenaFight = () => {
     }
     return state;
   }, [triggerTurnEffects]);
+
+  // Sync fight state on WebSocket reconnection
+  useEffect(() => {
+    let lastState: ConnectionState = ws.connectionState;
+    const untrack = ws.onStateChange((next: ConnectionState) => {
+      const wasDisconnected = lastState === "disconnected";
+      lastState = next;
+      if (next !== "connected" || !wasDisconnected) return;
+      if (!token || !activeFight || activeFight.isFinished) return;
+
+      fetchFightState(token)
+        .then(({ activeFight: fresh }) => {
+          if (!fresh || fresh.fightId !== activeFight.fightId) return;
+          processFightState(fresh);
+          if (!fresh.isFinished && !advanceLockRef.current) {
+            advanceLockRef.current = true;
+            ws.send({ type: "arena:fight:advance" });
+          }
+        })
+        .catch(() => {});
+    });
+    return untrack;
+  }, [ws, token, activeFight, processFightState]);
 
   useWebSocketEvent("arena:fight:turn", (data) => {
     const state = data as ArenaActiveFight;
@@ -436,8 +470,9 @@ const ArenaFight = () => {
 
     if (err.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
       const retryAfterMs = Math.max(err.retryAfterMs || 250, 250);
-      clearAutoTimer();
-      setNextAutoFightAt(Date.now() + retryAfterMs + 50);
+      if (autoTimerRef.current !== null) {
+        window.clearTimeout(autoTimerRef.current);
+      }
       autoTimerRef.current = window.setTimeout(() => {
         autoTimerRef.current = null;
         setNextAutoFightAt(null);
@@ -461,7 +496,9 @@ const ArenaFight = () => {
     safetyTimerRef.current = window.setTimeout(() => {
       safetyTimerRef.current = null;
       advanceLockRef.current = false;
-      sendAdvance();
+      if (ws.connectionState === "connected") {
+        sendAdvance();
+      }
     }, 10000);
   }, [ws, clearSafetyTimer]);
 
