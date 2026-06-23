@@ -19,14 +19,11 @@ export interface WebSocketClient {
 function resolveWsUrl(): string {
   if (typeof window === "undefined") return "";
 
-  if (import.meta.env.DEV) {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${window.location.host}/ws`;
+  const host = window.location.hostname;
+  if (host.includes("mirabellier.com")) {
+    return `wss://api.mirabellier.com/ws`;
   }
-
-  const apiUrl = new URL(API_BASE);
-  const protocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${apiUrl.host}/v1/ws`;
+  return `ws://localhost:3000/ws`;
 }
 
 async function fetchWsToken(): Promise<string> {
