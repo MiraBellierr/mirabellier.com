@@ -32,6 +32,15 @@ type MarketTab = "market" | "mine";
 
 const RARITIES = ["C", "R", "SR", "SSR", "UR"] as const;
 
+const ELEMENT_COLORS: Record<string, string> = {
+  Fire: "#e74c3c",
+  Water: "#3498db",
+  Earth: "#27ae60",
+  Wind: "#2ecc71",
+  Light: "#f1c40f",
+  Dark: "#8e44ad",
+};
+
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;
   if (error instanceof Error) return error.message;
@@ -417,6 +426,14 @@ const ArenaMarket = () => {
                     <span className="font-bold text-blue-700 truncate max-w-[120px] dark:text-purple-100">
                       {listing.card.title}
                     </span>
+                    {listing.card.element ? (
+                      <span
+                        className="inline-block shrink-0 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white"
+                        style={{ backgroundColor: ELEMENT_COLORS[listing.card.element] || "#888" }}
+                      >
+                        {listing.card.element}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="pointer-events-none absolute left-0 bottom-full z-40 mb-1 hidden whitespace-nowrap rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs shadow-lg group-hover:block dark:border-purple-400/40 dark:bg-slate-800">
                     <p className="font-bold text-blue-700 dark:text-purple-100">{listing.card.rarity} · IV {listing.card.iv.total}</p>
@@ -657,6 +674,14 @@ const ArenaMarket = () => {
                                       <span className="font-bold text-blue-700 truncate max-w-[120px] dark:text-purple-100">
                                         {listing.card.title}
                                       </span>
+                                      {listing.card.element ? (
+                                        <span
+                                          className="inline-block shrink-0 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white"
+                                          style={{ backgroundColor: ELEMENT_COLORS[listing.card.element] || "#888" }}
+                                        >
+                                          {listing.card.element}
+                                        </span>
+                                      ) : null}
                                     </div>
                                     <div className="pointer-events-none absolute left-0 bottom-full z-40 mb-1 hidden whitespace-nowrap rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs shadow-lg group-hover:block dark:border-purple-400/40 dark:bg-slate-800">
                                       <p className="font-bold text-blue-700 dark:text-purple-100">{listing.card.rarity} · IV {listing.card.iv.total}</p>
