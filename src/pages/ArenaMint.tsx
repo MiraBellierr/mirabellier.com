@@ -84,7 +84,6 @@ const ArenaMint = () => {
     if (!data) return [];
     const groups = new Map<number, ArenaCard[]>();
     for (const card of data.cards) {
-      if (card.rainbow) continue;
       const list = groups.get(card.malId);
       if (list) {
         list.push(card);
@@ -129,7 +128,7 @@ const ArenaMint = () => {
       ...a,
       iv,
       rainbow: true,
-      title: a.title + " (rainbow)",
+      title: a.title.replace(/\s*\(rainbow\)\s*$/, "") + " (rainbow)",
     };
   }, [pickedCards]);
 
