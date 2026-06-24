@@ -271,9 +271,9 @@ const Arena = () => {
                           </span>
                         </div>
                         <div className="text-sm">
-                          <span>✦ Luck:</span> <b>{profile.stats.total.luck}</b>{" "}
+                          <span>✦ Effect Hit:</span> <b>{profile.stats.total.effectHit}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.luck > 0 ? `equip +${profile.stats.equipment.luck}, ` : ""}IV +{profile.stats.card.luck})
+                            ({profile.stats.equipment.effectHit > 0 ? `equip +${profile.stats.equipment.effectHit}, ` : ""}IV +{profile.stats.card.effectHit})
                           </span>
                         </div>
                         {(profile.equipmentPct?.dmgPct || profile.equipmentPct?.defendPct) ? (
@@ -294,7 +294,7 @@ const Arena = () => {
                         <div className="border-t border-dotted border-sky-100 dark:border-purple-400/20 my-1" />
                         <div className="text-sm">
                           <span>✦ Crate:</span>{" "}
-                          <b>{(5 + profile.stats.total.luck * 0.35 + (profile.effects.critChanceBoostPct || 0) + (profile.equipmentPct?.critChancePct || 0)).toFixed(1)}%</b>
+                          <b>{(5 + (profile.effects.critChanceBoostPct || 0) + (profile.equipmentPct?.critChancePct || 0)).toFixed(1)}%</b>
                         </div>
                         <div className="text-sm">
                           <span>✦ Cdmg:</span>{" "}

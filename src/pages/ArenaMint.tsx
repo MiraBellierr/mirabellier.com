@@ -113,7 +113,7 @@ const ArenaMint = () => {
       power: base.power,
       guard: base.guard,
       speed: base.speed,
-      luck: base.luck,
+      effectHit: base.effectHit,
       total: base.total,
     };
     return {
@@ -273,7 +273,7 @@ const ArenaMint = () => {
                                     <ArenaPortraitCard
                                       card={card}
                                       level={1}
-                                      size="compact"
+                                      size="full"
                                       showIvLine={true}
                                       interactive
                                     />

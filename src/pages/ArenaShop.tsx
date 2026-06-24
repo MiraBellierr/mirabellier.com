@@ -37,7 +37,7 @@ import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import PackOpeningModal from "@/parts/PackOpeningModal";
 
 function formatCardIv(card: ArenaCard) {
-  return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · L ${card.iv.luck}`;
+  return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · EH ${card.iv.effectHit}`;
 }
 
 function formatOfferCountdown(endsAt: string, nowMs: number) {
@@ -174,7 +174,7 @@ function EquipmentRewardModal({
 
   const MAIN_LABELS: Record<string, string> = { power: "Power", guard: "Guard", critRate: "Crit Rate", critDmg: "Crit DMG" };
   const SUB_LABELS: Record<string, string> = {
-    hp: "HP", power: "P", guard: "G", speed: "S", luck: "L",
+    hp: "HP", power: "P", guard: "G", speed: "S", effectHit: "EH",
     hpPct: "HP%", dmgPct: "DMG%", defendPct: "DEF%",
     crit: "CRIT", critDmg: "CDMG",
   };

@@ -1041,7 +1041,7 @@ const ArenaMarket = () => {
                     <p>
                       <span className="font-bold">IV:</span> {selectedCard.iv.total}{" "}
                       · P {selectedCard.iv.power} · G {selectedCard.iv.guard} · S{" "}
-                      {selectedCard.iv.speed} · L {selectedCard.iv.luck}
+                      {selectedCard.iv.speed} · EH {selectedCard.iv.effectHit}
                     </p>
                     <PriceGuide guide={priceGuide} />
                   </div>

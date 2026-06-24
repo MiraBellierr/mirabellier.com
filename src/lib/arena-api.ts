@@ -16,7 +16,7 @@ export type ArenaStatsBlock = {
   power: number;
   guard: number;
   speed: number;
-  luck: number;
+  effectHit: number;
 };
 
 export type ArenaPctStats = {
@@ -96,7 +96,7 @@ export type ArenaCardIv = {
   power: number;
   guard: number;
   speed: number;
-  luck: number;
+  effectHit: number;
   total: number;
 };
 

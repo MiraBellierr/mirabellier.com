@@ -186,7 +186,7 @@ export function formatStats(stats: ArenaShopItem["stats"] | undefined) {
   if (Number(stats.power || 0) !== 0) entries.push(`P +${Number(stats.power || 0)}`);
   if (Number(stats.guard || 0) !== 0) entries.push(`G +${Number(stats.guard || 0)}`);
   if (Number(stats.speed || 0) !== 0) entries.push(`S +${Number(stats.speed || 0)}`);
-  if (Number(stats.luck || 0) !== 0) entries.push(`L +${Number(stats.luck || 0)}`);
+  if (Number(stats.effectHit || 0) !== 0) entries.push(`EH +${Number(stats.effectHit || 0)}`);
   return entries.join(" | ");
 }
 
@@ -210,13 +210,12 @@ function describePassiveAction(action: ArenaPassiveAction) {
   if (type === "extraStrikePct") {
     return `${toNumber(entry.chancePct)}% chance extra strike (${toNumber(entry.value)}% dmg)`;
   }
-  if (type === "scaleLuckIntoPowerPct") return `Gain power from ${toNumber(entry.value)}% luck`;
   if (type === "cancelCritical") return "Convert first crit taken into normal hit";
+  if (type === "reduceElementEffectivenessPct") return `Reduce enemy super-effective damage by ${toNumber(entry.value)}%`;
   if (type === "scaleBySpeedPct") return `Bonus damage = ${toNumber(entry.value)}% of speed`;
   if (type === "counterDamagePct") {
     return `${toNumber(entry.chancePct)}% chance counter for ${toNumber(entry.value)}% dmg`;
   }
-  if (type === "reduceOpponentLuckPct") return `Reduce opponent luck by ${toNumber(entry.value)}%`;
   return type || "Passive effect";
 }
 

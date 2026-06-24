@@ -43,7 +43,7 @@ const SUB_STAT_LABELS: Record<string, string> = {
   power: "P",
   guard: "G",
   speed: "S",
-  luck: "L",
+  effectHit: "EH",
   hpPct: "HP%",
   dmgPct: "DMG%",
   defendPct: "DEF%",
@@ -401,7 +401,7 @@ const ArenaInventory = () => {
                           return (
                             <li key={item.id} className="py-2">
                               <article className="flex items-start gap-3">
-                                <ArenaItemSprite item={item} className="h-10 w-10" />
+                                <ArenaItemSprite item={item} className="h-16 w-16" />
                                 <div className="min-w-0 flex-1 space-y-1">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <p className="font-bold text-blue-700">{item.name}</p>
