@@ -111,7 +111,7 @@ export default function PackOpeningModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="pack-opening-title"
-        className="w-full h-full flex flex-col gap-6 p-6"
+        className="w-full h-full flex flex-col gap-3 p-2 sm:gap-6 sm:p-6 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center">
@@ -120,7 +120,7 @@ export default function PackOpeningModal({
           </p>
           <h2
             id="pack-opening-title"
-            className="mt-1 text-xl font-bold text-blue-700 dark:text-purple-100"
+            className="mt-1 text-lg sm:text-xl font-bold text-blue-700 dark:text-purple-100"
           >
             {allRevealed ? "All cards revealed!" : `${revealedCount} / ${slots.length} revealed`}
           </h2>
@@ -136,7 +136,7 @@ export default function PackOpeningModal({
                       key={`rev-${index}`}
                       className="pack-opening__card-slot"
                       style={{
-                        left: "calc(50% - 130px)",
+                        left: "calc(50% - var(--pack-offset-x))",
                         top: "50%",
                         zIndex: 20 + slot.revealOrder,
                         transform: "translate(-50%, -50%)",
@@ -234,7 +234,7 @@ export default function PackOpeningModal({
             <button
               type="button"
               onClick={handleSkipAll}
-              className="text-xs font-semibold text-slate-500 underline hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              className="text-xs sm:text-xs font-semibold text-slate-500 underline hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 py-2 sm:py-0"
             >
               skip animation
             </button>
