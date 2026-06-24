@@ -759,8 +759,6 @@ h6 {
   background: #161217;
   backface-visibility: hidden;
   transform: translateZ(0px);
-  border: 2px solid var(--arena-card-badge, #00FFFF);
-  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12);
 }
 
 .arena-portrait-card__image {
