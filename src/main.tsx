@@ -21,11 +21,13 @@ function readChunkReloadGuardFromSession() {
   }
 }
 
-function writeChunkReloadGuardToSession(timestamp: number) {
+function writeChunkReloadGuardToSession(timestamp: number): boolean {
   try {
     sessionStorage.setItem(CHUNK_RELOAD_GUARD, String(timestamp));
+    return true;
   } catch {
     // Safari can deny storage access in some modes; URL guard still applies.
+    return false;
   }
 }
 
@@ -36,7 +38,9 @@ function consumeChunkReloadGuardFromUrl() {
   );
   if (!queryTimestamp) return;
 
-  writeChunkReloadGuardToSession(queryTimestamp);
+  const sessionWriteOk = writeChunkReloadGuardToSession(queryTimestamp);
+  if (!sessionWriteOk) return;
+
   url.searchParams.delete(CHUNK_RELOAD_QUERY);
 
   try {
