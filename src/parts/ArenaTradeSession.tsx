@@ -7,11 +7,14 @@ import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
   offerCardInArenaTrade,
   removeCardFromArenaTrade,
+  offerCoinsInArenaTrade,
+  removeCoinsFromArenaTrade,
   confirmArenaTrade,
   unconfirmArenaTrade,
   cancelArenaTradeSession,
   fetchArenaCollection,
   fetchArenaTradeSession,
+  fetchArenaProfile,
   type ArenaCard,
   type ArenaTradeSession as ArenaTradeSessionType,
 } from "@/lib/arena-api";
@@ -219,7 +222,11 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
   const [showPicker, setShowPicker] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [coinInput, setCoinInput] = useState("");
+  const [coinError, setCoinError] = useState<string | null>(null);
+  const [coinBalance, setCoinBalance] = useState(0);
   const receivedCardRef = useRef<ArenaCard | null>(null);
+  const receivedCoinsRef = useRef(0);
   useWebSocketEvent("arena:trade:session-update", (data) => {
     const sessionData = data as ArenaTradeSessionType | null;
     if (!sessionData) {
@@ -232,6 +239,13 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
       receivedCardRef.current = isAskerCompleted
         ? sessionData.responderCard
         : sessionData.askerCard;
+      receivedCoinsRef.current = isAskerCompleted
+        ? (sessionData.responderCoins ?? 0)
+        : (sessionData.askerCoins ?? 0);
+      // Refresh balance after trade
+      if (token) {
+        fetchArenaProfile(token).then((p) => setCoinBalance(p.coins)).catch(() => {});
+      }
       setMessage("Trade completed!");
     } else if (sessionData.status === "cancelled") {
       setMessage("Trade session cancelled.");
@@ -253,9 +267,24 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
     return () => { cancelled = true; };
   }, [token, sessionId]);
 
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const profile = await fetchArenaProfile(token);
+        if (!cancelled) setCoinBalance(profile.coins);
+      } catch { /* ignore */ }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [token]);
+
   const isAsker = userId === session?.askerId;
   const myCard = isAsker ? session?.askerCard : session?.responderCard;
   const theirCard = isAsker ? session?.responderCard : session?.askerCard;
+  const myCoins = isAsker ? (session?.askerCoins ?? 0) : (session?.responderCoins ?? 0);
+  const theirCoins = isAsker ? (session?.responderCoins ?? 0) : (session?.askerCoins ?? 0);
   const theirUsername = isAsker ? session?.responderUsername : session?.askerUsername;
   const myConfirmed = isAsker ? session?.askerConfirmed : session?.responderConfirmed;
   const theirConfirmed = isAsker ? session?.responderConfirmed : session?.askerConfirmed;
@@ -322,6 +351,45 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
     onClose();
   }, [token, sessionId, onClose]);
 
+  // Sync coinInput from session when coins change externally (WebSocket)
+  useEffect(() => {
+    if (!pending) {
+      setCoinInput(myCoins > 0 ? String(myCoins) : "");
+      setCoinError(null);
+    }
+  }, [myCoins, pending]);
+
+  // Debounced auto-offer coins on input change
+  useEffect(() => {
+    if (!token || !sessionId) return;
+    const trimmed = coinInput.trim();
+    const amount = trimmed ? Math.floor(Number(trimmed) || 0) : 0;
+
+    // Don't re-offer the same amount
+    if (amount === myCoins) return;
+    if (amount <= 0 && myCoins <= 0) return;
+
+    setCoinError(null);
+    const timer = setTimeout(async () => {
+      setPending(true);
+      try {
+        if (amount <= 0) {
+          const data = await removeCoinsFromArenaTrade(token, sessionId);
+          setSession(data);
+        } else {
+          const data = await offerCoinsInArenaTrade(token, sessionId, amount);
+          setSession(data);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to update coins.";
+        setCoinError(msg);
+      }
+      setPending(false);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [coinInput, token, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !showPicker) onClose();
@@ -349,12 +417,19 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
               <p className="text-lg font-bold text-pink-500 dark:text-pink-400">
                 Congratulations!
               </p>
-              <p className="text-sm text-blue-700 dark:text-purple-100">
-                You received a new card!
-              </p>
-              {receivedCardRef.current ? (
-                <ArenaPortraitCard card={receivedCardRef.current} size="full" showIvLine />
-              ) : null}
+              {receivedCardRef.current && (
+                <>
+                  <p className="text-sm text-blue-700 dark:text-purple-100">
+                    You received a new card!
+                  </p>
+                  <ArenaPortraitCard card={receivedCardRef.current} size="full" showIvLine />
+                </>
+              )}
+              {receivedCoinsRef.current > 0 && (
+                <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                  +{receivedCoinsRef.current.toLocaleString()} coins received!
+                </p>
+              )}
               <button
                 type="button"
                 onClick={onClose}
@@ -399,9 +474,14 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
         <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 min-[420px]:gap-6">
           {/* My slot */}
           <div className="flex flex-col items-center space-y-3">
-            <p className="text-sm font-bold text-blue-600 dark:text-purple-200">
-              Your Card
-            </p>
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-sm font-bold text-blue-600 dark:text-purple-200">
+                Your Card
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Balance: {coinBalance.toLocaleString()} coins
+              </p>
+            </div>
             <div className="flex aspect-[10/16] w-[118px] items-center justify-center rounded-xl border-2 border-dashed border-blue-200 p-1 dark:border-purple-400/30">
               {myCard ? (
                 <button
@@ -430,11 +510,35 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
               )}
             </div>
 
-            {myCard && myConfirmed ? (
+            {/* Coin offer section */}
+            <div className="flex flex-col items-center gap-2 w-full">
+              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                Coins
+              </p>
+              <input
+                type="number"
+                min="0"
+                value={coinInput}
+                onChange={(e) => setCoinInput(e.target.value)}
+                disabled={pending || myConfirmed}
+                placeholder="0"
+                className="w-24 rounded-lg border border-blue-200 bg-white px-2 py-1 text-center text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200 disabled:opacity-50"
+              />
+              {myCoins > 0 && (
+                <span className="text-xs text-amber-500 dark:text-amber-400/70">
+                  offering {myCoins.toLocaleString()} coins
+                </span>
+              )}
+              {coinError && (
+                <p className="text-xs text-red-500 dark:text-red-400">{coinError}</p>
+              )}
+            </div>
+
+            {myConfirmed ? (
               <p className="text-xs font-semibold text-green-600 dark:text-green-400">
                 Confirmed
               </p>
-            ) : myCard ? (
+            ) : (
               <button
                 type="button"
                 onClick={() => void handleConfirm()}
@@ -443,7 +547,7 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
               >
                 {pending ? "[ ... ]" : "[ confirm ]"}
               </button>
-            ) : null}
+            )}
           </div>
 
           {/* Their slot */}
@@ -464,6 +568,18 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
                 </p>
               )}
             </div>
+
+            {theirCoins > 0 && (
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  Coins
+                </p>
+                <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                  {theirCoins.toLocaleString()}
+                </span>
+              </div>
+            )}
+
             {theirConfirmed ? (
               <p className="text-xs font-semibold text-green-600 dark:text-green-400">
                 Confirmed

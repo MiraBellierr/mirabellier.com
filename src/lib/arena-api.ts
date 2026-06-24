@@ -968,6 +968,8 @@ export type ArenaTradeSession = {
   responderUsername: string;
   askerCard: ArenaCard | null;
   responderCard: ArenaCard | null;
+  askerCoins: number;
+  responderCoins: number;
   askerConfirmed: boolean;
   responderConfirmed: boolean;
   status: string;
@@ -1209,6 +1211,40 @@ export async function removeCardFromArenaTrade(
 ): Promise<ArenaTradeSession> {
   const response = await fetch(
     joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/remove-card`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeSession;
+}
+
+export async function offerCoinsInArenaTrade(
+  token: string,
+  sessionId: string,
+  amount: number,
+): Promise<ArenaTradeSession> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/offer-coins`),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: makeAuthHeaders(token),
+      body: JSON.stringify({ amount }),
+    },
+  );
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as ArenaTradeSession;
+}
+
+export async function removeCoinsFromArenaTrade(
+  token: string,
+  sessionId: string,
+): Promise<ArenaTradeSession> {
+  const response = await fetch(
+    joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/remove-coins`),
     {
       method: "POST",
       credentials: "include",
