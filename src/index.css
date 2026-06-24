@@ -1130,7 +1130,7 @@ h6 {
 
 .arena-portrait-card[data-ur-texture="rainbow"] .arena-portrait-card__shine {
   display: grid;
-  opacity: max(0.4, var(--card-opacity, 0));
+  opacity: max(1, var(--card-opacity, 0));
   --r1: hsl(0, 60%, 55%);
   --r2: hsl(30, 55%, 58%);
   --r3: hsl(50, 50%, 55%);

@@ -660,6 +660,9 @@ const ArenaShop = () => {
                                 <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
                                   {offer.price.toLocaleString()} coins
                                 </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Owned: {offer.ownedCount}
+                                </p>
                               </div>
                             </article>
                           );

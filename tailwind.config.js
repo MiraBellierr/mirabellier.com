@@ -51,5 +51,5 @@ export default {
   },
   plugins: [typography()],
   // Optimize by purging unused styles more aggressively
-  safelist: [],
+  safelist: ["bg-purple-500", "border-purple-500", "text-purple-500", "border-purple-300", "hover:bg-purple-50"],
 };

@@ -52,6 +52,7 @@ const InteractiveUiChrome = lazy(() => import("./parts/InteractiveUiChrome"));
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
 import { WebSocketProvider } from "./states/WebSocketProvider";
+import { ErrorBoundary } from "./parts/ErrorBoundary";
 
 const HOME_CANONICAL_PATH = "/";
 const HOME_ALIAS_PATHS = ["/home"] as const;
@@ -163,39 +164,41 @@ function App() {
   );
 
   return (
-    <div>
-      <CursorProvider>
-        <AuthProvider>
-          <WebSocketProvider>
-            <Suspense fallback={null}>
-              {showCursorManager ? <CursorManager /> : null}
-            </Suspense>
+    <ErrorBoundary>
+      <div>
+        <CursorProvider>
+          <AuthProvider>
+            <WebSocketProvider>
+              <Suspense fallback={null}>
+                {showCursorManager ? <CursorManager /> : null}
+              </Suspense>
 
-            <Suspense
-              fallback={
-                <div
-                  style={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    contain: "layout style paint",
-                  }}
-                >
-                  Loading...
-                </div>
-              }
-            >
-              {isHomePath ? (
-                routeTree
-              ) : (
-                <InteractiveUiChrome>{routeTree}</InteractiveUiChrome>
-              )}
-            </Suspense>
-          </WebSocketProvider>
-        </AuthProvider>
-      </CursorProvider>
-    </div>
+              <Suspense
+                fallback={
+                  <div
+                    style={{
+                      minHeight: "100vh",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      contain: "layout style paint",
+                    }}
+                  >
+                    Loading...
+                  </div>
+                }
+              >
+                {isHomePath ? (
+                  routeTree
+                ) : (
+                  <InteractiveUiChrome>{routeTree}</InteractiveUiChrome>
+                )}
+              </Suspense>
+            </WebSocketProvider>
+          </AuthProvider>
+        </CursorProvider>
+      </div>
+    </ErrorBoundary>
   );
 }
 
