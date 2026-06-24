@@ -550,6 +550,7 @@ export type ArenaCardShopDailyOffer = {
   price: number;
   sold: boolean;
   canBuy: boolean;
+  ownedCount: number;
 };
 
 export type ArenaCardShopResponse = {
@@ -1525,7 +1526,7 @@ export async function runArenaFight(
 
 export async function fetchArenaCollection(
   token: string,
-  options: { page?: number; perPage?: number; sort?: string; search?: string; element?: string } = {},
+  options: { page?: number; perPage?: number; sort?: string; search?: string; element?: string; duplicates?: boolean } = {},
 ): Promise<ArenaCollectionResponse> {
   const params = new URLSearchParams();
   if (options.page) params.set("page", String(options.page));
@@ -1533,6 +1534,7 @@ export async function fetchArenaCollection(
   if (options.sort) params.set("sort", options.sort);
   if (options.search) params.set("search", options.search);
   if (options.element) params.set("element", options.element);
+  if (options.duplicates) params.set("duplicates", "1");
   const response = await fetch(joinApi(`/arena/collection?${params.toString()}`), {
     credentials: "include",
     headers: shouldSendBearerToken(token)

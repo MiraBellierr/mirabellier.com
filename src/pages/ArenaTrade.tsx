@@ -690,7 +690,7 @@ const ArenaTrade = () => {
               {selectedCard && (
                 <div className="rounded-xl border border-blue-200 bg-white/80 p-3 dark:border-purple-400/40 dark:bg-slate-800/80">
                   <div className="flex items-start gap-3">
-                    <ArenaPortraitCard card={selectedCard} size="compact" showIvLine />
+                    <ArenaPortraitCard card={selectedCard} size="compact" showIvLine interactive auto />
                     <div className="flex-1 space-y-2">
                       <div className="flex gap-2">
                         <select
@@ -786,7 +786,7 @@ const ArenaTrade = () => {
                   onMouseLeave={handleCardMouseLeave}
                   className="flex flex-col items-center gap-2 rounded-xl border border-blue-100 bg-white/60 p-3 dark:border-purple-400/20 dark:bg-slate-800/60"
                 >
-                  <ArenaPortraitCard card={listing.card} size="compact" showIvLine />
+                  <ArenaPortraitCard card={listing.card} size="compact" showIvLine interactive auto />
                   {(listing.wantedRarity || listing.wantedElement) && (
                     <div className="flex flex-wrap justify-center gap-1">
                       {listing.wantedRarity && (
@@ -1149,7 +1149,7 @@ const ArenaTrade = () => {
                       <p className="text-sm font-bold text-blue-700 dark:text-purple-100">
                         Offer this card?
                       </p>
-                      <ArenaPortraitCard card={requestPreviewCard} size="full" showIvLine />
+                      <ArenaPortraitCard card={requestPreviewCard} size="full" showIvLine interactive auto />
                       <div className="flex gap-3">
                         <button
                           type="button"

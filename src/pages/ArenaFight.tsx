@@ -115,7 +115,6 @@ const ArenaFight = () => {
   const [opponentFallen, setOpponentFallen] = useState(false);
   const [autoBattle, setAutoBattle] = useState(false);
   const [nextAutoFightAt, setNextAutoFightAt] = useState<number | null>(null);
-  const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const playerCardRef = useRef<HTMLDivElement | null>(null);
   const opponentCardRef = useRef<HTMLDivElement | null>(null);
   const floaterKey = useRef(0);
@@ -146,6 +145,13 @@ const ArenaFight = () => {
   const startPendingRef = useRef(false);
   const isAutoStartRef = useRef(false);
 
+  const tokenRef = useRef(token);
+  const activeFightRef = useRef(activeFight);
+  const countdownRef = useRef<HTMLSpanElement | null>(null);
+
+  tokenRef.current = token;
+  activeFightRef.current = activeFight;
+
   const TURN_ADVANCE_DELAY_MS = 800;
 
   const clearAdvanceTimer = useCallback(() => {
@@ -172,8 +178,14 @@ const ArenaFight = () => {
 
   useEffect(() => {
     if (nextAutoFightAt === null) return;
-    setCountdownNow(Date.now());
-    const timer = window.setInterval(() => setCountdownNow(Date.now()), 250);
+    const el = countdownRef.current;
+    if (!el) return;
+    const update = () => {
+      const seconds = Math.max(0, Math.ceil((nextAutoFightAt - Date.now()) / 1000));
+      el.textContent = `Next fight in ${seconds}s`;
+    };
+    update();
+    const timer = window.setInterval(update, 250);
     return () => window.clearInterval(timer);
   }, [nextAutoFightAt]);
 
@@ -399,11 +411,13 @@ const ArenaFight = () => {
       const wasDisconnected = lastState === "disconnected";
       lastState = next;
       if (next !== "connected" || !wasDisconnected) return;
-      if (!token || !activeFight || activeFight.isFinished) return;
+      const t = tokenRef.current;
+      const fight = activeFightRef.current;
+      if (!t || !fight || fight.isFinished) return;
 
-      fetchFightState(token)
+      fetchFightState(t)
         .then(({ activeFight: fresh }) => {
-          if (!fresh || fresh.fightId !== activeFight.fightId) return;
+          if (!fresh || fresh.fightId !== fight.fightId) return;
           processFightState(fresh);
           if (!fresh.isFinished && !advanceLockRef.current) {
             advanceLockRef.current = true;
@@ -413,7 +427,7 @@ const ArenaFight = () => {
         .catch(() => {});
     });
     return untrack;
-  }, [ws, token, activeFight, processFightState]);
+  }, [ws, processFightState]);
 
   useWebSocketEvent("arena:fight:turn", (data) => {
     const state = data as ArenaActiveFight;
@@ -435,7 +449,8 @@ const ArenaFight = () => {
       }, TURN_ADVANCE_DELAY_MS);
     } else {
       clearAdvanceTimer();
-      fetchArenaProfile(token!).then(setProfile).catch(() => {});
+      const t = tokenRef.current;
+      if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
     }
   });
 
@@ -450,7 +465,8 @@ const ArenaFight = () => {
     }
 
     processFightState(state);
-    fetchArenaProfile(token!).then(setProfile).catch(() => {});
+    const t = tokenRef.current;
+    if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
   });
 
   useWebSocketEvent("arena:fight:error", (data) => {
@@ -544,10 +560,6 @@ const ArenaFight = () => {
 
   const fightInProgress = activeFight && !activeFight.isFinished;
   const fightFinished = activeFight?.isFinished;
-  const nextAutoFightSeconds =
-    nextAutoFightAt === null
-      ? null
-      : Math.max(0, Math.ceil((nextAutoFightAt - countdownNow) / 1000));
   const consoleLines: ArenaBattleConsoleEvent[] = activeFight?.battle?.console || [];
 
   // Auto-scroll console
@@ -782,12 +794,13 @@ const ArenaFight = () => {
                         />
                         Auto
                       </label>
-                      {autoBattle && nextAutoFightSeconds !== null ? (
+                      {autoBattle && nextAutoFightAt !== null ? (
                         <span
+                          ref={countdownRef}
                           className="ml-3 text-sm font-bold text-blue-600 dark:text-sky-200"
                           aria-live="polite"
                         >
-                          Next fight in {nextAutoFightSeconds}s
+                          Next fight in...s
                         </span>
                       ) : null}
                     </div>

@@ -56,6 +56,7 @@ const ArenaCollection = () => {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<CollectionSort>("recent");
   const [elementFilter, setElementFilter] = useState("");
+  const [duplicatesFilter, setDuplicatesFilter] = useState(false);
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
   const [togglingFavoriteId, setTogglingFavoriteId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -86,7 +87,7 @@ const ArenaCollection = () => {
       setErrorMessage(null);
       try {
         const payload = await fetchArenaCollection(token, {
-          page, perPage: 12, sort, search: query || undefined, element: elementFilter || undefined,
+          page, perPage: 12, sort, search: query || undefined, element: elementFilter || undefined, duplicates: duplicatesFilter,
         });
         if (cancelled) return;
         setCollection(payload);
@@ -102,7 +103,7 @@ const ArenaCollection = () => {
     return () => {
       cancelled = true;
     };
-  }, [token, page, sort, query, elementFilter]);
+  }, [token, page, sort, query, elementFilter, duplicatesFilter]);
 
   const handleSelectCard = async (cardInstanceId: string) => {
     if (!token) return;
@@ -252,6 +253,24 @@ const ArenaCollection = () => {
                         </button>
                       );
                     })}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-500 mr-1">show:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDuplicatesFilter((prev) => !prev);
+                        setPage(1);
+                      }}
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full border transition ${
+                        duplicatesFilter
+                          ? "bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300"
+                          : "text-purple-500 border-purple-300 hover:bg-purple-50"
+                      }`}
+                    >
+                      duplicates only
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
