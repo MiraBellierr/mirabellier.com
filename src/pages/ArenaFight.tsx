@@ -133,13 +133,13 @@ const ArenaFight = () => {
   const boostedIv = useMemo(() => {
     if (!profile?.selectedCard?.iv || !profile.effects?.ivBoostCharges || profile.effects.ivBoostCharges <= 0) return null;
     const base = profile.selectedCard.iv;
-    const iv = { power: base.power, guard: base.guard, speed: base.speed, luck: base.luck, total: base.total };
-    const stats = ["power", "guard", "speed", "luck"] as const;
+    const iv = { power: base.power, guard: base.guard, speed: base.speed, effectHit: base.effectHit, total: base.total };
+    const stats = ["power", "guard", "speed", "effectHit"] as const;
     for (let i = 0; i < 5; i++) {
       const stat = stats[Math.floor(Math.random() * stats.length)];
       iv[stat] = Math.min(iv[stat] + 1, 31);
     }
-    iv.total = iv.power + iv.guard + iv.speed + iv.luck;
+    iv.total = iv.power + iv.guard + iv.speed + iv.effectHit;
     return iv;
   }, [profile?.selectedCard?.iv, profile?.effects?.ivBoostCharges]);
   const startPendingRef = useRef(false);

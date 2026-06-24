@@ -152,7 +152,7 @@ function CardDetailTooltip({ detail }: {
               <span>Power: {iv.power ?? 0}</span>
               <span>Guard: {iv.guard ?? 0}</span>
               <span>Speed: {iv.speed ?? 0}</span>
-              <span>Luck: {iv.luck ?? 0}</span>
+              <span>Effect Hit: {iv.effectHit ?? 0}</span>
             </div>
             <p className="text-slate-400">IV Total: {iv.total ?? 0}</p>
           </>

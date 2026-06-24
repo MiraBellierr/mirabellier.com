@@ -45,7 +45,7 @@ type CollectionSort =
   | "power-desc"
   | "guard-desc"
   | "speed-desc"
-  | "luck-desc";
+  | "effectHit-desc";
 
 const ArenaCollection = () => {
   const auth = useOptionalAuth();
@@ -217,7 +217,7 @@ const ArenaCollection = () => {
                         <option value="power-desc">Power: highest first</option>
                         <option value="guard-desc">Guard: highest first</option>
                         <option value="speed-desc">Speed: highest first</option>
-                        <option value="luck-desc">Luck: highest first</option>
+                        <option value="effectHit-desc">Effect Hit: highest first</option>
                       </select>
                       <input
                         id="collection-search"
@@ -285,7 +285,7 @@ const ArenaCollection = () => {
                           <div className="relative group cursor-pointer" onClick={() => { if (card.cardInstanceId) { void handleToggleFavorite(card.cardInstanceId!, !!card.isFavorite); } }}>
                             <ArenaPortraitCard
                               card={card}
-                              size="compact"
+                              size="full"
                               showIvLine={true}
                               interactive
                             />

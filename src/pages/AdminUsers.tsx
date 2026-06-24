@@ -17,6 +17,8 @@ type UserLookup = {
   hasArenaProfile: boolean;
   coins: number | null;
   level: number | null;
+  dailyDrawsUsed: number | null;
+  lastCardDrawDate: string | null;
 };
 
 function makeAuthHeaders(token: string) {
@@ -56,6 +58,13 @@ const AdminUsers = () => {
   const [cardCount, setCardCount] = useState("1");
   const [addingCards, setAddingCards] = useState(false);
   const [cardResult, setCardResult] = useState<string | null>(null);
+
+  const [resettingDraws, setResettingDraws] = useState(false);
+  const [resetDrawsResult, setResetDrawsResult] = useState<string | null>(null);
+
+  const [debugRandomPack, setDebugRandomPack] = useState(
+    () => localStorage.getItem("debugRandomPack") === "1",
+  );
 
   usePageSeo({
     canonical: "https://mirabellier.com/admin/users",
@@ -132,6 +141,7 @@ const AdminUsers = () => {
     setLookedUp(null);
     setCoinResult(null);
     setCardResult(null);
+    setResetDrawsResult(null);
     try {
       const response = await fetch(
         joinApi(`/admin/users/lookup?username=${encodeURIComponent(username.trim())}`),
@@ -221,6 +231,33 @@ const AdminUsers = () => {
     }
   };
 
+  const handleResetDraws = async () => {
+    if (!token || !lookedUp?.hasArenaProfile) return;
+    setResettingDraws(true);
+    setResetDrawsResult(null);
+    try {
+      const response = await fetch(
+        joinApi(`/admin/users/${lookedUp.id}/reset-draws`),
+        {
+          method: "POST",
+          credentials: "include",
+          headers: makeAuthHeaders(token),
+          cache: "no-store",
+        },
+      );
+      if (!response.ok) throw await readApiError(response);
+      const data = (await response.json()) as { message: string; dailyDrawsUsed: number };
+      setResetDrawsResult(data.message);
+      setLookedUp({ ...lookedUp, dailyDrawsUsed: data.dailyDrawsUsed });
+    } catch (error) {
+      setResetDrawsResult(
+        error instanceof ArenaApiError ? error.message : "Failed to reset draws",
+      );
+    } finally {
+      setResettingDraws(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col font-[sans-serif] text-blue-900 dark:text-purple-200">
       <Header />
@@ -286,7 +323,7 @@ const AdminUsers = () => {
                       <p>
                         Arena:{" "}
                         {lookedUp.hasArenaProfile
-                          ? `Level ${lookedUp.level}, ${(lookedUp.coins ?? 0).toLocaleString()} coins`
+                          ? `Level ${lookedUp.level}, ${(lookedUp.coins ?? 0).toLocaleString()} coins, ${lookedUp.dailyDrawsUsed ?? 0}/10 draws`
                           : "No profile"}
                       </p>
                     </div>
@@ -371,6 +408,30 @@ const AdminUsers = () => {
                             </p>
                           ) : null}
                         </div>
+
+                        <div className="space-y-2 border-t border-blue-200 pt-3 dark:border-slate-700">
+                          <label className="block text-sm font-bold text-blue-700">
+                            Pack draws
+                          </label>
+                          <p className="text-xs text-blue-500">
+                            Used {lookedUp.dailyDrawsUsed ?? 0}/10 draws today. Reset to let them open packs again.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => void handleResetDraws()}
+                            disabled={resettingDraws}
+                            className="arena-redraw-button hover:animate-wiggle shrink-0"
+                          >
+                            {resettingDraws
+                              ? "[ resetting... ]"
+                              : "[ reset daily draws ]"}
+                          </button>
+                          {resetDrawsResult ? (
+                            <p className="text-sm text-green-700 dark:text-green-400">
+                              {resetDrawsResult}
+                            </p>
+                          ) : null}
+                        </div>
                       </>
                     )}
                   </div>
@@ -380,16 +441,31 @@ const AdminUsers = () => {
           </main>
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">
-            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-slate-600 dark:bg-slate-800/80">
-              <div className="space-y-2 text-sm text-blue-600">
-                <h2 className="text-center text-lg font-bold text-blue-700">
-                  admin tools
-                </h2>
-                <p>Look up a user by username, then add coins or cards.</p>
-                <p>Coins are added to their arena balance.</p>
-                <p>Cards are drawn from the arena card pool with random IVs.</p>
+              <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-slate-600 dark:bg-slate-800/80">
+                <div className="space-y-2 text-sm text-blue-600">
+                  <h2 className="text-center text-lg font-bold text-blue-700">
+                    debug
+                  </h2>
+                  <p className="text-xs">Force the random pack offer to always appear in the card shop, regardless of day-of-week restrictions.</p>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={debugRandomPack}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setDebugRandomPack(next);
+                        if (next) {
+                          localStorage.setItem("debugRandomPack", "1");
+                        } else {
+                          localStorage.removeItem("debugRandomPack");
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-xs font-semibold">Force random pack</span>
+                  </label>
+                </div>
               </div>
-            </div>
           </aside>
         </div>
       </div>

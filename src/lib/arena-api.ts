@@ -16,7 +16,7 @@ export type ArenaStatsBlock = {
   power: number;
   guard: number;
   speed: number;
-  luck: number;
+  effectHit: number;
 };
 
 export type ArenaPctStats = {
@@ -96,7 +96,7 @@ export type ArenaCardIv = {
   power: number;
   guard: number;
   speed: number;
-  luck: number;
+  effectHit: number;
   total: number;
 };
 
@@ -117,6 +117,7 @@ export type ArenaCard = {
   isFavorite?: boolean;
   from?: string | null;
   rainbow?: boolean;
+  ownedCount?: number;
 };
 
 export type ArenaProfile = {
@@ -571,7 +572,8 @@ export type ArenaCardShopPurchaseResponse = {
   kind: "daily" | "random";
   purchasedOfferId: string;
   pricePaid: number;
-  card: ArenaCard;
+  card?: ArenaCard;
+  cards?: ArenaCard[];
   profile: ArenaProfile;
   cardShop: ArenaCardShopResponse;
 };
@@ -1502,6 +1504,31 @@ export async function drawArenaCard(
   };
 }
 
+export async function drawArenaPack(
+  token: string,
+  count = 5,
+): Promise<{ cards: ArenaCard[]; profile: ArenaProfile }> {
+  const response = await fetch(joinApi("/arena/draw-pack"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ count }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  const payload = (await response.json()) as {
+    cards: ArenaCard[];
+    profile: ArenaProfile;
+  };
+  return {
+    ...payload,
+    profile: normalizeProfile(payload.profile),
+  };
+}
+
 export async function runArenaFight(
   token: string,
 ): Promise<ArenaFightResponse> {
@@ -1794,8 +1821,10 @@ export async function fetchArenaShop(token: string): Promise<ArenaShopResponse> 
 
 export async function fetchArenaCardShop(
   token: string,
+  forceRandomPack = false,
 ): Promise<ArenaCardShopResponse> {
-  const response = await fetch(joinApi("/arena/shop/cards"), {
+  const url = joinApi(`/arena/shop/cards${forceRandomPack ? "?forceRandomPack=1" : ""}`);
+  const response = await fetch(url, {
     credentials: "include",
     headers: shouldSendBearerToken(token)
       ? { Authorization: `Bearer ${token}` }
@@ -1814,7 +1843,7 @@ export async function buyArenaShopCard(
   token: string,
   purchase:
     | { kind: "daily"; offerId: string }
-    | { kind: "random" },
+    | { kind: "random"; forceRandomPack?: boolean },
 ): Promise<ArenaCardShopPurchaseResponse> {
   const response = await fetch(joinApi("/arena/shop/cards/buy"), {
     method: "POST",

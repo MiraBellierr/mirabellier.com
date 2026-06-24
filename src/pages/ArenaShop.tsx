@@ -34,9 +34,10 @@ import {
 } from "@/lib/arena-shop-ui";
 import { useConfirm } from "@/states/ConfirmContext";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
+import PackOpeningModal from "@/parts/PackOpeningModal";
 
 function formatCardIv(card: ArenaCard) {
-  return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · L ${card.iv.luck}`;
+  return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · EH ${card.iv.effectHit}`;
 }
 
 function formatOfferCountdown(endsAt: string, nowMs: number) {
@@ -173,7 +174,7 @@ function EquipmentRewardModal({
 
   const MAIN_LABELS: Record<string, string> = { power: "Power", guard: "Guard", critRate: "Crit Rate", critDmg: "Crit DMG" };
   const SUB_LABELS: Record<string, string> = {
-    hp: "HP", power: "P", guard: "G", speed: "S", luck: "L",
+    hp: "HP", power: "P", guard: "G", speed: "S", effectHit: "EH",
     hpPct: "HP%", dmgPct: "DMG%", defendPct: "DEF%",
     crit: "CRIT", critDmg: "CDMG",
   };
@@ -257,6 +258,7 @@ const ArenaShop = () => {
   const [cardErrorMessage, setCardErrorMessage] = useState<string | null>(null);
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
+  const [obtainedCards, setObtainedCards] = useState<ArenaCard[] | null>(null);
   const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; pieceId: string; price: number; shopItem: ArenaShopItem } | null>(null);
 
 
@@ -283,7 +285,7 @@ const ArenaShop = () => {
     setCardsLoading(true);
     setCardErrorMessage(null);
     try {
-      setCardShop(await fetchArenaCardShop(token));
+      setCardShop(await fetchArenaCardShop(token, localStorage.getItem("debugRandomPack") === "1"));
     } catch (error) {
       setCardErrorMessage(normalizeArenaError(error));
     } finally {
@@ -463,7 +465,7 @@ const ArenaShop = () => {
   const handleCardBuy = async (
     purchase:
       | { kind: "daily"; offerId: string }
-      | { kind: "random" },
+      | { kind: "random"; forceRandomPack?: boolean },
   ) => {
     if (!token) return;
     const offerId = purchase.kind === "daily" ? purchase.offerId : "random-card";
@@ -495,7 +497,8 @@ const ArenaShop = () => {
             }
           : previous,
       );
-      setObtainedCard(payload.card);
+      setObtainedCard(payload.card ?? null);
+      if (payload.cards) setObtainedCards(payload.cards);
     } catch (error) {
       setCardErrorMessage(normalizeArenaError(error));
     } finally {
@@ -505,6 +508,10 @@ const ArenaShop = () => {
 
   const closeCardModal = useCallback(() => {
     setObtainedCard(null);
+  }, []);
+
+  const closePackModal = useCallback(() => {
+    setObtainedCards(null);
   }, []);
 
   const closeEquipModal = useCallback(() => {
@@ -676,12 +683,15 @@ const ArenaShop = () => {
                           <div className="min-w-0 flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               <p className="font-bold text-blue-700 dark:text-purple-100">
-                                Random Card
+                                Random Pack
                               </p>
                               <button
                                 type="button"
                                 onClick={() =>
-                                  void handleCardBuy({ kind: "random" })
+                                  void handleCardBuy({
+                                    kind: "random",
+                                    forceRandomPack: localStorage.getItem("debugRandomPack") === "1",
+                                  })
                                 }
                                 disabled={
                                   !cardShop.randomOffer.canBuy ||
@@ -695,7 +705,7 @@ const ArenaShop = () => {
                               </button>
                             </div>
                             <p className="text-xs text-slate-700 dark:text-slate-200">
-                              Receive one random character card.
+                              Receive a random pack of 5 character cards.
                             </p>
                             <p className="text-xs text-slate-600 dark:text-slate-300">
                               Leaves in{" "}
@@ -853,7 +863,7 @@ const ArenaShop = () => {
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">shop info</h2>
                 <p>Five character cards spawn daily at midnight UTC.</p>
-                <p>Daily cards can be bought once per account; random cards stay available.</p>
+                <p>Daily cards can be bought once per account; random packs stay available.</p>
                 <p>Buy gear and consumables here. Use the tabs to browse.</p>
                 <p>Craft recipes are in the dedicated crafting page.</p>
                 <p>Equip gear from your inventory to activate passives.</p>
@@ -865,6 +875,9 @@ const ArenaShop = () => {
       <Footer />
       {obtainedCard ? (
         <CardRewardModal card={obtainedCard} onClose={closeCardModal} />
+      ) : null}
+      {obtainedCards ? (
+        <PackOpeningModal cards={obtainedCards} onClose={closePackModal} />
       ) : null}
       {obtainedPiece ? (
         <EquipmentRewardModal

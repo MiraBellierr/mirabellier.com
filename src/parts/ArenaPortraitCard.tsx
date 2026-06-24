@@ -18,7 +18,7 @@ type ArenaPortraitCardProps = {
   size?: ArenaPortraitCardSize;
   showIvLine?: boolean;
   className?: string;
-  boostedIv?: { power: number; guard: number; speed: number; luck: number; total: number } | null;
+  boostedIv?: { power: number; guard: number; speed: number; effectHit: number; total: number } | null;
   interactive?: boolean;
   auto?: boolean;
   popped?: boolean;
@@ -192,12 +192,12 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
                   <span className="text-amber-500">(+{boostedIv.guard - card.iv.guard})</span>
                   {" "}S {card.iv.speed}{" "}
                   <span className="text-amber-500">(+{boostedIv.speed - card.iv.speed})</span>
-                  {" "}L {card.iv.luck}{" "}
-                  <span className="text-amber-500">(+{boostedIv.luck - card.iv.luck})</span>
+                  {" "}EH {card.iv.effectHit}{" "}
+                  <span className="text-amber-500">(+{boostedIv.effectHit - card.iv.effectHit})</span>
                 </>
               )
               : (
-                `IV ${card.iv.total} | P ${card.iv.power} G ${card.iv.guard} S ${card.iv.speed} L ${card.iv.luck}`
+                `IV ${card.iv.total} | P ${card.iv.power} G ${card.iv.guard} S ${card.iv.speed} EH ${card.iv.effectHit}`
               )}
           </p>
         ) : null}

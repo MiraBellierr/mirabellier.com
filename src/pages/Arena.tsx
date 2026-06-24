@@ -9,14 +9,16 @@ import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
+import PackOpeningModal from "@/parts/PackOpeningModal";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useCardPopover } from "@/hooks/use-card-popover";
 import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
+  type ArenaCard,
   type ArenaProfile,
   type ArenaUpdate,
-  drawArenaCard,
+  drawArenaPack,
   fetchArenaProfile,
   fetchArenaUpdates,
 } from "@/lib/arena-api";
@@ -54,11 +56,18 @@ const Arena = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updates, setUpdates] = useState<ArenaUpdate[]>([]);
   const [expandedUpdates, setExpandedUpdates] = useState<Set<string>>(new Set());
+  const [drawnCards, setDrawnCards] = useState<ArenaCard[] | null>(null);
   const showingDrawMaintenance = isMaintenanceMessage(errorMessage);
   const xpBlocksFilled = profile
     ? Math.min(10, Math.max(0, Math.round(Number(profile.xpProgress || 0) * 10)))
     : 0;
   const xpBlocks = `${"▣".repeat(xpBlocksFilled)}${"☐".repeat(10 - xpBlocksFilled)}`;
+  const packSize = 5;
+  const packsRemaining = profile
+    ? Math.floor(profile.dailyDrawsRemaining / packSize)
+    : 0;
+  const maxPacks = Math.floor((profile?.dailyDrawLimit ?? 10) / packSize);
+  const drawsEnough = packsRemaining > 0;
   usePageSeo({
     canonical: "https://mirabellier.com/arena",
     structuredDataId: "arena-home-structured-data",
@@ -116,13 +125,14 @@ const Arena = () => {
     };
   }, [token]);
 
-  const handleDrawCard = async () => {
+  const handleDrawPack = async () => {
     if (!token) return;
     setDrawing(true);
     setErrorMessage(null);
     try {
-      const payload = await drawArenaCard(token);
+      const payload = await drawArenaPack(token, 5);
       setProfile(payload.profile);
+      setDrawnCards(payload.cards);
     } catch (error) {
       const msg = normalizeArenaError(error);
       if (error instanceof ArenaApiError && error.nextDrawAt) {
@@ -261,9 +271,9 @@ const Arena = () => {
                           </span>
                         </div>
                         <div className="text-sm">
-                          <span>✦ Luck:</span> <b>{profile.stats.total.luck}</b>{" "}
+                          <span>✦ Effect Hit:</span> <b>{profile.stats.total.effectHit}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.luck > 0 ? `equip +${profile.stats.equipment.luck}, ` : ""}IV +{profile.stats.card.luck})
+                            ({profile.stats.equipment.effectHit > 0 ? `equip +${profile.stats.equipment.effectHit}, ` : ""}IV +{profile.stats.card.effectHit})
                           </span>
                         </div>
                         {(profile.equipmentPct?.dmgPct || profile.equipmentPct?.defendPct) ? (
@@ -284,7 +294,7 @@ const Arena = () => {
                         <div className="border-t border-dotted border-sky-100 dark:border-purple-400/20 my-1" />
                         <div className="text-sm">
                           <span>✦ Crate:</span>{" "}
-                          <b>{(5 + profile.stats.total.luck * 0.35 + (profile.effects.critChanceBoostPct || 0) + (profile.equipmentPct?.critChancePct || 0)).toFixed(1)}%</b>
+                          <b>{(5 + (profile.effects.critChanceBoostPct || 0) + (profile.equipmentPct?.critChancePct || 0)).toFixed(1)}%</b>
                         </div>
                         <div className="text-sm">
                           <span>✦ Cdmg:</span>{" "}
@@ -336,11 +346,11 @@ const Arena = () => {
 
                         <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-2 text-sm font-semibold text-blue-950 dark:text-purple-200">
                           <span className="mr-1 items-center justify-center text-md">
-                            Draws left today:
+                            Packs left today:
                           </span>
                           {" "}
                           <span className="font-black text-blue-600">
-                            {profile.dailyDrawsRemaining}/{profile.dailyDrawLimit} draws
+                            {packsRemaining}/{maxPacks} packs
                           </span>
                         </div>
                       </div>
@@ -353,21 +363,25 @@ const Arena = () => {
                           {!showingDrawMaintenance ? (
                             <button
                               type="button"
-                              onClick={() => void handleDrawCard()}
+                              onClick={() => void handleDrawPack()}
                               disabled={drawing || !profile.canDrawCard}
                               className="arena-redraw-button hover:animate-wiggle"
                             >
                               {drawing
-                                ? "[ Drawing... ]"
+                                ? "[ Opening pack... ]"
                                 : profile.selectedCard
-                                  ? "[ Redraw Cards ]"
-                                  : "[ Draw Cards ]"}
+                                  ? "[ Open Pack ]"
+                                  : "[ Open Pack ]"}
                             </button>
                           ) : null}
                         </div>
                         {!showingDrawMaintenance && !profile.canDrawCard ? (
                           <p className="text-sm font-semibold text-amber-700">
-                            Daily draw limit reached. Next draw: {formatTime(profile.nextCardDrawAt)}
+                            Daily pack limit reached. Next pack: {formatTime(profile.nextCardDrawAt)}
+                          </p>
+                        ) : !showingDrawMaintenance && profile.canDrawCard && !drawsEnough ? (
+                          <p className="text-xs font-medium text-sky-600 dark:text-purple-300">
+                            Only {profile.dailyDrawsRemaining} draw{profile.dailyDrawsRemaining === 1 ? "" : "s"} left — you'll get a partial pack.
                           </p>
                         ) : null}
                       </div>
@@ -461,6 +475,12 @@ const Arena = () => {
         </div>
       </div>
       <Footer />
+      {drawnCards && (
+        <PackOpeningModal
+          cards={drawnCards}
+          onClose={() => setDrawnCards(null)}
+        />
+      )}
       {popped && createPortal(
         <div
           className="fixed inset-0 z-[9998]"
