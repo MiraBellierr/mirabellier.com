@@ -247,9 +247,14 @@ const ArenaTrade = () => {
 
   // Card filter for create-listing picker
   const cardSuggestions = cardSearch.trim()
-    ? collection.filter((c: ArenaCard) =>
-        c.title.toLowerCase().includes(cardSearch.toLowerCase()),
-      )
+    ? collection.filter((c: ArenaCard) => {
+        const q = cardSearch.toLowerCase();
+        return (
+          c.title.toLowerCase().includes(q) ||
+          (c.from && c.from.toLowerCase().includes(q)) ||
+          (c.element && c.element.toLowerCase().includes(q))
+        );
+      })
     : [];
 
   // Close card dropdown on outside click
