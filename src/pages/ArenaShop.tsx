@@ -33,6 +33,7 @@ import {
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
 import { useConfirm } from "@/states/ConfirmContext";
+import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 
 function formatCardIv(card: ArenaCard) {
   return `P ${card.iv.power} · G ${card.iv.guard} · S ${card.iv.speed} · L ${card.iv.luck}`;
@@ -107,11 +108,9 @@ function CardRewardModal({
               {card.title}
             </h2>
           </div>
-          <img
-            src={card.imageUrl}
-            alt={card.title}
-            className="mx-auto h-56 w-40 rounded-xl border-2 border-sky-200 object-cover shadow-lg dark:border-purple-400/50"
-          />
+          <div className="flex justify-center">
+            <ArenaPortraitCard card={card} interactive />
+          </div>
           <div className="space-y-1 text-sm text-blue-700 dark:text-purple-100">
             <p className="font-black">Rarity: {card.rarity}</p>
             <p>IV {card.iv.total} · {formatCardIv(card)}</p>
@@ -259,6 +258,8 @@ const ArenaShop = () => {
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
   const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; pieceId: string; price: number; shopItem: ArenaShopItem } | null>(null);
+
+
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/shop",
@@ -565,7 +566,7 @@ const ArenaShop = () => {
               ) : loading && !shop ? (
                 <p className="text-blue-500">Loading shop...</p>
               ) : shop ? (
-                <div className="space-y-4 ">
+                <div className="space-y-4">
                   <div className="arena-draw-count-rowpt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
                     <span className="mr-1 items-center justify-center text-md">Coins:</span>{" "}
                     <span className="font-black text-blue-600 dark:text-purple-300">{shop.profile.coins} 🪙</span>
@@ -621,12 +622,14 @@ const ArenaShop = () => {
                               key={offer.offerId}
                               className="flex gap-3 rounded-xl p-3"
                             >
-                              <img
-                                src={offer.card.imageUrl}
-                                alt={offer.card.title}
-                                className="h-28 w-20 shrink-0 rounded-lg border border-sky-200 object-cover shadow-sm dark:border-purple-400/40"
-                                loading="lazy"
-                              />
+                              <div className="shrink-0">
+                                <ArenaPortraitCard
+                                  card={offer.card}
+                                  size="compact"
+                                  showIvLine={true}
+                                  interactive
+                                />
+                              </div>
                               <div className="min-w-0 flex-1 space-y-1">
                                 <div className="flex items-center gap-2">
                                   <p className="font-bold text-blue-700 dark:text-purple-100">
@@ -654,12 +657,6 @@ const ArenaShop = () => {
                                         : "[ buy ]"}
                                   </button>
                                 </div>
-                                <p className="text-xs text-slate-700 dark:text-slate-200">
-                                  Rarity: {offer.card.rarity} · IV {offer.card.iv.total}
-                                </p>
-                                <p className="text-xs text-slate-600 dark:text-slate-300">
-                                  {formatCardIv(offer.card)}
-                                </p>
                                 <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
                                   {offer.price.toLocaleString()} coins
                                 </p>
