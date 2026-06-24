@@ -6,6 +6,9 @@ import "./index.css";
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
 const CHUNK_RELOAD_QUERY = "__chunk_reload";
 const CHUNK_RELOAD_COOLDOWN_MS = 90_000;
+const CHUNK_FAILURE_KEY = "mirabellier-chunk-failures";
+const CHUNK_FAILURE_WINDOW_MS = 30_000;
+const CHUNK_FAILURE_THRESHOLD = 3;
 
 function parsePositiveInteger(value: string | null) {
   if (!value) return 0;
@@ -54,6 +57,31 @@ function consumeChunkReloadGuardFromUrl() {
   }
 }
 
+function readChunkFailureTimestamps(): number[] {
+  try {
+    const raw = sessionStorage.getItem(CHUNK_FAILURE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0);
+  } catch {
+    return [];
+  }
+}
+
+function recordChunkFailure(): number {
+  const now = Date.now();
+  let timestamps = readChunkFailureTimestamps();
+  timestamps = timestamps.filter((t) => now - t < CHUNK_FAILURE_WINDOW_MS);
+  timestamps.push(now);
+  try {
+    sessionStorage.setItem(CHUNK_FAILURE_KEY, JSON.stringify(timestamps));
+  } catch {
+    // Ignore storage failures.
+  }
+  return timestamps.length;
+}
+
 function readLastChunkReloadTimestamp() {
   const sessionTimestamp = readChunkReloadGuardFromSession();
   const urlTimestamp = parsePositiveInteger(
@@ -93,16 +121,28 @@ function preconnectOrigin(url: string) {
   }
 }
 
-function reloadForUpdatedBuild() {
+function shouldReload(): boolean {
   const now = Date.now();
   const lastReloadTimestamp = readLastChunkReloadTimestamp();
   if (
     lastReloadTimestamp > 0 &&
     now - lastReloadTimestamp < CHUNK_RELOAD_COOLDOWN_MS
   ) {
-    return;
+    return false;
   }
 
+  const failures = recordChunkFailure();
+  if (failures < CHUNK_FAILURE_THRESHOLD) {
+    return false;
+  }
+
+  return true;
+}
+
+function reloadForUpdatedBuild() {
+  if (!shouldReload()) return;
+
+  const now = Date.now();
   writeChunkReloadGuardToSession(now);
   const nextUrl = new URL(window.location.href);
   nextUrl.searchParams.set(CHUNK_RELOAD_QUERY, String(now));

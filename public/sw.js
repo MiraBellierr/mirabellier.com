@@ -19,7 +19,14 @@ function isCacheableStaticChunk(request) {
 }
 
 self.addEventListener("install", () => {
-  self.skipWaiting();
+  // Don't skip waiting automatically — keep existing pages stable.
+  // New tabs will pick up the updated service worker on next navigation.
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {

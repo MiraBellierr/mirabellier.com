@@ -1584,6 +1584,30 @@ export async function toggleArenaCollectionCardFavorite(
   return (await response.json()) as { cardInstanceId: string; isFavorite: boolean };
 }
 
+export type ArenaMintDuplicateGroup = {
+  malId: number;
+  cards: ArenaCard[];
+  total: number;
+};
+
+export async function fetchMintDuplicates(
+  token: string,
+): Promise<ArenaMintDuplicateGroup[]> {
+  const response = await fetch(joinApi("/arena/mint/duplicates"), {
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaMintDuplicateGroup[];
+}
+
 export type ArenaMintResponse = {
   card: ArenaCard;
   profile: ArenaProfile;

@@ -13,8 +13,8 @@ import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
   type ArenaCard,
-  type ArenaCollectionResponse,
-  fetchArenaCollection,
+  type ArenaMintDuplicateGroup,
+  fetchMintDuplicates,
   mintRainbowCard,
 } from "@/lib/arena-api";
 
@@ -43,7 +43,7 @@ const ArenaMint = () => {
   const token = auth?.token || null;
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<ArenaCollectionResponse | null>(null);
+  const [mintGroups, setMintGroups] = useState<ArenaMintDuplicateGroup[]>([]);
   const [step, setStep] = useState<Step>("pick");
   const [picked, setPicked] = useState<string[]>([]);
   const [mintError, setMintError] = useState<string | null>(null);
@@ -53,17 +53,17 @@ const ArenaMint = () => {
   useEffect(() => {
     let cancelled = false;
     if (!token) {
-      setData(null);
+      setMintGroups([]);
       return () => { cancelled = true; };
     }
 
-    const loadCollection = async () => {
+    const loadDuplicates = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetchArenaCollection(token, { perPage: 200, sort: "recent" });
+        const groups = await fetchMintDuplicates(token);
         if (cancelled) return;
-        setData(res);
+        setMintGroups(groups);
         setPicked([]);
         setStep("pick");
         setMintedCard(null);
@@ -76,25 +76,17 @@ const ArenaMint = () => {
       }
     };
 
-    void loadCollection();
+    void loadDuplicates();
     return () => { cancelled = true; };
   }, [token]);
 
   const mintable = useMemo(() => {
-    if (!data) return [];
-    const groups = new Map<number, ArenaCard[]>();
-    for (const card of data.cards) {
-      const list = groups.get(card.malId);
-      if (list) {
-        list.push(card);
-      } else {
-        groups.set(card.malId, [card]);
-      }
-    }
-    return Array.from(groups.entries())
-      .filter(([, cards]) => cards.length >= 2)
-      .map(([malId, cards]) => ({ malId, cards: cards.slice(0, 5), total: cards.length }));
-  }, [data]);
+    return mintGroups.map(({ malId, cards, total }) => ({
+      malId,
+      cards: cards.slice(0, 5),
+      total,
+    }));
+  }, [mintGroups]);
 
   const togglePick = (instanceId: string) => {
     setPicked((prev) => {
@@ -107,11 +99,11 @@ const ArenaMint = () => {
   };
 
   const pickedCards = useMemo(() => {
-    if (!data) return [];
+    const allCards = mintGroups.flatMap((g) => g.cards);
     return picked
-      .map((id) => data.cards.find((c) => c.cardInstanceId === id))
+      .map((id) => allCards.find((c) => c.cardInstanceId === id))
       .filter((c): c is ArenaCard => !!c);
-  }, [data, picked]);
+  }, [mintGroups, picked]);
 
   const previewCard = useMemo((): ArenaCard | null => {
     if (pickedCards.length !== 2) return null;
@@ -142,8 +134,8 @@ const ArenaMint = () => {
       setMintedCard(res.card);
       setStep("pick");
       setPicked([]);
-      const updated = await fetchArenaCollection(token, { perPage: 200, sort: "recent" });
-      setData(updated);
+      const updated = await fetchMintDuplicates(token);
+      setMintGroups(updated);
     } catch (err) {
       setMintError(normalizeArenaError(err));
     } finally {
@@ -181,9 +173,9 @@ const ArenaMint = () => {
                     go to login
                   </Link>
                 </div>
-              ) : loading && !data ? (
+              ) : loading ? (
                 <p className="text-blue-500">Loading collection...</p>
-              ) : data ? (
+              ) : (
                 <>
                   {error ? <ArenaErrorNotice message={error} /> : null}
                   {mintError ? <ArenaErrorNotice message={mintError} /> : null}
@@ -204,7 +196,7 @@ const ArenaMint = () => {
                       </div>
                     </div>
                   ) : !mintable.length ? (
-                    null
+                    <p className="text-blue-500">No duplicate cards found. Draw more cards to collect duplicates for minting!</p>
                   ) : step === "preview" && previewCard ? (
                     <div className="space-y-4">
                       <h3 className="text-lg font-black text-blue-900">Preview Rainbow Card</h3>
@@ -315,7 +307,7 @@ const ArenaMint = () => {
                     </div>
                   )}
                 </>
-              ) : null}
+              )}
             </section>
             <Divider />
           </main>

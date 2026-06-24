@@ -186,21 +186,17 @@ const ArenaFight = () => {
     };
   }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
 
-  // Pause auto-battle when tab loses focus; resume advance chain on foreground
+  // Pause auto-battle when tab loses focus; reconnect handler resumes on foreground
   useEffect(() => {
     const onVisibility = () => {
-      const wasVisible = pageVisible.current;
       pageVisible.current = document.visibilityState === "visible";
       if (!pageVisible.current) {
         clearAutoTimer();
-      } else if (!wasVisible && activeFight && !activeFight.isFinished && !advanceLockRef.current) {
-        advanceLockRef.current = true;
-        ws.send({ type: "arena:fight:advance" });
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [clearAutoTimer, ws, activeFight]);
+  }, [clearAutoTimer]);
 
   // Page-load verification — verify Turnstile token once
   useEffect(() => {
