@@ -3,12 +3,85 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { API_BASE } from "./lib/config";
 import "./index.css";
+
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+function isLocalDev(): boolean {
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+}
+
+((): void => {
+  const navigation = performance.getEntriesByType(
+    "navigation",
+  )[0] as PerformanceNavigationTiming | undefined;
+
+  const bootCount =
+    Number(
+      ((): string => {
+        try {
+          return sessionStorage.getItem("mirabellier-boot-count") || "0";
+        } catch {
+          return "0";
+        }
+      })(),
+    ) + 1;
+
+  try {
+    sessionStorage.setItem("mirabellier-boot-count", String(bootCount));
+  } catch {
+    // sessionStorage may be unavailable
+  }
+
+  console.log("[app boot]", {
+    time: new Date().toISOString(),
+    navigationType: navigation?.type ?? "unknown",
+    bootCount,
+    isIOS: isIOS(),
+    isLocalDev: isLocalDev(),
+    url: window.location.href,
+  });
+
+  window.addEventListener("pageshow", (event) => {
+    console.log("[pageshow]", {
+      persisted: event.persisted,
+      time: new Date().toISOString(),
+    });
+  });
+
+  window.addEventListener("pagehide", (event) => {
+    console.log("[pagehide]", {
+      persisted: event.persisted,
+      time: new Date().toISOString(),
+    });
+  });
+
+  window.addEventListener("error", (event) => {
+    console.error("[window error]", event.error || event.message);
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    console.error("[unhandled rejection]", event.reason);
+  });
+})();
+
 const CHUNK_RELOAD_GUARD = "mirabellier-chunk-reload";
 const CHUNK_RELOAD_QUERY = "__chunk_reload";
 const CHUNK_RELOAD_COOLDOWN_MS = 90_000;
 const CHUNK_FAILURE_KEY = "mirabellier-chunk-failures";
 const CHUNK_FAILURE_WINDOW_MS = 30_000;
 const CHUNK_FAILURE_THRESHOLD = 3;
+
+const SKIP_CHUNK_RELOAD = isIOS();
+
+if (SKIP_CHUNK_RELOAD) {
+  console.log("[chunk guard] skipping chunk reload guard on iOS");
+}
 
 function parsePositiveInteger(value: string | null) {
   if (!value) return 0;
@@ -151,33 +224,39 @@ function reloadForUpdatedBuild() {
 
 consumeChunkReloadGuardFromUrl();
 
-window.addEventListener("vite:preloadError", (event) => {
-  event.preventDefault();
-  reloadForUpdatedBuild();
-});
-
-window.addEventListener("unhandledrejection", (event) => {
-  const reason =
-    typeof event.reason === "string"
-      ? event.reason
-      : event.reason instanceof Error
-        ? event.reason.message
-        : "";
-
-  if (
-    reason.includes("Failed to fetch dynamically imported module") ||
-    reason.includes("Importing a module script failed") ||
-    reason.includes("ChunkLoadError")
-  ) {
+if (!SKIP_CHUNK_RELOAD) {
+  window.addEventListener("vite:preloadError", (event) => {
     event.preventDefault();
     reloadForUpdatedBuild();
-  }
-});
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason =
+      typeof event.reason === "string"
+        ? event.reason
+        : event.reason instanceof Error
+          ? event.reason.message
+          : "";
+
+    if (
+      reason.includes("Failed to fetch dynamically imported module") ||
+      reason.includes("Importing a module script failed") ||
+      reason.includes("ChunkLoadError")
+    ) {
+      event.preventDefault();
+      reloadForUpdatedBuild();
+    }
+  });
+} else {
+  window.addEventListener("vite:preloadError", (event) => {
+    console.warn("[chunk guard] vite:preloadError on iOS — NOT reloading", event);
+  });
+}
 
 const initializeNonCriticalBoot = () => {
   preconnectOrigin(API_BASE);
 
-  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  if (import.meta.env.PROD && "serviceWorker" in navigator && !isIOS()) {
     void navigator.serviceWorker.register("/sw.js").catch(() => {
       // Ignore registration failures and keep loading the app.
     });

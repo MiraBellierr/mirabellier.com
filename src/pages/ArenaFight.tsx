@@ -206,9 +206,19 @@ const ArenaFight = () => {
         clearAutoTimer();
       }
     };
+    const onPageHide = () => {
+      clearAutoTimer();
+      clearAdvanceTimer();
+      clearSafetyTimer();
+      advanceLockRef.current = false;
+    };
     document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [clearAutoTimer]);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
 
   // Page-load verification — verify Turnstile token once
   useEffect(() => {
