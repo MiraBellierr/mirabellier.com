@@ -220,7 +220,7 @@ const ArenaMint = () => {
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-xs font-bold text-green-600">Result</span>
                           <ArenaPortraitCard card={previewCard} level={1} interactive showIvLine />
-                          <span className="text-xs text-amber-500">+3 random IV bonus</span>
+                          <span className="text-xs text-amber-500">+5 random IV bonus</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-center gap-3">
