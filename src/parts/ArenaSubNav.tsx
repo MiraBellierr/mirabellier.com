@@ -12,6 +12,7 @@ const SLUGS = [
   { slug: "/leaderboard", label: "Leaderboard" },
   { slug: "/collection", label: "Collection" },
   { slug: "/market", label: "Market" },
+  { slug: "/mint", label: "Mint" },
   { slug: "/trade", label: "Trade" },
   { slug: "/skill-tree", label: "Skill Tree" },
   { slug: "/inbox", label: "Inbox" },

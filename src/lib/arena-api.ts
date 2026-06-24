@@ -116,6 +116,7 @@ export type ArenaCard = {
   element?: string | null;
   isFavorite?: boolean;
   from?: string | null;
+  rainbow?: boolean;
 };
 
 export type ArenaProfile = {
@@ -1581,6 +1582,30 @@ export async function toggleArenaCollectionCardFavorite(
   }
 
   return (await response.json()) as { cardInstanceId: string; isFavorite: boolean };
+}
+
+export type ArenaMintResponse = {
+  card: ArenaCard;
+  profile: ArenaProfile;
+};
+
+export async function mintRainbowCard(
+  token: string,
+  cardInstanceId1: string,
+  cardInstanceId2: string,
+): Promise<ArenaMintResponse> {
+  const response = await fetch(joinApi("/arena/mint"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ cardInstanceId1, cardInstanceId2 }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaMintResponse;
 }
 
 export async function fetchArenaMarketListings(

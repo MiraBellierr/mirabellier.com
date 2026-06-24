@@ -20,6 +20,7 @@ type ArenaPortraitCardProps = {
   className?: string;
   boostedIv?: { power: number; guard: number; speed: number; luck: number; total: number } | null;
   interactive?: boolean;
+  auto?: boolean;
   popped?: boolean;
   popoverStyle?: CSSProperties;
   spinClass?: string;
@@ -120,6 +121,7 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
   className = "",
   boostedIv,
   interactive = false,
+  auto = false,
   popped = false,
   popoverStyle,
   spinClass,
@@ -129,7 +131,8 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
   const element = normalizeElement(card.element);
   const levelLabel = normalizeLevel(level);
   const stars = "\u2605".repeat(visual.stars);
-  const { tiltStyle, onPointerMove, onPointerLeave } = useHoloTilt();
+  const urTexture = card.rainbow ? "rainbow" : null;
+  const { tiltStyle, onPointerMove, onPointerLeave } = useHoloTilt({ auto });
 
   const rootStyle: CSSProperties = {
     "--arena-card-frame": visual.frame,
@@ -224,6 +227,8 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
   return (
     <article
       ref={ref}
+      data-rarity={visual.key}
+      {...(urTexture ? { "data-ur-texture": urTexture } : {})}
       className={`arena-portrait-card arena-portrait-card--${size}${interactive ? " arena-portrait-card--interactive" : ""}${popped ? " arena-portrait-card--popped" : ""} ${className}`.trim()}
       style={rootStyle}
       title={card.title}

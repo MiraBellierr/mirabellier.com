@@ -898,6 +898,7 @@ h6 {
   -webkit-tap-highlight-color: transparent;
   outline: 1px solid transparent;
   pointer-events: auto;
+  transition: transform 100ms cubic-bezier(0.25, 0.1, 0.1, 1);
 }
 
 .arena-portrait-card__rotator > * {
@@ -1057,6 +1058,229 @@ h6 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ===== UR TEXTURE BASE ===== */
+
+.arena-portrait-card[data-rarity="UR"] .arena-portrait-card__shine {
+  display: grid;
+}
+
+.arena-portrait-card[data-rarity="UR"] .arena-portrait-card__shine::before,
+.arena-portrait-card[data-rarity="UR"] .arena-portrait-card__shine::after {
+  content: "";
+  grid-area: 1/1;
+  border-radius: 12px;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ===== UR TEXTURE: PRISMATIC GOLD ===== */
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="prismatic-gold"] .arena-portrait-card__shine {
+  background-image:
+    conic-gradient(
+      from calc(var(--pointer-from-left, 0.5) * 360deg) at 50% 60%,
+      hsl(45, 100%, 45%),
+      hsl(35, 95%, 40%),
+      hsl(50, 85%, 50%),
+      hsl(40, 90%, 42%),
+      hsl(45, 100%, 45%)
+    ),
+    radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(50, 100%, 80%, 0.25) 0%, hsla(40, 80%, 40%, 0.1) 50%, hsla(30, 50%, 15%, 0.08) 100%);
+  background-size: 250% 250%, 200% 200%;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%) * -0.3) calc(50% + (var(--background-y, 50%) - 50%) * -0.3), center center;
+  background-blend-mode: overlay, normal;
+  filter: brightness(calc(var(--pointer-from-center, 0) * 0.25 + 0.5)) contrast(2.2) saturate(1.3);
+  mix-blend-mode: color-dodge;
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="prismatic-gold"] .arena-portrait-card__shine::before {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 215, 0, 0.12) 0px, rgba(255, 215, 0, 0.12) 1px, transparent 1px, transparent 5px, rgba(255, 255, 255, 0.1) 5px, rgba(255, 255, 255, 0.1) 6px, transparent 6px, transparent 10px),
+    repeating-linear-gradient(-35deg, rgba(255, 200, 0, 0.1) 0px, rgba(255, 200, 0, 0.1) 1px, transparent 1px, transparent 4px);
+  background-size: 50px 50px, 35px 35px;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%)) calc(50% + (var(--background-y, 50%) - 50%)), calc(50% - (var(--background-x, 50%) - 50%)) calc(50% - (var(--background-y, 50%) - 50%));
+  background-blend-mode: overlay;
+  mix-blend-mode: soft-light;
+  filter: brightness(1.15) contrast(1.3);
+  opacity: calc(var(--pointer-from-center, 0) * 0.5 + 0.25);
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="prismatic-gold"] .arena-portrait-card__shine::after {
+  background-image: repeating-linear-gradient(0deg, hsla(50, 100%, 70%, 0.15) 0%, hsla(35, 100%, 55%, 0.15) 25%, hsla(45, 100%, 65%, 0.15) 50%, hsla(30, 100%, 50%, 0.15) 75%, hsla(50, 100%, 70%, 0.15) 100%);
+  background-size: 100% 350%;
+  background-position: 0% calc(100% - var(--background-y, 50%));
+  mix-blend-mode: overlay;
+  filter: brightness(1.2) saturate(0.7);
+  opacity: 0.65;
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="prismatic-gold"] .arena-portrait-card__glare {
+  background-image: radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(50, 80%, 90%, 0.5) 0%, hsla(45, 70%, 60%, 0.25) 30%, hsla(40, 40%, 25%, 0.12) 70%, hsla(35, 30%, 12%, 0.2) 100%);
+  mix-blend-mode: hard-light;
+  filter: brightness(1.15) contrast(1.15);
+  opacity: calc(var(--card-opacity, 0) * 0.85);
+}
+
+/* ===== RAINBOW TEXTURE (minted cards) ===== */
+
+.arena-portrait-card[data-ur-texture="rainbow"] .arena-portrait-card__shine {
+  display: grid;
+  opacity: max(0.4, var(--card-opacity, 0));
+  --r1: hsl(0, 60%, 55%);
+  --r2: hsl(30, 55%, 58%);
+  --r3: hsl(50, 50%, 55%);
+  --r4: hsl(120, 40%, 52%);
+  --r5: hsl(180, 45%, 55%);
+  --r6: hsl(220, 55%, 58%);
+  --r7: hsl(270, 50%, 56%);
+  background-image:
+    linear-gradient(-30deg,
+      var(--r1), var(--r2), var(--r3), var(--r4), var(--r5), var(--r6), var(--r7),
+      var(--r1), var(--r2), var(--r3), var(--r4), var(--r5), var(--r6), var(--r7),
+      var(--r1), var(--r2), var(--r3), var(--r4), var(--r5), var(--r6), var(--r7),
+      var(--r1)
+    ),
+    radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(0, 0%, 100%, 0.3) 0%, hsla(0, 0%, 50%, 0.08) 50%, hsla(0, 0%, 15%, 0.05) 100%);
+  background-size: 500% 300%, 180% 180%;
+  background-position: calc(40% + (var(--background-x, 50%) - 50%) * -0.8) calc(40% + (var(--background-y, 50%) - 50%) * -0.8), center center;
+  background-blend-mode: soft-light, normal;
+  filter: brightness(calc(var(--pointer-from-center, 0) * 0.25 + 0.45)) contrast(1.6) saturate(1);
+  mix-blend-mode: color-dodge;
+}
+
+.arena-portrait-card[data-ur-texture="rainbow"] .arena-portrait-card__shine::before {
+  --r1: hsl(0, 60%, 55%);
+  --r2: hsl(30, 55%, 58%);
+  --r3: hsl(50, 50%, 55%);
+  --r4: hsl(120, 40%, 52%);
+  --r5: hsl(180, 45%, 55%);
+  --r6: hsl(220, 55%, 58%);
+  --r7: hsl(270, 50%, 56%);
+  background-image:
+    repeating-linear-gradient(-55deg,
+      var(--r1) 0%, var(--r2) 14%, var(--r3) 28%, var(--r4) 42%,
+      var(--r5) 57%, var(--r6) 71%, var(--r7) 85%, var(--r1) 100%
+    );
+  background-size: 200% 200%;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%)) calc(50% + (var(--background-y, 50%) - 50%));
+  mix-blend-mode: soft-light;
+  filter: brightness(1.0) saturate(0.8);
+  opacity: calc(var(--pointer-from-center, 0) * 0.35 + 0.15);
+}
+
+.arena-portrait-card[data-ur-texture="rainbow"] .arena-portrait-card__shine::after {
+  --r1: hsl(0, 60%, 55%);
+  --r2: hsl(30, 55%, 58%);
+  --r3: hsl(50, 50%, 55%);
+  --r4: hsl(120, 40%, 52%);
+  --r5: hsl(180, 45%, 55%);
+  --r6: hsl(220, 55%, 58%);
+  --r7: hsl(270, 50%, 56%);
+  background-image:
+    linear-gradient(60deg,
+      var(--r1), var(--r2), var(--r3), var(--r4), var(--r5), var(--r6), var(--r7),
+      var(--r1), var(--r2), var(--r3), var(--r4), var(--r5), var(--r6), var(--r7),
+      var(--r1)
+    );
+  background-size: 400% 200%;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%) * 0.6) calc(50% + (var(--background-y, 50%) - 50%) * 0.6);
+  mix-blend-mode: overlay;
+  filter: brightness(1.0) saturate(0.8);
+  opacity: calc(var(--pointer-from-center, 0) * 0.35 + 0.1);
+}
+
+.arena-portrait-card[data-ur-texture="rainbow"] .arena-portrait-card__glare {
+  background-image: radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(0, 0%, 100%, 0.45) 0%, hsla(0, 0%, 70%, 0.2) 30%, hsla(0, 0%, 20%, 0.12) 100%);
+  mix-blend-mode: overlay;
+  filter: brightness(1.0) contrast(1.1);
+  opacity: calc(var(--card-opacity, 0) * 0.75);
+}
+
+/* ===== UR TEXTURE: COSMIC (deep purple/blue + gold) ===== */
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="cosmic"] .arena-portrait-card__shine {
+  background-image:
+    conic-gradient(from 210deg at 50% 50%, hsl(270, 80%, 25%), hsl(230, 85%, 30%), hsl(45, 90%, 45%), hsl(280, 75%, 22%), hsl(250, 80%, 28%), hsl(45, 85%, 40%), hsl(270, 80%, 25%)),
+    radial-gradient(farthest-corner ellipse at calc(25% + (var(--pointer-x, 50%) - 25%) * 0.6) calc(25% + (var(--pointer-y, 50%) - 25%) * 0.6), hsla(280, 70%, 50%, 0.2) 0%, hsla(260, 50%, 20%, 0.1) 50%, hsla(220, 40%, 10%, 0.08) 100%),
+    radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(48, 100%, 60%, 0.2) 0%, hsla(45, 80%, 30%, 0.08) 60%);
+  background-size: 300% 300%, 200% 200%, 180% 180%;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%) * -0.4) calc(50% + (var(--background-y, 50%) - 50%) * -0.4), center center, center center;
+  background-blend-mode: soft-light, normal, overlay;
+  filter: brightness(calc(var(--pointer-from-center, 0) * 0.2 + 0.5)) contrast(2) saturate(1.5);
+  mix-blend-mode: color-dodge;
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="cosmic"] .arena-portrait-card__shine::before {
+  background-image:
+    repeating-linear-gradient(0deg, hsla(50, 100%, 70%, 0.12) 0%, hsla(280, 80%, 60%, 0.08) 40%, hsla(230, 90%, 55%, 0.05) 70%, hsla(50, 100%, 70%, 0.12) 100%);
+  background-size: 100% 400%;
+  background-position: 0% calc(100% - var(--background-y, 50%));
+  mix-blend-mode: overlay;
+  filter: brightness(1.1) saturate(1.3);
+  opacity: 0.55;
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="cosmic"] .arena-portrait-card__shine::after {
+  background-image:
+    repeating-conic-gradient(from calc(var(--pointer-from-left, 0.5) * 180deg) at 50% 50%, transparent 0deg, hsla(48, 100%, 75%, 0.15) 1deg, transparent 3deg, hsla(270, 80%, 65%, 0.1) 4deg, transparent 8deg);
+  background-size: 60px 60px;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%) * -0.8) calc(50% + (var(--background-y, 50%) - 50%) * -0.8);
+  mix-blend-mode: hard-light;
+  opacity: calc(var(--pointer-from-center, 0) * 0.4 + 0.25);
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="cosmic"] .arena-portrait-card__glare {
+  background-image: radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(270, 50%, 80%, 0.4) 0%, hsla(260, 40%, 40%, 0.2) 30%, hsla(240, 30%, 15%, 0.18) 100%);
+  mix-blend-mode: hard-light;
+  filter: brightness(1.1) contrast(1.1);
+  opacity: calc(var(--card-opacity, 0) * 0.85);
+}
+
+/* ===== UR TEXTURE: RADIANT (golden sunburst rays) ===== */
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="radiant"] .arena-portrait-card__shine {
+  background-image:
+    repeating-conic-gradient(from -0.5deg at 50% 50%, transparent 0deg, hsla(50, 100%, 80%, 0.2) 1.5deg, transparent 3deg, hsla(45, 100%, 70%, 0.12) 4.5deg, transparent 6deg, hsla(55, 95%, 85%, 0.1) 7deg, transparent 10deg),
+    linear-gradient(180deg, hsla(45, 100%, 60%, 0.18) 0%, hsla(52, 100%, 75%, 0.08) 50%, hsla(40, 90%, 55%, 0.15) 100%),
+    radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(50, 100%, 85%, 0.3) 0%, hsla(45, 90%, 50%, 0.12) 50%, hsla(38, 60%, 20%, 0.08) 100%);
+  background-size: 100px 100px, 200% 200%, 200% 200%;
+  background-position:
+    calc(50% + (var(--background-x, 50%) - 50%) * 1.2) calc(50% + (var(--background-y, 50%) - 50%) * 1.2),
+    calc(50% + (var(--background-x, 50%) - 50%) * -0.2) calc(50% + (var(--background-y, 50%) - 50%) * -0.2),
+    center center;
+  background-blend-mode: overlay, soft-light, normal;
+  filter: brightness(calc(var(--pointer-from-center, 0) * 0.35 + 0.4)) contrast(2.3) saturate(1.1);
+  mix-blend-mode: color-dodge;
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="radiant"] .arena-portrait-card__shine::before {
+  background-image:
+    repeating-linear-gradient(20deg, rgba(255, 215, 0, 0.1) 0px, rgba(255, 200, 0, 0.07) 1px, transparent 1px, transparent 6px, rgba(255, 255, 255, 0.08) 6px, transparent 7px),
+    repeating-linear-gradient(-50deg, rgba(255, 230, 150, 0.08) 0px, transparent 3px);
+  background-size: 60px 60px, 45px 45px;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%)) calc(50% + (var(--background-y, 50%) - 50%)), calc(50% - (var(--background-x, 50%) - 50%)) calc(50% - (var(--background-y, 50%) - 50%));
+  background-blend-mode: overlay;
+  mix-blend-mode: soft-light;
+  filter: brightness(1.1) contrast(1.2);
+  opacity: calc(var(--pointer-from-center, 0) * 0.45 + 0.2);
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="radiant"] .arena-portrait-card__shine::after {
+  background-image:
+    conic-gradient(from 90deg at 50% 50%, transparent 0deg, transparent 20deg, hsla(50, 100%, 70%, 0.1) 22deg, transparent 25deg, transparent 65deg, hsla(48, 100%, 75%, 0.1) 67deg, transparent 70deg, transparent 110deg, hsla(52, 100%, 70%, 0.1) 112deg, transparent 115deg, transparent 155deg, hsla(50, 100%, 75%, 0.1) 157deg, transparent 160deg, transparent 200deg, hsla(48, 100%, 70%, 0.1) 202deg, transparent 205deg, transparent 245deg, hsla(52, 100%, 75%, 0.1) 247deg, transparent 250deg, transparent 290deg, hsla(50, 100%, 70%, 0.1) 292deg, transparent 295deg, transparent 335deg, hsla(48, 100%, 75%, 0.1) 337deg, transparent 340deg, transparent 360deg);
+  background-size: 200% 200%;
+  background-position: calc(50% + (var(--background-x, 50%) - 50%) * -0.6) calc(50% + (var(--background-y, 50%) - 50%) * -0.6);
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+}
+
+.arena-portrait-card[data-rarity="UR"][data-ur-texture="radiant"] .arena-portrait-card__glare {
+  background-image: radial-gradient(farthest-corner circle at var(--pointer-x, 50%) var(--pointer-y, 50%), hsla(52, 90%, 90%, 0.5) 0%, hsla(48, 70%, 55%, 0.2) 35%, hsla(42, 40%, 20%, 0.15) 100%);
+  mix-blend-mode: hard-light;
+  filter: brightness(1.15) contrast(1.15);
+  opacity: calc(var(--card-opacity, 0) * 0.85);
 }
 
 .arena-draw-duel {

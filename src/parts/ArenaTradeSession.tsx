@@ -94,39 +94,41 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
       onClick={onClose}
     >
       <div
-        className="card-border w-full max-w-5xl rounded-2xl p-4 shadow-2xl dark:bg-slate-900"
+        className="card-border w-full max-w-full rounded-2xl p-4 shadow-2xl sm:max-w-5xl dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-3 text-center text-xs font-black uppercase tracking-[0.2em] text-pink-500">
           select a card
         </p>
-        <div className="mb-3 flex gap-2">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:gap-2">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="flex-1 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+            className="flex-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
           />
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <select
-            value={rarity}
-            onChange={(e) => setRarity(e.target.value)}
-            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
-          >
-            <option value="">All rarities</option>
-            {RARITIES.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="flex-1 rounded-lg border border-blue-200 bg-white px-2 py-2 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <select
+              value={rarity}
+              onChange={(e) => setRarity(e.target.value)}
+              className="flex-1 rounded-lg border border-blue-200 bg-white px-2 py-2 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+            >
+              <option value="">All rarities</option>
+              {RARITIES.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="mb-3 flex flex-wrap items-center gap-1.5">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">element:</span>
@@ -178,7 +180,7 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
               No matching cards in your collection.
             </p>
           ) : (
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
               {cards.map((card) => (
                 <button
                   key={card.cardInstanceId}
@@ -387,14 +389,14 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
       onClick={onClose}
     >
       <div
-        className="card-border w-full max-w-3xl rounded-2xl p-6 shadow-2xl dark:bg-slate-900"
+        className="card-border w-full max-w-full rounded-2xl p-4 shadow-2xl sm:max-w-3xl sm:p-6 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-4 text-center text-xs font-black uppercase tracking-[0.2em] text-pink-500">
           trade session
         </p>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 min-[420px]:gap-6">
           {/* My slot */}
           <div className="flex flex-col items-center space-y-3">
             <p className="text-sm font-bold text-blue-600 dark:text-purple-200">

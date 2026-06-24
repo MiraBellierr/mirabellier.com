@@ -432,7 +432,65 @@ const ArenaMarket = () => {
 
   const mineListingsContent = mine?.listings.length ? (
     <>
-      <div className="overflow-visible">
+      {/* Mobile: card-based listing */}
+      <div className="flex flex-col gap-3 sm:hidden">
+        {paginatedMineListings.map((listing) => (
+          <div
+            key={listing.listingId}
+            onMouseEnter={(e) => handleCardMouseEnter(listing.card, e)}
+            onMouseMove={handleCardMouseMove}
+            onMouseLeave={handleCardMouseLeave}
+            className="flex items-center gap-3 rounded-xl border border-blue-100 bg-white/60 p-3 dark:border-purple-400/20 dark:bg-slate-800/60"
+          >
+            <img
+              src={listing.card.imageUrl}
+              alt={listing.card.title}
+              className="h-12 w-9 shrink-0 rounded object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-blue-700 truncate dark:text-purple-100">
+                  {listing.card.title}
+                </span>
+                {listing.card.element ? (
+                  <span
+                    className="inline-block shrink-0 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white"
+                    style={{ backgroundColor: ELEMENT_COLORS[listing.card.element] || "#888" }}
+                  >
+                    {listing.card.element}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
+                <span className="text-slate-500 dark:text-slate-400">{listing.card.rarity}</span>
+                <span className="text-slate-400">·</span>
+                <span className="text-slate-500 dark:text-slate-400">IV {listing.card.iv.total}</span>
+                <span className="text-slate-400">·</span>
+                <span className="font-bold text-blue-700 dark:text-purple-200">{listing.price.toLocaleString()} 🪙</span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                Market: {listing.marketPrice.value.toLocaleString()}
+              </p>
+            </div>
+            <div className="shrink-0">
+              <button
+                type="button"
+                onClick={() => void handleCancel(listing)}
+                disabled={
+                  actioningId === `cancel:${listing.listingId}`
+                }
+                className="arena-redraw-button text-xs hover:animate-wiggle disabled:opacity-50"
+              >
+                {actioningId === `cancel:${listing.listingId}`
+                  ? "[ ... ]"
+                  : "[ cancel ]"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto sm:block">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-blue-200 text-xs font-bold text-blue-500 uppercase tracking-wider dark:border-purple-400/30 dark:text-purple-300">
@@ -520,7 +578,7 @@ const ArenaMarket = () => {
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">
-          <div className="left-side-rail flex-grow flex-col">
+          <div className="left-side-rail hidden flex-grow flex-col lg:flex">
             <Navigation />
           </div>
           <main className="w-full space-y-2 p-4 lg:w-3/5">
@@ -570,7 +628,7 @@ const ArenaMarket = () => {
                     <p className="text-blue-500 dark:text-purple-300">Opening the market...</p>
                   ) : tab === "market" ? (
                     <div className="space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
                         <div className="flex items-center gap-3">
                           <p className="font-bold text-blue-700 dark:text-purple-200">
                             Coins: {market?.profile.coins.toLocaleString() || 0} 🪙
@@ -586,13 +644,13 @@ const ArenaMarket = () => {
                               setSort(event.target.value as ArenaMarketSort);
                               setPage(1);
                             }}
-                            className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
                           >
-                            <option value="newest">Newest first</option>
-                            <option value="price-asc">Price: low to high</option>
-                            <option value="price-desc">Price: high to low</option>
-                            <option value="iv-desc">IV: high to low</option>
-                            <option value="iv-asc">IV: low to high</option>
+                            <option value="newest">Newest</option>
+                            <option value="price-asc">Price ↑</option>
+                            <option value="price-desc">Price ↓</option>
+                            <option value="iv-desc">IV ↓</option>
+                            <option value="iv-asc">IV ↑</option>
                           </select>
                           <select
                             value={rarity}
@@ -600,7 +658,7 @@ const ArenaMarket = () => {
                               setRarity(event.target.value);
                               setPage(1);
                             }}
-                            className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
                           >
                             <option value="">All rarities</option>
                             {RARITIES.map((value) => (
@@ -615,9 +673,9 @@ const ArenaMarket = () => {
                               setIvBand(event.target.value);
                               setPage(1);
                             }}
-                            className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
                           >
-                            <option value="">All IV bands</option>
+                            <option value="">All IV</option>
                             {bands.map((band) => (
                               <option key={band.id} value={band.id}>
                                 IV {band.id}
@@ -632,7 +690,7 @@ const ArenaMarket = () => {
                               setPage(1);
                             }}
                             placeholder="Search character..."
-                            className="w-44 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+                            className="w-full sm:w-44 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
                           />
                         </div>
                       </div>
@@ -646,88 +704,154 @@ const ArenaMarket = () => {
                       {marketLoading ? (
                         <p className="text-sm text-blue-500">Refreshing listings...</p>
                       ) : market?.listings.length ? (
-                        <div className="overflow-visible">
-                          <table className="w-full text-left text-sm">
-                            <thead>
-                              <tr className="border-b border-blue-200 text-xs font-bold text-blue-500 uppercase tracking-wider dark:border-purple-400/30 dark:text-purple-300">
-                                <th className="pb-2 pr-2">Card</th>
-                                <th className="pb-2 px-2">Rarity</th>
-                                <th className="pb-2 px-2">IV</th>
-                                <th className="pb-2 px-2">Price</th>
-                                <th className="pb-2 px-2">Market</th>
-                                <th className="pb-2 px-2">Seller</th>
-                                <th className="pb-2 pl-2"></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {market.listings.map((listing) => (
-                                <tr
-                                  key={listing.listingId}
-                                  onMouseEnter={(e) => handleCardMouseEnter(listing.card, e)}
-                                  onMouseLeave={handleCardMouseLeave}
-                                  className="border-b border-blue-50 last:border-b-0 dark:border-purple-400/10"
-                                >
-                                  <td className="py-2 pr-2 relative">
-                                    <div className="flex items-center gap-2">
-                                      <img
-                                        src={listing.card.imageUrl}
-                                        alt={listing.card.title}
-                                        className="h-10 w-7 shrink-0 rounded object-cover"
-                                      />
-                                      <span className="font-bold text-blue-700 truncate max-w-[120px] dark:text-purple-100">
-                                        {listing.card.title}
+                        <>
+                          {/* Mobile: card-based listing */}
+                          <div className="flex flex-col gap-3 sm:hidden">
+                            {market.listings.map((listing) => (
+                              <div
+                                key={listing.listingId}
+                                onMouseEnter={(e) => handleCardMouseEnter(listing.card, e)}
+                                onMouseMove={handleCardMouseMove}
+                                onMouseLeave={handleCardMouseLeave}
+                                className="flex items-center gap-3 rounded-xl border border-blue-100 bg-white/60 p-3 dark:border-purple-400/20 dark:bg-slate-800/60"
+                              >
+                                <img
+                                  src={listing.card.imageUrl}
+                                  alt={listing.card.title}
+                                  className="h-12 w-9 shrink-0 rounded object-cover"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-blue-700 truncate dark:text-purple-100">
+                                      {listing.card.title}
+                                    </span>
+                                    {listing.card.element ? (
+                                      <span
+                                        className="inline-block shrink-0 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white"
+                                        style={{ backgroundColor: ELEMENT_COLORS[listing.card.element] || "#888" }}
+                                      >
+                                        {listing.card.element}
                                       </span>
-                                      {listing.card.element ? (
-                                        <span
-                                          className="inline-block shrink-0 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white"
-                                          style={{ backgroundColor: ELEMENT_COLORS[listing.card.element] || "#888" }}
-                                        >
-                                          {listing.card.element}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-2 text-slate-600 dark:text-slate-300">
-                                    {listing.card.rarity}
-                                  </td>
-                                  <td className="py-2 px-2 text-slate-600 dark:text-slate-300">
-                                    {listing.card.iv.total}
-                                  </td>
-                                  <td className="py-2 px-2 font-bold text-blue-700 dark:text-purple-200">
-                                    {listing.price.toLocaleString()} 🪙
-                                  </td>
-                                  <td className="py-2 px-2 text-xs text-blue-600 dark:text-purple-300">
-                                    {listing.marketPrice.value.toLocaleString()}
-                                  </td>
-                                  <td className="py-2 px-2 text-xs text-slate-500 dark:text-slate-400">
-                                    {listing.seller.username}
-                                    {listing.isMine ? " (you)" : ""}
-                                  </td>
-                                  <td className="py-2 pl-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleBuy(listing)}
-                                      disabled={
-                                        listing.isMine ||
-                                        actioningId === `buy:${listing.listingId}` ||
-                                        Boolean(market && market.profile.coins < listing.price)
-                                      }
-                                      className="arena-redraw-button text-xs hover:animate-wiggle disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                      {listing.isMine
-                                        ? "[ your listing ]"
-                                        : actioningId === `buy:${listing.listingId}`
-                                          ? "[ buying... ]"
-                                          : market && market.profile.coins < listing.price
-                                            ? "[ not enough coins ]"
-                                            : "[ buy card ]"}
-                                    </button>
-                                  </td>
+                                    ) : null}
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
+                                    <span className="text-slate-500 dark:text-slate-400">{listing.card.rarity}</span>
+                                    <span className="text-slate-400">·</span>
+                                    <span className="text-slate-500 dark:text-slate-400">IV {listing.card.iv.total}</span>
+                                    <span className="text-slate-400">·</span>
+                                    <span className="font-bold text-blue-700 dark:text-purple-200">{listing.price.toLocaleString()} 🪙</span>
+                                  </div>
+                                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                                    {listing.seller.username}{listing.isMine ? " (you)" : ""}
+                                  </p>
+                                </div>
+                                <div className="shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleBuy(listing)}
+                                    disabled={
+                                      listing.isMine ||
+                                      actioningId === `buy:${listing.listingId}` ||
+                                      Boolean(market && market.profile.coins < listing.price)
+                                    }
+                                    className="arena-redraw-button text-xs hover:animate-wiggle disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    {listing.isMine
+                                      ? "[ yours ]"
+                                      : actioningId === `buy:${listing.listingId}`
+                                        ? "[ buying... ]"
+                                        : market && market.profile.coins < listing.price
+                                          ? "[ no coins ]"
+                                          : "[ buy ]"}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Desktop: table */}
+                          <div className="hidden overflow-x-auto sm:block">
+                            <table className="w-full text-left text-sm">
+                              <thead>
+                                <tr className="border-b border-blue-200 text-xs font-bold text-blue-500 uppercase tracking-wider dark:border-purple-400/30 dark:text-purple-300">
+                                  <th className="pb-2 pr-2">Card</th>
+                                  <th className="pb-2 px-2">Rarity</th>
+                                  <th className="pb-2 px-2">IV</th>
+                                  <th className="pb-2 px-2">Price</th>
+                                  <th className="pb-2 px-2">Market</th>
+                                  <th className="pb-2 px-2">Seller</th>
+                                  <th className="pb-2 pl-2"></th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                              </thead>
+                              <tbody>
+                                {market.listings.map((listing) => (
+                                  <tr
+                                    key={listing.listingId}
+                                    onMouseEnter={(e) => handleCardMouseEnter(listing.card, e)}
+                                    onMouseLeave={handleCardMouseLeave}
+                                    className="border-b border-blue-50 last:border-b-0 dark:border-purple-400/10"
+                                  >
+                                    <td className="py-2 pr-2 relative">
+                                      <div className="flex items-center gap-2">
+                                        <img
+                                          src={listing.card.imageUrl}
+                                          alt={listing.card.title}
+                                          className="h-10 w-7 shrink-0 rounded object-cover"
+                                        />
+                                        <span className="font-bold text-blue-700 truncate max-w-[120px] dark:text-purple-100">
+                                          {listing.card.title}
+                                        </span>
+                                        {listing.card.element ? (
+                                          <span
+                                            className="inline-block shrink-0 px-1.5 py-px rounded-full text-[0.6rem] font-bold text-white"
+                                            style={{ backgroundColor: ELEMENT_COLORS[listing.card.element] || "#888" }}
+                                          >
+                                            {listing.card.element}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-2 text-slate-600 dark:text-slate-300">
+                                      {listing.card.rarity}
+                                    </td>
+                                    <td className="py-2 px-2 text-slate-600 dark:text-slate-300">
+                                      {listing.card.iv.total}
+                                    </td>
+                                    <td className="py-2 px-2 font-bold text-blue-700 dark:text-purple-200">
+                                      {listing.price.toLocaleString()} 🪙
+                                    </td>
+                                    <td className="py-2 px-2 text-xs text-blue-600 dark:text-purple-300">
+                                      {listing.marketPrice.value.toLocaleString()}
+                                    </td>
+                                    <td className="py-2 px-2 text-xs text-slate-500 dark:text-slate-400">
+                                      {listing.seller.username}
+                                      {listing.isMine ? " (you)" : ""}
+                                    </td>
+                                    <td className="py-2 pl-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleBuy(listing)}
+                                        disabled={
+                                          listing.isMine ||
+                                          actioningId === `buy:${listing.listingId}` ||
+                                          Boolean(market && market.profile.coins < listing.price)
+                                        }
+                                        className="arena-redraw-button text-xs hover:animate-wiggle disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        {listing.isMine
+                                          ? "[ your listing ]"
+                                          : actioningId === `buy:${listing.listingId}`
+                                            ? "[ buying... ]"
+                                            : market && market.profile.coins < listing.price
+                                              ? "[ not enough coins ]"
+                                              : "[ buy card ]"}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
                       ) : (
                         <p className="rounded-xl border border-blue-100 bg-white/60 p-4 text-sm text-slate-600 dark:border-purple-400/20 dark:bg-slate-800/60 dark:text-slate-300">
                           No active listings match these filters.
@@ -865,7 +989,7 @@ const ArenaMarket = () => {
             </section>
             <Divider />
           </main>
-          <aside className="mb-auto w-full space-y-4 lg:w-1/5">
+          <aside className="hidden mb-auto w-full space-y-4 lg:block lg:w-1/5">
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-slate-800 dark:opacity-95">
               <div className="space-y-2 text-sm text-blue-600 dark:text-purple-200">
                 <h2 className="text-center text-lg font-bold text-blue-700 dark:text-purple-100">
@@ -988,7 +1112,7 @@ const ArenaMarket = () => {
                 zIndex: 230001,
               }}
             >
-              <ArenaPortraitCard card={hoverCard.card} size="full" showIvLine />
+              <ArenaPortraitCard card={hoverCard.card} size="full" showIvLine interactive auto />
             </div>,
             document.body,
           )

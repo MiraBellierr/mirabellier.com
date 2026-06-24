@@ -644,7 +644,7 @@ const ArenaFight = () => {
                             <div className="arena-chosen-card-body">
                               <div className="arena-card-portrait-slot">
                                 {profile?.selectedCard ? (
-                                  <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" interactive boostedIv={boostedIv} />
+                                  <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" interactive auto boostedIv={boostedIv} />
                                 ) : null}
                               </div>
                             </div>
@@ -666,7 +666,7 @@ const ArenaFight = () => {
                             {activeFight?.opponent?.selectedCard ? (
                               <div className="arena-chosen-card-body">
                                 <div className="arena-card-portrait-slot">
-                                  <ArenaPortraitCard card={activeFight.opponent.selectedCard} level={activeFight.opponent.level} className="arena-duel-card" interactive />
+                                  <ArenaPortraitCard card={activeFight.opponent.selectedCard} level={activeFight.opponent.level} className="arena-duel-card" interactive auto />
                                 </div>
                               </div>
                             ) : (
