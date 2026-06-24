@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
@@ -9,6 +10,7 @@ import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useCardPopover } from "@/hooks/use-card-popover";
 import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
@@ -42,6 +44,9 @@ function isMaintenanceMessage(message: string | null) {
 const Arena = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
+
+  const cardRef = useRef<HTMLElement | null>(null);
+  const { isOpen: popped, open, close, popoverStyle, spinClass } = useCardPopover(cardRef);
 
   const [profile, setProfile] = useState<ArenaProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -170,7 +175,7 @@ const Arena = () => {
                   Loading arena profile...
                 </div>
               ) : profile ? (
-                <div className="arena-duel-panel relative mx-auto max-w-2xl overflow-hidden p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4 dark:bg-slate-900/80">
+                <div className={`arena-duel-panel relative mx-auto max-w-2xl${popped ? "" : " overflow-hidden"} p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4 dark:bg-slate-900/80`}>
                   <div className="relative space-y-4">
                     <div className="">
                         <h2 className="text-4xl font-bold text-blue-900 dark:text-purple-100">Champione Information {`>^. .^<`}</h2>
@@ -193,13 +198,19 @@ const Arena = () => {
                       </div>
                     ) : null}
 
-                    <div className="arena-chosen-card-body">
-                      <div className="arena-card-portrait-slot">
+                    <div className="arena-chosen-card-body" style={popped ? { overflow: "visible" } : undefined}>
+                      <div className="arena-card-portrait-slot" style={popped ? { overflow: "visible", position: "relative", zIndex: 10000 } : undefined}>
                         {profile.selectedCard ? (
                           <ArenaPortraitCard
+                            ref={cardRef}
                             card={profile.selectedCard}
                             level={profile.level}
                             className="arena-duel-card"
+                            interactive
+                            popped={popped}
+                            popoverStyle={popoverStyle}
+                            spinClass={spinClass}
+                            onCardClick={open}
                           />
                         ) : (
                           <div className="arena-empty-card">CARD</div>
@@ -450,6 +461,13 @@ const Arena = () => {
         </div>
       </div>
       <Footer />
+      {popped && createPortal(
+        <div
+          className="fixed inset-0 z-[9998]"
+          onClick={close}
+        />,
+        document.body,
+      )}
     </div>
   );
 };

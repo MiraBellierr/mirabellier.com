@@ -1872,12 +1872,13 @@ export async function unequipArenaSlot(
 export async function fodderArenaPiece(
   token: string,
   pieceId: string,
+  refundAmount?: number,
 ): Promise<{ fodderPieceId: string; coinsGained: number }> {
   const response = await fetch(joinApi("/arena/shop/fodder"), {
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({ pieceId }),
+    body: JSON.stringify({ pieceId, refundAmount }),
   });
 
   if (!response.ok) {

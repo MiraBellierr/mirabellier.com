@@ -268,6 +268,7 @@ const ArenaCollection = () => {
                               card={card}
                               size="compact"
                               showIvLine={true}
+                              interactive
                             />
                             {card.cardInstanceId ? (
                               <button

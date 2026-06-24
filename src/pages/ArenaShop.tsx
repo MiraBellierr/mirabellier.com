@@ -20,6 +20,7 @@ import {
   buyArenaShopCard,
   fetchArenaCardShop,
   fetchArenaShop,
+  fodderArenaPiece,
   useArenaConsumable as activateArenaConsumable,
 } from "@/lib/arena-api";
 import {
@@ -135,12 +136,18 @@ function CardRewardModal({
 
 function EquipmentRewardModal({
   piece,
+  pieceId,
+  price,
   shopItem,
   onClose,
+  onFodder,
 }: {
   piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] };
+  pieceId: string;
+  price: number;
   shopItem: ArenaShopItem;
   onClose: () => void;
+  onFodder: (pieceId: string, refundAmount: number) => void;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -212,14 +219,25 @@ function EquipmentRewardModal({
               Added to your inventory.
             </p>
           </div>
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            className="arena-redraw-button hover:animate-wiggle"
-          >
-            [ nice! ]
-          </button>
+          <div className="flex justify-center gap-2">
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={onClose}
+              className="arena-redraw-button hover:animate-wiggle"
+            >
+              [ nice! ]
+            </button>
+            {pieceId && price > 0 ? (
+              <button
+                type="button"
+                onClick={() => onFodder(pieceId, Math.floor(price / 2))}
+                className="arena-redraw-button hover:animate-wiggle"
+              >
+                [ fodder +{Math.floor(price / 2)} ]
+              </button>
+            ) : null}
+          </div>
         </div>
       </section>
     </div>,
@@ -240,7 +258,7 @@ const ArenaShop = () => {
   const [cardErrorMessage, setCardErrorMessage] = useState<string | null>(null);
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
-  const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; shopItem: ArenaShopItem } | null>(null);
+  const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; pieceId: string; price: number; shopItem: ArenaShopItem } | null>(null);
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/shop",
@@ -384,6 +402,8 @@ const ArenaShop = () => {
       if (payload.rolledPiece) {
         setObtainedPiece({
           piece: payload.rolledPiece,
+          pieceId: payload.rolledPieceId || "",
+          price: item.price,
           shopItem: item,
         });
       }
@@ -490,6 +510,27 @@ const ArenaShop = () => {
     setObtainedPiece(null);
   }, []);
 
+  const handleFodderReward = useCallback(async (pieceId: string, refundAmount: number) => {
+    if (!token) return;
+    const confirmed = await confirm({
+      title: "Fodder equipment?",
+      message: `Convert this gear to ${refundAmount} coins? This cannot be undone.`,
+      confirmLabel: "Fodder",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
+    setActioningId(`fodder:${pieceId}`);
+    try {
+      await fodderArenaPiece(token, pieceId, refundAmount);
+      const refreshed = await fetchArenaShop(token);
+      setShop(refreshed);
+      setObtainedPiece(null);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  }, [token, confirm]);
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -828,8 +869,11 @@ const ArenaShop = () => {
       {obtainedPiece ? (
         <EquipmentRewardModal
           piece={obtainedPiece.piece}
+          pieceId={obtainedPiece.pieceId}
+          price={obtainedPiece.price}
           shopItem={obtainedPiece.shopItem}
           onClose={closeEquipModal}
+          onFodder={handleFodderReward}
         />
       ) : null}
     </div>

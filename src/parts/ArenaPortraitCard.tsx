@@ -1,6 +1,8 @@
-import type { CSSProperties } from "react";
+import { forwardRef, type CSSProperties } from "react";
 
 import type { ArenaCard } from "@/lib/arena-api";
+import { useHoloTilt } from "@/hooks/use-holo-tilt";
+import cardBack from "@/assets/back-card-design.jpg";
 import fireIcon from "@/assets/elements/fire.png";
 import waterIcon from "@/assets/elements/water.png";
 import earthIcon from "@/assets/elements/earth.png";
@@ -17,6 +19,11 @@ type ArenaPortraitCardProps = {
   showIvLine?: boolean;
   className?: string;
   boostedIv?: { power: number; guard: number; speed: number; luck: number; total: number } | null;
+  interactive?: boolean;
+  popped?: boolean;
+  popoverStyle?: CSSProperties;
+  spinClass?: string;
+  onCardClick?: () => void;
 };
 
 type RarityVisual = {
@@ -105,18 +112,25 @@ function normalizeLevel(level: number | null | undefined) {
   return String(Math.max(1, Math.floor(Number(level)))).padStart(2, "0");
 }
 
-const ArenaPortraitCard = ({
+const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
   card,
   level,
   size = "full",
   showIvLine = true,
   className = "",
   boostedIv,
-}: ArenaPortraitCardProps) => {
+  interactive = false,
+  popped = false,
+  popoverStyle,
+  spinClass,
+  onCardClick,
+}, ref) => {
   const visual = normalizeRarity(card.rarity);
   const element = normalizeElement(card.element);
   const levelLabel = normalizeLevel(level);
   const stars = "\u2605".repeat(visual.stars);
+  const { tiltStyle, onPointerMove, onPointerLeave } = useHoloTilt();
+
   const rootStyle: CSSProperties = {
     "--arena-card-frame": visual.frame,
     "--arena-card-glow": visual.glow,
@@ -124,77 +138,113 @@ const ArenaPortraitCard = ({
     "--arena-card-accent": visual.accent,
   } as CSSProperties;
 
+  const innerContent = (
+    <>
+      <img
+        src={card.imageUrl}
+        alt={card.title}
+        className="arena-portrait-card__image"
+        loading="lazy"
+        draggable={false}
+      />
+      <div className="arena-portrait-card__veil" />
+      <div className="arena-portrait-card__grain" />
+      <div className="arena-portrait-card__top">
+        <span className="arena-portrait-card__badge">{visual.key}</span>
+        {element ? (
+          <span
+            className="arena-portrait-card__element arena-portrait-card__element--icon"
+            title={element.label}
+          >
+            <img
+              className="arena-portrait-card__element-img"
+              src={element.icon}
+              alt=""
+              draggable={false}
+            />
+          </span>
+        ) : null}
+      </div>
+      <div className="arena-portrait-card__bottom">
+        <p className="arena-portrait-card__name">{card.title}</p>
+        {card.from ? (
+          <p className="arena-portrait-card__from">{card.from}</p>
+        ) : null}
+        <div className="arena-portrait-card__meta">
+          <span className="arena-portrait-card__stars" aria-label={`${visual.stars} stars`}>
+            {stars}
+          </span>
+          <span className="arena-portrait-card__level">LV {levelLabel}</span>
+        </div>
+        {showIvLine ? (
+          <p className="arena-portrait-card__iv">
+            {boostedIv
+              ? (
+                <>
+                  IV {card.iv.total}{" "}
+                  <span className="text-amber-500">(+{boostedIv.total - card.iv.total} → {boostedIv.total})</span>
+                  {" | "}P {card.iv.power}{" "}
+                  <span className="text-amber-500">(+{boostedIv.power - card.iv.power})</span>
+                  {" "}G {card.iv.guard}{" "}
+                  <span className="text-amber-500">(+{boostedIv.guard - card.iv.guard})</span>
+                  {" "}S {card.iv.speed}{" "}
+                  <span className="text-amber-500">(+{boostedIv.speed - card.iv.speed})</span>
+                  {" "}L {card.iv.luck}{" "}
+                  <span className="text-amber-500">(+{boostedIv.luck - card.iv.luck})</span>
+                </>
+              )
+              : (
+                `IV ${card.iv.total} | P ${card.iv.power} G ${card.iv.guard} S ${card.iv.speed} L ${card.iv.luck}`
+              )}
+          </p>
+        ) : null}
+      </div>
+    </>
+  );
+
+  const interactiveRotator = (
+    <div
+      className="arena-portrait-card__rotator"
+      style={tiltStyle}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+      onClick={onCardClick}
+      tabIndex={0}
+      role="button"
+    >
+      <img className="arena-portrait-card__back" src={cardBack} alt="" draggable={false} />
+      <div className="arena-portrait-card__inner">
+        {innerContent}
+      </div>
+      <div className="arena-portrait-card__shine" />
+      <div className="arena-portrait-card__glare" />
+    </div>
+  );
+
   return (
     <article
-      className={`arena-portrait-card arena-portrait-card--${size} ${className}`.trim()}
+      ref={ref}
+      className={`arena-portrait-card arena-portrait-card--${size}${interactive ? " arena-portrait-card--interactive" : ""}${popped ? " arena-portrait-card--popped" : ""} ${className}`.trim()}
       style={rootStyle}
       title={card.title}
     >
-      <div className="arena-portrait-card__inner">
-        <img
-          src={card.imageUrl}
-          alt={card.title}
-          className="arena-portrait-card__image"
-          loading="lazy"
-          draggable={false}
-        />
-        <div className="arena-portrait-card__veil" />
-        <div className="arena-portrait-card__grain" />
-
-        <div className="arena-portrait-card__top">
-          <span className="arena-portrait-card__badge">{visual.key}</span>
-          {element ? (
-            <span
-              className="arena-portrait-card__element arena-portrait-card__element--icon"
-              title={element.label}
-            >
-              <img
-                className="arena-portrait-card__element-img"
-                src={element.icon}
-                alt=""
-                draggable={false}
-              />
-            </span>
-          ) : null}
-        </div>
-
-        <div className="arena-portrait-card__bottom">
-          <p className="arena-portrait-card__name">{card.title}</p>
-          {card.from ? (
-            <p className="arena-portrait-card__from">{card.from}</p>
-          ) : null}
-          <div className="arena-portrait-card__meta">
-            <span className="arena-portrait-card__stars" aria-label={`${visual.stars} stars`}>
-              {stars}
-            </span>
-            <span className="arena-portrait-card__level">LV {levelLabel}</span>
+      <div className="arena-portrait-card__translater" style={popoverStyle}>
+        {interactive ? (
+          spinClass ? (
+            <div className={`arena-portrait-card__spinner ${spinClass}`}>
+              {interactiveRotator}
+            </div>
+          ) : (
+            interactiveRotator
+          )
+        ) : (
+          <div className="arena-portrait-card__inner">
+            {innerContent}
           </div>
-          {showIvLine ? (
-            <p className="arena-portrait-card__iv">
-              {boostedIv
-                ? (
-                  <>
-                    IV {card.iv.total}{" "}
-                    <span className="text-amber-500">(+{boostedIv.total - card.iv.total} → {boostedIv.total})</span>
-                    {" | "}P {card.iv.power}{" "}
-                    <span className="text-amber-500">(+{boostedIv.power - card.iv.power})</span>
-                    {" "}G {card.iv.guard}{" "}
-                    <span className="text-amber-500">(+{boostedIv.guard - card.iv.guard})</span>
-                    {" "}S {card.iv.speed}{" "}
-                    <span className="text-amber-500">(+{boostedIv.speed - card.iv.speed})</span>
-                    {" "}L {card.iv.luck}{" "}
-                    <span className="text-amber-500">(+{boostedIv.luck - card.iv.luck})</span>
-                  </>
-                )
-                : (
-                  `IV ${card.iv.total} | P ${card.iv.power} G ${card.iv.guard} S ${card.iv.speed} L ${card.iv.luck}`
-                )}
-            </p>
-          ) : null}
-        </div>
+        )}
       </div>
     </article>
   );
-};
+});
 
 export default ArenaPortraitCard;

@@ -734,17 +734,14 @@ h6 {
 .arena-portrait-card {
   --arena-card-frame: linear-gradient(160deg, #897055 0%, #d8c39d 46%, #80664a 100%);
   --arena-card-glow: rgba(216, 188, 144, 0.38);
-  --arena-card-badge: #cfb687;
+  --arena-card-badge: #00FFFF;
   --arena-card-accent: #f8e8c9;
   position: relative;
   width: 152px;
   aspect-ratio: 10 / 16;
-  padding: 2px;
-  border-radius: 14px;
-  background: var(--arena-card-frame);
-  box-shadow:
-    0 12px 26px rgba(9, 9, 12, 0.3),
-    0 0 18px var(--arena-card-glow);
+  padding: 0;
+  border-radius: 12px;
+  background: transparent;
   overflow: hidden;
   isolation: isolate;
 }
@@ -760,6 +757,10 @@ h6 {
   border-radius: 12px;
   overflow: hidden;
   background: #161217;
+  backface-visibility: hidden;
+  transform: translateZ(0px);
+  border: 2px solid var(--arena-card-badge, #00FFFF);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12);
 }
 
 .arena-portrait-card__image {
@@ -768,36 +769,150 @@ h6 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: brightness(1.15);
+  backface-visibility: hidden;
 }
 
 .arena-portrait-card__veil {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 14% 10%, rgba(255, 245, 226, 0.3) 0%, transparent 32%),
-    radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.2) 0%, transparent 28%),
-    linear-gradient(
-      180deg,
-      rgba(18, 14, 14, 0.08) 0%,
-      rgba(15, 11, 12, 0.36) 54%,
-      rgba(8, 6, 9, 0.82) 100%
-    );
+  backface-visibility: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba(18, 14, 14, 0.08) 0%,
+    rgba(15, 11, 12, 0.18) 54%,
+    rgba(8, 6, 9, 0.35) 100%
+  );
 }
 
 .arena-portrait-card__grain {
   position: absolute;
   inset: 0;
-  opacity: 0.28;
-  background-image:
-    radial-gradient(rgba(255, 255, 255, 0.24) 0.45px, transparent 0.45px),
-    radial-gradient(rgba(255, 255, 255, 0.14) 0.45px, transparent 0.45px);
-  background-size:
-    3px 3px,
-    4px 4px;
-  background-position:
-    0 0,
-    1px 1px;
   pointer-events: none;
+  backface-visibility: hidden;
+  opacity: 0.15;
+  mix-blend-mode: overlay;
+  background-image: url("/img/grain.webp");
+  background-size: 200px;
+}
+
+.arena-portrait-card__shine {
+  border-radius: 12px;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform: translateZ(1px);
+  background: transparent;
+  filter: brightness(0.85) contrast(2.75) saturate(0.65);
+  mix-blend-mode: color-dodge;
+  opacity: var(--card-opacity, 0);
+  backface-visibility: hidden;
+}
+
+.arena-portrait-card__glare {
+  border-radius: 12px;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  transform: translateZ(1.41px);
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(0, 0%, 100%, 0.8) 10%,
+    hsla(0, 0%, 100%, 0.65) 20%,
+    hsla(0, 0%, 0%, 0.5) 90%
+  );
+  mix-blend-mode: overlay;
+  opacity: var(--card-opacity, 0);
+  backface-visibility: hidden;
+}
+
+.arena-portrait-card__back {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #1a5276;
+  transform: rotateY(180deg) translateZ(1px);
+  backface-visibility: visible;
+}
+
+@keyframes arena-card-spin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+.arena-portrait-card__spinner--spin {
+  animation: arena-card-spin 1s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+.arena-portrait-card__spinner {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.arena-portrait-card--interactive {
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+  perspective: 600px;
+  transform: translate3d(0px, 0px, 0.01px);
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.arena-portrait-card--popped {
+  z-index: 9999 !important;
+}
+
+.arena-portrait-card__translater {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 500ms cubic-bezier(0.2, 0, 0, 1);
+  --translate-x: 0px;
+  --translate-y: 0px;
+  --card-scale: 1;
+  transform: translate3d(
+    var(--translate-x, 0px),
+    var(--translate-y, 0px),
+    0px
+  ) scale(var(--card-scale, 1));
+}
+
+.arena-portrait-card__rotator {
+  display: grid;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  perspective: 600px;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transform-origin: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: 1px solid transparent;
+  pointer-events: auto;
+}
+
+.arena-portrait-card__rotator > * {
+  grid-area: 1 / 1;
+  pointer-events: none;
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+
+.arena-portrait-card__rotator:focus-visible {
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px var(--arena-card-glow);
 }
 
 .arena-portrait-card__top {
@@ -875,6 +990,7 @@ h6 {
   right: 0;
   bottom: 0;
   z-index: 3;
+  border-radius: 0 0 12px 12px;
   padding: 0.6rem 0.55rem 0.5rem 0.65rem;
   background: linear-gradient(
     180deg,
@@ -943,14 +1059,6 @@ h6 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arena-portrait-card {
-    box-shadow:
-      0 8px 18px rgba(9, 9, 12, 0.22),
-      0 0 10px var(--arena-card-glow);
-  }
 }
 
 .arena-draw-duel {
@@ -1040,13 +1148,7 @@ h6 {
   width: 100%;
   height: 100%;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.88);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow:
-    0 18px 26px rgba(29, 78, 216, 0.15),
-    0 10px 18px rgba(85, 58, 35, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
   transform-origin: center;
   transform-style: preserve-3d;
   transition:
@@ -1057,49 +1159,6 @@ h6 {
 
 .arena-card-portrait-slot {
   perspective: 800px;
-}
-
-.arena-duel-card:hover {
-  animation: arena-card-inspect 2.4s ease-in-out infinite;
-  box-shadow:
-    0 26px 36px rgba(29, 78, 216, 0.18),
-    0 16px 24px rgba(85, 58, 35, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
-}
-
-.arena-duel-card .arena-portrait-card__inner {
-  border-radius: 14px;
-}
-
-.arena-duel-card .arena-portrait-card__inner::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      118deg,
-      transparent 0%,
-      transparent 28%,
-      rgba(255, 255, 255, 0.34) 38%,
-      rgba(255, 255, 255, 0.1) 47%,
-      transparent 58%,
-      transparent 100%
-    ),
-    radial-gradient(circle at 24% 8%, rgba(255, 255, 255, 0.32), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 34%);
-  mix-blend-mode: screen;
-  opacity: 0.76;
-  transform: translate3d(-8%, -4%, 0);
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-
-.arena-duel-card:hover .arena-portrait-card__inner::after {
-  animation: arena-card-gloss-sweep 2.4s ease-in-out infinite;
-  opacity: 0.92;
 }
 
 .arena-duel-card .arena-portrait-card__name {
@@ -1121,40 +1180,10 @@ h6 {
   font-size: 0.51rem;
 }
 
-@keyframes arena-card-inspect {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
-  }
-  22% {
-    transform: translate3d(3px, -4px, 0) rotateX(5deg) rotateY(-7deg);
-  }
-  48% {
-    transform: translate3d(-3px, -6px, 0) rotateX(-4deg) rotateY(8deg);
-  }
-  74% {
-    transform: translate3d(2px, -3px, 0) rotateX(4deg) rotateY(5deg);
-  }
-}
-
-@keyframes arena-card-gloss-sweep {
-  0%,
-  100% {
-    transform: translate3d(-18%, -8%, 0);
-  }
-  48% {
-    transform: translate3d(14%, 8%, 0);
-  }
-  74% {
-    transform: translate3d(8%, -4%, 0);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .arena-duel-card,
-  .arena-duel-card:hover,
-  .arena-duel-card:hover .arena-portrait-card__inner::after {
-    animation: none;
+  .arena-portrait-card__rotator {
+    transform: perspective(600px) rotateY(0deg) rotateX(0deg) !important;
+    transition: none !important;
   }
 }
 
