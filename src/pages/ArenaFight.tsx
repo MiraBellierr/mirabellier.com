@@ -13,12 +13,14 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import type { Socket } from "socket.io-client";
 import { createDedicatedSocket } from "@/lib/websocket";
 import { usePageSeo } from "@/lib/seo";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ArenaApiError,
   type ArenaActiveFight,
   type ArenaBattleConsoleEvent,
   type ArenaProfile,
   fetchArenaProfile,
+  fetchFightState,
   verifyArena,
 } from "@/lib/arena-api";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
@@ -100,6 +102,7 @@ const ArenaFight = () => {
   const token = auth?.token || null;
   const socketRef = useRef<Socket | null>(null);
   const [fightConnected, setFightConnected] = useState(false);
+  const isMobile = useIsMobile();
 
   const [profile, setProfile] = useState<ArenaProfile | null>(null);
   const [activeFight, setActiveFight] = useState<ArenaActiveFight | null>(null);
@@ -457,6 +460,33 @@ const ArenaFight = () => {
     }
   }, [token, verified]);
 
+  // Sync fight state on reconnection
+  const wasDisconnectedRef = useRef(false);
+
+  useEffect(() => {
+    if (!fightConnected) {
+      wasDisconnectedRef.current = true;
+      return;
+    }
+    if (!wasDisconnectedRef.current) return;
+    wasDisconnectedRef.current = false;
+
+    const t = tokenRef.current;
+    const fight = activeFightRef.current;
+    if (!t || !fight || fight.isFinished) return;
+
+    fetchFightState(t)
+      .then(({ activeFight: fresh }) => {
+        if (!fresh || fresh.fightId !== fight.fightId) return;
+        processFightState(fresh);
+        if (!fresh.isFinished && !advanceLockRef.current) {
+          advanceLockRef.current = true;
+          queueFightCommand("arena:fight:advance");
+        }
+      })
+      .catch(() => {});
+  }, [fightConnected, processFightState, queueFightCommand]);
+
   // ---- WS action helpers ----
 
   const sendAdvance = useCallback(() => {
@@ -695,7 +725,7 @@ const ArenaFight = () => {
                             <div className="arena-chosen-card-body">
                               <div className="arena-card-portrait-slot">
                                 {profile?.selectedCard ? (
-                                  <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" interactive auto boostedIv={boostedIv} />
+                                  <ArenaPortraitCard card={profile.selectedCard} level={profile.level} className="arena-duel-card" interactive auto={!isMobile} boostedIv={boostedIv} />
                                 ) : null}
                               </div>
                             </div>
@@ -717,7 +747,7 @@ const ArenaFight = () => {
                             {activeFight?.opponent?.selectedCard ? (
                               <div className="arena-chosen-card-body">
                                 <div className="arena-card-portrait-slot">
-                                  <ArenaPortraitCard card={activeFight.opponent.selectedCard} level={activeFight.opponent.level} className="arena-duel-card" interactive auto />
+                                  <ArenaPortraitCard card={activeFight.opponent.selectedCard} level={activeFight.opponent.level} className="arena-duel-card" interactive auto={!isMobile} />
                                 </div>
                               </div>
                             ) : (

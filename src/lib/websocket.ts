@@ -199,7 +199,10 @@ export function createDedicatedSocket(): Socket {
   return io(resolveApiUrl(), {
     path: "/ws",
     autoConnect: false,
-    reconnection: false,
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 30000,
+    reconnectionAttempts: Infinity,
     transports: ["websocket"],
     auth: (cb: (data: object) => void) => {
       fetchWsToken()
