@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWebSocket } from "@/states/WebSocketProvider";
+import type { ConnectionState } from "@/lib/websocket";
 
 export function useWebSocketEvent(
   type: string,
@@ -8,9 +9,7 @@ export function useWebSocketEvent(
   const ws = useWebSocket();
   const callbackRef = useRef(callback);
 
-  useEffect(() => {
-    callbackRef.current = callback;
-  }, [callback]);
+  callbackRef.current = callback;
 
   useEffect(() => {
     const unsubscribe = ws.on(type, (data) => {
@@ -18,4 +17,18 @@ export function useWebSocketEvent(
     });
     return unsubscribe;
   }, [ws, type]);
+}
+
+export function useWebSocketState(): ConnectionState {
+  const ws = useWebSocket();
+  const [connectionState, setConnectionState] = useState<ConnectionState>(
+    ws.connectionState,
+  );
+
+  useEffect(() => {
+    setConnectionState(ws.connectionState);
+    return ws.onStateChange(setConnectionState);
+  }, [ws]);
+
+  return connectionState;
 }

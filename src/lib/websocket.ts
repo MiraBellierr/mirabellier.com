@@ -7,10 +7,13 @@ type EventCallback = (data: unknown) => void;
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
 const RECONNECT_MULTIPLIER = 1.5;
+const MAX_QUEUED_MESSAGES = 50;
 
 export interface WebSocketClient {
   get connectionState(): ConnectionState;
-  send(data: Record<string, unknown>): void;
+  get isClosed(): boolean;
+  send(data: Record<string, unknown>): boolean;
+  sendWhenReady(data: Record<string, unknown>): boolean;
   on(type: string, callback: EventCallback): () => void;
   off(type: string, callback: EventCallback): void;
   onStateChange(callback: (state: ConnectionState) => void): () => void;
@@ -44,6 +47,7 @@ export function createWebSocketClient(): WebSocketClient {
   let connectPromise: Promise<void> | null = null;
   let reconnectAttempt = 0;
   let closed = false;
+  const queuedMessages: Record<string, unknown>[] = [];
 
   const listeners = new Map<string, Set<EventCallback>>();
   const stateListeners = new Set<(state: ConnectionState) => void>();
@@ -82,6 +86,23 @@ export function createWebSocketClient(): WebSocketClient {
     );
   }
 
+  function flushQueue() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    while (queuedMessages.length > 0 && ws.readyState === WebSocket.OPEN) {
+      const data = queuedMessages.shift();
+      if (!data) continue;
+      ws.send(JSON.stringify(data));
+    }
+  }
+
+  function sendNow(data: Record<string, unknown>) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+      return true;
+    }
+    return false;
+  }
+
   async function connect() {
     if (closed) return;
     if (connectPromise) return connectPromise;
@@ -106,6 +127,7 @@ export function createWebSocketClient(): WebSocketClient {
           }
           setState("connected");
           reconnectAttempt = 0;
+          flushQueue();
         };
 
         socket.onmessage = (event) => {
@@ -146,10 +168,25 @@ export function createWebSocketClient(): WebSocketClient {
       return state;
     },
 
+    get isClosed() {
+      return closed;
+    },
+
     send(data: Record<string, unknown>) {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(data));
+      return sendNow(data);
+    },
+
+    sendWhenReady(data: Record<string, unknown>) {
+      if (closed) return false;
+      if (sendNow(data)) return true;
+      if (queuedMessages.length >= MAX_QUEUED_MESSAGES) {
+        queuedMessages.shift();
       }
+      queuedMessages.push(data);
+      if (state === "disconnected" && !connectPromise && !hasActiveSocket()) {
+        void connect();
+      }
+      return true;
     },
 
     on(type: string, callback: EventCallback): () => void {
@@ -187,6 +224,7 @@ export function createWebSocketClient(): WebSocketClient {
       closed = true;
       clearReconnect();
       connectPromise = null;
+      queuedMessages.length = 0;
       if (ws) {
         ws.onopen = null;
         ws.onmessage = null;
@@ -196,6 +234,8 @@ export function createWebSocketClient(): WebSocketClient {
         ws = null;
       }
       listeners.clear();
+      stateListeners.clear();
+      setState("disconnected");
     },
   };
 }
@@ -203,7 +243,7 @@ export function createWebSocketClient(): WebSocketClient {
 let defaultClient: WebSocketClient | null = null;
 
 export function getWebSocketClient(): WebSocketClient {
-  if (!defaultClient) {
+  if (!defaultClient || defaultClient.isClosed) {
     defaultClient = createWebSocketClient();
   }
   return defaultClient;

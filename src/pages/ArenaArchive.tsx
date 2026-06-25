@@ -16,6 +16,8 @@ import {
   type ArenaArchiveResponse,
 } from "@/lib/arena-api";
 
+type ArchiveOwnershipFilter = "all" | "owned" | "not-owned";
+
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;
   if (error instanceof Error) return error.message;
@@ -30,6 +32,7 @@ const ArenaArchive = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [ownership, setOwnership] = useState<ArchiveOwnershipFilter>("all");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   usePageSeo({
@@ -61,6 +64,7 @@ const ArenaArchive = () => {
           page,
           perPage: 12,
           search: query || undefined,
+          ownership,
         });
         if (cancelled) return;
         setArchive(payload);
@@ -76,7 +80,7 @@ const ArenaArchive = () => {
     return () => {
       cancelled = true;
     };
-  }, [token, page, query]);
+  }, [token, page, query, ownership]);
 
   const cards = archive?.cards || [];
   const totalPages = archive?.totalPages || 1;
@@ -121,6 +125,27 @@ const ArenaArchive = () => {
                       Cards indexed: {archive.total}
                     </p>
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                      <div className="flex flex-wrap gap-2" aria-label="Ownership filter">
+                        {([
+                          ["all", "all"],
+                          ["owned", "owned"],
+                          ["not-owned", "not owned"],
+                        ] as const).map(([value, label]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => {
+                              setOwnership(value);
+                              setPage(1);
+                            }}
+                            className="arena-redraw-button hover:animate-wiggle"
+                          >
+                            {ownership === value
+                              ? `[ » ${label} « ]`
+                              : `[ ${label} ]`}
+                          </button>
+                        ))}
+                      </div>
                       <label htmlFor="archive-search" className="sr-only">
                         Search archive
                       </label>
@@ -152,6 +177,15 @@ const ArenaArchive = () => {
                             showIvLine
                             interactive
                           />
+                          <p
+                            className={`text-center text-[0.65rem] font-black uppercase ${
+                              card.owned
+                                ? "text-emerald-600 dark:text-emerald-300"
+                                : "text-slate-400 dark:text-slate-500"
+                            }`}
+                          >
+                            {card.owned ? "Owned" : "Not owned"}
+                          </p>
                         </div>
                       );
                     })}
@@ -159,7 +193,7 @@ const ArenaArchive = () => {
 
                   {cards.length === 0 ? (
                     <p className="text-sm text-slate-600 dark:text-purple-300">
-                      No cards match your search.
+                      No cards match this archive filter.
                     </p>
                   ) : null}
 

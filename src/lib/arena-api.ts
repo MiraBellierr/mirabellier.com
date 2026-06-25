@@ -118,6 +118,7 @@ export type ArenaCard = {
   from?: string | null;
   rainbow?: boolean;
   ownedCount?: number;
+  owned?: boolean;
 };
 
 export type ArenaProfile = {
@@ -397,6 +398,7 @@ export type ArenaArchiveResponse = {
   totalPages: number;
   total: number;
   search?: string;
+  ownership: "all" | "owned" | "not-owned";
 };
 
 export type ArenaSelectCollectionCardResponse = {
@@ -1647,12 +1649,20 @@ export async function fetchArenaCollection(
 
 export async function fetchArenaArchive(
   token: string,
-  options: { page?: number; perPage?: number; search?: string } = {},
+  options: {
+    page?: number;
+    perPage?: number;
+    search?: string;
+    ownership?: "all" | "owned" | "not-owned";
+  } = {},
 ): Promise<ArenaArchiveResponse> {
   const params = new URLSearchParams();
   if (options.page) params.set("page", String(options.page));
   if (options.perPage) params.set("perPage", String(options.perPage));
   if (options.search) params.set("search", options.search);
+  if (options.ownership && options.ownership !== "all") {
+    params.set("ownership", options.ownership);
+  }
   const response = await fetch(joinApi(`/arena/archive?${params.toString()}`), {
     credentials: "include",
     headers: shouldSendBearerToken(token)

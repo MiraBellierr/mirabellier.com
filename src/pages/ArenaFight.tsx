@@ -11,7 +11,7 @@ import ArenaSubNav from "@/parts/ArenaSubNav";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useWebSocket } from "@/states/WebSocketProvider";
-import { useWebSocketEvent } from "@/hooks/use-websocket";
+import { useWebSocketEvent, useWebSocketState } from "@/hooks/use-websocket";
 import { usePageSeo } from "@/lib/seo";
 import type { ConnectionState } from "@/lib/websocket";
 import {
@@ -101,6 +101,7 @@ const ArenaFight = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
   const ws = useWebSocket();
+  const connectionState = useWebSocketState();
 
   const [profile, setProfile] = useState<ArenaProfile | null>(null);
   const [activeFight, setActiveFight] = useState<ArenaActiveFight | null>(null);
@@ -153,6 +154,7 @@ const ArenaFight = () => {
   activeFightRef.current = activeFight;
 
   const TURN_ADVANCE_DELAY_MS = 800;
+  const isSocketConnected = connectionState === "connected";
 
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current !== null) {
@@ -175,6 +177,20 @@ const ArenaFight = () => {
     }
     setNextAutoFightAt(null);
   }, []);
+
+  const queueFightCommand = useCallback(
+    (type: "arena:fight:advance" | "arena:fight:skip" | "arena:fight:start") => {
+      const queued = ws.sendWhenReady({ type });
+      if (!queued) {
+        advanceLockRef.current = false;
+        startPendingRef.current = false;
+        setStarting(false);
+        setErrorMessage("Connection is not ready. Please refresh and try again.");
+      }
+      return queued;
+    },
+    [ws],
+  );
 
   useEffect(() => {
     if (nextAutoFightAt === null) return;
@@ -389,7 +405,7 @@ const ArenaFight = () => {
         return;
       }
       advanceLockRef.current = true;
-      ws.send({ type: "arena:fight:advance" });
+      queueFightCommand("arena:fight:advance");
     };
 
     tryResume();
@@ -400,7 +416,7 @@ const ArenaFight = () => {
         resumeRetryRef.current = null;
       }
     };
-  }, [activeFight?.fightId, ws]);
+  }, [activeFight?.fightId, queueFightCommand]);
 
   // ---- WebSocket event handlers ----
 
@@ -431,13 +447,13 @@ const ArenaFight = () => {
           processFightState(fresh);
           if (!fresh.isFinished && !advanceLockRef.current) {
             advanceLockRef.current = true;
-            ws.send({ type: "arena:fight:advance" });
+            queueFightCommand("arena:fight:advance");
           }
         })
         .catch(() => {});
     });
     return untrack;
-  }, [ws, processFightState]);
+  }, [ws, processFightState, queueFightCommand]);
 
   useWebSocketEvent("arena:fight:turn", (data) => {
     const state = data as ArenaActiveFight;
@@ -513,7 +529,7 @@ const ArenaFight = () => {
   const sendAdvance = useCallback(() => {
     if (advanceLockRef.current) return;
     advanceLockRef.current = true;
-    ws.send({ type: "arena:fight:advance" });
+    if (!queueFightCommand("arena:fight:advance")) return;
     clearSafetyTimer();
     safetyTimerRef.current = window.setTimeout(() => {
       safetyTimerRef.current = null;
@@ -522,7 +538,7 @@ const ArenaFight = () => {
         sendAdvance();
       }
     }, 10000);
-  }, [ws, clearSafetyTimer]);
+  }, [ws, clearSafetyTimer, queueFightCommand]);
 
   // ---- User actions ----
 
@@ -531,6 +547,10 @@ const ArenaFight = () => {
   const handleStartFight = useCallback((automatic = false) => {
     if (!token || starting) return;
     if (activeFight && !activeFight.isFinished) return;
+    if (!automatic && !isSocketConnected) {
+      setErrorMessage("Connecting to Arena. Please try again in a moment.");
+      return;
+    }
 
     needsResumeRef.current = false;
     setStarting(true);
@@ -538,16 +558,22 @@ const ArenaFight = () => {
     startPendingRef.current = true;
     isAutoStartRef.current = automatic;
     advanceLockRef.current = true;
-    ws.send({ type: "arena:fight:start" });
-  }, [token, starting, activeFight, ws]);
+    queueFightCommand("arena:fight:start");
+  }, [
+    token,
+    starting,
+    activeFight,
+    isSocketConnected,
+    queueFightCommand,
+  ]);
 
   handleStartFightRef.current = handleStartFight;
 
   const handleSkip = useCallback(() => {
     if (advanceLockRef.current) return;
     advanceLockRef.current = true;
-    ws.send({ type: "arena:fight:skip" });
-  }, [ws]);
+    queueFightCommand("arena:fight:skip");
+  }, [queueFightCommand]);
 
   const handleSkipRef = useRef(handleSkip);
   handleSkipRef.current = handleSkip;
@@ -773,13 +799,22 @@ const ArenaFight = () => {
                         <button
                           type="button"
                           onClick={() => void handleStartFight()}
-                          disabled={starting || !verified || (!!activeFight && !activeFight.isFinished)}
+                          disabled={
+                            starting ||
+                            !verified ||
+                            !isSocketConnected ||
+                            (!!activeFight && !activeFight.isFinished)
+                          }
                           className="arena-redraw-button hover:animate-wiggle"
                         >
                           {starting
                             ? "[ Starting... ]"
                             : !verified
                               ? "[ Verify first ]"
+                              : !isSocketConnected
+                                ? connectionState === "connecting"
+                                  ? "[ Connecting... ]"
+                                  : "[ Reconnecting... ]"
                               : fightFinished
                                 ? "[ Fight Again! ]"
                                 : "[ Fight! ]"}
