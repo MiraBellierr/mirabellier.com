@@ -21,6 +21,7 @@ const ArenaInventory = lazy(() => import("./pages/ArenaInventory"));
 const ArenaInbox = lazy(() => import("./pages/ArenaInbox"));
 const ArenaLeaderboard = lazy(() => import("./pages/ArenaLeaderboard"));
 const ArenaCollection = lazy(() => import("./pages/ArenaCollection"));
+const ArenaArchive = lazy(() => import("./pages/ArenaArchive"));
 const ArenaMarket = lazy(() => import("./pages/ArenaMarket"));
 const ArenaMint = lazy(() => import("./pages/ArenaMint"));
 const ArenaSkillTree = lazy(() => import("./pages/ArenaSkillTree"));
@@ -108,6 +109,7 @@ function App() {
       <Route path="/arena/inbox" element={<ArenaInbox />} />
       <Route path="/arena/leaderboard" element={<ArenaLeaderboard />} />
       <Route path="/arena/collection" element={<ArenaCollection />} />
+      <Route path="/arena/archive" element={<ArenaArchive />} />
       <Route path="/arena/market" element={<ArenaMarket />} />
       <Route path="/arena/mint" element={<ArenaMint />} />
       <Route path="/arena/skill-tree" element={<ArenaSkillTree />} />
@@ -121,6 +123,7 @@ function App() {
       <Route path="/ar/inbox" element={<ArenaInbox />} />
       <Route path="/ar/leaderboard" element={<ArenaLeaderboard />} />
       <Route path="/ar/collection" element={<ArenaCollection />} />
+      <Route path="/ar/archive" element={<ArenaArchive />} />
       <Route path="/ar/market" element={<ArenaMarket />} />
       <Route path="/ar/mint" element={<ArenaMint />} />
       <Route path="/ar/skill-tree" element={<ArenaSkillTree />} />

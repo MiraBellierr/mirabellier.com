@@ -390,6 +390,15 @@ export type ArenaCollectionResponse = {
   element?: string;
 };
 
+export type ArenaArchiveResponse = {
+  cards: ArenaCard[];
+  page: number;
+  perPage: number;
+  totalPages: number;
+  total: number;
+  search?: string;
+};
+
 export type ArenaSelectCollectionCardResponse = {
   selectedCard: ArenaCard;
   profile: ArenaProfile;
@@ -969,6 +978,8 @@ export type ArenaTradeSession = {
   responderUsername: string;
   askerCard: ArenaCard | null;
   responderCard: ArenaCard | null;
+  askerCards: ArenaCard[];
+  responderCards: ArenaCard[];
   askerCoins: number;
   responderCoins: number;
   askerConfirmed: boolean;
@@ -1227,6 +1238,7 @@ export async function offerCardInArenaTrade(
 export async function removeCardFromArenaTrade(
   token: string,
   sessionId: string,
+  cardInstanceId?: string,
 ): Promise<ArenaTradeSession> {
   const response = await fetch(
     joinApi(`/arena/trade/session/${encodeURIComponent(sessionId)}/remove-card`),
@@ -1234,6 +1246,7 @@ export async function removeCardFromArenaTrade(
       method: "POST",
       credentials: "include",
       headers: makeAuthHeaders(token),
+      body: JSON.stringify({ cardInstanceId }),
     },
   );
   if (!response.ok) throw await readApiError(response);
@@ -1630,6 +1643,29 @@ export async function fetchArenaCollection(
   }
 
   return (await response.json()) as ArenaCollectionResponse;
+}
+
+export async function fetchArenaArchive(
+  token: string,
+  options: { page?: number; perPage?: number; search?: string } = {},
+): Promise<ArenaArchiveResponse> {
+  const params = new URLSearchParams();
+  if (options.page) params.set("page", String(options.page));
+  if (options.perPage) params.set("perPage", String(options.perPage));
+  if (options.search) params.set("search", options.search);
+  const response = await fetch(joinApi(`/arena/archive?${params.toString()}`), {
+    credentials: "include",
+    headers: shouldSendBearerToken(token)
+      ? { Authorization: `Bearer ${token}` }
+      : undefined,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaArchiveResponse;
 }
 
 export async function selectArenaCollectionCard(
