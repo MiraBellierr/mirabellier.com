@@ -24,6 +24,7 @@ import {
   fetchArenaCollection,
   fetchArenaTradeListings,
   fetchMyArenaTradeListings,
+  searchArenaTradeCards,
   searchArenaTradeUsers,
   sendArenaTradeRequest,
 } from "@/lib/arena-api";
@@ -96,10 +97,16 @@ const ArenaTrade = () => {
   const [cardDropdownOpen, setCardDropdownOpen] = useState(false);
   const [cardHighlight, setCardHighlight] = useState(-1);
   const [selectedCard, setSelectedCard] = useState<ArenaCard | null>(null);
+  const [wantedCardSearch, setWantedCardSearch] = useState("");
+  const [wantedCardDropdownOpen, setWantedCardDropdownOpen] = useState(false);
+  const [wantedCardHighlight, setWantedCardHighlight] = useState(-1);
+  const [selectedWantedCard, setSelectedWantedCard] = useState<ArenaCard | null>(null);
+  const [wantedCardResults, setWantedCardResults] = useState<ArenaCard[]>([]);
   const [createWantedRarity, setCreateWantedRarity] = useState("");
   const [createWantedElement, setCreateWantedElement] = useState("");
   const [createNote, setCreateNote] = useState("");
   const cardDropdownRef = useRef<HTMLDivElement | null>(null);
+  const wantedCardDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Request from listings: card picker
   const [requestTargetListing, setRequestTargetListing] = useState<ArenaTradeListing | null>(null);
@@ -256,12 +263,35 @@ const ArenaTrade = () => {
         );
       })
     : [];
+  const wantedCardSuggestions = wantedCardSearch.trim() ? wantedCardResults : [];
+
+  useEffect(() => {
+    if (!token || !wantedCardSearch.trim()) {
+      setWantedCardResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const cards = await searchArenaTradeCards(token, wantedCardSearch);
+        setWantedCardResults(cards);
+      } catch {
+        setWantedCardResults([]);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [token, wantedCardSearch]);
 
   // Close card dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (cardDropdownRef.current && !cardDropdownRef.current.contains(e.target as Node)) {
         setCardDropdownOpen(false);
+      }
+      if (
+        wantedCardDropdownRef.current &&
+        !wantedCardDropdownRef.current.contains(e.target as Node)
+      ) {
+        setWantedCardDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
@@ -275,21 +305,24 @@ const ArenaTrade = () => {
     try {
       await createArenaTradeListing(token, {
         cardInstanceId: selectedCard.cardInstanceId,
+        wantedCardMalId: selectedWantedCard?.malId,
         wantedRarity: createWantedRarity || undefined,
         wantedElement: createWantedElement || undefined,
         note: createNote.trim() || undefined,
       });
       setSelectedCard(null);
+      setSelectedWantedCard(null);
       setCreateWantedRarity("");
       setCreateWantedElement("");
       setCreateNote("");
       setCardSearch("");
+      setWantedCardSearch("");
       await refreshAfterMutation();
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
     }
     setActioningId(null);
-  }, [token, selectedCard, createWantedRarity, createWantedElement, createNote, refreshAfterMutation]);
+  }, [token, selectedCard, selectedWantedCard, createWantedRarity, createWantedElement, createNote, refreshAfterMutation]);
 
   const handleCancelListing = useCallback(
     async (listingId: string) => {
@@ -328,7 +361,9 @@ const ArenaTrade = () => {
       if (!token) return;
       setRequestTargetListing(listing);
       setRequestCardPickerOpen(true);
-      setRequestCardQuery("");
+      setRequestCardQuery(listing.wantedCard?.title || "");
+      setRequestCardRarity(listing.wantedCard?.rarity || listing.wantedRarity || "");
+      setRequestCardElement(listing.wantedCard?.element || listing.wantedElement || "");
       setRequestCardHighlight(-1);
     },
     [token],
@@ -341,7 +376,12 @@ const ArenaTrade = () => {
       setErrorMessage(null);
       setRequestCardPickerOpen(false);
       try {
-        await sendArenaTradeRequest(token, requestTargetListing.userId, cardInstanceId);
+        await sendArenaTradeRequest(
+          token,
+          requestTargetListing.userId,
+          cardInstanceId,
+          requestTargetListing.id,
+        );
         await refreshAfterMutation();
         setRequestTargetListing(null);
       } catch (error) {
@@ -443,6 +483,11 @@ const ArenaTrade = () => {
                       <span className="text-slate-500 dark:text-slate-400">IV {listing.card.iv.total}</span>
                     </div>
                     <div className="mt-1 flex flex-wrap gap-1">
+                      {listing.wantedCard ? (
+                        <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-xs font-bold text-pink-800 dark:bg-pink-900/40 dark:text-pink-200">
+                          {listing.wantedCard.title}
+                        </span>
+                      ) : null}
                       {listing.wantedRarity ? (
                         <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${WANTED_BADGES[listing.wantedRarity] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"}`}>
                           {listing.wantedRarity}
@@ -453,7 +498,7 @@ const ArenaTrade = () => {
                           {listing.wantedElement}
                         </span>
                       ) : null}
-                      {!listing.wantedRarity && !listing.wantedElement ? (
+                      {!listing.wantedCard && !listing.wantedRarity && !listing.wantedElement ? (
                         <span className="text-xs text-slate-400 dark:text-slate-500">Any</span>
                       ) : null}
                     </div>
@@ -533,6 +578,11 @@ const ArenaTrade = () => {
                       </td>
                       <td className="py-2 px-2">
                         <div className="flex flex-wrap gap-1">
+                          {listing.wantedCard ? (
+                            <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-xs font-bold text-pink-800 dark:bg-pink-900/40 dark:text-pink-200">
+                              {listing.wantedCard.title}
+                            </span>
+                          ) : null}
                           {listing.wantedRarity ? (
                             <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${WANTED_BADGES[listing.wantedRarity] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"}`}>
                               {listing.wantedRarity}
@@ -543,7 +593,7 @@ const ArenaTrade = () => {
                               {listing.wantedElement}
                             </span>
                           ) : null}
-                          {!listing.wantedRarity && !listing.wantedElement ? (
+                          {!listing.wantedCard && !listing.wantedRarity && !listing.wantedElement ? (
                             <span className="text-xs text-slate-400 dark:text-slate-500">Any</span>
                           ) : null}
                         </div>
@@ -723,6 +773,97 @@ const ArenaTrade = () => {
                           ))}
                         </select>
                       </div>
+                      <div ref={wantedCardDropdownRef} className="relative">
+                        <input
+                          type="text"
+                          value={wantedCardSearch}
+                          onChange={(e) => {
+                            setWantedCardSearch(e.target.value);
+                            setWantedCardDropdownOpen(true);
+                            setWantedCardHighlight(-1);
+                          }}
+                          onFocus={() => {
+                            if (wantedCardSearch.trim()) setWantedCardDropdownOpen(true);
+                          }}
+                          onKeyDown={(e) => {
+                            if (!wantedCardDropdownOpen || wantedCardSuggestions.length === 0) return;
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              setWantedCardHighlight((prev) =>
+                                prev < wantedCardSuggestions.length - 1 ? prev + 1 : 0,
+                              );
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              setWantedCardHighlight((prev) =>
+                                prev > 0 ? prev - 1 : wantedCardSuggestions.length - 1,
+                              );
+                            } else if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (
+                                wantedCardHighlight >= 0 &&
+                                wantedCardHighlight < wantedCardSuggestions.length
+                              ) {
+                                setSelectedWantedCard(wantedCardSuggestions[wantedCardHighlight]);
+                                setWantedCardSearch("");
+                                setWantedCardDropdownOpen(false);
+                              }
+                            } else if (e.key === "Escape") {
+                              setWantedCardDropdownOpen(false);
+                              setWantedCardHighlight(-1);
+                            }
+                          }}
+                          placeholder="Specific card wanted..."
+                          className="w-full rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
+                        />
+                        {wantedCardDropdownOpen && wantedCardSearch.trim() && wantedCardSuggestions.length > 0 && (
+                          <ul className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-blue-200 bg-white shadow-lg dark:border-purple-400/40 dark:bg-slate-800">
+                            {wantedCardSuggestions.map((card, index) => (
+                              <li key={card.cardInstanceId || index}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedWantedCard(card);
+                                    setWantedCardSearch("");
+                                    setWantedCardDropdownOpen(false);
+                                  }}
+                                  onMouseEnter={() => setWantedCardHighlight(index)}
+                                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                                    index === wantedCardHighlight
+                                      ? "bg-blue-100 text-blue-700 dark:bg-purple-900/50 dark:text-purple-100"
+                                      : "text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-700"
+                                  }`}
+                                >
+                                  <img
+                                    src={card.imageUrl}
+                                    alt={card.title}
+                                    className="h-10 w-7 shrink-0 rounded object-cover"
+                                  />
+                                  <span className="truncate">
+                                    {card.title} · {card.rarity} · IV {card.iv.total}
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      {selectedWantedCard ? (
+                        <div className="flex items-center justify-between gap-2 rounded-lg border border-pink-200 bg-pink-50 px-2 py-1 text-xs text-pink-700 dark:border-pink-400/40 dark:bg-pink-950/30 dark:text-pink-200">
+                          <span className="truncate">
+                            Want: {selectedWantedCard.title} · {selectedWantedCard.rarity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedWantedCard(null);
+                              setWantedCardSearch("");
+                            }}
+                            className="font-bold"
+                          >
+                            clear
+                          </button>
+                        </div>
+                      ) : null}
                       <input
                         type="text"
                         value={createNote}
@@ -736,9 +877,11 @@ const ArenaTrade = () => {
                           type="button"
                           onClick={() => {
                             setSelectedCard(null);
+                            setSelectedWantedCard(null);
                             setCreateWantedRarity("");
                             setCreateWantedElement("");
                             setCreateNote("");
+                            setWantedCardSearch("");
                           }}
                           className="arena-redraw-button text-xs hover:animate-wiggle"
                         >
@@ -792,8 +935,13 @@ const ArenaTrade = () => {
                   className="flex flex-col items-center gap-2 rounded-xl border border-blue-100 bg-white/60 p-3 dark:border-purple-400/20 dark:bg-slate-800/60"
                 >
                   <ArenaPortraitCard card={listing.card} size="compact" showIvLine interactive auto />
-                  {(listing.wantedRarity || listing.wantedElement) && (
+                  {(listing.wantedCard || listing.wantedRarity || listing.wantedElement) && (
                     <div className="flex flex-wrap justify-center gap-1">
+                      {listing.wantedCard && (
+                        <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-bold text-pink-800 dark:bg-pink-900/40 dark:text-pink-200">
+                          Want: {listing.wantedCard.title}
+                        </span>
+                      )}
                       {listing.wantedRarity && (
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-bold ${WANTED_BADGES[listing.wantedRarity] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"}`}

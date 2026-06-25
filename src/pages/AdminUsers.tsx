@@ -62,6 +62,9 @@ const AdminUsers = () => {
   const [resettingDraws, setResettingDraws] = useState(false);
   const [resetDrawsResult, setResetDrawsResult] = useState<string | null>(null);
 
+  const [rerollingShop, setRerollingShop] = useState(false);
+  const [shopRerollResult, setShopRerollResult] = useState<string | null>(null);
+
   const [debugRandomPack, setDebugRandomPack] = useState(
     () => localStorage.getItem("debugRandomPack") === "1",
   );
@@ -255,6 +258,36 @@ const AdminUsers = () => {
       );
     } finally {
       setResettingDraws(false);
+    }
+  };
+
+  const handleRerollShop = async () => {
+    if (!token) return;
+    setRerollingShop(true);
+    setShopRerollResult(null);
+    try {
+      const response = await fetch(joinApi("/admin/arena/card-shop/reroll"), {
+        method: "POST",
+        credentials: "include",
+        headers: makeAuthHeaders(token),
+        cache: "no-store",
+      });
+      if (!response.ok) throw await readApiError(response);
+      const data = (await response.json()) as {
+        offerDate: string;
+        dailyOffers: Array<{ offerId: string }>;
+        deletedOffers: number;
+        deletedPurchases: number;
+      };
+      setShopRerollResult(
+        `Rerolled ${data.dailyOffers.length} card(s) for ${data.offerDate}. Cleared ${data.deletedOffers} offer(s) and ${data.deletedPurchases} purchase marker(s).`,
+      );
+    } catch (error) {
+      setShopRerollResult(
+        error instanceof ArenaApiError ? error.message : "Failed to reroll shop",
+      );
+    } finally {
+      setRerollingShop(false);
     }
   };
 
@@ -464,6 +497,22 @@ const AdminUsers = () => {
                     />
                     <span className="text-xs font-semibold">Force random pack</span>
                   </label>
+                  <div className="border-t border-blue-200 pt-2 dark:border-slate-700">
+                    <p className="mb-2 text-xs">Regenerate today's global card shop offers for everyone.</p>
+                    <button
+                      type="button"
+                      onClick={() => void handleRerollShop()}
+                      disabled={rerollingShop}
+                      className="arena-redraw-button hover:animate-wiggle shrink-0"
+                    >
+                      {rerollingShop ? "[ rerolling... ]" : "[ reroll card shop ]"}
+                    </button>
+                    {shopRerollResult ? (
+                      <p className="mt-2 text-xs text-green-700 dark:text-green-400">
+                        {shopRerollResult}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
           </aside>

@@ -932,6 +932,7 @@ export type ArenaTradeListing = {
   username: string;
   avatar: string | null;
   card: ArenaCard;
+  wantedCard: ArenaCard | null;
   wantedRarity: string | null;
   wantedElement: string | null;
   note: string | null;
@@ -1006,6 +1007,21 @@ export async function searchArenaTradeUsers(
   return payload.users;
 }
 
+export async function searchArenaTradeCards(
+  token: string,
+  query: string,
+): Promise<ArenaCard[]> {
+  const params = new URLSearchParams({ q: query });
+  const response = await fetch(joinApi(`/arena/trade/cards?${params.toString()}`), {
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  const payload = (await response.json()) as { cards: ArenaCard[] };
+  return payload.cards;
+}
+
 export async function fetchArenaTradeListings(
   token: string,
   options: {
@@ -1047,6 +1063,8 @@ export async function createArenaTradeListing(
   token: string,
   input: {
     cardInstanceId: string;
+    wantedCardInstanceId?: string;
+    wantedCardMalId?: number;
     wantedRarity?: string;
     wantedElement?: string;
     note?: string;
@@ -1082,12 +1100,13 @@ export async function sendArenaTradeRequest(
   token: string,
   responderId: string,
   cardInstanceId?: string,
+  listingId?: string,
 ): Promise<{ requestId: string }> {
   const response = await fetch(joinApi("/arena/trade/request"), {
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({ responderId, cardInstanceId }),
+    body: JSON.stringify({ responderId, cardInstanceId, listingId }),
   });
   if (!response.ok) throw await readApiError(response);
   return (await response.json()) as { requestId: string };
