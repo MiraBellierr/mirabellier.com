@@ -195,6 +195,20 @@ export function createWebSocketClient(): WebSocketClient {
   };
 }
 
+export function createDedicatedSocket(): Socket {
+  return io(resolveApiUrl(), {
+    path: "/ws",
+    autoConnect: false,
+    reconnection: false,
+    transports: ["websocket"],
+    auth: (cb: (data: object) => void) => {
+      fetchWsToken()
+        .then((token) => cb({ token }))
+        .catch(() => cb({ token: "" }));
+    },
+  });
+}
+
 let defaultClient: WebSocketClient | null = null;
 
 export function getWebSocketClient(): WebSocketClient {

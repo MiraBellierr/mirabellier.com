@@ -10,17 +10,15 @@ import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
-import { useWebSocket } from "@/states/WebSocketProvider";
-import { useWebSocketEvent, useWebSocketState } from "@/hooks/use-websocket";
+import type { Socket } from "socket.io-client";
+import { createDedicatedSocket } from "@/lib/websocket";
 import { usePageSeo } from "@/lib/seo";
-import type { ConnectionState } from "@/lib/websocket";
 import {
   ArenaApiError,
   type ArenaActiveFight,
   type ArenaBattleConsoleEvent,
   type ArenaProfile,
   fetchArenaProfile,
-  fetchFightState,
   verifyArena,
 } from "@/lib/arena-api";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
@@ -100,8 +98,8 @@ function HpBar({
 const ArenaFight = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
-  const ws = useWebSocket();
-  const connectionState = useWebSocketState();
+  const socketRef = useRef<Socket | null>(null);
+  const [fightConnected, setFightConnected] = useState(false);
 
   const [profile, setProfile] = useState<ArenaProfile | null>(null);
   const [activeFight, setActiveFight] = useState<ArenaActiveFight | null>(null);
@@ -154,7 +152,7 @@ const ArenaFight = () => {
   activeFightRef.current = activeFight;
 
   const TURN_ADVANCE_DELAY_MS = 800;
-  const isSocketConnected = connectionState === "connected";
+  const isSocketConnected = fightConnected;
 
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current !== null) {
@@ -180,16 +178,18 @@ const ArenaFight = () => {
 
   const queueFightCommand = useCallback(
     (type: "arena:fight:advance" | "arena:fight:skip" | "arena:fight:start") => {
-      const queued = ws.sendWhenReady({ type });
-      if (!queued) {
+      const socket = socketRef.current;
+      if (!socket?.connected) {
         advanceLockRef.current = false;
         startPendingRef.current = false;
         setStarting(false);
-        setErrorMessage("Connection is not ready. Please refresh and try again.");
+        setErrorMessage("Connection lost. Please refresh and try again.");
+        return false;
       }
-      return queued;
+      socket.emit("message", { type });
+      return true;
     },
-    [ws],
+    [],
   );
 
   useEffect(() => {
@@ -430,99 +430,32 @@ const ArenaFight = () => {
     return state;
   }, [triggerTurnEffects]);
 
-  // Sync fight state on WebSocket reconnection
+  // ---- Dedicated Socket.IO setup for fight ----
+
   useEffect(() => {
-    let lastState: ConnectionState = ws.connectionState;
-    const untrack = ws.onStateChange((next: ConnectionState) => {
-      const wasDisconnected = lastState === "disconnected";
-      lastState = next;
-      if (next !== "connected" || !wasDisconnected) return;
-      const t = tokenRef.current;
-      const fight = activeFightRef.current;
-      if (!t || !fight || fight.isFinished) return;
+    const socket = createDedicatedSocket();
 
-      fetchFightState(t)
-        .then(({ activeFight: fresh }) => {
-          if (!fresh || fresh.fightId !== fight.fightId) return;
-          processFightState(fresh);
-          if (!fresh.isFinished && !advanceLockRef.current) {
-            advanceLockRef.current = true;
-            queueFightCommand("arena:fight:advance");
-          }
-        })
-        .catch(() => {});
-    });
-    return untrack;
-  }, [ws, processFightState, queueFightCommand]);
+    socket.on("connect", () => setFightConnected(true));
+    socket.on("disconnect", () => setFightConnected(false));
+    socket.on("connect_error", () => setFightConnected(false));
 
-  useWebSocketEvent("arena:fight:turn", (data) => {
-    const state = data as ArenaActiveFight;
-    advanceLockRef.current = false;
-    clearSafetyTimer();
+    socketRef.current = socket;
 
-    if (startPendingRef.current) {
-      startPendingRef.current = false;
-      setStarting(false);
+    return () => {
+      socket.disconnect();
+      socket.removeAllListeners();
+      socketRef.current = null;
+    };
+  }, []);
+
+  // Connect socket when ready (authenticated + verified)
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !token || !verified) return;
+    if (!socket.connected) {
+      socket.connect();
     }
-
-    processFightState(state);
-
-    if (!state.isFinished) {
-      clearAdvanceTimer();
-      advanceTimerRef.current = window.setTimeout(() => {
-        advanceTimerRef.current = null;
-        sendAdvance();
-      }, TURN_ADVANCE_DELAY_MS);
-    } else {
-      clearAdvanceTimer();
-      const t = tokenRef.current;
-      if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
-    }
-  });
-
-  useWebSocketEvent("arena:fight:finished", (data) => {
-    const state = data as ArenaActiveFight;
-    advanceLockRef.current = false;
-    clearSafetyTimer();
-
-    if (startPendingRef.current) {
-      startPendingRef.current = false;
-      setStarting(false);
-    }
-
-    processFightState(state);
-    const t = tokenRef.current;
-    if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
-  });
-
-  useWebSocketEvent("arena:fight:error", (data) => {
-    advanceLockRef.current = false;
-    clearSafetyTimer();
-
-    if (startPendingRef.current) {
-      startPendingRef.current = false;
-      setStarting(false);
-    }
-
-    const err = data as { code?: string; message?: string; retryAfterMs?: number };
-
-    if (err.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
-      const retryAfterMs = Math.max(err.retryAfterMs || 250, 250);
-      if (autoTimerRef.current !== null) {
-        window.clearTimeout(autoTimerRef.current);
-      }
-      autoTimerRef.current = window.setTimeout(() => {
-        autoTimerRef.current = null;
-        setNextAutoFightAt(null);
-        if (pageVisible.current) {
-          void handleStartFightRef.current(true);
-        }
-      }, retryAfterMs + 50);
-      return;
-    }
-
-    setErrorMessage(err.message || "Arena fight error");
-  });
+  }, [token, verified]);
 
   // ---- WS action helpers ----
 
@@ -534,11 +467,85 @@ const ArenaFight = () => {
     safetyTimerRef.current = window.setTimeout(() => {
       safetyTimerRef.current = null;
       advanceLockRef.current = false;
-      if (ws.connectionState === "connected") {
+      if (socketRef.current?.connected) {
         sendAdvance();
       }
     }, 10000);
-  }, [ws, clearSafetyTimer, queueFightCommand]);
+  }, [clearSafetyTimer, queueFightCommand]);
+
+  // Register fight event listeners on the dedicated socket
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const handler = (msg: { type: string; data: unknown }) => {
+      switch (msg.type) {
+        case "arena:fight:turn": {
+          const state = msg.data as ArenaActiveFight;
+          advanceLockRef.current = false;
+          clearSafetyTimer();
+          if (startPendingRef.current) {
+            startPendingRef.current = false;
+            setStarting(false);
+          }
+          processFightState(state);
+          if (!state.isFinished) {
+            clearAdvanceTimer();
+            advanceTimerRef.current = window.setTimeout(() => {
+              advanceTimerRef.current = null;
+              sendAdvance();
+            }, TURN_ADVANCE_DELAY_MS);
+          } else {
+            clearAdvanceTimer();
+            const t = tokenRef.current;
+            if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
+          }
+          break;
+        }
+        case "arena:fight:finished": {
+          const state = msg.data as ArenaActiveFight;
+          advanceLockRef.current = false;
+          clearSafetyTimer();
+          if (startPendingRef.current) {
+            startPendingRef.current = false;
+            setStarting(false);
+          }
+          processFightState(state);
+          const t = tokenRef.current;
+          if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
+          break;
+        }
+        case "arena:fight:error": {
+          advanceLockRef.current = false;
+          clearSafetyTimer();
+          if (startPendingRef.current) {
+            startPendingRef.current = false;
+            setStarting(false);
+          }
+          const err = msg.data as { code?: string; message?: string; retryAfterMs?: number };
+          if (err.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
+            const retryAfterMs = Math.max(err.retryAfterMs || 250, 250);
+            if (autoTimerRef.current !== null) {
+              window.clearTimeout(autoTimerRef.current);
+            }
+            autoTimerRef.current = window.setTimeout(() => {
+              autoTimerRef.current = null;
+              setNextAutoFightAt(null);
+              if (pageVisible.current) {
+                void handleStartFightRef.current(true);
+              }
+            }, retryAfterMs + 50);
+            return;
+          }
+          setErrorMessage(err.message || "Arena fight error");
+          break;
+        }
+      }
+    };
+
+    socket.on("message", handler);
+    return () => { socket.off("message", handler); };
+  }, [processFightState, sendAdvance, clearAdvanceTimer, clearSafetyTimer]);
 
   // ---- User actions ----
 
@@ -812,9 +819,7 @@ const ArenaFight = () => {
                             : !verified
                               ? "[ Verify first ]"
                               : !isSocketConnected
-                                ? connectionState === "connecting"
-                                  ? "[ Connecting... ]"
-                                  : "[ Reconnecting... ]"
+                                ? "[ Connecting... ]"
                               : fightFinished
                                 ? "[ Fight Again! ]"
                                 : "[ Fight! ]"}
