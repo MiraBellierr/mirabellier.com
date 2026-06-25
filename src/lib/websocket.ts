@@ -41,6 +41,7 @@ export function createWebSocketClient(): WebSocketClient {
   let state: ConnectionState = "disconnected";
   let ws: WebSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let connectPromise: Promise<void> | null = null;
   let reconnectAttempt = 0;
   let closed = false;
 
@@ -74,47 +75,70 @@ export function createWebSocketClient(): WebSocketClient {
     }, delay);
   }
 
+  function hasActiveSocket() {
+    return (
+      ws !== null &&
+      (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)
+    );
+  }
+
   async function connect() {
     if (closed) return;
+    if (connectPromise) return connectPromise;
+    if (hasActiveSocket()) return;
+
     clearReconnect();
+    setState("connecting");
 
-    try {
-      const token = await fetchWsToken();
-      if (closed) return;
+    connectPromise = (async () => {
+      try {
+        const token = await fetchWsToken();
+        if (closed || hasActiveSocket()) return;
 
-      const url = `${resolveWsUrl()}?token=${encodeURIComponent(token)}`;
-      ws = new WebSocket(url);
+        const url = `${resolveWsUrl()}?token=${encodeURIComponent(token)}`;
+        const socket = new WebSocket(url);
+        ws = socket;
 
-      ws.onopen = () => {
-        setState("connected");
-        reconnectAttempt = 0;
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data as string) as { type: string; data: unknown };
-          const cbs = listeners.get(msg.type);
-          if (cbs) {
-            for (const cb of cbs) cb(msg.data);
+        socket.onopen = () => {
+          if (ws !== socket) {
+            socket.close();
+            return;
           }
-        } catch {
-          // ignore malformed messages
-        }
-      };
+          setState("connected");
+          reconnectAttempt = 0;
+        };
 
-      ws.onclose = () => {
-        ws = null;
+        socket.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data as string) as { type: string; data: unknown };
+            const cbs = listeners.get(msg.type);
+            if (cbs) {
+              for (const cb of cbs) cb(msg.data);
+            }
+          } catch {
+            // ignore malformed messages
+          }
+        };
+
+        socket.onclose = () => {
+          if (ws !== socket) return;
+          ws = null;
+          setState("disconnected");
+          scheduleReconnect();
+        };
+
+        socket.onerror = () => {
+          // onclose will fire after this
+        };
+      } catch {
         setState("disconnected");
         scheduleReconnect();
-      };
+      } finally {
+        connectPromise = null;
+      }
+    })();
 
-      ws.onerror = () => {
-        // onclose will fire after this
-      };
-    } catch {
-      setState("disconnected");
-      scheduleReconnect();
-    }
+    return connectPromise;
   }
 
   return {
@@ -162,6 +186,7 @@ export function createWebSocketClient(): WebSocketClient {
     close() {
       closed = true;
       clearReconnect();
+      connectPromise = null;
       if (ws) {
         ws.onopen = null;
         ws.onmessage = null;

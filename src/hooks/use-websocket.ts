@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useWebSocket } from "@/states/WebSocketProvider";
 
 export function useWebSocketEvent(
@@ -6,9 +6,16 @@ export function useWebSocketEvent(
   callback: (data: unknown) => void,
 ) {
   const ws = useWebSocket();
+  const callbackRef = useRef(callback);
 
   useEffect(() => {
-    const unsubscribe = ws.on(type, callback);
+    callbackRef.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    const unsubscribe = ws.on(type, (data) => {
+      callbackRef.current(data);
+    });
     return unsubscribe;
-  }, [ws, type, callback]);
+  }, [ws, type]);
 }
