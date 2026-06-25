@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
@@ -28,12 +28,15 @@ import {
   startTcgSoloGame,
   joinTcgQueue,
   leaveTcgQueue,
+  checkTcgQueue,
   submitTcgDeck,
   fetchTcgGameState,
   submitTcgAction,
 } from "@/lib/arena-api";
 
 const DECK_SIZE = 10;
+const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
+const RARITY_ORDER = ["C", "R", "SR", "SSR", "UR"] as const;
 
 const ELEMENT_COLORS: Record<string, string> = {
   Fire: "#e74c3c",
@@ -52,6 +55,58 @@ const ELEMENT_ICONS: Record<string, string> = {
   Light: lightIcon,
   Dark: darkIcon,
 };
+
+type CollectionSort =
+  | "recent"
+  | "rarity-desc"
+  | "rarity-asc"
+  | "iv-desc"
+  | "iv-asc"
+  | "power-desc"
+  | "guard-desc"
+  | "speed-desc"
+  | "effectHit-desc";
+
+type MobileTcgDrag =
+  | { kind: "card"; cardId: string }
+  | { kind: "draw" }
+  | { kind: "attack" }
+  | { kind: "promote"; slot: string }
+  | { kind: "element"; element: string };
+
+function rarityRank(rarity: string | null | undefined) {
+  const index = RARITY_ORDER.indexOf((rarity || "C") as (typeof RARITY_ORDER)[number]);
+  return index >= 0 ? index : 0;
+}
+
+function sortDeckCards(cards: ArenaCard[], sort: CollectionSort) {
+  return [...cards].sort((a, b) => {
+    const byDate = (Date.parse(b.drawnAt || "") || 0) - (Date.parse(a.drawnAt || "") || 0);
+    if (sort === "rarity-desc") return rarityRank(b.rarity) - rarityRank(a.rarity) || byDate;
+    if (sort === "rarity-asc") return rarityRank(a.rarity) - rarityRank(b.rarity) || byDate;
+    if (sort === "iv-desc") return (b.iv?.total || 0) - (a.iv?.total || 0) || byDate;
+    if (sort === "iv-asc") return (a.iv?.total || 0) - (b.iv?.total || 0) || byDate;
+    if (sort === "power-desc") return (b.iv?.power || 0) - (a.iv?.power || 0) || byDate;
+    if (sort === "guard-desc") return (b.iv?.guard || 0) - (a.iv?.guard || 0) || byDate;
+    if (sort === "speed-desc") return (b.iv?.speed || 0) - (a.iv?.speed || 0) || byDate;
+    if (sort === "effectHit-desc") return (b.iv?.effectHit || 0) - (a.iv?.effectHit || 0) || byDate;
+    return byDate;
+  });
+}
+
+function readMobileTcgDrag(target: EventTarget | null): MobileTcgDrag | null {
+  if (!(target instanceof Element)) return null;
+  const dragElement = target.closest("[data-tcg-drag-kind]") as HTMLElement | null;
+  if (!dragElement) return null;
+
+  const kind = dragElement.dataset.tcgDragKind;
+  if (kind === "card" && dragElement.dataset.tcgCardId) return { kind, cardId: dragElement.dataset.tcgCardId };
+  if (kind === "draw") return { kind };
+  if (kind === "attack") return { kind };
+  if (kind === "promote" && dragElement.dataset.tcgPromoteSlot) return { kind, slot: dragElement.dataset.tcgPromoteSlot };
+  if (kind === "element" && dragElement.dataset.tcgElement) return { kind, element: dragElement.dataset.tcgElement };
+  return null;
+}
 
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;
@@ -169,12 +224,13 @@ function CardDetailTooltip({ detail }: {
   );
 }
 
-function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onDragStart, onMouseEnter, onMouseLeave }: {
+function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, touchDrag, onDragStart, onMouseEnter, onMouseLeave }: {
   card: TcgCard | ArenaCard | null;
   size?: "sm" | "md" | "lg";
   onClick?: () => void;
   highlighted?: boolean;
   draggable?: boolean;
+  touchDrag?: MobileTcgDrag;
   onDragStart?: (e: React.DragEvent) => void;
   onMouseEnter?: (e: React.MouseEvent) => void;
   onMouseLeave?: (e: React.MouseEvent) => void;
@@ -201,14 +257,20 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, onD
   const hp = (card as TcgCard).currentHp !== undefined ? (card as TcgCard).currentHp : (card as TcgCard).maxHp;
   const maxHp = (card as TcgCard).maxHp;
   const assigned = (card as TcgCard).assignedElements || [];
+  const isTouchDraggable = draggable || !!touchDrag;
 
   return (
     <div
       className={`${dims} rounded-lg border-2 flex-shrink-0 relative overflow-hidden cursor-pointer ${
         highlighted ? "border-yellow-400 shadow-lg shadow-yellow-200 scale-105" : "border-slate-400 hover:border-blue-400"
-      }`}
+      } ${isTouchDraggable ? "touch-none select-none" : ""}`}
       onClick={onClick}
       draggable={draggable}
+      data-tcg-draggable={isTouchDraggable ? "true" : undefined}
+      data-tcg-drag-kind={touchDrag?.kind}
+      data-tcg-card-id={touchDrag?.kind === "card" ? touchDrag.cardId : undefined}
+      data-tcg-promote-slot={touchDrag?.kind === "promote" ? touchDrag.slot : undefined}
+      data-tcg-element={touchDrag?.kind === "element" ? touchDrag.element : undefined}
       onDragStart={onDragStart}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -273,6 +335,8 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
       <div className={attackerClasses}
         data-board-key={boardKey || ""}
         data-slot="attacker"
+        data-tcg-drop-board={boardKey || ""}
+        data-tcg-drop-slot="attacker"
         onDragOver={(e) => {
           const atk = e.dataTransfer.types.length > 0; // accept if has any data
           if (isTurn || atk) e.preventDefault();
@@ -309,6 +373,10 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
             if (elCount >= 1 && !board.switchedCardThisTurn && board.board.support.some((s) => !!s)) return true;
             return false;
           })())}
+          touchDrag={isTurn && board.board.attacker && (() => {
+            const elCount = board.board.attacker.assignedElements?.length ?? 0;
+            return elCount >= 2 || (elCount >= 1 && !board.switchedCardThisTurn && board.board.support.some((s) => !!s));
+          })() ? { kind: "attack" } : undefined}
           onDragStart={(e) => {
             const elCount = board.board.attacker?.assignedElements?.length ?? 0;
             if (isTurn && board.board.attacker && (elCount >= 2 || (elCount >= 1 && !board.switchedCardThisTurn && board.board.support.some((s) => !!s)))) {
@@ -344,6 +412,8 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
             key={`s-${i}`}
             className={`relative ${!card && isTurn ? "border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/50" : ""}`}
             style={!card && isTurn ? { minWidth: "64px", minHeight: "80px" } : undefined}
+            data-tcg-drop-board={boardKey || ""}
+            data-tcg-drop-slot={`support_${i}`}
             onDragOver={(e) => { if (isTurn) e.preventDefault(); }}
             onDrop={(e) => {
               if (!isTurn) return;
@@ -365,6 +435,7 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
               size="md"
               highlighted={!!(card && !board.board.attacker && isTurn)}
               draggable={!!(card && !board.board.attacker && isTurn)}
+              touchDrag={card && !board.board.attacker && isTurn ? { kind: "promote", slot: `support_${i}` } : undefined}
               onDragStart={(e) => {
                 if (card && !board.board.attacker && isTurn) {
                   e.dataTransfer.setData("promote", `support_${i}`);
@@ -384,11 +455,12 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
   );
 }
 
-function BoardHand({ board, isTurn, mirror, onAction, onCardHover, onCardHoverLeave }: {
+function BoardHand({ board, isTurn, mirror, onAction, boardKey, onCardHover, onCardHoverLeave }: {
   board: TcgPlayerState | null;
   isTurn: boolean;
   mirror?: boolean;
   onAction?: (action: { type: string }) => void;
+  boardKey?: string;
   onCardHover?: (card: ArenaCard | TcgCard, e: React.MouseEvent) => void;
   onCardHoverLeave?: () => void;
 }) {
@@ -401,6 +473,8 @@ function BoardHand({ board, isTurn, mirror, onAction, onCardHover, onCardHoverLe
       </p>
       <div
         className={`flex gap-2 flex-wrap mt-0.5 ${mirror ? "flex-row-reverse justify-center" : "justify-center"}`}
+        data-tcg-drop-board={boardKey || ""}
+        data-tcg-drop-zone="hand"
         onDragOver={(e) => {
           if (isTurn && onAction && e.dataTransfer.types.length > 0) e.preventDefault();
         }}
@@ -423,6 +497,7 @@ function BoardHand({ board, isTurn, mirror, onAction, onCardHover, onCardHoverLe
               size="md"
               highlighted={isTurn && hasSlot}
               draggable={isTurn && hasSlot}
+              touchDrag={isTurn && hasSlot ? { kind: "card", cardId: cid } : undefined}
               onDragStart={(e) => {
                 e.dataTransfer.setData("cardId", cid);
                 e.dataTransfer.effectAllowed = "move";
@@ -450,7 +525,7 @@ function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLea
   const discardCards = [...board.discardPile].reverse().map((id) => deck.find((c) => toCardId(c) === id)).filter((c): c is TcgCard => !!c);
   const drawCards = [...board.drawPile].reverse().map((id) => deck.find((c) => toCardId(c) === id)).filter((c): c is TcgCard => !!c);
   return (
-    <div className="flex flex-col gap-6 mr-2">
+    <div className="flex flex-row justify-center gap-2 sm:flex-col sm:gap-6 sm:mr-2">
       {/* Discard pile — aligned with support row */}
       <div className="flex flex-col items-center group relative">
         <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center shadow-inner">
@@ -472,8 +547,10 @@ function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLea
       <div className="flex flex-col items-center group relative">
         {isTurn && board.drawPile.length > 0 && onAction ? (
           <div
-            className={`cursor-grab active:cursor-grabbing ${!board.drawnCardThisTurn && (!turn || turn > 1) ? "border-2 border-yellow-400 shadow-lg shadow-yellow-200 scale-105 rounded-xl" : ""}`}
+            className={`touch-none cursor-grab select-none active:cursor-grabbing ${!board.drawnCardThisTurn && (!turn || turn > 1) ? "border-2 border-yellow-400 shadow-lg shadow-yellow-200 scale-105 rounded-xl" : ""}`}
             draggable
+            data-tcg-draggable="true"
+            data-tcg-drag-kind="draw"
             onDragStart={(e) => {
               e.dataTransfer.setData("draw", "1");
               e.dataTransfer.effectAllowed = "move";
@@ -553,7 +630,9 @@ const TcgPage = () => {
   const [selectedDeck, setSelectedDeck] = useState<Set<string>>(() => new Set(loadSavedDeck()));
   const [elementPool, setElementPool] = useState<string[]>(() => loadElementPool());
   const [deckSearch, setDeckSearch] = useState("");
+  const [deckSort, setDeckSort] = useState<CollectionSort>("recent");
   const [deckFilterEl, setDeckFilterEl] = useState("");
+  const [deckDuplicatesFilter, setDeckDuplicatesFilter] = useState(false);
   const [hoverDetail, setHoverDetail] = useState<{ card: ArenaCard; top: number; left: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorState, setErrorState] = useState<"hidden" | "pending" | "entering" | "visible" | "leaving">("hidden");
@@ -569,6 +648,9 @@ const TcgPage = () => {
   selectedDeckRef.current = selectedDeck;
   const elementPoolRef = useRef(elementPool);
   elementPoolRef.current = elementPool;
+  const queueStateRef = useRef(queueState);
+  queueStateRef.current = queueState;
+  const claimedMatchRef = useRef<string | null>(null);
 
   function showError(msg: string) {
     setErrorMessage(msg);
@@ -585,6 +667,11 @@ const TcgPage = () => {
   const [attackFloaters, setAttackFloaters] = useState<{ key: number; dmg: number; elLabel: string | null; elColor: string | null; defenderKey: string }[]>([]);
   const [shakeOpponent, setShakeOpponent] = useState(false);
   const [shakePlayer, setShakePlayer] = useState(false);
+  const [boardDragActive, setBoardDragActive] = useState(false);
+  const boardDragActiveRef = useRef(false);
+  const boardElementRef = useRef<HTMLDivElement | null>(null);
+  const mobileDragRef = useRef<MobileTcgDrag | null>(null);
+  const mobileDragPointRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const floaterKeyRef = useRef(0);
   const [projectile, setProjectile] = useState<{ key: number; fromBoard: string; toBoard: string; fromX: number; fromY: number; toX: number; toY: number } | null>(null);
   const projectileKeyRef = useRef(0);
@@ -615,11 +702,47 @@ const TcgPage = () => {
     setTimeout(() => setProjectile((prev) => (prev?.key === key ? null : prev)), 500);
   }
 
+  const startBoardDrag = useCallback(() => {
+    boardDragActiveRef.current = true;
+    setBoardDragActive(true);
+  }, []);
+
+  const stopBoardDrag = useCallback(() => {
+    boardDragActiveRef.current = false;
+    setBoardDragActive(false);
+  }, []);
+
   usePageSeo({
-    canonical: "https://mirabellier.com/staging/tcg",
+    canonical: "https://mirabellier.com/arena/tcg",
     structuredDataId: "tcg-structured-data",
-    structuredData: { "@context": "https://schema.org", "@type": "WebPage", name: "TCG Showdown", url: "https://mirabellier.com/staging/tcg" },
+    structuredData: { "@context": "https://schema.org", "@type": "WebPage", name: "TCG Showdown", url: "https://mirabellier.com/arena/tcg" },
   });
+
+  useEffect(() => {
+    if (!boardDragActive) return;
+
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverscroll = document.documentElement.style.overscrollBehavior;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overscrollBehavior = "none";
+    const boardElement = boardElementRef.current;
+    const preventBoardTouchScroll = (event: TouchEvent) => {
+      if (boardDragActiveRef.current) {
+        event.preventDefault();
+      }
+    };
+
+    boardElement?.addEventListener("touchmove", preventBoardTouchScroll, {
+      passive: false,
+    });
+
+    return () => {
+      boardElement?.removeEventListener("touchmove", preventBoardTouchScroll);
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overscrollBehavior = htmlOverscroll;
+    };
+  }, [boardDragActive]);
 
   // ── Load eligible cards on mount ──
   useEffect(() => {
@@ -701,24 +824,73 @@ const TcgPage = () => {
     if (!token) return;
     try { await leaveTcgQueue(token); } catch { /* ignore */ }
     setQueueState("idle");
+    claimedMatchRef.current = null;
   };
+
+  const claimMatchedGame = useCallback(async (matchedGameId: string) => {
+    const t = tokenRef.current;
+    if (!t || !matchedGameId) return;
+    if (claimedMatchRef.current === matchedGameId) return;
+    claimedMatchRef.current = matchedGameId;
+    setQueueState("matched");
+
+    const deckCards = eligibleCardsRef.current.filter((c) =>
+      selectedDeckRef.current.has(toCardId(c)),
+    );
+    if (deckCards.length < DECK_SIZE) {
+      showError("Deck cards are still loading. Please try finding a match again.");
+      claimedMatchRef.current = null;
+      setQueueState("idle");
+      return;
+    }
+
+    try {
+      await submitTcgDeck(t, matchedGameId, deckCards, elementPoolRef.current);
+      setGameId(matchedGameId);
+      localStorage.setItem("tcg_active_game", matchedGameId);
+      setTab("match");
+      const state = await fetchTcgGameState(t, matchedGameId);
+      setGameState(state);
+    } catch (err) {
+      claimedMatchRef.current = null;
+      setQueueState("idle");
+      showError(normalizeArenaError(err));
+    }
+  }, []);
 
   // ── WebSocket: queue matched ──
   const handleQueueMatched = useCallback(async (data: unknown) => {
     const { gameId: matchedGameId } = data as { gameId: string };
-    const t = tokenRef.current;
-    if (!t || queueState !== "searching") return;
-    setQueueState("matched");
-    const deckCards = eligibleCardsRef.current.filter((c) => selectedDeckRef.current.has(toCardId(c)));
-    await submitTcgDeck(t, matchedGameId, deckCards, elementPoolRef.current);
-    setGameId(matchedGameId);
-    localStorage.setItem("tcg_active_game", matchedGameId);
-    setTab("match");
-    const state = await fetchTcgGameState(t, matchedGameId);
-    setGameState(state);
-  }, [queueState]);
+    if (queueStateRef.current !== "searching" && queueStateRef.current !== "matched") return;
+    await claimMatchedGame(matchedGameId);
+  }, [claimMatchedGame]);
 
   useWebSocketEvent("tcg:queue:matched", handleQueueMatched);
+
+  useEffect(() => {
+    if (!token || queueState !== "searching") return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const status = await checkTcgQueue(token);
+        if (cancelled) return;
+        if (status.matched && status.gameId) {
+          await claimMatchedGame(status.gameId);
+        } else if (!status.waiting && !status.inQueue) {
+          setQueueState("idle");
+          claimedMatchRef.current = null;
+        }
+      } catch {
+        // The websocket path may still succeed; keep the search UI alive.
+      }
+    };
+    const interval = window.setInterval(() => void poll(), 2000);
+    void poll();
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [token, queueState, claimMatchedGame]);
 
   // ── WebSocket: game state ──
   const handleGameState = useCallback((data: unknown) => {
@@ -825,6 +997,94 @@ const TcgPage = () => {
   const gameBoard = gameState?.board;
   const myBoard = gameBoard?.[myKey as keyof typeof gameBoard] || null;
   const oppBoard = gameBoard?.[oppKey as keyof typeof gameBoard] || null;
+  const handleMobileTcgDrop = useCallback((drag: MobileTcgDrag, dropElement: Element | null) => {
+    const dropTarget = dropElement?.closest("[data-tcg-drop-slot], [data-tcg-drop-zone]") as HTMLElement | null;
+    if (!dropTarget || !gameState?.board) return;
+
+    const dropBoardKey = dropTarget.dataset.tcgDropBoard;
+    const dropBoard = dropBoardKey === myKey ? myBoard : dropBoardKey === oppKey ? oppBoard : null;
+    if (!dropBoard || !dropBoardKey) return;
+
+    const isDropBoardTurn = gameState.solo
+      ? gameState.currentPlayer === dropBoardKey
+      : dropBoardKey === myKey && !!gameState.myTurn;
+
+    if (drag.kind === "draw") {
+      if (isDropBoardTurn && dropTarget.dataset.tcgDropZone === "hand") {
+        void handleAction({ type: "draw" });
+      }
+      return;
+    }
+
+    const slot = dropTarget.dataset.tcgDropSlot;
+    if (!slot) return;
+    const targetCard = slot === "attacker"
+      ? dropBoard.board.attacker
+      : dropBoard.board.support[Number(slot.replace("support_", ""))] || null;
+
+    if (drag.kind === "card") {
+      if (!isDropBoardTurn) return;
+      if (slot === "attacker" && !dropBoard.board.attacker && dropBoard.board.support.every((support) => !support)) {
+        void handleAction({ type: "place", cardId: drag.cardId, slot: "attacker" });
+      } else if (slot.startsWith("support_") && !targetCard) {
+        void handleAction({ type: "place", cardId: drag.cardId, slot });
+      }
+      return;
+    }
+
+    if (drag.kind === "promote") {
+      if (isDropBoardTurn && slot === "attacker" && !dropBoard.board.attacker) {
+        void handleAction({ type: "promote", slot: drag.slot });
+      }
+      return;
+    }
+
+    if (drag.kind === "element") {
+      if (isDropBoardTurn && targetCard) {
+        void handleAction({ type: "assign", slot });
+      }
+      return;
+    }
+
+    if (drag.kind === "attack") {
+      if (!isDropBoardTurn && slot === "attacker" && targetCard) {
+        void handleAction({ type: "attack" });
+      } else if (isDropBoardTurn && slot.startsWith("support_") && targetCard) {
+        void handleAction({ type: "switch", slot });
+      }
+    }
+  }, [gameState, handleAction, myBoard, myKey, oppBoard, oppKey]);
+
+  const deckDuplicateIds = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const card of eligibleCards) {
+      counts.set(card.malId, (counts.get(card.malId) || 0) + 1);
+    }
+    return new Set(
+      Array.from(counts)
+        .filter(([, count]) => count > 1)
+        .map(([malId]) => malId),
+    );
+  }, [eligibleCards]);
+  const selectedDeckCards = useMemo(
+    () => eligibleCards.filter((card) => selectedDeck.has(toCardId(card))),
+    [eligibleCards, selectedDeck],
+  );
+  const filteredDeckCards = useMemo(() => {
+    const search = deckSearch.trim().toLowerCase();
+    const filtered = eligibleCards.filter((card) => {
+      if (selectedDeck.has(toCardId(card))) return false;
+      if (deckFilterEl && card.element !== deckFilterEl) return false;
+      if (deckDuplicatesFilter && !deckDuplicateIds.has(card.malId)) return false;
+      if (!search) return true;
+      return (
+        card.title.toLowerCase().includes(search) ||
+        card.rarity.toLowerCase().includes(search) ||
+        String(card.malId).includes(search)
+      );
+    });
+    return sortDeckCards(filtered, deckSort);
+  }, [deckDuplicateIds, deckDuplicatesFilter, deckFilterEl, deckSearch, deckSort, eligibleCards, selectedDeck]);
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -915,24 +1175,22 @@ const TcgPage = () => {
                             </div>
                           </div>
                           <div className="flex gap-3 overflow-x-auto pb-2 select-none" onContextMenu={(e) => e.preventDefault()}>
-                            {eligibleCards
-                              .filter((card) => selectedDeck.has(toCardId(card)))
-                              .map((card) => {
-                                const id = toCardId(card);
-                                return (
-                                  <div
-                                    key={id}
-                                    className="relative cursor-pointer flex-shrink-0 hover:scale-105 transition rounded-xl overflow-hidden"
-                                    onClick={() => handleToggleCard(id)}
-                                    title="Click to remove"
-                                  >
-                                    <ArenaPortraitCard card={card} size="compact" showIvLine={false} />
-                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition">
-                                      <span className="text-white text-sm font-bold bg-red-500/80 px-2 py-0.5 rounded-full">Remove</span>
-                                    </div>
+                            {selectedDeckCards.map((card) => {
+                              const id = toCardId(card);
+                              return (
+                                <div
+                                  key={id}
+                                  className="relative cursor-pointer flex-shrink-0 hover:scale-105 transition rounded-xl overflow-hidden"
+                                  onClick={() => handleToggleCard(id)}
+                                  title="Click to remove"
+                                >
+                                  <ArenaPortraitCard card={card} size="compact" showIvLine={false} />
+                                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                    <span className="text-white text-sm font-bold bg-red-500/80 px-2 py-0.5 rounded-full">Remove</span>
                                   </div>
-                                );
-                              })}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ) : null}
@@ -940,7 +1198,7 @@ const TcgPage = () => {
                       {/* Element spawn selector — choose which elements appear during match */}
                       <div className="flex flex-wrap items-center gap-2 bg-amber-50/60 border border-amber-200 rounded-lg p-2">
                         <span className="text-xs font-bold text-amber-700">⚡ Elements to spawn:</span>
-                        {Object.keys(ELEMENT_COLORS).map((el) => {
+                        {ELEMENTS.map((el) => {
                           const active = elementPool.includes(el);
                           return (
                             <button
@@ -967,52 +1225,84 @@ const TcgPage = () => {
                         })}
                       </div>
 
-                      {/* Search + Element Filter */}
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-semibold text-slate-500">filter:</span>
-                          {Object.keys(ELEMENT_COLORS).map((el) => {
-                            const active = deckFilterEl === el;
-                            return (
-                              <button
-                                key={el}
-                                type="button"
-                                onClick={() => setDeckFilterEl(active ? "" : el)}
-                                style={{
-                                  backgroundColor: active ? ELEMENT_COLORS[el] : "transparent",
-                                  borderColor: ELEMENT_COLORS[el],
-                                  color: active ? "#fff" : ELEMENT_COLORS[el],
-                                }}
-                                className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full border transition"
-                              >
-                                {el.charAt(0)}
-                              </button>
-                            );
-                          })}
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm text-blue-600">
+                          Cards available: {filteredDeckCards.length}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <label htmlFor="tcg-deck-sort" className="sr-only">
+                            Sort deck cards
+                          </label>
+                          <select
+                            id="tcg-deck-sort"
+                            value={deckSort}
+                            onChange={(event) => setDeckSort(event.target.value as CollectionSort)}
+                            className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                          >
+                            <option value="recent">Collection order</option>
+                            <option value="rarity-desc">Rarity: highest first</option>
+                            <option value="rarity-asc">Rarity: lowest first</option>
+                            <option value="iv-desc">IV: highest first</option>
+                            <option value="iv-asc">IV: lowest first</option>
+                            <option value="power-desc">Power: highest first</option>
+                            <option value="guard-desc">Guard: highest first</option>
+                            <option value="speed-desc">Speed: highest first</option>
+                            <option value="effectHit-desc">Effect Hit: highest first</option>
+                          </select>
+                          <input
+                            id="tcg-deck-search"
+                            type="search"
+                            value={deckSearch}
+                            onChange={(event) => setDeckSearch(event.target.value)}
+                            placeholder="Lelouch Lamperouge..."
+                            className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                          />
                         </div>
-                        <input
-                          type="search"
-                          value={deckSearch}
-                          onChange={(e) => setDeckSearch(e.target.value)}
-                          placeholder="Search cards..."
-                          className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
-                        />
                       </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-semibold text-slate-500 mr-1">element:</span>
+                        {ELEMENTS.map((el) => {
+                          const active = deckFilterEl === el;
+                          return (
+                            <button
+                              key={el}
+                              type="button"
+                              onClick={() => setDeckFilterEl(active ? "" : el)}
+                              style={{
+                                backgroundColor: active ? ELEMENT_COLORS[el] : "transparent",
+                                borderColor: ELEMENT_COLORS[el],
+                                color: active ? "#fff" : ELEMENT_COLORS[el],
+                              }}
+                              className="text-xs font-bold px-2 py-0.5 rounded-full border transition"
+                            >
+                              {el}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-semibold text-slate-500 mr-1">show:</span>
+                        <button
+                          type="button"
+                          onClick={() => setDeckDuplicatesFilter((prev) => !prev)}
+                          className={`text-xs font-bold px-2 py-0.5 rounded-full border transition ${
+                            deckDuplicatesFilter
+                              ? "bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300"
+                              : "text-purple-500 border-purple-300 hover:bg-purple-50"
+                          }`}
+                        >
+                          duplicates only
+                        </button>
+                      </div>
+
                       {eligibleCards.length === 0 ? (
                         <p className="text-sm text-slate-500">Loading cards...</p>
                       ) : (
-                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 max-h-96 overflow-y-auto select-none" onContextMenu={(e) => e.preventDefault()}>
-                          {eligibleCards
-                            .filter((card) => !selectedDeck.has(toCardId(card)))
-                            .filter((card) => {
-                              if (deckFilterEl && card.element !== deckFilterEl) return false;
-                              if (deckSearch) {
-                                const q = deckSearch.toLowerCase();
-                                return card.title.toLowerCase().includes(q) || (card.element || "").toLowerCase().includes(q);
-                              }
-                              return true;
-                            })
-                            .map((card) => {
+                        <>
+                          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 max-h-96 overflow-y-auto select-none" onContextMenu={(e) => e.preventDefault()}>
+                            {filteredDeckCards.map((card) => {
                               const id = toCardId(card);
                               return (
                                 <div
@@ -1029,7 +1319,11 @@ const TcgPage = () => {
                                 </div>
                               );
                             })}
-                        </div>
+                          </div>
+                          {filteredDeckCards.length === 0 ? (
+                            <p className="text-sm text-slate-600">No cards match your search.</p>
+                          ) : null}
+                        </>
                       )}
                       <div className="flex gap-2 justify-center">
                         {selectedDeck.size > 0 ? (
@@ -1091,7 +1385,47 @@ const TcgPage = () => {
 
                       {/* Game Board */}
                       {gameId && gameState?.board && !gameState?.winner ? (
-                          <div className="space-y-2 sm:space-y-4 select-none" onContextMenu={(e) => e.preventDefault()}>
+                          <div
+                            ref={boardElementRef}
+                            className="space-y-2 overscroll-contain touch-pan-x select-none sm:space-y-4"
+                            data-tcg-board="true"
+                            onContextMenu={(e) => e.preventDefault()}
+                            onDragStartCapture={startBoardDrag}
+                            onDragEndCapture={stopBoardDrag}
+                            onDropCapture={stopBoardDrag}
+                            onTouchStartCapture={(e) => {
+                              const drag = readMobileTcgDrag(e.target);
+                              if (drag) {
+                                const touch = e.touches[0];
+                                mobileDragRef.current = drag;
+                                mobileDragPointRef.current = touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
+                                startBoardDrag();
+                              }
+                            }}
+                            onTouchMoveCapture={(e) => {
+                              if (!mobileDragRef.current) return;
+                              const touch = e.touches[0];
+                              if (touch) {
+                                mobileDragPointRef.current = { clientX: touch.clientX, clientY: touch.clientY };
+                              }
+                            }}
+                            onTouchEndCapture={(e) => {
+                              const drag = mobileDragRef.current;
+                              const touch = e.changedTouches[0];
+                              const point = touch ? { clientX: touch.clientX, clientY: touch.clientY } : mobileDragPointRef.current;
+                              mobileDragRef.current = null;
+                              mobileDragPointRef.current = null;
+                              stopBoardDrag();
+                              if (drag && point) {
+                                handleMobileTcgDrop(drag, document.elementFromPoint(point.clientX, point.clientY));
+                              }
+                            }}
+                            onTouchCancelCapture={() => {
+                              mobileDragRef.current = null;
+                              mobileDragPointRef.current = null;
+                              stopBoardDrag();
+                            }}
+                          >
                             {/* Turn indicator */}
                             {gameState.solo ? (
                               <p className="text-center text-sm font-bold">
@@ -1144,18 +1478,21 @@ const TcgPage = () => {
                                     ))
                                   : <span className="text-slate-400 text-[0.65rem]">none</span>}
                               </div>
-                                <div className="mx-auto w-fit relative">
-                                  <div className="absolute top-0 left-full ml-2">
+                                <div className="relative mx-auto w-fit max-w-full">
+                                  <div className="static mb-2 flex justify-center sm:absolute sm:top-0 sm:left-full sm:mb-0 sm:ml-2">
                                     {oppBoard && oppBoard.elementPool.length > 0 && gameState.solo && gameState.currentPlayer === "p2" ? (
                                       (() => {
                                         const el = oppBoard.elementPool[0];
                                         const hasMatch = (!!oppBoard.board.attacker && oppBoard.board.attacker.element === el) || oppBoard.board.support.some((s) => s && s.element === el);
                                         return (
                                           <div
-                                            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasMatch ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
+                                            className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasMatch ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
                                             style={{ backgroundColor: ELEMENT_COLORS[el] || "#888", borderColor: ELEMENT_COLORS[el] || "#888" }}
                                             title={`Drag to assign ${el} to a card`}
                                             draggable
+                                            data-tcg-draggable="true"
+                                            data-tcg-drag-kind="element"
+                                            data-tcg-element={el}
                                             onDragStart={(e) => {
                                               e.dataTransfer.setData("element", el);
                                               e.dataTransfer.effectAllowed = "move";
@@ -1185,7 +1522,7 @@ const TcgPage = () => {
                                     )}
                                   </div>
                                   <div>
-                                    <BoardHand board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} mirror onAction={gameState.solo ? handleAction : undefined} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
+                                    <BoardHand board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} mirror onAction={gameState.solo ? handleAction : undefined} boardKey={oppKey} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                                     <div className="mt-4">
                                       <PlayerBoard
                                         board={oppBoard}
@@ -1200,7 +1537,7 @@ const TcgPage = () => {
                                     />
                                     </div>
                                   </div>
-                                  <div className="absolute top-0 right-full mr-2">
+                                  <div className="static mt-2 flex justify-center sm:absolute sm:top-0 sm:right-full sm:mt-0 sm:mr-2">
                                       <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                                   </div>
                                 </div>
@@ -1226,7 +1563,7 @@ const TcgPage = () => {
                                     ))
                                   : <span className="text-slate-400 text-[0.65rem]">none</span>}
                               </div>
-                                  <div className="mx-auto w-fit relative">
+                                  <div className="relative mx-auto w-fit max-w-full">
                                     <div>
                                       <PlayerBoard
                                         board={oppBoard}
@@ -1243,7 +1580,7 @@ const TcgPage = () => {
                                         Hand: {oppBoard?.hand.length ?? 0}
                                       </p>
                                     </div>
-                                    <div className="absolute top-0 right-full mr-2">
+                                    <div className="static mt-2 flex justify-center sm:absolute sm:top-0 sm:right-full sm:mt-0 sm:mr-2">
                                     <BoardPiles board={oppBoard} isTurn={gameState.solo && gameState.currentPlayer === "p2"} onAction={gameState.solo ? handleAction : undefined} turn={gameState.turn} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                                   </div>
                               </div>
@@ -1276,18 +1613,21 @@ const TcgPage = () => {
                                   ))
                                 : <span className="text-slate-400 text-[0.65rem]">none</span>}
                             </div>
-                            <div className="mx-auto w-fit relative">
-                              <div className="absolute top-0 right-full mr-2">
+                            <div className="relative mx-auto w-fit max-w-full">
+                              <div className="static mb-2 flex justify-center sm:absolute sm:top-0 sm:right-full sm:mb-0 sm:mr-2">
                                 {myBoard && myBoard.elementPool.length > 0 && (gameState.solo ? gameState.currentPlayer === "p1" : gameState?.myTurn) ? (
                                   (() => {
                                     const el = myBoard.elementPool[0];
                                     const hasMatch = (!!myBoard.board.attacker && myBoard.board.attacker.element === el) || myBoard.board.support.some((s) => s && s.element === el);
                                     return (
                                       <div
-                                        className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasMatch ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
+                                        className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasMatch ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
                                         style={{ backgroundColor: ELEMENT_COLORS[el] || "#888", borderColor: ELEMENT_COLORS[el] || "#888" }}
                                         title={`Drag to assign ${el} to a card`}
                                         draggable
+                                        data-tcg-draggable="true"
+                                        data-tcg-drag-kind="element"
+                                        data-tcg-element={el}
                                         onDragStart={(e) => {
                                           e.dataTransfer.setData("element", el);
                                           e.dataTransfer.effectAllowed = "move";
@@ -1327,9 +1667,9 @@ const TcgPage = () => {
                                   onCardHover={onCardHover}
                                   onCardHoverLeave={onCardHoverLeave}
                                 />
-                                <BoardHand board={myBoard} isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn} onAction={handleAction} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
+                                <BoardHand board={myBoard} isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn} onAction={handleAction} boardKey={myKey} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                               </div>
-                              <div className="absolute top-0 left-full ml-2">
+                              <div className="static mt-2 flex justify-center sm:absolute sm:top-0 sm:left-full sm:mt-0 sm:ml-2">
                                 <BoardPiles board={myBoard} isTurn={gameState.solo ? gameState.currentPlayer === "p1" : gameState.myTurn} onAction={handleAction} turn={gameState.turn} onCardHover={onCardHover} onCardHoverLeave={onCardHoverLeave} />
                               </div>
                             </div>
