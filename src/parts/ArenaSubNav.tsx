@@ -11,6 +11,7 @@ const SLUGS = [
   { slug: "/inventory", label: "Inventory" },
   { slug: "/leaderboard", label: "Leaderboard" },
   { slug: "/collection", label: "Collection" },
+  { slug: "/archive", label: "Archive" },
   { slug: "/market", label: "Market" },
   { slug: "/mint", label: "Mint" },
   { slug: "/trade", label: "Trade" },

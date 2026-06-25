@@ -27,6 +27,7 @@ type ArenaTradeSessionProps = {
 type CardPickerProps = {
   onSelect: (cardInstanceId: string) => void;
   onClose: () => void;
+  excludedCardIds?: string[];
 };
 
 const CARD_PICKER_PAGE_SIZE = 30;
@@ -49,7 +50,7 @@ const ELEMENT_COLORS: Record<string, string> = {
   Dark: "#8e44ad",
 };
 
-function CardPicker({ onSelect, onClose }: CardPickerProps) {
+function CardPicker({ onSelect, onClose, excludedCardIds = [] }: CardPickerProps) {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
   const [cards, setCards] = useState<ArenaCard[]>([]);
@@ -73,7 +74,9 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
         search: search || undefined,
         element: element || undefined,
       });
-      let filtered = data.cards;
+      let filtered = data.cards.filter(
+        (card) => !card.cardInstanceId || !excludedCardIds.includes(card.cardInstanceId),
+      );
       if (rarity) {
         filtered = filtered.filter((c) => c.rarity === rarity);
       }
@@ -83,7 +86,7 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
       // ignore
     }
     setLoading(false);
-  }, [token, sort, search, rarity, element]);
+  }, [token, sort, search, rarity, element, excludedCardIds]);
 
   useEffect(() => {
     setPage(1);
@@ -104,7 +107,7 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-3 text-center text-xs font-black uppercase tracking-[0.2em] text-pink-500">
-          select a card
+          add a card
         </p>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:gap-2">
           <input
@@ -161,7 +164,7 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
           {previewCard ? (
             <div className="flex flex-col items-center gap-3">
               <p className="text-sm font-bold text-blue-700 dark:text-purple-100">
-                Offer this card?
+                Add this card to your offer?
               </p>
               <ArenaPortraitCard card={previewCard} size="full" showIvLine />
               <div className="flex gap-3">
@@ -228,7 +231,7 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
   const [coinInput, setCoinInput] = useState("");
   const [coinError, setCoinError] = useState<string | null>(null);
   const [coinBalance, setCoinBalance] = useState(0);
-  const receivedCardRef = useRef<ArenaCard | null>(null);
+  const receivedCardsRef = useRef<ArenaCard[]>([]);
   const receivedCoinsRef = useRef(0);
   useWebSocketEvent("arena:trade:session-update", (data) => {
     const sessionData = data as ArenaTradeSessionType | null;
@@ -239,9 +242,9 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
     setSession(sessionData);
     if (sessionData.status === "completed") {
       const isAskerCompleted = userId === sessionData.askerId;
-      receivedCardRef.current = isAskerCompleted
-        ? sessionData.responderCard
-        : sessionData.askerCard;
+      receivedCardsRef.current = isAskerCompleted
+        ? (sessionData.responderCards?.length ? sessionData.responderCards : sessionData.responderCard ? [sessionData.responderCard] : [])
+        : (sessionData.askerCards?.length ? sessionData.askerCards : sessionData.askerCard ? [sessionData.askerCard] : []);
       receivedCoinsRef.current = isAskerCompleted
         ? (sessionData.responderCoins ?? 0)
         : (sessionData.askerCoins ?? 0);
@@ -284,8 +287,12 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
   }, [token]);
 
   const isAsker = userId === session?.askerId;
-  const myCard = isAsker ? session?.askerCard : session?.responderCard;
-  const theirCard = isAsker ? session?.responderCard : session?.askerCard;
+  const myCards = isAsker
+    ? (session?.askerCards?.length ? session.askerCards : session?.askerCard ? [session.askerCard] : [])
+    : (session?.responderCards?.length ? session.responderCards : session?.responderCard ? [session.responderCard] : []);
+  const theirCards = isAsker
+    ? (session?.responderCards?.length ? session.responderCards : session?.responderCard ? [session.responderCard] : [])
+    : (session?.askerCards?.length ? session.askerCards : session?.askerCard ? [session.askerCard] : []);
   const myCoins = isAsker ? (session?.askerCoins ?? 0) : (session?.responderCoins ?? 0);
   const theirCoins = isAsker ? (session?.responderCoins ?? 0) : (session?.askerCoins ?? 0);
   const theirUsername = isAsker ? session?.responderUsername : session?.askerUsername;
@@ -308,11 +315,11 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
     [token, sessionId],
   );
 
-  const handleRemoveCard = useCallback(async () => {
+  const handleRemoveCard = useCallback(async (cardInstanceId: string) => {
     if (!token || !sessionId) return;
     setPending(true);
     try {
-      const data = await removeCardFromArenaTrade(token, sessionId);
+      const data = await removeCardFromArenaTrade(token, sessionId, cardInstanceId);
       setSession(data);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed to remove card.");
@@ -420,12 +427,21 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
               <p className="text-lg font-bold text-pink-500 dark:text-pink-400">
                 Congratulations!
               </p>
-              {receivedCardRef.current && (
+              {receivedCardsRef.current.length > 0 && (
                 <>
                   <p className="text-sm text-blue-700 dark:text-purple-100">
-                    You received a new card!
+                    You received {receivedCardsRef.current.length === 1 ? "a new card!" : `${receivedCardsRef.current.length} new cards!`}
                   </p>
-                  <ArenaPortraitCard card={receivedCardRef.current} size="full" showIvLine />
+                  <div className="grid max-h-[52vh] grid-cols-2 gap-2 overflow-y-auto">
+                    {receivedCardsRef.current.map((card) => (
+                      <ArenaPortraitCard
+                        key={card.cardInstanceId || `${card.malId}-${card.title}`}
+                        card={card}
+                        size="full"
+                        showIvLine
+                      />
+                    ))}
+                  </div>
                 </>
               )}
               {receivedCoinsRef.current > 0 && (
@@ -477,40 +493,48 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
         <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 min-[420px]:gap-6">
           {/* My slot */}
           <div className="flex flex-col items-center space-y-3">
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex h-10 flex-col items-center justify-start gap-1">
               <p className="text-sm font-bold text-blue-600 dark:text-purple-200">
-                Your Card
+                Your Cards
               </p>
               <p className="text-xs text-amber-600 dark:text-amber-400">
                 Balance: {coinBalance.toLocaleString()} coins
               </p>
             </div>
-            <div className="flex aspect-[10/16] w-[118px] items-center justify-center rounded-xl border-2 border-dashed border-blue-200 p-1 dark:border-purple-400/30">
-              {myCard ? (
-                <button
-                  type="button"
-                  onClick={() => { if (!myConfirmed) void handleRemoveCard(); }}
-                  disabled={pending || myConfirmed}
-                  className="group relative disabled:cursor-default"
-                  title={myConfirmed ? "Confirmed" : "Click to remove"}
-                >
-                  <ArenaPortraitCard card={myCard} size="compact" showIvLine />
-                  {!myConfirmed && (
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 transition group-hover:opacity-100">
-                      <span className="text-xs font-bold text-red-300">remove</span>
-                    </div>
-                  )}
-                </button>
-              ) : (
+            <div className="flex h-[232px] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-blue-200 p-2 dark:border-purple-400/30">
+              {myCards.length > 0 ? (
+                <div className="flex max-h-full w-full max-w-[252px] flex-wrap justify-center gap-2 overflow-y-auto">
+                  {myCards.map((card) => (
+                    <button
+                      key={card.cardInstanceId || `${card.malId}-${card.title}`}
+                      type="button"
+                      onClick={() => {
+                        if (!myConfirmed && card.cardInstanceId) void handleRemoveCard(card.cardInstanceId);
+                      }}
+                      disabled={pending || myConfirmed}
+                      className="group relative disabled:cursor-default"
+                      title={myConfirmed ? "Confirmed" : "Click to remove"}
+                    >
+                      <ArenaPortraitCard card={card} size="compact" showIvLine />
+                      {!myConfirmed && (
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 transition group-hover:opacity-100">
+                          <span className="text-xs font-bold text-red-300">remove</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {!myConfirmed ? (
                 <button
                   type="button"
                   onClick={() => setShowPicker(true)}
-                  disabled={pending || myConfirmed}
+                  disabled={pending}
                   className="arena-redraw-button hover:animate-wiggle disabled:opacity-50"
                 >
-                  {pending ? "[ ... ]" : "[ add card ]"}
+                  {pending ? "[ ... ]" : myCards.length ? "[ add another ]" : "[ add card ]"}
                 </button>
-              )}
+              ) : null}
             </div>
 
             {/* Coin offer section */}
@@ -555,16 +579,26 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
 
           {/* Their slot */}
           <div className="flex flex-col items-center space-y-3">
-            <p className="text-sm font-bold text-blue-600 dark:text-purple-200">
-              {theirUsername}&apos;s Card
-            </p>
-            <div className="flex aspect-[10/16] w-[118px] items-center justify-center rounded-xl border-2 border-dashed border-blue-200 p-1 dark:border-purple-400/30">
-              {theirCard ? (
-                <ArenaPortraitCard
-                  card={theirCard}
-                  size="compact"
-                  showIvLine
-                />
+            <div className="flex h-10 flex-col items-center justify-start gap-1">
+              <p className="text-sm font-bold text-blue-600 dark:text-purple-200">
+                {theirUsername}&apos;s Cards
+              </p>
+              <p className="invisible text-xs text-amber-600 dark:text-amber-400">
+                Balance: 0 coins
+              </p>
+            </div>
+            <div className="flex h-[232px] w-full items-center justify-center rounded-xl border-2 border-dashed border-blue-200 p-2 dark:border-purple-400/30">
+              {theirCards.length > 0 ? (
+                <div className="flex max-h-full w-full max-w-[252px] flex-wrap justify-center gap-2 overflow-y-auto">
+                  {theirCards.map((card) => (
+                    <ArenaPortraitCard
+                      key={card.cardInstanceId || `${card.malId}-${card.title}`}
+                      card={card}
+                      size="compact"
+                      showIvLine
+                    />
+                  ))}
+                </div>
               ) : (
                 <p className="text-sm text-blue-400 dark:text-purple-400/60">
                   Waiting...
@@ -623,7 +657,13 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
       </div>
 
       {showPicker && (
-        <CardPicker onSelect={(id) => { void handlePlaceCard(id); }} onClose={() => setShowPicker(false)} />
+        <CardPicker
+          excludedCardIds={myCards
+            .map((card) => card.cardInstanceId)
+            .filter((cardInstanceId): cardInstanceId is string => !!cardInstanceId)}
+          onSelect={(id) => { void handlePlaceCard(id); }}
+          onClose={() => setShowPicker(false)}
+        />
       )}
     </div>,
     document.body,
