@@ -1,12 +1,10 @@
+import { io, type Socket } from "socket.io-client";
 import { API_BASE } from "./config";
 
 export type ConnectionState = "connecting" | "connected" | "disconnected";
 
 type EventCallback = (data: unknown) => void;
 
-const RECONNECT_BASE_MS = 1000;
-const RECONNECT_MAX_MS = 30000;
-const RECONNECT_MULTIPLIER = 1.5;
 const MAX_QUEUED_MESSAGES = 50;
 
 export interface WebSocketClient {
@@ -20,14 +18,15 @@ export interface WebSocketClient {
   close(): void;
 }
 
-function resolveWsUrl(): string {
+function resolveApiUrl(): string {
   if (typeof window === "undefined") return "";
 
   const host = window.location.hostname;
   if (host.includes("mirabellier.com")) {
-    return `wss://api.mirabellier.com/ws`;
+    return "https://api.mirabellier.com";
   }
-  return `ws://localhost:3000/ws`;
+  // In development, connect through Vite proxy (empty string = current origin)
+  return "";
 }
 
 async function fetchWsToken(): Promise<string> {
@@ -42,11 +41,9 @@ async function fetchWsToken(): Promise<string> {
 
 export function createWebSocketClient(): WebSocketClient {
   let state: ConnectionState = "disconnected";
-  let ws: WebSocket | null = null;
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  let connectPromise: Promise<void> | null = null;
-  let reconnectAttempt = 0;
+  let socket: Socket | null = null;
   let closed = false;
+  let connectCalled = false;
   const queuedMessages: Record<string, unknown>[] = [];
 
   const listeners = new Map<string, Set<EventCallback>>();
@@ -58,109 +55,65 @@ export function createWebSocketClient(): WebSocketClient {
     for (const cb of stateListeners) cb(state);
   }
 
-  function clearReconnect() {
-    if (reconnectTimer !== null) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-    }
-  }
+  function ensureSocket() {
+    if (socket || closed) return socket;
 
-  function scheduleReconnect() {
-    if (closed) return;
-    clearReconnect();
-    const delay = Math.min(
-      RECONNECT_BASE_MS * Math.pow(RECONNECT_MULTIPLIER, reconnectAttempt),
-      RECONNECT_MAX_MS,
-    );
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-      reconnectAttempt++;
-      void connect();
-    }, delay);
-  }
+    socket = io(resolveApiUrl(), {
+      path: "/ws",
+      autoConnect: false,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 30000,
+      reconnectionAttempts: Infinity,
+      auth: (cb: (data: object) => void) => {
+        fetchWsToken()
+          .then((token) => cb({ token }))
+          .catch(() => cb({ token: "" }));
+      },
+    });
 
-  function hasActiveSocket() {
-    return (
-      ws !== null &&
-      (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)
-    );
+    socket.on("connect", () => {
+      if (socket?.connected) {
+        setState("connected");
+        flushQueue();
+      }
+    });
+
+    socket.on("disconnect", () => {
+      setState("disconnected");
+    });
+
+    socket.on("connect_error", () => {
+      setState("disconnected");
+    });
+
+    socket.on("message", (msg: { type: string; data: unknown }) => {
+      if (msg && typeof msg.type === "string") {
+        const cbs = listeners.get(msg.type);
+        if (cbs) {
+          for (const cb of cbs) cb(msg.data);
+        }
+      }
+    });
+
+    return socket;
   }
 
   function flushQueue() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    while (queuedMessages.length > 0 && ws.readyState === WebSocket.OPEN) {
+    while (queuedMessages.length > 0 && socket?.connected) {
       const data = queuedMessages.shift();
       if (!data) continue;
-      ws.send(JSON.stringify(data));
+      socket.emit("message", data);
     }
   }
 
-  function sendNow(data: Record<string, unknown>) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(data));
-      return true;
-    }
-    return false;
-  }
-
-  async function connect() {
-    if (closed) return;
-    if (connectPromise) return connectPromise;
-    if (hasActiveSocket()) return;
-
-    clearReconnect();
+  function triggerConnect() {
+    if (closed || connectCalled) return;
+    const s = ensureSocket();
+    if (!s) return;
+    connectCalled = true;
     setState("connecting");
-
-    connectPromise = (async () => {
-      try {
-        const token = await fetchWsToken();
-        if (closed || hasActiveSocket()) return;
-
-        const url = `${resolveWsUrl()}?token=${encodeURIComponent(token)}`;
-        const socket = new WebSocket(url);
-        ws = socket;
-
-        socket.onopen = () => {
-          if (ws !== socket) {
-            socket.close();
-            return;
-          }
-          setState("connected");
-          reconnectAttempt = 0;
-          flushQueue();
-        };
-
-        socket.onmessage = (event) => {
-          try {
-            const msg = JSON.parse(event.data as string) as { type: string; data: unknown };
-            const cbs = listeners.get(msg.type);
-            if (cbs) {
-              for (const cb of cbs) cb(msg.data);
-            }
-          } catch {
-            // ignore malformed messages
-          }
-        };
-
-        socket.onclose = () => {
-          if (ws !== socket) return;
-          ws = null;
-          setState("disconnected");
-          scheduleReconnect();
-        };
-
-        socket.onerror = () => {
-          // onclose will fire after this
-        };
-      } catch {
-        setState("disconnected");
-        scheduleReconnect();
-      } finally {
-        connectPromise = null;
-      }
-    })();
-
-    return connectPromise;
+    s.connect();
   }
 
   return {
@@ -173,18 +126,24 @@ export function createWebSocketClient(): WebSocketClient {
     },
 
     send(data: Record<string, unknown>) {
-      return sendNow(data);
+      if (!socket?.connected) return false;
+      socket.emit("message", data);
+      return true;
     },
 
     sendWhenReady(data: Record<string, unknown>) {
       if (closed) return false;
-      if (sendNow(data)) return true;
+      if (socket?.connected) {
+        socket.emit("message", data);
+        return true;
+      }
+      ensureSocket();
       if (queuedMessages.length >= MAX_QUEUED_MESSAGES) {
         queuedMessages.shift();
       }
       queuedMessages.push(data);
-      if (state === "disconnected" && !connectPromise && !hasActiveSocket()) {
-        void connect();
+      if (!connectCalled) {
+        triggerConnect();
       }
       return true;
     },
@@ -195,8 +154,8 @@ export function createWebSocketClient(): WebSocketClient {
       cbs.add(callback);
       const isFirst = cbs.size === 1;
 
-      if (isFirst && state === "disconnected" && !closed) {
-        void connect();
+      if (isFirst && !connectCalled && !closed) {
+        triggerConnect();
       }
 
       return () => {
@@ -222,16 +181,12 @@ export function createWebSocketClient(): WebSocketClient {
 
     close() {
       closed = true;
-      clearReconnect();
-      connectPromise = null;
+      connectCalled = false;
       queuedMessages.length = 0;
-      if (ws) {
-        ws.onopen = null;
-        ws.onmessage = null;
-        ws.onclose = null;
-        ws.onerror = null;
-        ws.close();
-        ws = null;
+      if (socket) {
+        socket.disconnect();
+        socket.removeAllListeners();
+        socket = null;
       }
       listeners.clear();
       stateListeners.clear();
