@@ -15,13 +15,14 @@ const SLUGS = [
   { slug: "/mint", label: "Mint" },
   { slug: "/trade", label: "Trade" },
   { slug: "/skill-tree", label: "Skill Tree" },
+  { slug: "/tcg", label: "TCG (Alpha)" },
   { slug: "/inbox", label: "Inbox" },
 ];
 
 export default function ArenaSubNav() {
   const [unreadCount, setUnreadCount] = useState(0);
   const { pathname } = useLocation();
-  const prefix = pathname.startsWith("/ar") ? "/ar" : "/arena";
+  const prefix = pathname === "/ar" || pathname.startsWith("/ar/") ? "/ar" : "/arena";
 
   useWebSocketEvent("arena:notification:unread-count", (data) => {
     const payload = data as { count: number };

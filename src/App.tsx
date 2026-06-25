@@ -112,6 +112,7 @@ function App() {
       <Route path="/arena/mint" element={<ArenaMint />} />
       <Route path="/arena/skill-tree" element={<ArenaSkillTree />} />
       <Route path="/arena/trade" element={<ArenaTrade />} />
+      <Route path="/arena/tcg" element={<TcgPage />} />
       <Route path="/ar" element={<Arena />} />
       <Route path="/ar/fight" element={<ArenaFight />} />
       <Route path="/ar/shop" element={<ArenaShop />} />
@@ -124,7 +125,8 @@ function App() {
       <Route path="/ar/mint" element={<ArenaMint />} />
       <Route path="/ar/skill-tree" element={<ArenaSkillTree />} />
       <Route path="/ar/trade" element={<ArenaTrade />} />
-      <Route path="/staging/tcg" element={<TcgPage />} />
+      <Route path="/ar/tcg" element={<TcgPage />} />
+      <Route path="/staging/tcg" element={<Navigate to="/arena/tcg" replace />} />
       <Route path="/shrine" element={<Shrine />} />
       <Route path="/shrine/kanna" element={<Kanna />} />
       <Route path="/shrine/rossina" element={<Rossina />} />
