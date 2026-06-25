@@ -108,17 +108,28 @@ const ArenaMint = () => {
   const previewCard = useMemo((): ArenaCard | null => {
     if (pickedCards.length !== 2) return null;
     const [a, b] = pickedCards;
-    const base = a.iv.total >= b.iv.total ? a.iv : b.iv;
+    const CARD_IV_MAX = 31;
     const iv = {
-      power: base.power,
-      guard: base.guard,
-      speed: base.speed,
-      effectHit: base.effectHit,
-      total: base.total,
+      power: a.iv.power,
+      guard: a.iv.guard,
+      speed: a.iv.speed,
+      effectHit: a.iv.effectHit,
     };
+    // Deterministic +5 bonus simulation from card IDs
+    let seed = 0;
+    for (let i = 0; i < (a.cardInstanceId! + b.cardInstanceId!).length; i++) {
+      seed = ((seed << 5) - seed + (a.cardInstanceId! + b.cardInstanceId!).charCodeAt(i)) | 0;
+    }
+    const stats = ["power", "guard", "speed", "effectHit"] as const;
+    for (let i = 0; i < 5; i++) {
+      const eligible = stats.filter((s) => iv[s] < CARD_IV_MAX);
+      if (!eligible.length) break;
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      iv[eligible[seed % eligible.length]]++;
+    }
     return {
       ...a,
-      iv,
+      iv: { ...iv, total: iv.power + iv.guard + iv.speed + iv.effectHit },
       rainbow: true,
       title: a.title.replace(/\s*\(rainbow\)\s*$/, "") + " (rainbow)",
     };
@@ -316,7 +327,7 @@ const ArenaMint = () => {
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">minting info</h2>
                 <p>Combine two identical non-rainbow cards of the same character.</p>
-                <p>The resulting rainbow card gets averaged IVs <span className="font-bold">rounded up</span>, giving a small bonus.</p>
+                <p>The resulting rainbow card inherits the left card's IVs plus a random <span className="font-bold">+5 bonus</span> distributed across stats.</p>
                 <p>Rainbow cards keep their original rarity and work in <span className="font-bold">fight, trade, and market</span> normally.</p>
                 <p className="text-xs text-blue-400">Tip: Draw more cards daily to collect duplicates for minting!</p>
               </div>
