@@ -62,12 +62,12 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
   const [element, setElement] = useState("");
   const [previewCard, setPreviewCard] = useState<ArenaCard | null>(null);
 
-  const loadCards = useCallback(async () => {
+  const loadCards = useCallback(async (targetPage: number) => {
     if (!token) return;
     setLoading(true);
     try {
       const data = await fetchArenaCollection(token, {
-        page,
+        page: targetPage,
         perPage: CARD_PICKER_PAGE_SIZE,
         sort,
         search: search || undefined,
@@ -77,19 +77,22 @@ function CardPicker({ onSelect, onClose }: CardPickerProps) {
       if (rarity) {
         filtered = filtered.filter((c) => c.rarity === rarity);
       }
-      setCards((prev) => (page === 1 ? filtered : [...prev, ...filtered]));
+      setCards((prev) => (targetPage === 1 ? filtered : [...prev, ...filtered]));
       setHasMore(data.cards.length === CARD_PICKER_PAGE_SIZE);
     } catch {
       // ignore
     }
     setLoading(false);
-  }, [token, page, sort, search, rarity, element]);
+  }, [token, sort, search, rarity, element]);
 
   useEffect(() => {
     setPage(1);
-    void loadCards();
-     
-  }, [loadCards]);
+  }, [search, sort, rarity, element]);
+
+  useEffect(() => {
+    if (!token) return;
+    void loadCards(page);
+  }, [page, loadCards, token]);
 
   return (
     <div
