@@ -252,6 +252,7 @@ const ArenaMint = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      <div className="max-h-[55vh] overflow-y-auto [scrollbar-gutter:stable] space-y-4 pr-1">
                       {mintable.map(({ malId, cards, total }) => {
                         const characterTitle = cards[0].title;
                         const possibleFirstId = cards[0].cardInstanceId;
@@ -274,20 +275,20 @@ const ArenaMint = () => {
                                   <div
                                     key={cid}
                                     className={`flex flex-col items-center space-y-1 transition-all ${
-                                      isPicked
-                                        ? "ring-2 ring-amber-400 rounded-xl"
-                                        : cannotPick
-                                          ? "opacity-40"
-                                          : "opacity-85 hover:opacity-100"
+                                      cannotPick && !isPicked
+                                        ? "opacity-40"
+                                        : "opacity-85 hover:opacity-100"
                                     }`}
                                   >
-                                    <ArenaPortraitCard
-                                      card={card}
-                                      level={1}
-                                      size="full"
-                                      showIvLine={true}
-                                      interactive
-                                    />
+                                    <div className={isPicked ? "ring-2 ring-amber-400 rounded-xl" : ""}>
+                                      <ArenaPortraitCard
+                                        card={card}
+                                        level={1}
+                                        size="full"
+                                        showIvLine={true}
+                                        interactive
+                                      />
+                                    </div>
                                     <button
                                       className={`arena-redraw-button hover:animate-wiggle text-xs ${
                                         isPicked ? "text-amber-600 font-bold" : ""
@@ -304,9 +305,10 @@ const ArenaMint = () => {
                           </div>
                         );
                       })}
+                      </div>
 
                       {pickedCards.length === 2 ? (
-                        <div className="flex justify-center">
+                        <div className="flex justify-center pt-2">
                           <button
                             className="arena-redraw-button text-base"
                             onClick={() => setStep("preview")}

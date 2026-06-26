@@ -3,3 +3,4 @@
 7. add bots for each elements to populate the fight pool
 . make timeout automatically ends the game to game over element (tcg)
 add drag animation on phone (tcg)
+fix button "forge rainbow card" got dragged to the bottom if the list is too long
