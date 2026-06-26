@@ -641,6 +641,31 @@ export type ArenaLeaderboardResponse = {
   }>;
 };
 
+export type ArenaHallOfFameEntry = {
+  rank: number;
+  userId: string;
+  username: string;
+  avatar: string | null;
+  level: number;
+  eloRating: number;
+  eloMatches: number;
+  peakElo: number;
+};
+
+export type ArenaHallOfFameMonth = {
+  month: string;
+  entries: ArenaHallOfFameEntry[];
+  createdAt: string;
+};
+
+export type ArenaHallOfFameResponse = {
+  months: ArenaHallOfFameMonth[];
+  page: number;
+  perPage: number;
+  totalPages: number;
+  total: number;
+};
+
 export class ArenaApiError extends Error {
   status: number;
   code: string | null;
@@ -2201,4 +2226,24 @@ export async function verifyArena(
   if (!response.ok) {
     throw await readApiError(response);
   }
+}
+
+export async function fetchArenaHallOfFame(
+  options: { month?: string; page?: number } = {},
+): Promise<ArenaHallOfFameResponse> {
+  const params = new URLSearchParams();
+  if (options.month) params.set("month", options.month);
+  if (options.page) params.set("page", String(options.page));
+
+  const query = params.toString();
+  const response = await fetch(
+    joinApi(`/arena/hall-of-fame${query ? `?${query}` : ""}`),
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return response.json();
 }

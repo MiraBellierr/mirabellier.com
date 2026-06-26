@@ -6,6 +6,7 @@ import { useWebSocketEvent } from "@/hooks/use-websocket";
 const SLUGS = [
   { slug: "", label: "Arena Home" },
   { slug: "/fight", label: "Fight" },
+  { slug: "/hall-of-fame", label: "Hall of Fame" },
   { slug: "/shop", label: "Shop" },
   { slug: "/crafting", label: "Craft" },
   { slug: "/inventory", label: "Inventory" },

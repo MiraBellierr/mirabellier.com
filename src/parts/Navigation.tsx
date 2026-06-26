@@ -98,6 +98,14 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
           pathname === "/ar" || pathname.startsWith("/ar/"),
       },
       {
+        label: "hall of fame",
+        to: "/arena/hall-of-fame",
+        icon: NAV_ICON_ARENA,
+        isActive: (pathname) =>
+          pathname.startsWith("/arena/hall-of-fame") ||
+          pathname.startsWith("/ar/hall-of-fame"),
+      },
+      {
         label: "guestbook",
         to: "/guestbook",
         icon: guestbook,

@@ -15,6 +15,7 @@ const Quotes = lazy(() => import("./pages/Quotes"));
 const Anime = lazy(() => import("./pages/Anime"));
 const Arena = lazy(() => import("./pages/Arena"));
 const ArenaFight = lazy(() => import("./pages/ArenaFight"));
+const ArenaHallOfFame = lazy(() => import("./pages/ArenaHallOfFame"));
 const ArenaShop = lazy(() => import("./pages/ArenaShop"));
 const ArenaCrafting = lazy(() => import("./pages/ArenaCrafting"));
 const ArenaInventory = lazy(() => import("./pages/ArenaInventory"));
@@ -103,6 +104,7 @@ function App() {
       <Route path="/anime" element={<Anime />} />
       <Route path="/arena" element={<Arena />} />
       <Route path="/arena/fight" element={<ArenaFight />} />
+      <Route path="/arena/hall-of-fame" element={<ArenaHallOfFame />} />
       <Route path="/arena/shop" element={<ArenaShop />} />
       <Route path="/arena/crafting" element={<ArenaCrafting />} />
       <Route path="/arena/inventory" element={<ArenaInventory />} />
@@ -117,6 +119,7 @@ function App() {
       <Route path="/arena/tcg" element={<TcgPage />} />
       <Route path="/ar" element={<Arena />} />
       <Route path="/ar/fight" element={<ArenaFight />} />
+      <Route path="/ar/hall-of-fame" element={<ArenaHallOfFame />} />
       <Route path="/ar/shop" element={<ArenaShop />} />
       <Route path="/ar/crafting" element={<ArenaCrafting />} />
       <Route path="/ar/inventory" element={<ArenaInventory />} />
