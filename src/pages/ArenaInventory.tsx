@@ -9,12 +9,16 @@ import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import {
+  type ArenaEquipmentLoadout,
   type ArenaEquipmentPiece,
   type ArenaShopItem,
   type ArenaShopResponse,
   equipArenaItem,
   fetchArenaShop,
   fodderArenaPiece,
+  saveEquipmentLoadout,
+  restoreEquipmentLoadout,
+  deleteEquipmentLoadout,
   unequipArenaSlot,
   useArenaConsumable as activateArenaConsumable,
 } from "@/lib/arena-api";
@@ -109,6 +113,8 @@ const ArenaInventory = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [tab, setTab] = useState<InventoryTab>("weapon");
   const [page, setPage] = useState(1);
+  const [loadoutName, setLoadoutName] = useState("");
+  const [loadoutActionId, setLoadoutActionId] = useState<string | null>(null);
   const PER_PAGE = 20;
 
   usePageSeo({
@@ -298,7 +304,93 @@ const ArenaInventory = () => {
     }
   };
 
+  const handleSaveLoadout = async () => {
+    if (!token) return;
+    setLoadoutActionId("save");
+    setErrorMessage(null);
+    try {
+      const payload = await saveEquipmentLoadout(token, loadoutName);
+      setShop(payload.shop);
+      setLoadoutName("");
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setLoadoutActionId(null);
+    }
+  };
+
+  const handleRestoreLoadout = async (loadout: ArenaEquipmentLoadout) => {
+    if (!token) return;
+    const pieceMap = new Map(
+      (shop?.profile?.equipmentPieces || []).map((p) => [p.id, p]),
+    );
+    const slots: string[] = [];
+    if (loadout.weaponPieceId && pieceMap.has(loadout.weaponPieceId)) slots.push("Weapon");
+    if (loadout.armorPieceId && pieceMap.has(loadout.armorPieceId)) slots.push("Armour");
+    if (loadout.charmPieceId && pieceMap.has(loadout.charmPieceId)) slots.push("Charm");
+
+    if (slots.length === 0) {
+      setErrorMessage("No pieces in this loadout still exist.");
+      return;
+    }
+
+    const hasEquipped = ["weapon", "armor", "charm"].some(
+      (s) => shop?.equipped?.[s as keyof typeof shop.equipped],
+    );
+    if (hasEquipped) {
+      const shouldRestore = await confirm({
+        title: `Restore "${loadout.name}"?`,
+        message: (
+          <span>
+            Currently equipped gear will be replaced. Restoring: {slots.join(", ")}.
+          </span>
+        ),
+        confirmLabel: "Restore loadout",
+        cancelLabel: "Cancel",
+      });
+      if (!shouldRestore) return;
+    }
+
+    setLoadoutActionId(`restore:${loadout.id}`);
+    setErrorMessage(null);
+    try {
+      const payload = await restoreEquipmentLoadout(token, loadout.id);
+      setShop(payload.shop);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setLoadoutActionId(null);
+    }
+  };
+
+  const handleDeleteLoadout = async (loadout: ArenaEquipmentLoadout) => {
+    if (!token) return;
+    const shouldDelete = await confirm({
+      title: `Delete "${loadout.name}"?`,
+      message: "This loadout will be permanently removed.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (!shouldDelete) return;
+
+    setLoadoutActionId(`delete:${loadout.id}`);
+    setErrorMessage(null);
+    try {
+      const payload = await deleteEquipmentLoadout(token, loadout.id);
+      setShop(payload.shop);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setLoadoutActionId(null);
+    }
+  };
+
   const activeEffects = shop ? formatActiveEffects(shop) : [];
+  const loadouts = shop?.profile?.equipmentLoadouts || [];
+  const pieceMap = useMemo(
+    () => new Map((pieces).map((p) => [p.id, p])),
+    [pieces],
+  );
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -376,6 +468,95 @@ const ArenaInventory = () => {
                         <p>{activeEffects.join(" · ")}</p>
                       </div>
                     ) : null}
+                  </div>
+
+                  <div className="border-t border-sky-200 pt-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-blue-900">Loadouts:</p>
+                      <input
+                        type="text"
+                        value={loadoutName}
+                        onChange={(e) => setLoadoutName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") void handleSaveLoadout();
+                        }}
+                        placeholder="loadout name..."
+                        className="rounded border border-blue-200 bg-white/80 px-2 py-1 text-xs text-blue-800 placeholder-blue-300 outline-none focus:border-blue-400"
+                        disabled={loadoutActionId !== null}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleSaveLoadout()}
+                        disabled={loadoutActionId !== null}
+                        className="arena-redraw-button hover:animate-wiggle text-xs"
+                      >
+                        {loadoutActionId === "save" ? "[ saving... ]" : "[ save loadout ]"}
+                      </button>
+                    </div>
+                    {loadouts.length > 0 ? (
+                      <div className="mt-2 space-y-2">
+                        {loadouts.map((loadout) => {
+                          const weapon = loadout.weaponPieceId ? pieceMap.get(loadout.weaponPieceId) : null;
+                          const armor = loadout.armorPieceId ? pieceMap.get(loadout.armorPieceId) : null;
+                          const charm = loadout.charmPieceId ? pieceMap.get(loadout.charmPieceId) : null;
+                          const isBusy = loadoutActionId !== null;
+                          const isRestoring = loadoutActionId === `restore:${loadout.id}`;
+                          const isDeleting = loadoutActionId === `delete:${loadout.id}`;
+                          const hasAnyPiece = weapon || armor || charm;
+
+                          return (
+                            <div key={loadout.id} className="rounded border border-blue-100 bg-blue-50/60 p-2 text-xs text-blue-900">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-bold">{loadout.name}</span>
+                                <span className="flex gap-1">
+                                  {hasAnyPiece ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleRestoreLoadout(loadout)}
+                                      disabled={isBusy}
+                                      className="arena-redraw-button hover:animate-wiggle text-xs"
+                                    >
+                                      {isRestoring ? "[ restoring... ]" : "[ restore ]"}
+                                    </button>
+                                  ) : (
+                                    <span className="text-amber-600 italic">[ empty ]</span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleDeleteLoadout(loadout)}
+                                    disabled={isBusy}
+                                    className="arena-redraw-button hover:animate-wiggle text-xs"
+                                  >
+                                    {isDeleting ? "[ deleting... ]" : "[ delete ]"}
+                                  </button>
+                                </span>
+                              </div>
+                              <div className="mt-1 text-blue-600">
+                                {weapon ? (
+                                  <span>✦ Weapon: {MAIN_STAT_LABELS[weapon.mainStatType] || weapon.mainStatType} {weapon.mainStatValue}</span>
+                                ) : (
+                                  <span className="text-blue-300">✦ Weapon: —</span>
+                                )}
+                                {" · "}
+                                {armor ? (
+                                  <span>✦ Armour: {MAIN_STAT_LABELS[armor.mainStatType] || armor.mainStatType} {armor.mainStatValue}</span>
+                                ) : (
+                                  <span className="text-blue-300">✦ Armour: —</span>
+                                )}
+                                {" · "}
+                                {charm ? (
+                                  <span>✦ Charm: {MAIN_STAT_LABELS[charm.mainStatType] || charm.mainStatType} {charm.mainStatValue}</span>
+                                ) : (
+                                  <span className="text-blue-300">✦ Charm: —</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-blue-400">No loadouts saved yet. Equip gear and save it here for quick swapping.</p>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">

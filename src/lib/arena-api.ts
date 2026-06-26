@@ -200,6 +200,7 @@ export type ArenaProfile = {
   };
   equipmentPct?: ArenaPctStats;
   equipmentPieces?: ArenaEquipmentPiece[];
+  equipmentLoadouts?: ArenaEquipmentLoadout[];
   activePassives?: ArenaPassiveRule[];
   skillTree?: {
     earnedPoints: number;
@@ -215,6 +216,15 @@ export type ArenaProfile = {
   updatedAt: string | null;
   activeFight?: ArenaActiveFight | null;
   tutorialComplete: boolean;
+};
+
+export type ArenaEquipmentLoadout = {
+  id: string;
+  name: string;
+  weaponPieceId: string | null;
+  armorPieceId: string | null;
+  charmPieceId: string | null;
+  createdAt: string;
 };
 
 export type ArenaEquippedItem = {
@@ -2097,6 +2107,60 @@ export async function fodderArenaPiece(
   }
 
   return (await response.json()) as { fodderPieceId: string; coinsGained: number };
+}
+
+export async function saveEquipmentLoadout(
+  token: string,
+  name?: string,
+): Promise<{ loadout: ArenaEquipmentLoadout; shop: ArenaShopResponse }> {
+  const response = await fetch(joinApi("/arena/loadout/save"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ name }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as { loadout: ArenaEquipmentLoadout; shop: ArenaShopResponse };
+}
+
+export async function restoreEquipmentLoadout(
+  token: string,
+  loadoutId: string,
+): Promise<{ loadoutId: string; restored: string[]; shop: ArenaShopResponse }> {
+  const response = await fetch(joinApi("/arena/loadout/restore"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ loadoutId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as { loadoutId: string; restored: string[]; shop: ArenaShopResponse };
+}
+
+export async function deleteEquipmentLoadout(
+  token: string,
+  loadoutId: string,
+): Promise<{ success: boolean; loadoutId: string; shop: ArenaShopResponse }> {
+  const response = await fetch(joinApi("/arena/loadout/delete"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ loadoutId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as { success: boolean; loadoutId: string; shop: ArenaShopResponse };
 }
 
 export async function craftArenaRecipe(
