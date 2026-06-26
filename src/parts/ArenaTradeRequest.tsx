@@ -6,6 +6,7 @@ import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
   sendArenaTradeRequest,
   cancelArenaTradeRequest,
+  fetchArenaTradeRequestStatus,
   type ArenaTradeUser,
 } from "@/lib/arena-api";
 
@@ -49,7 +50,7 @@ const ArenaTradeRequest = ({
     } catch {
       setMessage("Failed to send trade request.");
     }
-  }, [token, user.id]);
+  }, [token, user.id, setRequestIdWrapper, setStepWrapper]);
 
   useWebSocketEvent("arena:trade:request-update", (data) => {
     const update = data as { requestId: string; status: string; sessionId?: string };
@@ -75,6 +76,49 @@ const ArenaTradeRequest = ({
       setMessage("Trade request ended.");
     }
   });
+
+  useEffect(() => {
+    if (!token || step !== "waiting" || !requestId) return;
+    let cancelled = false;
+
+    const checkStatus = async () => {
+      try {
+        const status = await fetchArenaTradeRequestStatus(token, requestId);
+        if (cancelled || stepRef.current !== "waiting") return;
+
+        if (status.status === "accepted" && status.sessionId) {
+          onSessionStart(status.sessionId);
+          return;
+        }
+        if (status.status === "cancelled") {
+          setStepWrapper("declined");
+          setMessage("Trade request was cancelled.");
+          return;
+        }
+        if (status.status === "denied") {
+          setStepWrapper("declined");
+          setMessage("Trade request was declined.");
+          return;
+        }
+        if (status.status !== "pending") {
+          setStepWrapper("declined");
+          setMessage("Trade request ended.");
+        }
+      } catch {
+        // Keep waiting; the websocket handler can still resolve the request.
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void checkStatus();
+    }, 2000);
+    void checkStatus();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [token, step, requestId, onSessionStart, setStepWrapper]);
 
   const handleCancel = useCallback(async () => {
     if (!token || !requestId) return;
