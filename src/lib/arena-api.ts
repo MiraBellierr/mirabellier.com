@@ -214,6 +214,7 @@ export type ArenaProfile = {
   createdAt: string | null;
   updatedAt: string | null;
   activeFight?: ArenaActiveFight | null;
+  tutorialComplete: boolean;
 };
 
 export type ArenaEquippedItem = {
@@ -726,6 +727,10 @@ function normalizeProfile(value: unknown): ArenaProfile {
       typeof profile?.eloProvisional === "boolean"
         ? profile.eloProvisional
         : eloMatches < ELO_PROVISIONAL_MATCHES,
+    tutorialComplete:
+      typeof profile?.tutorialComplete === "boolean"
+        ? profile.tutorialComplete
+        : !!profile?.tutorialComplete,
   };
 }
 

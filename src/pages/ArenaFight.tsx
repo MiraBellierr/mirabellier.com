@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -117,6 +118,7 @@ const ArenaFight = () => {
   const [opponentFallen, setOpponentFallen] = useState(false);
   const [autoBattle, setAutoBattle] = useState(false);
   const [nextAutoFightAt, setNextAutoFightAt] = useState<number | null>(null);
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
   const playerCardRef = useRef<HTMLDivElement | null>(null);
   const opponentCardRef = useRef<HTMLDivElement | null>(null);
   const floaterKey = useRef(0);
@@ -528,7 +530,10 @@ const ArenaFight = () => {
           } else {
             clearAdvanceTimer();
             const t = tokenRef.current;
-            if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
+            if (t) fetchArenaProfile(t).then((p) => {
+              setProfile(p);
+              if (p.level >= 5 && !p.tutorialComplete) setShowTutorialModal(true);
+            }).catch(() => {});
           }
           break;
         }
@@ -542,7 +547,10 @@ const ArenaFight = () => {
           }
           processFightState(state);
           const t = tokenRef.current;
-          if (t) fetchArenaProfile(t).then(setProfile).catch(() => {});
+          if (t) fetchArenaProfile(t).then((p) => {
+            setProfile(p);
+            if (p.level >= 5 && !p.tutorialComplete) setShowTutorialModal(true);
+          }).catch(() => {});
           break;
         }
         case "arena:fight:error": {
@@ -958,6 +966,52 @@ const ArenaFight = () => {
         </div>
       </div>
       <Footer />
+      {showTutorialModal
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[230000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70"
+              onClick={() => setShowTutorialModal(false)}
+            >
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tutorial-modal-title"
+                className="card-border w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl dark:bg-slate-900"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-pink-500">
+                      Tutorial Complete
+                    </p>
+                    <h2 id="tutorial-modal-title" className="mt-2 text-xl font-bold text-blue-700 dark:text-purple-100">
+                      Congratulations!
+                    </h2>
+                  </div>
+
+                  <div className="space-y-2 text-sm text-blue-800 dark:text-slate-200">
+                    <p>You completed the tutorial!</p>
+                    <p>
+                      From now on, you'll face <strong>real opponents</strong> in the Arena.
+                    </p>
+                    <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                      Here's 10,000 coins to get you started. Good luck!
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowTutorialModal(false)}
+                    className="arena-redraw-button hover:animate-wiggle"
+                  >
+                    [ nice! ]
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 };
