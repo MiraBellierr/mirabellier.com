@@ -65,6 +65,7 @@ export function createWebSocketClient(): WebSocketClient {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 30000,
       reconnectionAttempts: Infinity,
+      transports: ["websocket"],
       auth: (cb: (data: object) => void) => {
         fetchWsToken()
           .then((token) => cb({ token }))
