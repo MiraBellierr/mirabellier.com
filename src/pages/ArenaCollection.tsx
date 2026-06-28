@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -36,12 +36,20 @@ function normalizeArenaError(error: unknown) {
 }
 
 
-type CollectionSort =
+type PrimarySort =
   | "recent"
   | "rarity-desc"
   | "rarity-asc"
   | "iv-desc"
   | "iv-asc"
+  | "power-desc"
+  | "guard-desc"
+  | "speed-desc"
+  | "effectHit-desc";
+
+type SecondarySort =
+  | ""
+  | "iv-desc"
   | "power-desc"
   | "guard-desc"
   | "speed-desc"
@@ -54,12 +62,19 @@ const ArenaCollection = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<CollectionSort>("recent");
+  const [primarySort, setPrimarySort] = useState<PrimarySort>("recent");
+  const [secondarySort, setSecondarySort] = useState<SecondarySort>("");
   const [elementFilter, setElementFilter] = useState("");
   const [duplicatesFilter, setDuplicatesFilter] = useState(false);
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
   const [togglingFavoriteId, setTogglingFavoriteId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Combine both dropdowns with AND logic: primary first, secondary as tiebreaker
+  const sort = useMemo<string>(
+    () => (secondarySort ? `${primarySort},${secondarySort}` : primarySort),
+    [primarySort, secondarySort],
+  );
 
   usePageSeo({
     canonical: "https://mirabellier.com/arena/collection",
@@ -200,24 +215,38 @@ const ArenaCollection = () => {
                       Cards collected: {collection.total}
                     </p>
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                      <label htmlFor="collection-sort" className="sr-only">
-                        Sort collection
+                      <label htmlFor="collection-sort-primary" className="text-xs text-slate-500">
+                        sort:
                       </label>
                       <select
-                        id="collection-sort"
-                        value={sort}
-                        onChange={(event) => { setSort(event.target.value as CollectionSort); setPage(1); }}
-                        className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                        id="collection-sort-primary"
+                        value={primarySort}
+                        onChange={(event) => { setPrimarySort(event.target.value as PrimarySort); setPage(1); }}
+                        className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
                       >
-                        <option value="recent">Collection order</option>
-                        <option value="rarity-desc">Rarity: highest first</option>
-                        <option value="rarity-asc">Rarity: lowest first</option>
-                        <option value="iv-desc">IV: highest first</option>
-                        <option value="iv-asc">IV: lowest first</option>
-                        <option value="power-desc">Power: highest first</option>
-                        <option value="guard-desc">Guard: highest first</option>
-                        <option value="speed-desc">Speed: highest first</option>
-                        <option value="effectHit-desc">Effect Hit: highest first</option>
+                        <option value="recent">Recent</option>
+                        <option value="rarity-desc">Rarity ▼</option>
+                        <option value="rarity-asc">Rarity ▲</option>
+                        <option value="iv-desc">IV ▼</option>
+                        <option value="iv-asc">IV ▲</option>
+                        <option value="power-desc">Power ▼</option>
+                        <option value="guard-desc">Guard ▼</option>
+                        <option value="speed-desc">Speed ▼</option>
+                        <option value="effectHit-desc">Effect Hit ▼</option>
+                      </select>
+                      <span className="text-xs text-slate-400">then</span>
+                      <select
+                        id="collection-sort-secondary"
+                        value={secondarySort}
+                        onChange={(event) => { setSecondarySort(event.target.value as SecondarySort); setPage(1); }}
+                        className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
+                      >
+                        <option value="">—</option>
+                        <option value="iv-desc">IV ▼</option>
+                        <option value="power-desc">Power ▼</option>
+                        <option value="guard-desc">Guard ▼</option>
+                        <option value="speed-desc">Speed ▼</option>
+                        <option value="effectHit-desc">Effect Hit ▼</option>
                       </select>
                       <input
                         id="collection-search"
