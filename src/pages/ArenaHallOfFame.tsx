@@ -12,7 +12,7 @@ import {
   type ArenaHallOfFameEntry,
   type ArenaHallOfFameResponse,
   fetchArenaHallOfFame,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 
 function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) return error.message;

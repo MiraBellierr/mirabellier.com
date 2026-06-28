@@ -8,7 +8,7 @@ import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { useAuth } from "@/states/AuthContext";
 import { joinApi } from "@/lib/config";
-import { ArenaApiError } from "@/lib/arena-api";
+import { ArenaApiError } from "@/lib/arena";
 
 type UserLookup = {
   id: string;

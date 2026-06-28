@@ -32,7 +32,7 @@ import {
   submitTcgDeck,
   fetchTcgGameState,
   submitTcgAction,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 
 const DECK_SIZE = 10;
 const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;

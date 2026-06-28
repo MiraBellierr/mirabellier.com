@@ -14,7 +14,7 @@ import {
   type ArenaShopResponse,
   craftArenaRecipe,
   fetchArenaShop,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import {
   ArenaItemSprite,
   describeConsumableEffect,

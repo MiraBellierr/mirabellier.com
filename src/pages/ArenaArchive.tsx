@@ -14,7 +14,7 @@ import {
   ArenaApiError,
   fetchArenaArchive,
   type ArenaArchiveResponse,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 
 type ArchiveOwnershipFilter = "all" | "owned" | "not-owned";
 

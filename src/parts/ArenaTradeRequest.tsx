@@ -8,7 +8,7 @@ import {
   cancelArenaTradeRequest,
   fetchArenaTradeRequestStatus,
   type ArenaTradeUser,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 
 type ArenaTradeRequestProps = {
   user: ArenaTradeUser;

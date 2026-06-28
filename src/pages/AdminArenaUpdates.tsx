@@ -11,7 +11,7 @@ import {
   createArenaUpdate,
   deleteArenaUpdate,
   fetchArenaUpdates,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { useAuth } from "@/states/AuthContext";

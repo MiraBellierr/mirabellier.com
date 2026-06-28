@@ -6,8 +6,8 @@ import type {
   ArenaProfile,
   ArenaShopItem,
   ArenaShopResponse,
-} from "@/lib/arena-api";
-import { ArenaApiError } from "@/lib/arena-api";
+} from "@/lib/arena";
+import { ArenaApiError } from "@/lib/arena";
 
 const spriteModules = import.meta.glob("/src/assets/sprites/*.png", {
   import: "default",

@@ -23,7 +23,7 @@ import {
   fetchArenaProfile,
   fetchFightState,
   verifyArena,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
 
 const ELEMENT_COLORS: Record<string, string> = {

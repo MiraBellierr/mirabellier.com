@@ -27,7 +27,7 @@ import {
   searchArenaTradeCards,
   searchArenaTradeUsers,
   sendArenaTradeRequest,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import { usePageSeo } from "@/lib/seo";
 import { useConfirm } from "@/states/ConfirmContext";
 

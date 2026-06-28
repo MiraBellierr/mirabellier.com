@@ -12,7 +12,7 @@ import {
   type ArenaLeaderboardResponse,
   type ArenaMetric,
   fetchArenaLeaderboard,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 
 const METRICS: Array<{ id: ArenaMetric; label: string }> = [
   { id: "elo", label: "ELO" },

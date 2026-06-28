@@ -1,4 +1,4 @@
-import type { ArenaTradeRequest } from "@/lib/arena-api";
+import type { ArenaTradeRequest } from "@/lib/arena";
 
 type ArenaTradeNotificationProps = {
   request: ArenaTradeRequest;

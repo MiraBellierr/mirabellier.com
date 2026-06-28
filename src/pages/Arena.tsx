@@ -21,7 +21,7 @@ import {
   drawArenaPack,
   fetchArenaProfile,
   fetchArenaUpdates,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
 
 function formatTime(value: string | null) {

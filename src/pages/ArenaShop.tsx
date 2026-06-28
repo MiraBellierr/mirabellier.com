@@ -22,7 +22,7 @@ import {
   fetchArenaShop,
   fodderArenaPiece,
   useArenaConsumable as activateArenaConsumable,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import {
   ArenaItemSprite,
   describeConsumableEffect,

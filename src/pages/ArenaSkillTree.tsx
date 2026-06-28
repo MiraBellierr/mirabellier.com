@@ -20,7 +20,7 @@ import {
   activateArenaSkill,
   fetchArenaSkillTree,
   resetArenaSkillTree,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import { usePageSeo } from "@/lib/seo";
 
 function normalizeArenaError(error: unknown) {

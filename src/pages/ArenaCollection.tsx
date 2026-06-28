@@ -15,7 +15,7 @@ import {
   fetchArenaCollection,
   selectArenaCollectionCard,
   toggleArenaCollectionCardFavorite,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 
 const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;

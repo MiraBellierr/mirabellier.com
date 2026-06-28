@@ -27,7 +27,7 @@ import {
   fetchArenaMarketListings,
   fetchArenaMarketPriceGuide,
   fetchMyArenaMarketListings,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 import { usePageSeo } from "@/lib/seo";
 import { useConfirm } from "@/states/ConfirmContext";
 

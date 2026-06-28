@@ -17,7 +17,7 @@ import {
   fetchArenaProfile,
   type ArenaCard,
   type ArenaTradeSession as ArenaTradeSessionType,
-} from "@/lib/arena-api";
+} from "@/lib/arena";
 
 type ArenaTradeSessionProps = {
   sessionId: string;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import type { ArenaCard } from "@/lib/arena-api";
+import type { ArenaCard } from "@/lib/arena";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import cardBack from "@/assets/back-card-design.jpg";
 
