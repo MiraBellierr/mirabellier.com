@@ -269,8 +269,8 @@ const ArenaCollection = () => {
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
           </div>
-          <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <section className="card-border space-y-4 bg-white/60 p-4">
+          <main className="w-full space-y-2 p-2 sm:p-4 lg:w-3/5">
+            <section className="card-border space-y-4 bg-white/60 p-2 sm:p-4">
               <div className="">
                 <h2 className="text-4xl font-bold text-blue-900">Card Collection {`>^. .^<`}</h2>
                 <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -26,6 +27,28 @@ function normalizeArenaError(error: unknown) {
 
 type Step = "pick" | "preview";
 
+function MobileSwapGhost({ slot, pos, card }: { slot: 0 | 1 | null; pos: { clientX: number; clientY: number } | null; card: ArenaCard | null }) {
+  if (slot === null || !pos || !card) return null;
+  return createPortal(
+    <div
+      className="fixed pointer-events-none z-[230002] opacity-90"
+      style={{
+        left: pos.clientX,
+        top: pos.clientY,
+        transform: "translate(-50%, -50%)",
+      }}
+    >
+      <div className="w-24 overflow-hidden rounded-lg border-2 border-amber-400 shadow-2xl bg-slate-200">
+        <img src={card.imageUrl || ""} alt="" className="w-full object-cover" draggable={false} />
+      </div>
+      <span className="block text-center text-[0.6rem] font-black text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mt-1">
+        {slot === 0 ? "Left base" : "Right material"}
+      </span>
+    </div>,
+    document.body,
+  );
+}
+
 const ArenaMint = () => {
   usePageSeo({
     canonical: "https://mirabellier.com/arena/mint",
@@ -50,6 +73,65 @@ const ArenaMint = () => {
   const [mintedCard, setMintedCard] = useState<ArenaCard | null>(null);
   const [actioning, setActioning] = useState(false);
   const [draggedSlot, setDraggedSlot] = useState<0 | 1 | null>(null);
+
+  // Mobile touch drag
+  const [mobileDragSlot, setMobileDragSlot] = useState<0 | 1 | null>(null);
+  const [mobileDragPos, setMobileDragPos] = useState<{ clientX: number; clientY: number } | null>(null);
+  const mobileDragRef = useRef<{ slot: 0 | 1; startX: number; startY: number } | null>(null);
+  const slot0Ref = useRef<HTMLDivElement | null>(null);
+  const slot1Ref = useRef<HTMLDivElement | null>(null);
+
+  const handleMobileTouchStart = useCallback((slot: 0 | 1, e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    mobileDragRef.current = { slot, startX: touch.clientX, startY: touch.clientY };
+    setMobileDragSlot(slot);
+    setMobileDragPos({ clientX: touch.clientX, clientY: touch.clientY });
+  }, []);
+
+  // Non-passive touchmove/touchend listeners to prevent scroll during drag
+  useEffect(() => {
+    if (mobileDragSlot === null) return;
+
+    const onMove = (e: TouchEvent) => {
+      e.preventDefault(); // block scroll
+      const touch = e.touches[0];
+      if (!touch) return;
+      setMobileDragPos({ clientX: touch.clientX, clientY: touch.clientY });
+    };
+
+    const onEnd = (e: TouchEvent) => {
+      const drag = mobileDragRef.current;
+      mobileDragRef.current = null;
+      setMobileDragSlot(null);
+      setMobileDragPos(null);
+      if (!drag) return;
+      const touch = e.changedTouches[0];
+      const point = touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
+      if (!point) return;
+      const targetEl = document.elementFromPoint(point.clientX, point.clientY);
+      const otherSlot = drag.slot === 0 ? 1 : 0;
+      const otherRef = otherSlot === 0 ? slot0Ref : slot1Ref;
+      if (otherRef.current && targetEl && otherRef.current.contains(targetEl)) {
+        swapPickedSlots();
+      }
+    };
+
+    const onCancel = () => {
+      mobileDragRef.current = null;
+      setMobileDragSlot(null);
+      setMobileDragPos(null);
+    };
+
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onCancel);
+    return () => {
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onCancel);
+    };
+  }, [mobileDragSlot]);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,6 +222,11 @@ const ArenaMint = () => {
     };
   }, [pickedCards]);
 
+  const mobileGhostCard = useMemo(() => {
+    if (mobileDragSlot === null || pickedCards.length < 2) return null;
+    return pickedCards[mobileDragSlot];
+  }, [mobileDragSlot, pickedCards]);
+
   const handleMint = async () => {
     if (!token || pickedCards.length !== 2) return;
     setMintError(null);
@@ -170,8 +257,8 @@ const ArenaMint = () => {
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
           </div>
-          <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <section className="card-border space-y-4 bg-white/60 p-4">
+          <main className="w-full space-y-2 p-2 sm:p-4 lg:w-3/5">
+            <section className="card-border space-y-4 bg-white/60 p-2 sm:p-4">
               <div className="">
                 <h2 className="text-4xl font-bold text-blue-900">Card Minting Forge {`>^. .^<`}</h2>
                 <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
@@ -218,7 +305,8 @@ const ArenaMint = () => {
                       <h3 className="text-lg font-black text-blue-900">Preview Rainbow Card</h3>
                       <div className="flex flex-wrap items-center justify-center gap-4">
                         <div
-                          className={`flex flex-col items-center gap-1 rounded-xl p-1 transition ${draggedSlot === 1 ? "ring-2 ring-amber-300" : ""}`}
+                          ref={slot0Ref}
+                          className={`flex flex-col items-center gap-1 rounded-xl p-1 transition ${draggedSlot === 1 || mobileDragSlot === 1 ? "ring-2 ring-amber-300" : ""}`}
                           draggable
                           onClick={swapPickedSlots}
                           onDragStart={(event) => {
@@ -235,6 +323,7 @@ const ArenaMint = () => {
                             setDraggedSlot(null);
                           }}
                           onDragEnd={() => setDraggedSlot(null)}
+                          onTouchStart={(e) => handleMobileTouchStart(0, e)}
                           title="Tap or drag to swap mint base"
                         >
                           <span className="text-xs font-bold text-blue-700">Left base</span>
@@ -245,7 +334,8 @@ const ArenaMint = () => {
                         </div>
                         <span className="text-2xl font-bold text-blue-400">+</span>
                         <div
-                          className={`flex flex-col items-center gap-1 rounded-xl p-1 transition ${draggedSlot === 0 ? "ring-2 ring-amber-300" : ""}`}
+                          ref={slot1Ref}
+                          className={`flex flex-col items-center gap-1 rounded-xl p-1 transition ${draggedSlot === 0 || mobileDragSlot === 0 ? "ring-2 ring-amber-300" : ""}`}
                           draggable
                           onClick={swapPickedSlots}
                           onDragStart={(event) => {
@@ -262,6 +352,7 @@ const ArenaMint = () => {
                             setDraggedSlot(null);
                           }}
                           onDragEnd={() => setDraggedSlot(null)}
+                          onTouchStart={(e) => handleMobileTouchStart(1, e)}
                           title="Tap or drag to swap mint base"
                         >
                           <span className="text-xs font-bold text-blue-700">Right material</span>
@@ -380,6 +471,7 @@ const ArenaMint = () => {
           </aside>
         </div>
       </div>
+      <MobileSwapGhost slot={mobileDragSlot} pos={mobileDragPos} card={mobileGhostCard} />
       <Footer />
     </div>
   );

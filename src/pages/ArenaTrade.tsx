@@ -1189,7 +1189,7 @@ const ArenaTrade = () => {
       {requestTargetListing && requestCardPickerOpen
         ? createPortal(
             <div
-              className="fixed inset-0 z-[240000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70"
+              className="fixed inset-0 z-[240000] flex items-center justify-center bg-white/50 p-2 sm:p-4 backdrop-blur-sm dark:bg-slate-950/70"
               onClick={() => {
                 setRequestCardPickerOpen(false);
                 setRequestTargetListing(null);
@@ -1197,7 +1197,7 @@ const ArenaTrade = () => {
               }}
             >
               <div
-                className="card-border w-full max-w-5xl rounded-2xl p-4 shadow-2xl dark:bg-slate-900" 
+                className="card-border w-full max-w-5xl rounded-2xl p-2 sm:p-4 shadow-2xl dark:bg-slate-900" 
                 onClick={(e) => e.stopPropagation()}
               >
                 <p className="mb-3 text-center text-xs font-black uppercase tracking-[0.2em] text-pink-500">

@@ -99,11 +99,11 @@ function CardPicker({ onSelect, onClose, excludedCardIds = [] }: CardPickerProps
 
   return (
     <div
-      className="fixed inset-0 z-[240000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70"
+      className="fixed inset-0 z-[240000] flex items-center justify-center bg-white/50 p-2 sm:p-4 backdrop-blur-sm dark:bg-slate-950/70"
       onClick={onClose}
     >
       <div
-        className="card-border w-full max-w-full rounded-2xl p-4 shadow-2xl sm:max-w-5xl dark:bg-slate-900"
+        className="card-border w-full max-w-full rounded-2xl p-2 sm:p-4 shadow-2xl sm:max-w-5xl dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-3 text-center text-xs font-black uppercase tracking-[0.2em] text-pink-500">
@@ -420,8 +420,8 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
   if (message) {
     const isCompleted = message === "Trade completed!";
     return createPortal(
-      <div className="fixed inset-0 z-[231000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70">
-        <div className="card-border w-full max-w-sm rounded-2xl p-5 text-center shadow-2xl dark:bg-slate-900">
+      <div className="fixed inset-0 z-[231000] flex items-center justify-center bg-white/50 p-2 sm:p-4 backdrop-blur-sm dark:bg-slate-950/70">
+        <div className="card-border w-full max-w-sm rounded-2xl p-3 sm:p-5 text-center shadow-2xl dark:bg-slate-900">
           {isCompleted ? (
             <div className="flex flex-col items-center gap-3">
               <p className="text-lg font-bold text-pink-500 dark:text-pink-400">
@@ -479,11 +479,11 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[231000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70"
+      className="fixed inset-0 z-[231000] flex items-center justify-center bg-white/50 p-2 sm:p-4 backdrop-blur-sm dark:bg-slate-950/70"
       onClick={onClose}
     >
       <div
-        className="card-border w-full max-w-full rounded-2xl p-4 shadow-2xl sm:max-w-3xl sm:p-6 dark:bg-slate-900"
+        className="card-border w-full max-w-full rounded-2xl p-2 sm:p-4 shadow-2xl sm:max-w-3xl dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-4 text-center text-xs font-black uppercase tracking-[0.2em] text-pink-500">

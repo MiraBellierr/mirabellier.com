@@ -750,6 +750,12 @@ h6 {
   width: 118px;
 }
 
+@media (max-width: 380px) {
+  .arena-portrait-card:not(.arena-portrait-card--compact) {
+    width: 130px;
+  }
+}
+
 .arena-portrait-card__inner {
   position: relative;
   width: 100%;
