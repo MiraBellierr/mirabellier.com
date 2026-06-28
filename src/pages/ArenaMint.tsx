@@ -49,6 +49,7 @@ const ArenaMint = () => {
   const [mintError, setMintError] = useState<string | null>(null);
   const [mintedCard, setMintedCard] = useState<ArenaCard | null>(null);
   const [actioning, setActioning] = useState(false);
+  const [draggedSlot, setDraggedSlot] = useState<0 | 1 | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +105,10 @@ const ArenaMint = () => {
       .map((id) => allCards.find((c) => c.cardInstanceId === id))
       .filter((c): c is ArenaCard => !!c);
   }, [mintGroups, picked]);
+
+  const swapPickedSlots = () => {
+    setPicked((prev) => (prev.length === 2 ? [prev[1], prev[0]] : prev));
+  };
 
   const previewCard = useMemo((): ArenaCard | null => {
     if (pickedCards.length !== 2) return null;
@@ -212,16 +217,54 @@ const ArenaMint = () => {
                     <div className="space-y-4">
                       <h3 className="text-lg font-black text-blue-900">Preview Rainbow Card</h3>
                       <div className="flex flex-wrap items-center justify-center gap-4">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs font-bold text-blue-700">Material 1</span>
+                        <div
+                          className={`flex flex-col items-center gap-1 rounded-xl p-1 transition ${draggedSlot === 1 ? "ring-2 ring-amber-300" : ""}`}
+                          draggable
+                          onClick={swapPickedSlots}
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = "move";
+                            setDraggedSlot(0);
+                          }}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = "move";
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            if (draggedSlot === 1) swapPickedSlots();
+                            setDraggedSlot(null);
+                          }}
+                          onDragEnd={() => setDraggedSlot(null)}
+                          title="Tap or drag to swap mint base"
+                        >
+                          <span className="text-xs font-bold text-blue-700">Left base</span>
                           <ArenaPortraitCard card={pickedCards[0]} level={1} interactive />
                           <span className="text-xs text-blue-600">
                             IV {pickedCards[0].iv.total}
                           </span>
                         </div>
                         <span className="text-2xl font-bold text-blue-400">+</span>
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs font-bold text-blue-700">Material 2</span>
+                        <div
+                          className={`flex flex-col items-center gap-1 rounded-xl p-1 transition ${draggedSlot === 0 ? "ring-2 ring-amber-300" : ""}`}
+                          draggable
+                          onClick={swapPickedSlots}
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = "move";
+                            setDraggedSlot(1);
+                          }}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = "move";
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            if (draggedSlot === 0) swapPickedSlots();
+                            setDraggedSlot(null);
+                          }}
+                          onDragEnd={() => setDraggedSlot(null)}
+                          title="Tap or drag to swap mint base"
+                        >
+                          <span className="text-xs font-bold text-blue-700">Right material</span>
                           <ArenaPortraitCard card={pickedCards[1]} level={1} interactive />
                           <span className="text-xs text-blue-600">
                             IV {pickedCards[1].iv.total}

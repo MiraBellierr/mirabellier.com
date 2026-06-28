@@ -74,6 +74,12 @@ type MobileTcgDrag =
   | { kind: "promote"; slot: string }
   | { kind: "element"; element: string };
 
+type MobileTcgGhost = {
+  drag: MobileTcgDrag;
+  clientX: number;
+  clientY: number;
+};
+
 function rarityRank(rarity: string | null | undefined) {
   const index = RARITY_ORDER.indexOf((rarity || "C") as (typeof RARITY_ORDER)[number]);
   return index >= 0 ? index : 0;
@@ -117,6 +123,15 @@ function normalizeArenaError(error: unknown) {
 function toCardId(card: TcgCard | ArenaCard | null): string {
   if (!card) return "";
   return card.cardInstanceId || `${card.malId}-${card.drawnAt || "card"}`;
+}
+
+function canTcgCardAttack(card: TcgCard | null | undefined) {
+  const assigned = card?.assignedElements || [];
+  return !!card?.element && assigned.length >= 2 && assigned.every((element) => element === card.element);
+}
+
+function canTcgCardSwitch(card: TcgCard | null | undefined, board: TcgPlayerState) {
+  return !!card && (card.assignedElements?.length || 0) >= 1 && !board.switchedCardThisTurn && board.board.support.some((support) => !!support);
 }
 
 function loadSavedDeck(): string[] {
@@ -291,20 +306,18 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, tou
       ) : null}
       {assigned.length > 0 ? (
         <div className="absolute top-0.5 left-0.5 flex items-center gap-0.5">
-          <span className="w-3 h-3 flex items-center justify-center rounded-full bg-white/90 shadow-sm">
-            <img
-              src={ELEMENT_ICONS[el || ""] || ""}
-              alt=""
-              className="w-2.5 h-2.5 object-contain pointer-events-none"
-              draggable={false}
-            />
-          </span>
+          {assigned.slice(0, 2).map((assignedEl, index) => (
+            <span key={`${assignedEl}-${index}`} className="w-3 h-3 flex items-center justify-center rounded-full bg-white/90 shadow-sm">
+              <img
+                src={ELEMENT_ICONS[assignedEl] || ""}
+                alt=""
+                className="w-2.5 h-2.5 object-contain pointer-events-none"
+                draggable={false}
+              />
+            </span>
+          ))}
           {assigned.length > 2 ? (
             <span className="text-[0.45rem] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">×{assigned.length}</span>
-          ) : assigned.length === 2 ? (
-            <span className="w-3 h-3 flex items-center justify-center rounded-full bg-white/90 shadow-sm">
-              <img src={ELEMENT_ICONS[el || ""] || ""} alt="" className="w-2.5 h-2.5 object-contain pointer-events-none" draggable={false} />
-            </span>
           ) : null}
         </div>
         ) : null}
@@ -325,6 +338,9 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
   onCardHoverLeave?: () => void;
 }) {
   if (!board) return null;
+  const attackerCanAttack = canTcgCardAttack(board.board.attacker);
+  const attackerCanSwitch = canTcgCardSwitch(board.board.attacker, board);
+  const attackerCanDrag = attackerCanAttack || attackerCanSwitch;
   const attackerClasses = [
     "relative",
     !board.board.attacker && isTurn ? "border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/50" : "",
@@ -361,25 +377,11 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
         <CardThumbnail
           card={board.board.attacker}
           size="lg"
-          highlighted={!!board.board.attacker && isTurn && (() => {
-            const elCount = board.board.attacker.assignedElements?.length ?? 0;
-            if (elCount >= 2) return true; // can attack
-            if (elCount >= 1 && !board.switchedCardThisTurn && board.board.support.some((s) => !!s)) return true; // can switch
-            return false;
-          })()}
-          draggable={!!(isTurn && board.board.attacker && (() => {
-            const elCount = board.board.attacker.assignedElements?.length ?? 0;
-            if (elCount >= 2) return true;
-            if (elCount >= 1 && !board.switchedCardThisTurn && board.board.support.some((s) => !!s)) return true;
-            return false;
-          })())}
-          touchDrag={isTurn && board.board.attacker && (() => {
-            const elCount = board.board.attacker.assignedElements?.length ?? 0;
-            return elCount >= 2 || (elCount >= 1 && !board.switchedCardThisTurn && board.board.support.some((s) => !!s));
-          })() ? { kind: "attack" } : undefined}
+          highlighted={!!board.board.attacker && isTurn && attackerCanDrag}
+          draggable={!!(isTurn && board.board.attacker && attackerCanDrag)}
+          touchDrag={isTurn && board.board.attacker && attackerCanDrag ? { kind: "attack" } : undefined}
           onDragStart={(e) => {
-            const elCount = board.board.attacker?.assignedElements?.length ?? 0;
-            if (isTurn && board.board.attacker && (elCount >= 2 || (elCount >= 1 && !board.switchedCardThisTurn && board.board.support.some((s) => !!s)))) {
+            if (isTurn && board.board.attacker && attackerCanDrag) {
               e.dataTransfer.setData("text/plain", "tcg-attack");
               e.dataTransfer.setData("attack", "1");
               e.dataTransfer.effectAllowed = "move";
@@ -588,13 +590,15 @@ function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLea
   );
 }
 
-function CountdownTimer({ startMs }: { startMs: number }) {
+function CountdownTimer({ startMs, onExpire }: { startMs: number; onExpire?: () => void }) {
   const TURN_SECONDS = 180;
   const [left, setLeft] = useState(TURN_SECONDS);
   const startRef = useRef(startMs);
+  const expiredRef = useRef(false);
 
   useEffect(() => {
     startRef.current = startMs;
+    expiredRef.current = false;
     setLeft(TURN_SECONDS);
   }, [startMs]);
 
@@ -605,17 +609,70 @@ function CountdownTimer({ startMs }: { startMs: number }) {
       const elapsed = (Date.now() - startRef.current) / 1000;
       const remaining = Math.max(0, Math.ceil(TURN_SECONDS - elapsed));
       setLeft(remaining);
+      if (remaining <= 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        onExpire?.();
+      }
       if (remaining > 0) setTimeout(update, 250);
     };
     const timer = setTimeout(update, 250);
     return () => { active = false; clearTimeout(timer); };
-  }, [startMs]);
+  }, [onExpire, startMs]);
 
   if (left <= 0) return null;
   return (
     <p className={`text-center text-sm font-bold ${left <= 30 ? "text-red-600 animate-pulse" : "text-slate-500"}`}>
       ⏱ {left}s
     </p>
+  );
+}
+
+function MobileDragGhost({ ghost, card }: { ghost: MobileTcgGhost | null; card?: TcgCard | ArenaCard | null }) {
+  if (!ghost) return null;
+
+  const shellStyle: React.CSSProperties = {
+    left: ghost.clientX,
+    top: ghost.clientY,
+    transform: "translate(-50%, -50%)",
+    zIndex: 230002,
+  };
+
+  let content: React.ReactNode;
+  if (ghost.drag.kind === "element") {
+    const element = ghost.drag.element;
+    content = (
+      <div
+        className="w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-2xl ring-4 ring-white/60"
+        style={{ backgroundColor: ELEMENT_COLORS[element] || "#888", borderColor: ELEMENT_COLORS[element] || "#888" }}
+      >
+        <img src={ELEMENT_ICONS[element] || ""} alt={element} className="w-7 h-7 object-contain" draggable={false} />
+      </div>
+    );
+  } else if (ghost.drag.kind === "attack") {
+    content = (
+      <div className="rounded-lg border-2 border-amber-300 bg-slate-950/90 px-3 py-2 text-xs font-black text-amber-200 shadow-2xl">
+        Attack / Switch
+      </div>
+    );
+  } else if (ghost.drag.kind === "promote") {
+    content = (
+      <div className="rounded-lg border-2 border-emerald-300 bg-slate-950/90 px-3 py-2 text-xs font-black text-emerald-200 shadow-2xl">
+        Promote
+      </div>
+    );
+  } else {
+    content = (
+      <div className="w-16 h-20 overflow-hidden rounded-lg border-2 border-white bg-slate-200 shadow-2xl">
+        <img src={card?.imageUrl || cardBack} alt="" className="h-full w-full object-cover" draggable={false} />
+      </div>
+    );
+  }
+
+  return createPortal(
+    <div className="fixed pointer-events-none opacity-90" style={shellStyle}>
+      {content}
+    </div>,
+    document.body,
   );
 }
 
@@ -652,7 +709,7 @@ const TcgPage = () => {
   queueStateRef.current = queueState;
   const claimedMatchRef = useRef<string | null>(null);
 
-  function showError(msg: string) {
+  const showError = useCallback((msg: string) => {
     setErrorMessage(msg);
     setErrorState("entering");
     requestAnimationFrame(() => setErrorState("visible"));
@@ -661,7 +718,7 @@ const TcgPage = () => {
       setErrorMessage(null);
       setErrorState("hidden");
     }, 3260);
-  }
+  }, []);
   const [loading, setLoading] = useState(false);
   const [actionPending, setActionPending] = useState(false);
   const [attackFloaters, setAttackFloaters] = useState<{ key: number; dmg: number; elLabel: string | null; elColor: string | null; defenderKey: string }[]>([]);
@@ -672,18 +729,19 @@ const TcgPage = () => {
   const boardElementRef = useRef<HTMLDivElement | null>(null);
   const mobileDragRef = useRef<MobileTcgDrag | null>(null);
   const mobileDragPointRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const [mobileDragGhost, setMobileDragGhost] = useState<MobileTcgGhost | null>(null);
   const floaterKeyRef = useRef(0);
   const [projectile, setProjectile] = useState<{ key: number; fromBoard: string; toBoard: string; fromX: number; fromY: number; toX: number; toY: number } | null>(null);
   const projectileKeyRef = useRef(0);
   const lastAttackDedupRef = useRef<string | null>(null);
 
-  function spawnAttackFloat(dmg: number, elLabel: string | null, elColor: string | null, defenderKey: string) {
+  const spawnAttackFloat = useCallback((dmg: number, elLabel: string | null, elColor: string | null, defenderKey: string) => {
     const key = floaterKeyRef.current++;
     setAttackFloaters((prev) => [...prev, { key, dmg, elLabel, elColor, defenderKey }]);
     setTimeout(() => setAttackFloaters((prev) => prev.filter((f) => f.key !== key)), 1800);
-  }
+  }, []);
 
-  function spawnProjectile(fromBoard: string, toBoard: string) {
+  const spawnProjectile = useCallback((fromBoard: string, toBoard: string) => {
     const fromEl = document.querySelector(`[data-board-key="${fromBoard}"][data-slot="attacker"]`);
     const toEl = document.querySelector(`[data-board-key="${toBoard}"][data-slot="attacker"]`);
     if (!fromEl || !toEl) return;
@@ -700,7 +758,7 @@ const TcgPage = () => {
       toY: toRect.top + toRect.height / 2,
     });
     setTimeout(() => setProjectile((prev) => (prev?.key === key ? null : prev)), 500);
-  }
+  }, []);
 
   const startBoardDrag = useCallback(() => {
     boardDragActiveRef.current = true;
@@ -756,16 +814,33 @@ const TcgPage = () => {
     const savedGameId = localStorage.getItem("tcg_active_game");
     if (savedGameId) {
       fetchTcgGameState(token, savedGameId).then((state) => {
-        if (state && state.state === "playing" && !state.winner) {
+        if (state?.board) {
           setGameId(savedGameId);
           setGameState(state);
           setTab("match");
+          if (state.winner || state.phase === "finished") {
+            localStorage.removeItem("tcg_active_game");
+          }
         } else {
           localStorage.removeItem("tcg_active_game");
         }
       }).catch(() => localStorage.removeItem("tcg_active_game"));
     }
   }, [token]);
+
+  const refreshActiveGameState = useCallback(async () => {
+    if (!token || !gameId) return;
+    try {
+      const state = await fetchTcgGameState(token, gameId);
+      setGameState(state);
+      if (state.winner || state.phase === "finished") {
+        localStorage.removeItem("tcg_active_game");
+        setTab("match");
+      }
+    } catch {
+      // Keep the current board visible; websocket/action refresh may still recover.
+    }
+  }, [gameId, token]);
 
   // ── Start game ──
   const handleStartSolo = async (mode: "solo" | "ai" = "solo") => {
@@ -856,7 +931,7 @@ const TcgPage = () => {
       setQueueState("idle");
       showError(normalizeArenaError(err));
     }
-  }, []);
+  }, [showError]);
 
   // ── WebSocket: queue matched ──
   const handleQueueMatched = useCallback(async (data: unknown) => {
@@ -892,6 +967,21 @@ const TcgPage = () => {
     };
   }, [token, queueState, claimMatchedGame]);
 
+  useEffect(() => {
+    if (!token || !gameId || !gameState?.board || gameState.winner || gameState.phase === "finished") return;
+    const interval = window.setInterval(() => void refreshActiveGameState(), 5000);
+    const timeoutMs = gameState.turnStartedAt
+      ? Math.max(0, gameState.turnStartedAt + 180000 - Date.now() + 300)
+      : null;
+    const timeout = timeoutMs == null
+      ? null
+      : window.setTimeout(() => void refreshActiveGameState(), timeoutMs);
+    return () => {
+      window.clearInterval(interval);
+      if (timeout != null) window.clearTimeout(timeout);
+    };
+  }, [gameId, gameState?.board, gameState?.phase, gameState?.turnStartedAt, gameState?.winner, refreshActiveGameState, token]);
+
   // ── WebSocket: game state ──
   const handleGameState = useCallback((data: unknown) => {
     const state = data as TcgGameState;
@@ -912,7 +1002,7 @@ const TcgPage = () => {
       }
     }
     setGameState(state);
-  }, []);
+  }, [spawnAttackFloat, spawnProjectile]);
 
   useWebSocketEvent("tcg:game:state", handleGameState);
 
@@ -944,7 +1034,36 @@ const TcgPage = () => {
   }, []);
   const onCardHoverLeave = useCallback(() => setHoverDetail(null), []);
 
-  const handleAction = async (action: { type: string; cardId?: string; slot?: string }) => {
+  const myKey = gameState?.solo ? "p1" : (gameState?.playerKey || "p1");
+  const oppKey = myKey === "p1" ? "p2" : "p1";
+  const gameBoard = gameState?.board;
+  const myBoard = gameBoard?.[myKey as keyof typeof gameBoard] || null;
+  const oppBoard = gameBoard?.[oppKey as keyof typeof gameBoard] || null;
+  const mobileDragGhostCard = useMemo(() => {
+    if (!mobileDragGhost) return null;
+    const drag = mobileDragGhost.drag;
+    const boards = [myBoard, oppBoard].filter((board): board is TcgPlayerState => !!board);
+    if (drag.kind === "card") {
+      for (const board of boards) {
+        const found = board.hand.find((card) => toCardId(card) === drag.cardId)
+          || board.fullDeck?.find((card) => toCardId(card) === drag.cardId);
+        if (found) return found;
+      }
+    }
+    if (drag.kind === "promote") {
+      const index = Number(drag.slot.replace("support_", ""));
+      for (const board of boards) {
+        const found = board.board.support[index];
+        if (found) return found;
+      }
+    }
+    if (drag.kind === "attack") {
+      return myBoard?.board.attacker || oppBoard?.board.attacker || null;
+    }
+    return null;
+  }, [mobileDragGhost, myBoard, oppBoard]);
+
+  const handleAction = useCallback(async (action: { type: string; cardId?: string; slot?: string }) => {
     if (!token || !gameId || actionPending) return;
     setActionPending(true); setErrorMessage(null);
     try {
@@ -990,13 +1109,7 @@ const TcgPage = () => {
       }
     } catch (err) { showError(normalizeArenaError(err)); }
     finally { setActionPending(false); }
-  };
-
-  const myKey = gameState?.solo ? "p1" : (gameState?.playerKey || "p1");
-  const oppKey = myKey === "p1" ? "p2" : "p1";
-  const gameBoard = gameState?.board;
-  const myBoard = gameBoard?.[myKey as keyof typeof gameBoard] || null;
-  const oppBoard = gameBoard?.[oppKey as keyof typeof gameBoard] || null;
+  }, [actionPending, gameId, myKey, showError, spawnAttackFloat, spawnProjectile, token]);
   const handleMobileTcgDrop = useCallback((drag: MobileTcgDrag, dropElement: Element | null) => {
     const dropTarget = dropElement?.closest("[data-tcg-drop-slot], [data-tcg-drop-zone]") as HTMLElement | null;
     if (!dropTarget || !gameState?.board) return;
@@ -1125,6 +1238,7 @@ const TcgPage = () => {
                   />
                 </div>
               ) : null}
+              <MobileDragGhost ghost={mobileDragGhost} card={mobileDragGhostCard} />
               <h2 className="text-2xl sm:text-4xl font-bold text-blue-900">TCG Showdown</h2>
 
               {!token ? (
@@ -1397,8 +1511,10 @@ const TcgPage = () => {
                               const drag = readMobileTcgDrag(e.target);
                               if (drag) {
                                 const touch = e.touches[0];
+                                const point = touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
                                 mobileDragRef.current = drag;
-                                mobileDragPointRef.current = touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
+                                mobileDragPointRef.current = point;
+                                setMobileDragGhost(point ? { drag, ...point } : null);
                                 startBoardDrag();
                               }
                             }}
@@ -1407,6 +1523,7 @@ const TcgPage = () => {
                               const touch = e.touches[0];
                               if (touch) {
                                 mobileDragPointRef.current = { clientX: touch.clientX, clientY: touch.clientY };
+                                setMobileDragGhost((prev) => prev ? { ...prev, clientX: touch.clientX, clientY: touch.clientY } : null);
                               }
                             }}
                             onTouchEndCapture={(e) => {
@@ -1415,6 +1532,7 @@ const TcgPage = () => {
                               const point = touch ? { clientX: touch.clientX, clientY: touch.clientY } : mobileDragPointRef.current;
                               mobileDragRef.current = null;
                               mobileDragPointRef.current = null;
+                              setMobileDragGhost(null);
                               stopBoardDrag();
                               if (drag && point) {
                                 handleMobileTcgDrop(drag, document.elementFromPoint(point.clientX, point.clientY));
@@ -1423,6 +1541,7 @@ const TcgPage = () => {
                             onTouchCancelCapture={() => {
                               mobileDragRef.current = null;
                               mobileDragPointRef.current = null;
+                              setMobileDragGhost(null);
                               stopBoardDrag();
                             }}
                           >
@@ -1451,7 +1570,7 @@ const TcgPage = () => {
                               <p className="text-center text-sm font-bold text-purple-600 animate-pulse">{aiActionText}</p>
                             ) : null}
                             {gameState?.turnStartedAt && gameState.phase !== "finished" ? (
-                              <CountdownTimer startMs={gameState.turnStartedAt} />
+                              <CountdownTimer startMs={gameState.turnStartedAt} onExpire={refreshActiveGameState} />
                             ) : null}
                             {/* Top Player (P2 in solo, Opponent in PvP) */}
                           {gameState.solo ? (
@@ -1483,12 +1602,12 @@ const TcgPage = () => {
                                     {oppBoard && oppBoard.elementPool.length > 0 && gameState.solo && gameState.currentPlayer === "p2" ? (
                                       (() => {
                                         const el = oppBoard.elementPool[0];
-                                        const hasMatch = (!!oppBoard.board.attacker && oppBoard.board.attacker.element === el) || oppBoard.board.support.some((s) => s && s.element === el);
+                                        const hasTarget = !!oppBoard.board.attacker || oppBoard.board.support.some((s) => !!s);
                                         return (
                                           <div
-                                            className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasMatch ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
+                                            className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasTarget ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
                                             style={{ backgroundColor: ELEMENT_COLORS[el] || "#888", borderColor: ELEMENT_COLORS[el] || "#888" }}
-                                            title={`Drag to assign ${el} to a card`}
+                                            title={`Drag ${el} energy to a card`}
                                             draggable
                                             data-tcg-draggable="true"
                                             data-tcg-drag-kind="element"
@@ -1618,12 +1737,12 @@ const TcgPage = () => {
                                 {myBoard && myBoard.elementPool.length > 0 && (gameState.solo ? gameState.currentPlayer === "p1" : gameState?.myTurn) ? (
                                   (() => {
                                     const el = myBoard.elementPool[0];
-                                    const hasMatch = (!!myBoard.board.attacker && myBoard.board.attacker.element === el) || myBoard.board.support.some((s) => s && s.element === el);
+                                    const hasTarget = !!myBoard.board.attacker || myBoard.board.support.some((s) => !!s);
                                     return (
                                       <div
-                                        className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasMatch ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
+                                        className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasTarget ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
                                         style={{ backgroundColor: ELEMENT_COLORS[el] || "#888", borderColor: ELEMENT_COLORS[el] || "#888" }}
-                                        title={`Drag to assign ${el} to a card`}
+                                        title={`Drag ${el} energy to a card`}
                                         draggable
                                         data-tcg-draggable="true"
                                         data-tcg-drag-kind="element"
@@ -1676,16 +1795,16 @@ const TcgPage = () => {
                           </div>
 
                           {/* Action Buttons */}
-                          {gameState.myTurn || gameState.solo ? (
-                            <div className="flex flex-wrap justify-center gap-2">
+                          <div className="flex flex-wrap justify-center gap-2">
+                            {gameState.myTurn || gameState.solo ? (
                               <button onClick={() => handleAction({ type: "end" })} className="arena-redraw-button hover:animate-wiggle text-xs font-bold">
                                 [ End Turn ]
                               </button>
-                              <button onClick={() => handleAction({ type: "forfeit" })} className="arena-redraw-button hover:animate-wiggle text-xs text-red-600 font-bold">
-                                [ Forfeit ]
-                              </button>
-                            </div>
-                          ) : null}
+                            ) : null}
+                            <button onClick={() => handleAction({ type: "forfeit" })} className="arena-redraw-button hover:animate-wiggle text-xs text-red-600 font-bold">
+                              [ Forfeit ]
+                            </button>
+                          </div>
                         </div>
                       ) : null}
 
@@ -1754,7 +1873,9 @@ const TcgPage = () => {
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">tcg rules</h2>
                 <p>10-card deck. 1 attacker + 3 support.</p>
-                <p>Assign 2 matching elements to attack.</p>
+                <p>Energy can go on any card.</p>
+                <p>Attack with 2 matching energy.</p>
+                <p>Off-element energy can switch.</p>
                 <p>Each turn spawns 1 random element type.</p>
                 <p>Super-effective = 3x damage!</p>
                 <p>First to 3 points wins.</p>

@@ -43,6 +43,18 @@ function isMaintenanceMessage(message: string | null) {
   return normalized.includes("maintenance") || normalized.includes("maintanance");
 }
 
+function formatAffinityBonus(statBonus?: ArenaProfile["stats"]["affinity"]) {
+  if (!statBonus) return "no bonus yet";
+  const parts = [
+    statBonus.power ? `Power +${statBonus.power}` : "",
+    statBonus.guard ? `Guard +${statBonus.guard}` : "",
+    statBonus.speed ? `Speed +${statBonus.speed}` : "",
+    statBonus.effectHit ? `Effect Hit +${statBonus.effectHit}` : "",
+    statBonus.hp ? `Health +${statBonus.hp}` : "",
+  ].filter(Boolean);
+  return parts.length ? parts.join(", ") : "no bonus yet";
+}
+
 const Arena = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
@@ -68,6 +80,12 @@ const Arena = () => {
     : 0;
   const maxPacks = Math.floor((profile?.dailyDrawLimit ?? 10) / packSize);
   const drawsEnough = packsRemaining > 0;
+  const selectedAffinity = profile?.selectedCard?.affinity || null;
+  const affinityStats = profile?.stats.affinity || selectedAffinity?.statBonus || null;
+  const affinityProgress =
+    selectedAffinity?.nextThreshold && selectedAffinity.nextThreshold > 0
+      ? Math.min(100, Math.floor((selectedAffinity.fights / selectedAffinity.nextThreshold) * 100))
+      : 100;
   usePageSeo({
     canonical: "https://mirabellier.com/arena",
     structuredDataId: "arena-home-structured-data",
@@ -240,6 +258,34 @@ const Arena = () => {
                         </div>
                         <div className="border-t-2 border-dotted border-sky-200 dark:border-purple-400/30" />
 
+                        {selectedAffinity ? (
+                          <div className="border-b border-dotted border-sky-100 py-2 text-blue-900 dark:border-purple-400/20 dark:text-purple-100">
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
+                              <p>
+                                <span className="font-normal">✦ Affinity:</span>{" "}
+                                <b>Lv {selectedAffinity.level}</b>
+                              </p>
+                              <p className="text-xs font-semibold text-sky-600 dark:text-purple-300">
+                                {selectedAffinity.fights} fights / {selectedAffinity.wins} wins
+                              </p>
+                            </div>
+                            <div className="mt-1 h-1.5 overflow-hidden rounded-full border border-sky-100 bg-white/70 dark:border-purple-400/20 dark:bg-slate-800">
+                              <div
+                                className="h-full rounded-full bg-blue-500 dark:bg-purple-400"
+                                style={{ width: `${affinityProgress}%` }}
+                              />
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-semibold text-sky-600 dark:text-purple-300">
+                              <span>{formatAffinityBonus(affinityStats || undefined)}</span>
+                              <span>
+                                {selectedAffinity.nextThreshold
+                                  ? `next ${selectedAffinity.nextThreshold}`
+                                  : "Max affinity"}
+                              </span>
+                            </div>
+                          </div>
+                        ) : null}
+
                         <div className="text-md pt-1 pb-1 text-blue-900 dark:text-purple-100">
                         <div className="text-sm">
                           {/* <p className="text-lg font-semibold underline">Card Stats (Total)</p> */}
@@ -249,31 +295,31 @@ const Arena = () => {
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {(profile.equipmentPct?.hpPct || 0) > 0
                               ? `(+${profile.equipmentPct?.hpPct || 0}% equip → ${Math.floor(profile.stats.total.hp * (1 + (profile.equipmentPct?.hpPct || 0) / 100))})`
-                              : `(${profile.stats.equipment.hp > 0 ? `equip +${profile.stats.equipment.hp}, ` : ""}IV +${profile.stats.card.hp})`}
+                              : `(${profile.stats.equipment.hp > 0 ? `equip +${profile.stats.equipment.hp}, ` : ""}IV +${profile.stats.card.hp}${(affinityStats?.hp || 0) > 0 ? `, affinity +${affinityStats?.hp || 0}` : ""})`}
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Power:</span> <b>{profile.stats.total.power}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.power > 0 ? `equip +${profile.stats.equipment.power}, ` : ""}IV +{profile.stats.card.power})
+                            ({profile.stats.equipment.power > 0 ? `equip +${profile.stats.equipment.power}, ` : ""}IV +{profile.stats.card.power}{(affinityStats?.power || 0) > 0 ? `, affinity +${affinityStats?.power || 0}` : ""})
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.guard > 0 ? `equip +${profile.stats.equipment.guard}, ` : ""}IV +{profile.stats.card.guard})
+                            ({profile.stats.equipment.guard > 0 ? `equip +${profile.stats.equipment.guard}, ` : ""}IV +{profile.stats.card.guard}{(affinityStats?.guard || 0) > 0 ? `, affinity +${affinityStats?.guard || 0}` : ""})
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.speed > 0 ? `equip +${profile.stats.equipment.speed}, ` : ""}IV +{profile.stats.card.speed})
+                            ({profile.stats.equipment.speed > 0 ? `equip +${profile.stats.equipment.speed}, ` : ""}IV +{profile.stats.card.speed}{(affinityStats?.speed || 0) > 0 ? `, affinity +${affinityStats?.speed || 0}` : ""})
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Effect Hit:</span> <b>{profile.stats.total.effectHit}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.effectHit > 0 ? `equip +${profile.stats.equipment.effectHit}, ` : ""}IV +{profile.stats.card.effectHit})
+                            ({profile.stats.equipment.effectHit > 0 ? `equip +${profile.stats.equipment.effectHit}, ` : ""}IV +{profile.stats.card.effectHit}{(affinityStats?.effectHit || 0) > 0 ? `, affinity +${affinityStats?.effectHit || 0}` : ""})
                           </span>
                         </div>
                         {(profile.equipmentPct?.dmgPct || profile.equipmentPct?.defendPct) ? (

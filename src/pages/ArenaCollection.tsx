@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -11,8 +11,11 @@ import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
   ArenaApiError,
+  type ArenaCard,
   type ArenaCollectionResponse,
+  type ArenaSacrificePreview,
   fetchArenaCollection,
+  sacrificeArenaCollectionCards,
   selectArenaCollectionCard,
   toggleArenaCollectionCardFavorite,
 } from "@/lib/arena";
@@ -35,6 +38,15 @@ function normalizeArenaError(error: unknown) {
   return "Arena request failed.";
 }
 
+const SACRIFICE_BLOCK_LABELS: Record<string, string> = {
+  favorite: "favorite",
+  selected: "selected",
+  market_listed: "market",
+  trade_listed: "trade",
+  trade_session: "trade",
+  invalid: "invalid",
+  not_found: "missing",
+};
 
 type PrimarySort =
   | "recent"
@@ -69,6 +81,12 @@ const ArenaCollection = () => {
   const [selectingCardId, setSelectingCardId] = useState<string | null>(null);
   const [togglingFavoriteId, setTogglingFavoriteId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [sacrificeMode, setSacrificeMode] = useState(false);
+  const [sacrificeSelectedIds, setSacrificeSelectedIds] = useState<string[]>([]);
+  const [sacrificePreview, setSacrificePreview] = useState<ArenaSacrificePreview | null>(null);
+  const [sacrificeLoading, setSacrificeLoading] = useState(false);
+  const [sacrificeConfirmOpen, setSacrificeConfirmOpen] = useState(false);
+  const [sacrificing, setSacrificing] = useState(false);
 
   // Combine both dropdowns with AND logic: primary first, secondary as tiebreaker
   const sort = useMemo<string>(
@@ -88,37 +106,34 @@ const ArenaCollection = () => {
     },
   });
 
-  useEffect(() => {
-    let cancelled = false;
+  const refreshCollection = useCallback(async (cancelled?: () => boolean) => {
     if (!token) {
       setCollection(null);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const payload = await fetchArenaCollection(token, {
+        page, perPage: 12, sort, search: query || undefined, element: elementFilter || undefined, duplicates: duplicatesFilter,
+      });
+      if (cancelled?.()) return;
+      setCollection(payload);
+    } catch (error) {
+      if (cancelled?.()) return;
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      if (!cancelled?.()) setLoading(false);
+    }
+  }, [token, page, sort, query, elementFilter, duplicatesFilter]);
 
-    const loadCollection = async () => {
-      setLoading(true);
-      setErrorMessage(null);
-      try {
-        const payload = await fetchArenaCollection(token, {
-          page, perPage: 12, sort, search: query || undefined, element: elementFilter || undefined, duplicates: duplicatesFilter,
-        });
-        if (cancelled) return;
-        setCollection(payload);
-      } catch (error) {
-        if (cancelled) return;
-        setErrorMessage(normalizeArenaError(error));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void loadCollection();
+  useEffect(() => {
+    let cancelled = false;
+    void refreshCollection(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [token, page, sort, query, elementFilter, duplicatesFilter]);
+  }, [refreshCollection]);
 
   const handleSelectCard = async (cardInstanceId: string) => {
     if (!token) return;
@@ -173,8 +188,75 @@ const ArenaCollection = () => {
     }
   };
 
+  const toggleSacrificeCard = (card: ArenaCard) => {
+    const cardInstanceId = card.cardInstanceId;
+    if (!cardInstanceId) return;
+    setSacrificeSelectedIds((previous) =>
+      previous.includes(cardInstanceId)
+        ? previous.filter((id) => id !== cardInstanceId)
+        : [...previous, cardInstanceId],
+    );
+  };
+
+  const selectedKey = sacrificeSelectedIds.join("|");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!token || !sacrificeMode || sacrificeSelectedIds.length === 0) {
+      setSacrificePreview(null);
+      setSacrificeLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadPreview = async () => {
+      setSacrificeLoading(true);
+      try {
+        const payload = await sacrificeArenaCollectionCards(token, sacrificeSelectedIds, false);
+        if (!cancelled) setSacrificePreview(payload.preview);
+      } catch (error) {
+        if (!cancelled) {
+          setSacrificePreview(null);
+          setErrorMessage(normalizeArenaError(error));
+        }
+      } finally {
+        if (!cancelled) setSacrificeLoading(false);
+      }
+    };
+
+    void loadPreview();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, sacrificeMode, selectedKey, sacrificeSelectedIds]);
+
+  const handleConfirmSacrifice = async () => {
+    if (!token || sacrificeSelectedIds.length === 0) return;
+    setSacrificing(true);
+    setErrorMessage(null);
+    try {
+      await sacrificeArenaCollectionCards(token, sacrificeSelectedIds, true);
+      setSacrificeConfirmOpen(false);
+      setSacrificeSelectedIds([]);
+      setSacrificePreview(null);
+      await refreshCollection();
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setSacrificing(false);
+    }
+  };
+
   const cards = collection?.cards || [];
   const totalPages = collection?.totalPages || 1;
+  const selectedSacrificeCount = sacrificeSelectedIds.length;
+  const sacrificeBlockedCount = sacrificePreview?.blocked.length || 0;
+  const sacrificeCanConfirm =
+    selectedSacrificeCount > 0 &&
+    !!sacrificePreview?.canSacrifice &&
+    !sacrificeLoading &&
+    !sacrificing;
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -300,18 +382,79 @@ const ArenaCollection = () => {
                     >
                       duplicates only
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSacrificeMode((current) => !current);
+                        setSacrificeSelectedIds([]);
+                        setSacrificePreview(null);
+                      }}
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full border transition ${
+                        sacrificeMode
+                          ? "bg-rose-600 text-white border-rose-600 ring-2 ring-rose-300"
+                          : "text-rose-500 border-rose-300 hover:bg-rose-50"
+                      }`}
+                    >
+                      sacrifice
+                    </button>
                   </div>
+
+                  {sacrificeMode ? (
+                    <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-3 text-sm text-rose-800">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-bold">
+                          {selectedSacrificeCount} selected · +{sacrificePreview?.totalCoins ?? 0} coins
+                          {sacrificeBlockedCount > 0 ? ` · ${sacrificeBlockedCount} blocked` : ""}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSacrificeSelectedIds([]);
+                              setSacrificePreview(null);
+                            }}
+                            disabled={selectedSacrificeCount === 0}
+                            className="arena-redraw-button text-xs"
+                          >
+                            [ clear ]
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSacrificeConfirmOpen(true)}
+                            disabled={!sacrificeCanConfirm}
+                            className="arena-redraw-button text-xs"
+                          >
+                            {sacrificeLoading ? "[ checking... ]" : "[ sacrifice ]"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {cards.map((card) => {
                       const isSelected =
                         collection.profile.selectedCard?.cardInstanceId === card.cardInstanceId;
+                      const isSacrificeSelected = !!card.cardInstanceId && sacrificeSelectedIds.includes(card.cardInstanceId);
+                      const sacrificeItem = sacrificePreview?.items.find((item) => item.cardInstanceId === card.cardInstanceId);
+                      const blockLabel = sacrificeItem?.blockedReason
+                        ? SACRIFICE_BLOCK_LABELS[sacrificeItem.blockedReason] || sacrificeItem.blockedReason
+                        : null;
                       return (
                         <div
                           key={card.cardInstanceId || `${card.malId}-${card.drawnAt || "card"}`}
                           className="flex flex-col items-center space-y-1"
                         >
-                          <div className="relative group cursor-pointer" onClick={() => { if (card.cardInstanceId) { void handleToggleFavorite(card.cardInstanceId!, !!card.isFavorite); } }}>
+                          <div
+                            className={`relative group cursor-pointer ${isSacrificeSelected ? "rounded-xl ring-2 ring-rose-500" : ""}`}
+                            onClick={() => {
+                              if (sacrificeMode) {
+                                toggleSacrificeCard(card);
+                              } else if (card.cardInstanceId) {
+                                void handleToggleFavorite(card.cardInstanceId, !!card.isFavorite);
+                              }
+                            }}
+                          >
                             <ArenaPortraitCard
                               card={card}
                               size="full"
@@ -329,10 +472,24 @@ const ArenaCollection = () => {
                                 {card.isFavorite ? "♥" : "♡"}
                               </button>
                             ) : null}
+                            {sacrificeMode ? (
+                              <span className={`absolute left-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[0.65rem] font-black shadow ${
+                                isSacrificeSelected
+                                  ? "border-rose-500 bg-rose-600 text-white"
+                                  : "border-white/80 bg-slate-900/60 text-white"
+                              }`}>
+                                {isSacrificeSelected ? "sell" : "+"}
+                              </span>
+                            ) : null}
                           </div>
+                          {sacrificeMode && isSacrificeSelected ? (
+                            <span className={`text-xs font-semibold ${blockLabel ? "text-red-600" : "text-emerald-700"}`}>
+                              {blockLabel ? `blocked: ${blockLabel}` : `+${sacrificeItem?.coins ?? 0} coins`}
+                            </span>
+                          ) : null}
                           {isSelected ? (
                             <span className="text-xs font-semibold text-pink-600">selected</span>
-                          ) : (
+                          ) : !sacrificeMode ? (
                             <button
                               type="button"
                               onClick={() =>
@@ -350,7 +507,7 @@ const ArenaCollection = () => {
                                 ? "[ choosing... ]"
                                 : "[ choose card ]"}
                             </button>
-                          )}
+                          ) : null}
                         </div>
                       );
                     })}
@@ -402,6 +559,35 @@ const ArenaCollection = () => {
           </aside>
         </div>
       </div>
+      {sacrificeConfirmOpen ? (
+        <div className="fixed inset-0 z-[230000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70">
+          <div className="w-full max-w-md rounded-xl border border-rose-300 bg-white p-5 text-blue-900 shadow-xl dark:bg-slate-900 dark:text-sky-50">
+            <h3 className="text-lg font-black text-rose-700 dark:text-rose-300">Confirm sacrifice</h3>
+            <p className="mt-2 text-sm">
+              Sacrifice {selectedSacrificeCount} card{selectedSacrificeCount === 1 ? "" : "s"} for{" "}
+              <span className="font-bold">{sacrificePreview?.totalCoins ?? 0}</span> coins?
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="arena-redraw-button text-xs"
+                onClick={() => setSacrificeConfirmOpen(false)}
+                disabled={sacrificing}
+              >
+                [ cancel ]
+              </button>
+              <button
+                type="button"
+                className="arena-redraw-button text-xs"
+                onClick={handleConfirmSacrifice}
+                disabled={!sacrificeCanConfirm}
+              >
+                {sacrificing ? "[ sacrificing... ]" : "[ confirm ]"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <Footer />
     </div>
   );

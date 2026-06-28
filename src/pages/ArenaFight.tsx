@@ -20,6 +20,7 @@ import {
   type ArenaActiveFight,
   type ArenaBattleConsoleEvent,
   type ArenaProfile,
+  advanceFightTurn,
   fetchArenaProfile,
   fetchFightState,
   verifyArena,
@@ -439,6 +440,43 @@ const ArenaFight = () => {
     return state;
   }, [triggerTurnEffects]);
 
+  const advanceViaHttpFallback = useCallback(async () => {
+    const t = tokenRef.current;
+    const fight = activeFightRef.current;
+    if (!t || !fight || fight.isFinished) {
+      advanceLockRef.current = false;
+      return;
+    }
+
+    try {
+      const state = await advanceFightTurn(t);
+      advanceLockRef.current = false;
+      clearSafetyTimer();
+      processFightState(state);
+      if (!state.isFinished) {
+        clearAdvanceTimer();
+        advanceTimerRef.current = window.setTimeout(() => {
+          advanceTimerRef.current = null;
+          sendAdvanceRef.current();
+        }, TURN_ADVANCE_DELAY_MS);
+      } else {
+        const profilePayload = await fetchArenaProfile(t);
+        setProfile(profilePayload);
+        if (profilePayload.level >= 5 && !profilePayload.tutorialComplete) {
+          setShowTutorialModal(true);
+        }
+      }
+    } catch {
+      advanceLockRef.current = false;
+      try {
+        const fresh = await fetchFightState(t);
+        if (fresh.activeFight) processFightState(fresh.activeFight);
+      } catch {
+        setErrorMessage("Fight sync stalled. Please refresh and resume the battle.");
+      }
+    }
+  }, [clearAdvanceTimer, clearSafetyTimer, processFightState]);
+
   // ---- Dedicated Socket.IO setup for fight ----
 
   useEffect(() => {
@@ -502,12 +540,12 @@ const ArenaFight = () => {
     clearSafetyTimer();
     safetyTimerRef.current = window.setTimeout(() => {
       safetyTimerRef.current = null;
-      advanceLockRef.current = false;
-      if (socketRef.current?.connected) {
-        sendAdvance();
-      }
+      void advanceViaHttpFallback();
     }, 10000);
-  }, [clearSafetyTimer, queueFightCommand]);
+  }, [advanceViaHttpFallback, clearSafetyTimer, queueFightCommand]);
+
+  const sendAdvanceRef = useRef(sendAdvance);
+  sendAdvanceRef.current = sendAdvance;
 
   // Register fight event listeners on the dedicated socket
   useEffect(() => {

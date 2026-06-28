@@ -24,6 +24,7 @@ export type ArenaStatBreakdown = {
   equipment: ArenaStatsBlock;
   card: ArenaStatsBlock;
   skill: ArenaStatsBlock;
+  affinity?: ArenaStatsBlock;
   total: ArenaStatsBlock;
 };
 
@@ -119,6 +120,15 @@ export type ArenaCard = {
   rainbow?: boolean;
   ownedCount?: number;
   owned?: boolean;
+  affinity?: ArenaCardAffinity;
+};
+
+export type ArenaCardAffinity = {
+  fights: number;
+  wins: number;
+  level: number;
+  nextThreshold: number | null;
+  statBonus: ArenaStatsBlock;
 };
 
 export type ArenaProfile = {
@@ -142,6 +152,7 @@ export type ArenaProfile = {
     equipment: ArenaStatsBlock;
     card: ArenaStatsBlock;
     skill: ArenaStatsBlock;
+    affinity?: ArenaStatsBlock;
     total: ArenaStatsBlock;
   };
   selectedCard: ArenaCard | null;
@@ -1733,6 +1744,48 @@ export async function toggleArenaCollectionCardFavorite(
   }
 
   return (await response.json()) as { cardInstanceId: string; isFavorite: boolean };
+}
+
+export type ArenaSacrificePreviewItem = {
+  cardInstanceId: string;
+  card: ArenaCard | null;
+  coins: number;
+  blockedReason: string | null;
+  canSacrifice: boolean;
+};
+
+export type ArenaSacrificePreview = {
+  items: ArenaSacrificePreviewItem[];
+  blocked: ArenaSacrificePreviewItem[];
+  totalCoins: number;
+  canSacrifice: boolean;
+};
+
+export type ArenaSacrificeResponse = {
+  sacrificedCardInstanceIds: string[];
+  coinsGained: number;
+  preview: ArenaSacrificePreview;
+  profile: ArenaProfile;
+  collectionTotal: number;
+};
+
+export async function sacrificeArenaCollectionCards(
+  token: string,
+  cardInstanceIds: string[],
+  confirm: boolean,
+): Promise<ArenaSacrificeResponse> {
+  const response = await fetch(joinApi("/arena/collection/sacrifice"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ cardInstanceIds, confirm }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as ArenaSacrificeResponse;
 }
 
 export type ArenaMintDuplicateGroup = {
