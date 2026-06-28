@@ -50,7 +50,7 @@ const ITEM_SPRITE_NAME_BY_ID: Record<string, string> = {
   crimson_core: "red_orb",
   prism_draught: "pink_flask",
   sacred_candles: "candle_lit",
-  gate_key: "silver_key",
+  gate_key: "curved_bone",
   orbit_scepter: "white_magic_staff",
   aegis_crown: "feather_crown",
   azure_core: "blue_orb",
