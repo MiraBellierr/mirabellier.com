@@ -2,14 +2,14 @@
 
 ## Critical bugs
 
-- Fix backend Arena test suite failures. Current run: `npm test` in `mirabellier-backend` = 50 pass / 39 fail.
-  - Update `test/arena-service.test.js#createTestDb` so the in-memory schema matches production schema in `lib/db.js`.
-  - Add missing `arena_equipment_loadouts` table to the test DB.
-  - Stop defaulting test profiles to `catalogVersion: "v2"` when current `CATALOG_VERSION` is `"v3"`, or make tests explicitly opt into migration cases.
-  - Prefer a shared schema/bootstrap helper for tests so production schema and test schema cannot drift again.
-- Fix ELO opponent selection regression. Test "ELO matchmaking prefers nearby ratings and avoids recent opponents" expects `u3` but gets `u2`, so recent-opponent avoidance or rating-distance ordering is wrong.
-- Fix playback fight reward persistence. Test "playback fight state keeps finalized exp and coin rewards" fails after finalization, so finalized rewards are not being exposed or retained consistently.
-- Remove `[HIGHER_RARITY_BONUS]` debug `console.log` calls from `mirabellier-backend/lib/arena/legacy-service.js`; they pollute test output and production logs.
+- [x] Fix backend Arena test suite failures. Current run: `npm test` in `mirabellier-backend` = 89 pass / 0 fail.
+  - [x] Update `test/arena-service.test.js#createTestDb` so the in-memory schema matches production schema in `lib/db.js`.
+  - [x] Add missing `arena_equipment_loadouts` table to the test DB.
+  - [x] Stop defaulting test profiles to `catalogVersion: "v2"` when current `CATALOG_VERSION` is `"v3"`, or make tests explicitly opt into migration cases.
+  - [x] Prefer a shared schema/bootstrap helper for tests so production schema and test schema cannot drift again.
+- [x] Fix ELO opponent selection regression. Test "ELO matchmaking prefers nearby ratings and avoids recent opponents" expects `u3` but gets `u2`, so recent-opponent avoidance or rating-distance ordering is wrong.
+- [x] Fix playback fight reward persistence. Test "playback fight state keeps finalized exp and coin rewards" fails after finalization, so finalized rewards are not being exposed or retained consistently.
+- [x] Remove `[HIGHER_RARITY_BONUS]` debug `console.log` calls from `mirabellier-backend/lib/arena/legacy-service.js`; they pollute test output and production logs.
 
 ## TCG bugs and fixes
 

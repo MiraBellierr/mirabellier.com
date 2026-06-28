@@ -156,6 +156,12 @@ const ArenaFight = () => {
   tokenRef.current = token;
   activeFightRef.current = activeFight;
 
+  const activeFightId = activeFight?.fightId ?? null;
+  const activeFightCursor = activeFight?.cursor ?? null;
+  const activeFightFinished = activeFight?.isFinished ?? false;
+  const activeFightPlayerHp = activeFight?.battle.currentHp.player ?? 0;
+  const activeFightOpponentHp = activeFight?.battle.currentHp.opponent ?? 0;
+
   const TURN_ADVANCE_DELAY_MS = 800;
   const isSocketConnected = fightConnected;
 
@@ -375,27 +381,25 @@ const ArenaFight = () => {
 
   // Fall animation when fight finishes
   useEffect(() => {
-    if (!activeFight?.isFinished) return;
-    const playerLost = activeFight.battle.currentHp.player <= 0;
-    const opponentLost = activeFight.battle.currentHp.opponent <= 0;
-    if (playerLost) setPlayerFallen(true);
-    if (opponentLost) setOpponentFallen(true);
-  }, [activeFight?.isFinished]);
+    if (!activeFightFinished) return;
+    if (activeFightPlayerHp <= 0) setPlayerFallen(true);
+    if (activeFightOpponentHp <= 0) setOpponentFallen(true);
+  }, [activeFightFinished, activeFightOpponentHp, activeFightPlayerHp]);
 
   // Reset fall when new fight starts
   useEffect(() => {
-    if (!activeFight || activeFight.cursor > 0) return;
+    if (!activeFightId || activeFightCursor !== 0) return;
     setFloaters([]);
     setElemFloaters([]);
     setPlayerFallen(false);
     setOpponentFallen(false);
     lastCursor.current = 0;
     playedTurnIndices.current.clear();
-  }, [activeFight?.fightId]);
+  }, [activeFightCursor, activeFightId]);
 
   // Resume fight loop when returning to an in-progress fight
   useEffect(() => {
-    if (!activeFight || activeFight.isFinished || !needsResumeRef.current) return;
+    if (!activeFightId || activeFightFinished || !needsResumeRef.current) return;
     needsResumeRef.current = false;
 
     let attempts = 0;
@@ -421,7 +425,7 @@ const ArenaFight = () => {
         resumeRetryRef.current = null;
       }
     };
-  }, [activeFight?.fightId, queueFightCommand]);
+  }, [activeFightFinished, activeFightId, queueFightCommand]);
 
   // ---- WebSocket event handlers ----
 
@@ -625,8 +629,7 @@ const ArenaFight = () => {
 
   // Auto-battle: restart when a fight finishes and auto is enabled
   useEffect(() => {
-    const finished = activeFight?.isFinished;
-    if (!autoBattle || !finished || !pageVisible.current) return;
+    if (!autoBattle || !activeFightFinished || !pageVisible.current) return;
     clearAutoTimer();
     setNextAutoFightAt(Date.now() + 1500);
     autoTimerRef.current = window.setTimeout(() => {
@@ -635,7 +638,7 @@ const ArenaFight = () => {
       void handleStartFightRef.current(true);
     }, 1500);
     return () => clearAutoTimer();
-  }, [autoBattle, activeFight?.isFinished, clearAutoTimer]);
+  }, [activeFightFinished, autoBattle, clearAutoTimer]);
 
   // ---- Derived display state ----
 

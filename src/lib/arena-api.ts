@@ -19,6 +19,14 @@ export type ArenaStatsBlock = {
   effectHit: number;
 };
 
+export type ArenaStatBreakdown = {
+  base: ArenaStatsBlock;
+  equipment: ArenaStatsBlock;
+  card: ArenaStatsBlock;
+  skill: ArenaStatsBlock;
+  total: ArenaStatsBlock;
+};
+
 export type ArenaPctStats = {
   hpPct: number;
   dmgPct: number;
@@ -301,24 +309,30 @@ export type ArenaRecentFight = {
   createdAt: string;
 };
 
+export type ArenaFightOpponent = {
+  userId: string;
+  displayName: string;
+  isNpc: boolean;
+  level: number;
+  eloRating: number | null;
+  eloMatches: number;
+  eloProvisional: boolean;
+  stats: ArenaStatsBlock;
+  statBreakdown: ArenaStatBreakdown;
+  equipment: {
+    weapon: ArenaEquippedItem | null;
+    armor: ArenaEquippedItem | null;
+    charm: ArenaEquippedItem | null;
+  };
+  equipmentPct: ArenaPctStats;
+  effects: ArenaProfile["effects"];
+  activePassives: ArenaPassiveRule[];
+  selectedCard: ArenaCard | null;
+};
+
 export type ArenaFightResponse = {
   result: "win" | "loss";
-  opponent: {
-    userId: string;
-    displayName: string;
-    isNpc: boolean;
-    level: number;
-    eloRating: number | null;
-    eloMatches: number;
-    eloProvisional: boolean;
-    stats: ArenaStatsBlock;
-    equipment: {
-      weapon: ArenaEquippedItem | null;
-      armor: ArenaEquippedItem | null;
-      charm: ArenaEquippedItem | null;
-    };
-    selectedCard: ArenaCard | null;
-  };
+  opponent: ArenaFightOpponent;
   battle: ArenaBattleState;
   rounds: ArenaBattleTurn[];
   score: {
@@ -360,22 +374,7 @@ export type ArenaActiveFight = {
   totalTurns: number;
   isFinished: boolean;
   result: "win" | "loss" | null;
-  opponent: {
-    userId: string;
-    displayName: string;
-    isNpc: boolean;
-    level: number;
-    eloRating: number | null;
-    eloMatches: number;
-    eloProvisional: boolean;
-    stats: ArenaStatsBlock;
-    equipment: {
-      weapon: ArenaEquippedItem | null;
-      armor: ArenaEquippedItem | null;
-      charm: ArenaEquippedItem | null;
-    };
-    selectedCard: ArenaCard | null;
-  };
+  opponent: ArenaFightOpponent;
   battle: ArenaActiveFightBattle;
   turns: ArenaBattleTurn[];
   score: { player: number; opponent: number };
