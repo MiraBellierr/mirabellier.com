@@ -216,7 +216,6 @@ export type ArenaProfile = {
     availablePoints: number;
     resetCost: number;
   };
-  materialInventory?: Record<string, number>;
   catalogVersion?: string;
   recentFights?: ArenaRecentFight[];
   lastFightAt: string | null;
@@ -266,13 +265,6 @@ export type ArenaBattleConsoleEvent = {
   line: string;
   playerHp: number;
   opponentHp: number;
-};
-
-export type ArenaMaterialReward = {
-  itemId: string;
-  itemName?: string;
-  tier?: string;
-  quantity: number;
 };
 
 export type ArenaEloResult = {
@@ -344,7 +336,6 @@ export type ArenaFightResponse = {
     coins: number;
     rarityCoinReward: number;
     levelsGained: number;
-    materialDrops?: ArenaMaterialReward[];
     elo: ArenaEloResult;
   };
   effectUsage: {
@@ -383,7 +374,6 @@ export type ArenaActiveFight = {
     coins: number;
     rarityCoinReward?: number;
     levelsGained?: number;
-    materialDrops: ArenaMaterialReward[];
     elo?: ArenaEloResult | null;
   } | null;
   createdAt: string;
@@ -525,8 +515,8 @@ export type ArenaShopItem = {
   tier: string | null;
   unlockLevel: number;
   price: number;
-  type: "gear" | "consumable" | "material" | "instant";
-  acquisition?: "buy" | "craft" | "drop";
+  type: "gear" | "consumable" | "instant";
+  acquisition?: "buy" | "craft";
   slot?: "weapon" | "armor" | "charm";
   stats?: Partial<ArenaStatsBlock>;
   passive?: ArenaPassiveRule | null;

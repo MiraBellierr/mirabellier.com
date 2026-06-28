@@ -38,6 +38,63 @@
 - Investigate ArenaFight hook dependency warnings in `src/pages/ArenaFight.tsx`; stale `activeFight` or HP deps could cause resume/animation state to desync.
 - Make active fight resume/retry behavior testable so interrupted fights cannot get stuck between active and finished states.
 
+## Arena balancing improvements
+
+### P1 — Guard double-dips HP + defense (dominant stat) ✅
+- **Problem:** Every point of Guard gives +2.2 HP (via `computeMaxHp`) AND +1.6 to defense rolls, making it the optimal stat in all situations.
+- **Fix (`computeMaxHp` in `mirabellier-backend/lib/arena/combat.js`):**
+  - Reduce `guardBonus` multiplier from `2.2` → `1.5`.
+  - Increase `(power + speed)` multiplier from `0.35` → `0.7`.
+  - This creates three viable builds: Power (damage), Guard (mitigation), Speed (HP + turn order + evasion).
+
+### P2 — Speed is a dead stat ✅
+- **Problem:** Evasion scaling is `defSpeed * 0.002` — a 10-point speed advantage gives only +2% evasion. Turn order is `speed + random(0,8)`, drowning speed in RNG.
+- **Fix A (`computeEvasionChance`):** Increase evasion scaling: `defSpeed * 0.002` → `defSpeed * 0.004` and `atkSpeed * 0.001` → `atkSpeed * 0.002`.
+- **Fix B (turn order in `simulateFight`):** Reduce initiative random range from `randomInt(0, 8)` → `randomInt(0, 4)` so speed matters twice as much.
+
+### P4 — XP curve too steep at high levels ✅
+- **Problem:** `xpToNext = 80 + 40 * level²`. Level 69→70 = 190,520 XP needed ÷ ~200 XP/win = ~953 wins = 32 days of all-wins at 30 fights/day.
+- **Fix:** Soften quadratic: `40 * level²` → `25 * level²`. Then 69→70 = ~119K XP = ~595 wins (still grindy but less absurd).
+- **Alternative:** Add XP scaling by player level in `calculateWinXp` so higher-level players earn proportionally more.
+
+### P5 — Coin economy too tight ✅
+- **Problem:** Cosmic-tier materials cost 52,000–60,000 coins. At ~246 coins/win (Lv70 + UR), that's ~220 wins per single material.
+- **Fixes applied:**
+  - ✅ Increased coin reward: `opponentLevel * 3` → `opponentLevel * 5`. At Lv70: ~288 coins/win (was ~246).
+  - ✅ Crafting recipes now use flat coin costs (200–120,000 per tier) instead of material-based pricing.
+  - ✅ Removed deprecated material system entirely (materials arrays, materialPrices, normalizeMaterialItem, CONSUMABLE_CRAFT_COIN_FEES, buildMaterialInventory, ArenaMaterialReward type, material sprite mappings).
+  - Skipped: daily login bonus, sell-to-vendor (larger features, deferred).
+
+### P6 — Crit disabled on element advantage is counter-intuitive ✅
+- **Problem:** In `calculateAttackOutcome`, crits are blocked when `elementMult > 1.0`. Players investing in crit gear get punished for having element advantage.
+- **Fix:** Allow crits on super-effective hits at halved chance instead of blocking entirely:
+  - `const reducedCritChance = critChance * 0.5; critical = randomFn() < reducedCritChance;`
+
+### P7 — Element effectiveness is too swingy (1.5× / 0.5×) ✅
+- **Problem:** A disadvantaged player deals half damage AND takes 1.5× — effectively a 3× power swing. Only 3 counter-pairs among 6 elements means hard-counters feel random.
+- **Fix:** Soften to 1.3× / 0.7×. Or add neutral 0.85× for non-countered pairs so element matching always matters.
+- **Also:** Let defender's `effectHit` reduce incoming elemental damage (symmetric with attacker's `effectHit` boosting it).
+
+### P8 — Consumable durations are inconsistent ✅
+- **Problem:** Damage/Speed Boost = 200 fights. Guard/Crit Boost = 1,500 fights. Same crafting effort, wildly different value.
+- **Fix:** Normalize all boost consumables to 500 fights (or all to 1,000). Pick one and apply uniformly.
+
+### P9 — Rarity power bonus doesn't scale with level ✅
+- **Problem:** UR +18 vs C +0 is huge at level 1 but negligible at level 70 (power ~150).
+- **Fix:** Scale rarity bonus: `rarityPower * (1 + level * 0.02)`. At level 70, UR gives +43 instead of +18.
+
+### P10 — Win streak XP cap is too low ✅
+- **Problem:** `min(streak, 10)` means streaks past 10 give no extra benefit.
+- **Fix:** Logarithmic bonus: `floor(log2(streak + 1)) * 3`. Streak of 31 → +15 XP instead of +10.
+
+### P11 — Equipment sub-stat `dmgPct` range is too wide ✅
+- **Problem:** `dmgPct` range is 5–45% per sub-stat with 4 sub-stats per piece. A single piece could roll +180% damage.
+- **Fix:** Reduce range to 5–20% or add a per-stat cap.
+
+### P12 — Tutorial coin bonus rushes progression ✅
+- **Problem:** 10,000 coins at level 5 is a huge one-time injection.
+- **Fix:** Spread it: 2,000 at levels 5, 8, 12, 16, 20 (same total, smoother feel).
+
 ## Frontend cleanup
 
 - Fix `src/pages/TcgPage.tsx` hook warning by wrapping `handleAction` in `useCallback`; it currently changes every render and churns `handleMobileTcgDrop`.
