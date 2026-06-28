@@ -1,23 +1,29 @@
-# Changes — 2026-06-28
+# What's New — June 28, 2026
 
-*Frontend-only update (no backend changes)*
+**Fights & Stability**
 
-1. **Added HTTP fallback for Arena Fight turns** — your fights won't get stuck mid-battle if the socket disconnects; turns keep advancing automatically over HTTP instead.
+- 🛡️ **Fights no longer freeze if the connection drops.** If the game loses its real-time link during a battle, turns now keep going automatically so you're never stuck waiting.
 
-2. **Added drag-and-drop material swapping in Arena Mint** — when forging a rainbow card you can drag or tap to swap which card is the "base" vs "material," which changes the resulting card's stats. Works on desktop (HTML5 drag) and mobile (touch-drag with floating ghost).
+- 📶 **TCG matches refresh themselves.** The card battle screen now updates on its own and clears out finished games, so you won't see a stale board.
 
-3. **Added card sacrifice in Arena Collection** — a new "sacrifice" toggle lets you select unwanted cards and exchange them for coins, with a coin preview and confirmation before committing.
+**New Features**
 
-4. **Added mobile drag ghost in TCG** — dragging cards on your phone now shows a floating visual following your finger, so you can see what you're dragging (attacks, element assigns, promotions, and card moves).
+- 🧪 **Swap forge materials by dragging.** When making a rainbow card, you can now drag the two cards to swap which one is the "base" and which is the "material" — changing the result. Works by dragging with a mouse or by touch-and-drag on your phone.
 
-5. **Added auto-refresh for TCG game state** — the match board refreshes itself in the background and auto-cleans up finished games, so you're less likely to get stuck on a stale board.
+- 💰 **Sacrifice unwanted cards for coins.** Your collection now has a "sacrifice" button. Select cards you don't need, see how many coins you'll get, and confirm to exchange them.
 
-6. **Fixed TCG element display on cards** — card thumbnails now show up to 2 element icons instead of 1, so you can tell at a glance how many elements are assigned.
+- 💗 **Affinity is now visible on the Arena home screen.** See your card's bond level, how many fights and wins you've earned together, a progress bar toward the next level, and exactly which stats get a bonus from it.
 
-7. **Fixed mobile touch-drag scrolling interference in Arena Mint** — long-pressing a material card now properly blocks page scroll so the drag feels smooth and you can actually drop on the other slot.
+**Visual & Mobile Fixes**
 
-8. **Fixed mobile card grid overflow in Mint, Collection, and Trade modals** — card listings now fit properly on small phone screens (320–380px). Cards shrink slightly and padding is reduced on narrow screens so two-column grids stop overflowing.
+- 👻 **Dragging cards on your phone now shows a floating preview.** In TCG battles, a ghost image of the card follows your finger so you always know what you're moving — works for attacks, element assignment, promotions, and card switches.
 
-9. **Added affinity display on Arena home page** — your selected card's affinity level, fight/wins progress, and stat bonuses (Power, Guard, Speed, Effect Hit, Health) are now shown on the Arena dashboard. Affinity bonuses also appear inline in the stat breakdown rows so you can see exactly where the extra stats come from.
+- 📱 **Card grids now fit properly on small phones.** Card lists in the Mint, Collection, and Trade screens no longer spill off the edge on narrow screens.
 
-10. **Verified consumable caps and added comprehensive tests** — all 18 consumable effects now have verified hard caps (`EFFECT_DURATION_LIMITS`) and soft caps (`charges × 2`). Added tests for every consumable including previously untested ones (Frost Elixir, Viridian Elixir, Sage's Tome, Sacred Candles, Void Cauldron, Chrono Vial, Solar Cauldron), cap enforcement, stacking behavior, and interleaved multi-use scenarios.
+- 🃏 **Card thumbnails now show both assigned elements.** You can tell at a glance how many elements a TCG card has, not just one.
+
+**Balance & Reliability**
+
+- ⚗️ **Consumable stacking limits are now consistent.** Using the same potion or charm multiple times always respects the same cap. The "are you sure?" popup when using a consumable now shows the correct remaining uses and how many would be wasted — no more confusing numbers.
+
+- 📊 **All consumable effects have been reviewed and tested.** Every potion, charm, elixir, and craftable item now has verified limits — nothing was changed for players, but the system is now fully tested to prevent future issues.

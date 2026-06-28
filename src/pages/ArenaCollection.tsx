@@ -7,6 +7,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
+import ConfirmDialog from "@/parts/ConfirmDialog";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -560,33 +561,20 @@ const ArenaCollection = () => {
         </div>
       </div>
       {sacrificeConfirmOpen ? (
-        <div className="fixed inset-0 z-[230000] flex items-center justify-center bg-white/50 p-4 backdrop-blur-sm dark:bg-slate-950/70">
-          <div className="w-full max-w-md rounded-xl border border-rose-300 bg-white p-5 text-blue-900 shadow-xl dark:bg-slate-900 dark:text-sky-50">
-            <h3 className="text-lg font-black text-rose-700 dark:text-rose-300">Confirm sacrifice</h3>
-            <p className="mt-2 text-sm">
+        <ConfirmDialog
+          title="Confirm sacrifice"
+          message={
+            <span>
               Sacrifice {selectedSacrificeCount} card{selectedSacrificeCount === 1 ? "" : "s"} for{" "}
               <span className="font-bold">{sacrificePreview?.totalCoins ?? 0}</span> coins?
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="arena-redraw-button text-xs"
-                onClick={() => setSacrificeConfirmOpen(false)}
-                disabled={sacrificing}
-              >
-                [ cancel ]
-              </button>
-              <button
-                type="button"
-                className="arena-redraw-button text-xs"
-                onClick={handleConfirmSacrifice}
-                disabled={!sacrificeCanConfirm}
-              >
-                {sacrificing ? "[ sacrificing... ]" : "[ confirm ]"}
-              </button>
-            </div>
-          </div>
-        </div>
+            </span>
+          }
+          confirmLabel={sacrificing ? "Sacrificing..." : "Confirm"}
+          cancelLabel="Cancel"
+          confirmDisabled={!sacrificeCanConfirm}
+          onConfirm={handleConfirmSacrifice}
+          onCancel={() => setSacrificeConfirmOpen(false)}
+        />
       ) : null}
       <Footer />
     </div>

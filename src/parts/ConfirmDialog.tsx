@@ -6,6 +6,7 @@ type ConfirmDialogProps = {
   message: React.ReactNode;
   confirmLabel: string;
   cancelLabel: string;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -15,6 +16,7 @@ const ConfirmDialog = ({
   message,
   confirmLabel,
   cancelLabel,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) => {
@@ -85,7 +87,8 @@ const ConfirmDialog = ({
             <button
               type="button"
               onClick={onConfirm}
-              className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 dark:bg-pink-500 dark:hover:bg-pink-400"
+              disabled={confirmDisabled}
+              className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 disabled:opacity-50 dark:bg-pink-500 dark:hover:bg-pink-400"
             >
               {confirmLabel}
             </button>
