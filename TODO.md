@@ -256,7 +256,7 @@
 - [ ] **Cap win-streak XP bonus** — `Math.min(Math.log2(winStreak + 1), Math.log2(6)) * 3` (cap at streak 5).
 - [ ] **Add streak coin multiplier** — `+2% coins per streak, capped at +30%`.
 - [ ] **Cap element effectiveness** — Clamp `1.3 + effectHit * 0.02 - defenderEffectHit * 0.01` at 1.8×. Give `effectHit` a secondary effect (e.g., 1% shield pierce per 10 pts).
-- [ ] **Reduce evasion cap** — From 60% to 35%.
+- [x] ~~**Reduce evasion cap** — From 60% to 44%.~~ ✅ DONE — Combat evasion clamp is now 44%.
 - [ ] **Add max-level overflow** — Convert excess XP to coins at level 70 (e.g., 1 XP = 5 coins).
 
 ---
