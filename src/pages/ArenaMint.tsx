@@ -203,9 +203,11 @@ const ArenaMint = () => {
       effectHit: a.iv.effectHit,
     };
     // Deterministic +5 bonus simulation from card IDs
+    const idA = a.cardInstanceId || "";
+    const idB = b.cardInstanceId || "";
     let seed = 0;
-    for (let i = 0; i < (a.cardInstanceId! + b.cardInstanceId!).length; i++) {
-      seed = ((seed << 5) - seed + (a.cardInstanceId! + b.cardInstanceId!).charCodeAt(i)) | 0;
+    for (let i = 0; i < (idA + idB).length; i++) {
+      seed = ((seed << 5) - seed + (idA + idB).charCodeAt(i)) | 0;
     }
     const stats = ["power", "guard", "speed", "effectHit"] as const;
     for (let i = 0; i < 5; i++) {
@@ -233,7 +235,8 @@ const ArenaMint = () => {
     setActioning(true);
     try {
       const [a, b] = pickedCards;
-      const res = await mintRainbowCard(token, a.cardInstanceId!, b.cardInstanceId!);
+      if (!a.cardInstanceId || !b.cardInstanceId) return;
+      const res = await mintRainbowCard(token, a.cardInstanceId, b.cardInstanceId);
       setMintedCard(res.card);
       setStep("pick");
       setPicked([]);

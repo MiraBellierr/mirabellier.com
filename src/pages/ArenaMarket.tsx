@@ -469,7 +469,7 @@ const ArenaMarket = () => {
                 <span className="font-bold text-blue-700 dark:text-purple-200">{listing.price.toLocaleString()} 🪙</span>
               </div>
               <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                Market: {listing.marketPrice.value.toLocaleString()}
+                Market: {listing.marketPrice?.value?.toLocaleString() ?? "—"}
               </p>
             </div>
             <div className="shrink-0">
@@ -541,7 +541,7 @@ const ArenaMarket = () => {
                   {listing.price.toLocaleString()} 🪙
                 </td>
                 <td className="py-2 px-2 text-xs text-blue-600 dark:text-purple-300">
-                  {listing.marketPrice.value.toLocaleString()}
+                  {listing.marketPrice?.value?.toLocaleString() ?? "—"}
                 </td>
                 <td className="py-2 pl-2">
                   <button
@@ -820,7 +820,7 @@ const ArenaMarket = () => {
                                       {listing.price.toLocaleString()} 🪙
                                     </td>
                                     <td className="py-2 px-2 text-xs text-blue-600 dark:text-purple-300">
-                                      {listing.marketPrice.value.toLocaleString()}
+                                      {listing.marketPrice?.value?.toLocaleString() ?? "—"}
                                     </td>
                                     <td className="py-2 px-2 text-xs text-slate-500 dark:text-slate-400">
                                       {listing.seller.username}

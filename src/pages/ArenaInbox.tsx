@@ -34,6 +34,7 @@ const NOTIFICATION_ICONS: Record<string, string> = {
   trade_request: "*",
   trade_accepted: "+",
   trade_denied: "-",
+  trade_completed: "=",
 };
 
 const NOTIFICATION_LABELS: Record<string, string> = {
@@ -41,12 +42,17 @@ const NOTIFICATION_LABELS: Record<string, string> = {
   trade_request: "Trade Request",
   trade_accepted: "Accepted",
   trade_denied: "Denied",
+  trade_completed: "Trade Done",
 };
 
 const NOTIFICATION_LABEL_CLASSES: Record<string, string> = {
   trade_accepted: "text-green-500 dark:text-green-400",
   trade_denied: "text-red-500 dark:text-red-400",
+  trade_completed: "text-green-600 dark:text-green-300",
 };
+
+// Persist resolved trade request IDs across page navigations within the SPA session
+const resolvedTradeRequestIds = new Set<string>();
 
 const ArenaInbox = () => {
   const auth = useOptionalAuth();
@@ -102,6 +108,28 @@ const ArenaInbox = () => {
     void loadData(token, page);
   }, [token, page, loadData]);
 
+  // Auto-resolve trade_request notifications whose underlying request is no longer pending
+  useEffect(() => {
+    if (!data) return;
+    let changed = false;
+    const updatedNotifications = data.notifications.map((n) => {
+      if (n.type === "trade_request" && n.requestStatus && n.requestStatus !== "pending") {
+        let meta = null;
+        try { meta = n.metadata ? JSON.parse(n.metadata) : null; } catch { /* ignore */ }
+        if (meta?.requestId && !resolvedTradeRequestIds.has(meta.requestId)) {
+          resolvedTradeRequestIds.add(meta.requestId);
+          changed = true;
+        }
+        return { ...n, type: "trade_denied" as ArenaNotification["type"], title: "This trade request is no longer available", body: null };
+      }
+      return n;
+    });
+    if (changed) {
+      setData((prev) => prev ? { ...prev, notifications: updatedNotifications } : prev);
+      setResolveTick((t) => t + 1);
+    }
+  }, [data]);
+
   useWebSocketEvent("arena:notification:unread-count", (data) => {
     const { count } = data as { count: number };
     if (count !== prevCountRef.current) {
@@ -129,7 +157,7 @@ const ArenaInbox = () => {
               }
             : prev,
         );
-        if (notification.link && notification.type !== "trade_request" && notification.type !== "trade_accepted") {
+        if (notification.link && notification.type !== "trade_request" && notification.type !== "trade_accepted" && notification.type !== "trade_completed") {
           navigate(notification.link);
         }
       } catch {
@@ -142,13 +170,15 @@ const ArenaInbox = () => {
   const handleAcceptTrade = useCallback(
     async (notification: ArenaNotification) => {
       if (!token) return;
+      let meta = null;
+      try { meta = notification.metadata ? JSON.parse(notification.metadata) : null; } catch { /* ignore malformed JSON */ }
+      const requestId = meta?.requestId;
+      if (!requestId) return;
       try {
-        const meta = notification.metadata ? JSON.parse(notification.metadata) : null;
-        const requestId = meta?.requestId;
-        if (!requestId) return;
         setConfirmAcceptNotification(null);
         setActioning(notification.id);
         const result = await acceptArenaTradeRequest(token, requestId);
+        markRequestResolved(requestId);
         await markArenaNotificationRead(token, notification.id);
         setData((prev) =>
           prev
@@ -160,13 +190,32 @@ const ArenaInbox = () => {
               }
             : prev,
         );
-        if (result.sessionId) {
+        if (result.completed) {
+          // Instant trade (listing-based) — show the card the user received
+          setSuccessCard((result.askerCard ?? result.responderCard) as ArenaCard);
+        } else if (result.sessionId) {
           navigate(`/arena/trade?session=${encodeURIComponent(result.sessionId)}`);
         } else if (result.askerCard) {
           setSuccessCard(result.askerCard as ArenaCard);
         }
-      } catch {
-        // ignore
+      } catch (error) {
+        // If the request is no longer pending (canceled/expired), update the notification
+        if (error instanceof ArenaApiError && error.status === 409) {
+          markRequestResolved(requestId);
+          await markArenaNotificationRead(token, notification.id);
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  notifications: prev.notifications.map((n) =>
+                    n.id === notification.id
+                      ? { ...n, isRead: true, type: "trade_denied" as ArenaNotification["type"], title: "This trade request is no longer available", body: null }
+                      : n,
+                  ),
+                }
+              : prev,
+          );
+        }
       }
       setActioning(null);
     },
@@ -176,12 +225,14 @@ const ArenaInbox = () => {
   const handleDenyTrade = useCallback(
     async (notification: ArenaNotification) => {
       if (!token) return;
+      let meta = null;
+      try { meta = notification.metadata ? JSON.parse(notification.metadata) : null; } catch { /* ignore malformed JSON */ }
+      const requestId = meta?.requestId;
+      if (!requestId) return;
       try {
-        const meta = notification.metadata ? JSON.parse(notification.metadata) : null;
-        const requestId = meta?.requestId;
-        if (!requestId) return;
         setActioning(notification.id);
         await denyArenaTradeRequest(token, requestId);
+        markRequestResolved(requestId);
         await markArenaNotificationRead(token, notification.id);
         const askerName = notification.title.replace(" wants to trade", "");
         setData((prev) =>
@@ -190,14 +241,30 @@ const ArenaInbox = () => {
                 ...prev,
                 notifications: prev.notifications.map((n) =>
                   n.id === notification.id
-                    ? { ...n, isRead: true, title: `You denied ${askerName} trade request`, body: null }
+                    ? { ...n, isRead: true, title: `You denied ${askerName} trade request`, body: null, type: "trade_denied" as ArenaNotification["type"] }
                     : n,
                 ),
               }
             : prev,
         );
-      } catch {
-        // ignore
+      } catch (error) {
+        // If the request is no longer pending (canceled/expired), update the notification
+        if (error instanceof ArenaApiError && error.status === 409) {
+          markRequestResolved(requestId);
+          await markArenaNotificationRead(token, notification.id);
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  notifications: prev.notifications.map((n) =>
+                    n.id === notification.id
+                      ? { ...n, isRead: true, type: "trade_denied" as ArenaNotification["type"], title: "This trade request is no longer available", body: null }
+                      : n,
+                  ),
+                }
+              : prev,
+          );
+        }
       }
       setActioning(null);
     },
@@ -207,6 +274,13 @@ const ArenaInbox = () => {
   const [actioning, setActioning] = useState<string | null>(null);
   const [successCard, setSuccessCard] = useState<ArenaCard | null>(null);
   const [confirmAcceptNotification, setConfirmAcceptNotification] = useState<ArenaNotification | null>(null);
+  const [resolveTick, setResolveTick] = useState(0);
+
+  const markRequestResolved = useCallback((requestId: string) => {
+    if (resolvedTradeRequestIds.has(requestId)) return;
+    resolvedTradeRequestIds.add(requestId);
+    setResolveTick((t) => t + 1);
+  }, []);
 
   const handleMarkAllRead = useCallback(async () => {
     if (!token) return;
@@ -285,12 +359,13 @@ const ArenaInbox = () => {
                   {loading ? (
                     <p className="text-blue-500 dark:text-purple-300">Loading...</p>
                   ) : data && data.notifications.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-resolve-tick={resolveTick}>
                       {data.notifications.map((notification) => {
                         const meta =
                           (notification.type === "trade_request" ||
                            notification.type === "trade_accepted" ||
-                           notification.type === "trade_denied") && notification.metadata
+                           notification.type === "trade_denied" ||
+                           notification.type === "trade_completed") && notification.metadata
                             ? (() => {
                                 try {
                                   return JSON.parse(notification.metadata);
@@ -299,22 +374,25 @@ const ArenaInbox = () => {
                                 }
                               })()
                             : null;
-                        const isTrade = notification.type === "trade_request" && !notification.isRead;
+                        const isTradeRequest = notification.type === "trade_request";
+                        const isTradeUnread = isTradeRequest && !notification.isRead;
+                        const isTradePending = isTradeRequest && !resolvedTradeRequestIds.has(meta?.requestId);
                         const hasCards = notification.type === "trade_request" ||
                           notification.type === "trade_accepted" ||
-                          notification.type === "trade_denied";
+                          notification.type === "trade_denied" ||
+                          notification.type === "trade_completed";
 
                         return (
                           <div
                             key={notification.id}
                             onClick={() => {
-                              if (!isTrade) void handleMarkRead(notification);
+                              if (!isTradeUnread) void handleMarkRead(notification);
                             }}
                             className={`w-full rounded-xl border p-3 transition ${
                               notification.isRead
                                 ? "border-blue-100 bg-white/40 dark:border-purple-400/10 dark:bg-slate-800/40"
                                 : "border-blue-300 bg-blue-50/80 dark:border-purple-400/30 dark:bg-purple-950/40"
-                            } ${isTrade ? "" : "cursor-pointer"}`}
+                            } ${isTradeUnread ? "" : "cursor-pointer"}`}
                           >
                             <div className="flex items-start gap-3">
                             <span
@@ -343,7 +421,7 @@ const ArenaInbox = () => {
                                   </span>
                                 {!notification.isRead && (
                                   <span className={`h-2 w-2 rounded-full ${
-                                    notification.type === "trade_accepted"
+                                    notification.type === "trade_accepted" || notification.type === "trade_completed"
                                       ? "bg-green-500"
                                       : notification.type === "trade_denied"
                                         ? "bg-red-500"
@@ -417,7 +495,7 @@ const ArenaInbox = () => {
                                           </div>
                                         </>
                                       )}
-                                      {isTrade && (
+                                      {isTradePending && (
                                         <div className="flex gap-2 pt-2">
                                           <button
                                             type="button"
@@ -446,7 +524,7 @@ const ArenaInbox = () => {
                                     </div>
                                   </div>
                                 )}
-                                {isTrade && !meta?.askerCard && (
+                                {isTradePending && !meta?.askerCard && (
                                   <div className="flex gap-2 pt-3">
                                     <button
                                       type="button"
@@ -476,7 +554,7 @@ const ArenaInbox = () => {
                                   {formatTime(notification.createdAt)}
                                 </p>
                               </div>
-                              {notification.link && !isTrade && (
+                              {notification.link && !isTradeUnread && (
                                 <span className="mt-1 shrink-0 text-xs text-slate-300 dark:text-slate-600">
                                   →
                                 </span>

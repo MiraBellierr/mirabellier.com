@@ -424,11 +424,12 @@ const ArenaShop = () => {
     if (effect) {
       const kind = typeof effect.kind === "string" ? effect.kind : "";
       const charges = getConsumableChargeValue(effect);
-      const field = getEffectFieldForKind(kind);
-      if (field && charges > 0) {
+      const effectMeta = getEffectFieldForKind(kind);
+      if (effectMeta && charges > 0) {
+        const { field, max } = effectMeta;
         const current =
           Number(shop.profile.effects[field as keyof typeof shop.profile.effects]) || 0;
-        const cap = Math.max(current, charges * 2);
+        const cap = max;
         const newValue = Math.min(current + charges, cap);
         const wasted = current + charges - newValue;
         if (wasted > 0) {

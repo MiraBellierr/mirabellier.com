@@ -602,8 +602,8 @@ const ArenaFight = () => {
             startPendingRef.current = false;
             setStarting(false);
           }
-          const err = msg.data as { code?: string; message?: string; retryAfterMs?: number };
-          if (err.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
+          const err = (msg.data || {}) as { code?: string; message?: string; retryAfterMs?: number };
+          if (err?.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
             const retryAfterMs = Math.max(err.retryAfterMs || 250, 250);
             if (autoTimerRef.current !== null) {
               window.clearTimeout(autoTimerRef.current);

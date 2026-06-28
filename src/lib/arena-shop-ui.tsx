@@ -321,24 +321,24 @@ export function getConsumableChargeValue(effect: ArenaConsumableRule | null | un
 
 export function getEffectFieldForKind(kind: string) {
   switch (kind) {
-    case "damage_boost":          return "damageBoostFightsRemaining" as const;
-    case "speed_boost":           return "speedBoostFightsRemaining" as const;
-    case "stat_steroid":          return "statSteroidFightsRemaining" as const;
-    case "evade_next_fight":      return "evadeBoostFightsRemaining" as const;
-    case "vampiric_heal":         return "vampiricHealFightsRemaining" as const;
-    case "crit_chance":           return "critChanceBoostFightsRemaining" as const;
-    case "guard_boost":           return "guardBoostFightsRemaining" as const;
-    case "exp_boost":             return "expBoostWinsRemaining" as const;
-    case "double_passive_trigger": return "doublePassiveTriggerFightsRemaining" as const;
-    case "death_save":            return "deathSaveCharges" as const;
-    case "match_rarity":          return "matchRarityCharges" as const;
-    case "streak_shield":         return "streakShieldCharges" as const;
-    case "shield_fight_start":    return "fightStartShieldCharges" as const;
-    case "first_hit_true_damage": return "firstHitTrueDamageCharges" as const;
-    case "bonus_vs_higher_rarity": return "higherRarityDamageBonusPctCharges" as const;
-    case "first_attack_double":   return "firstAttackDoubleCharges" as const;
-    case "iv_boost":              return "ivBoostCharges" as const;
-    case "self_revive":           return "selfReviveCharges" as const;
+    case "damage_boost":          return { field: "damageBoostFightsRemaining" as const, max: 500 };
+    case "speed_boost":           return { field: "speedBoostFightsRemaining" as const, max: 500 };
+    case "stat_steroid":          return { field: "statSteroidFightsRemaining" as const, max: 1000 };
+    case "evade_next_fight":      return { field: "evadeBoostFightsRemaining" as const, max: 500 };
+    case "vampiric_heal":         return { field: "vampiricHealFightsRemaining" as const, max: 1000 };
+    case "crit_chance":           return { field: "critChanceBoostFightsRemaining" as const, max: 500 };
+    case "guard_boost":           return { field: "guardBoostFightsRemaining" as const, max: 500 };
+    case "exp_boost":             return { field: "expBoostWinsRemaining" as const, max: 500 };
+    case "double_passive_trigger": return { field: "doublePassiveTriggerFightsRemaining" as const, max: 1000 };
+    case "death_save":            return { field: "deathSaveCharges" as const, max: 1000 };
+    case "match_rarity":          return { field: "matchRarityCharges" as const, max: 1500 };
+    case "streak_shield":         return { field: "streakShieldCharges" as const, max: 6 };
+    case "shield_fight_start":    return { field: "fightStartShieldCharges" as const, max: 2000 };
+    case "first_hit_true_damage": return { field: "firstHitTrueDamageCharges" as const, max: 500 };
+    case "bonus_vs_higher_rarity": return { field: "higherRarityDamageBonusPctCharges" as const, max: 1000 };
+    case "first_attack_double":   return { field: "firstAttackDoubleCharges" as const, max: 1000 };
+    case "iv_boost":              return { field: "ivBoostCharges" as const, max: 500 };
+    case "self_revive":           return { field: "selfReviveCharges" as const, max: 1000 };
     case "restore_consumable_charge": return null;
     default: return null;
   }

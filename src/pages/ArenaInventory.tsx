@@ -13,6 +13,7 @@ import {
   type ArenaEquipmentPiece,
   type ArenaShopItem,
   type ArenaShopResponse,
+  type ArenaSubStat,
   equipArenaItem,
   fetchArenaShop,
   fodderArenaPiece,
@@ -90,7 +91,7 @@ function slotSpriteItem(slot: string): ArenaShopItem {
   };
 }
 
-function pieceSummary(piece: ArenaEquipmentPiece) {
+function pieceSummary(piece: { mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }) {
   const main = `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} ${piece.mainStatValue}`;
   const subs = piece.subStats
     .map((s) => `${SUB_STAT_LABELS[s.type] || s.type} +${s.value}`)
@@ -204,11 +205,12 @@ const ArenaInventory = () => {
     if (effect) {
       const kind = typeof effect.kind === "string" ? effect.kind : "";
       const charges = getConsumableChargeValue(effect);
-      const field = getEffectFieldForKind(kind);
-      if (field && charges > 0) {
+      const effectMeta = getEffectFieldForKind(kind);
+      if (effectMeta && charges > 0) {
+        const { field, max } = effectMeta;
         const current =
           Number(shop.profile.effects[field as keyof typeof shop.profile.effects]) || 0;
-        const cap = Math.max(current, charges * 2);
+        const cap = max;
         const newValue = Math.min(current + charges, cap);
         const wasted = current + charges - newValue;
         if (wasted > 0) {
@@ -437,21 +439,21 @@ const ArenaInventory = () => {
                       <div>
                         <p className="text-lg font-semibold underline">Equipped Gear</p>
                         <p>✦ Weapon: {shop.equipped.weapon
-                          ? pieceSummary(shop.equipped.weapon as unknown as ArenaEquipmentPiece)
+                          ? pieceSummary(shop.equipped.weapon)
                           : "none"}{" "}
                           {shop.equipped.weapon ? (
                             <button type="button" onClick={() => void handleUnequip("weapon")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
                           ) : null}
                         </p>
                         <p>✦ Armour: {shop.equipped.armor
-                          ? pieceSummary(shop.equipped.armor as unknown as ArenaEquipmentPiece)
+                          ? pieceSummary(shop.equipped.armor)
                           : "none"}{" "}
                           {shop.equipped.armor ? (
                             <button type="button" onClick={() => void handleUnequip("armor")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
                           ) : null}
                         </p>
                         <p>✦ Charm: {shop.equipped.charm
-                          ? pieceSummary(shop.equipped.charm as unknown as ArenaEquipmentPiece)
+                          ? pieceSummary(shop.equipped.charm)
                           : "none"}{" "}
                           {shop.equipped.charm ? (
                             <button type="button" onClick={() => void handleUnequip("charm")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>

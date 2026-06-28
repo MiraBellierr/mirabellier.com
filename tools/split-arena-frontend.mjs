@@ -1,18 +1,12 @@
-/**
- * Splits arena-api.ts into domain modules by moving actual function bodies.
- * Run: node tools/split-arena-frontend.cjs
- */
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-const ROOT = path.join(__dirname, '..');
-const SRC = path.join(ROOT, 'src', 'lib', 'arena-api.ts');
-const OUT = path.join(ROOT, 'src', 'lib', 'arena');
+const SRC = 'src/lib/arena-api.ts';
+const OUT = 'src/lib/arena';
 
 const lines = fs.readFileSync(SRC, 'utf-8').split('\n');
 console.log('Total lines:', lines.length);
 
-// Find block end (closing brace/paren at matching indent)
 function findBlockEnd(startLine) {
   let depth = 0, started = false;
   for (let i = startLine; i < lines.length; i++) {
@@ -28,18 +22,16 @@ function findBlockEnd(startLine) {
   return lines.length;
 }
 
-// Find all exports
-const exports = [];
+const allExports = [];
 for (let i = 0; i < lines.length; i++) {
   const line = lines[i].trim();
   let m;
-  if ((m = line.match(/^export type (\w+)\s*=/))) exports.push({ name: m[1], start: i, end: findBlockEnd(i), kind: 'type' });
-  else if ((m = line.match(/^export (async )?function (\w+)/))) exports.push({ name: m[2], start: i, end: findBlockEnd(i), kind: 'fn' });
-  else if ((m = line.match(/^export class (\w+)/))) exports.push({ name: m[1], start: i, end: findBlockEnd(i), kind: 'class' });
+  if ((m = line.match(/^export type (\w+)\s*=/))) allExports.push({ name: m[1], start: i, end: findBlockEnd(i), kind: 'type' });
+  else if ((m = line.match(/^export (async )?function (\w+)/))) allExports.push({ name: m[2], start: i, end: findBlockEnd(i), kind: 'fn' });
+  else if ((m = line.match(/^export class (\w+)/))) allExports.push({ name: m[1], start: i, end: findBlockEnd(i), kind: 'class' });
 }
-console.log('Exports:', exports.length);
+console.log('Exports:', allExports.length);
 
-// Find private helpers
 const helpers = [];
 for (let i = 0; i < lines.length; i++) {
   const line = lines[i].trim();
@@ -49,7 +41,6 @@ for (let i = 0; i < lines.length; i++) {
 }
 console.log('Helpers:', helpers.map(h => h.name).join(', '));
 
-// Find const declarations
 const consts = [];
 for (let i = 0; i < lines.length; i++) {
   if (lines[i].trim().match(/^const (DEFAULT_ELO_RATING|ELO_PROVISIONAL_MATCHES)\s*=/)) {
@@ -57,7 +48,6 @@ for (let i = 0; i < lines.length; i++) {
   }
 }
 
-// Domain config
 const domains = {
   'shared.ts': {
     types: ['ArenaMetric','ArenaStatsBlock','ArenaStatBreakdown','ArenaPctStats','ArenaSubStat',
@@ -104,10 +94,10 @@ const domains = {
 
 function collectRanges(cfg) {
   const ranges = [];
-  if (cfg.types) for (const n of cfg.types) { const e = exports.find(x => x.name === n && x.kind === 'type'); if (e) ranges.push([e.start, e.end]); }
-  if (cfg.classes) for (const n of cfg.classes) { const e = exports.find(x => x.name === n && x.kind === 'class'); if (e) ranges.push([e.start, e.end]); }
-  if (cfg.fns) for (const n of cfg.fns) { const e = exports.find(x => x.name === n && x.kind === 'fn'); if (e) ranges.push([e.start, e.end]); }
-  if (cfg.helpers) for (const n of cfg.helpers) { const h = helpers.find(x => x.name === n); if (h) ranges.push([h.start, h.end]); }
+  if (cfg.types) for (const n of cfg.types) { const e = allExports.find(x => x.name === n && x.kind === 'type'); if (e) ranges.push([e.start, e.end]); }
+  if (cfg.classes) for (const n of cfg.classes) { const e = allExports.find(x => x.name === n && x.kind === 'class'); if (e) ranges.push([e.start, e.end]); }
+  if (cfg.fns) for (const n of cfg.fns) { const e = allExports.find(x => x.name === n && x.kind === 'fn'); if (e) ranges.push([e.start, e.end]); }
+  if (cfg.helpers) for (const n of cfg.helpers) { const h = helpers.find(x => x.name === n); if (h) ranges.push([h.start, h.end]); else { const e = allExports.find(x => x.name === n && x.kind === 'fn'); if (e) ranges.push([e.start, e.end]); } }
   if (cfg.consts) for (const c of consts) ranges.push([c.start, c.end]);
   ranges.sort((a, b) => a[0] - b[0]);
   const merged = [];
@@ -148,8 +138,7 @@ for (const [filename, cfg] of Object.entries(domains)) {
   console.log(filename + ': ' + finalContent.split('\n').length + ' lines');
 }
 
-// index.ts
 let idx = '// Arena API — domain modules\n';
 ['shared','profile','cards','collection','archive','combat','equipment','shop','card-shop','mint','market','trade','leaderboard','hall-of-fame','skill-tree','notifications','updates','tcg'].forEach(d => idx += 'export * from "./' + d + '";\n');
 fs.writeFileSync(path.join(OUT, 'index.ts'), idx, 'utf-8');
-console.log('\nWrote index.ts. Now delete arena-api.ts and run: npm run build');
+console.log('\nWrote index.ts. Delete arena-api.ts and run: npm run build');

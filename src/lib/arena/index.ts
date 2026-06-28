@@ -1,5 +1,19 @@
-// Re-exports all types and API functions from the monolithic arena-api.ts
-// Split into logical domain modules for better code organization.
-// Individual function bodies will be migrated to their respective modules over time.
-
-export * from "../arena-api";
+// Arena API — domain modules
+export * from "./shared";
+export * from "./profile";
+export * from "./cards";
+export * from "./collection";
+export * from "./archive";
+export * from "./combat";
+export * from "./equipment";
+export * from "./shop";
+export * from "./card-shop";
+export * from "./mint";
+export * from "./market";
+export * from "./trade";
+export * from "./leaderboard";
+export * from "./hall-of-fame";
+export * from "./skill-tree";
+export * from "./notifications";
+export * from "./updates";
+export * from "./tcg";
