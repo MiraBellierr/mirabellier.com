@@ -428,8 +428,10 @@ const ArenaShop = () => {
       if (field && charges > 0) {
         const current =
           Number(shop.profile.effects[field as keyof typeof shop.profile.effects]) || 0;
-        const cap = charges * 2;
-        if (current + charges >= cap) {
+        const cap = Math.max(current, charges * 2);
+        const newValue = Math.min(current + charges, cap);
+        const wasted = current + charges - newValue;
+        if (wasted > 0) {
           const desc = describeConsumableEffect(effect);
           const confirmed = await confirm({
             title: `Use ${item.name}?`,
@@ -438,7 +440,7 @@ const ArenaShop = () => {
                 <p>{desc}</p>
                 <p className="text-sm text-amber-700">
                   You already have {current} charge{current !== 1 ? "s" : ""}{" "}
-                  (cap: {cap}). Using this will be partially wasted.
+                  (cap: {cap}). {wasted} charge{wasted !== 1 ? "s" : ""} will be wasted.
                 </p>
               </div>
             ),

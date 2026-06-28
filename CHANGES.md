@@ -17,3 +17,7 @@
 7. **Fixed mobile touch-drag scrolling interference in Arena Mint** — long-pressing a material card now properly blocks page scroll so the drag feels smooth and you can actually drop on the other slot.
 
 8. **Fixed mobile card grid overflow in Mint, Collection, and Trade modals** — card listings now fit properly on small phone screens (320–380px). Cards shrink slightly and padding is reduced on narrow screens so two-column grids stop overflowing.
+
+9. **Added affinity display on Arena home page** — your selected card's affinity level, fight/wins progress, and stat bonuses (Power, Guard, Speed, Effect Hit, Health) are now shown on the Arena dashboard. Affinity bonuses also appear inline in the stat breakdown rows so you can see exactly where the extra stats come from.
+
+10. **Verified consumable caps and added comprehensive tests** — all 18 consumable effects now have verified hard caps (`EFFECT_DURATION_LIMITS`) and soft caps (`charges × 2`). Added tests for every consumable including previously untested ones (Frost Elixir, Viridian Elixir, Sage's Tome, Sacred Candles, Void Cauldron, Chrono Vial, Solar Cauldron), cap enforcement, stacking behavior, and interleaved multi-use scenarios.
