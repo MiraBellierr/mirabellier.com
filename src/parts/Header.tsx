@@ -31,7 +31,6 @@ const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/arena", title: "Arena" },
   { path: "/arena/fight", title: "Arena Fight" },
   { path: "/arena/shop", title: "Arena Shop" },
-  { path: "/arena/crafting", title: "Arena Crafting" },
   { path: "/arena/inventory", title: "Arena Inventory" },
   { path: "/arena/inbox", title: "Arena Inbox" },
   { path: "/arena/leaderboard", title: "Arena Leaderboard" },

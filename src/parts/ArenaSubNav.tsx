@@ -8,7 +8,6 @@ const SLUGS = [
   { slug: "/fight", label: "Fight" },
   { slug: "/hall-of-fame", label: "Hall of Fame" },
   { slug: "/shop", label: "Shop" },
-  { slug: "/crafting", label: "Craft" },
   { slug: "/inventory", label: "Inventory" },
   { slug: "/leaderboard", label: "Leaderboard" },
   { slug: "/collection", label: "Collection" },

@@ -18,6 +18,7 @@ import {
   type ArenaSubStat,
   buyArenaItem,
   buyArenaShopCard,
+  craftArenaRecipe,
   fetchArenaCardShop,
   fetchArenaShop,
   fodderArenaPiece,
@@ -53,6 +54,29 @@ function formatOfferCountdown(endsAt: string, nowMs: number) {
   if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
   return `${minutes}m ${seconds}s`;
+}
+
+function getConsumableActiveInfo(
+  item: ArenaShopItem,
+  effects: Record<string, unknown> | undefined,
+) {
+  if (!item.consumableEffect || !effects) return null;
+  const meta = getEffectFieldForKind(item.consumableEffect.kind);
+  if (!meta) return null;
+  const remaining = Number(effects[meta.field]) || 0;
+  // For percent-based effects, also check the corresponding percent/value field
+  const pctField = meta.field.replace(/FightsRemaining|WinsRemaining|Charges$/, "");
+  const pctKey = pctField + (pctField.endsWith("Pct") ? "" : "Pct");
+  const valueKey = pctField + "Value";
+  const amount = Number(effects[pctKey] ?? effects[valueKey]) || 0;
+  if (remaining > 0 && amount > 0) {
+    return { active: true, remaining, amount };
+  }
+  // For non-percent effects (charges-only like death_save, streak_shield)
+  if (remaining > 0) {
+    return { active: true, remaining };
+  }
+  return null;
 }
 
 function CardRewardModal({
@@ -465,6 +489,20 @@ const ArenaShop = () => {
     }
   };
 
+  const handleCraft = async (recipeId: string) => {
+    if (!token || !shop) return;
+    setActioningId(`craft:${recipeId}`);
+    setErrorMessage(null);
+    try {
+      const payload = await craftArenaRecipe(token, recipeId, 1);
+      setShop(payload.shop);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   const handleCardBuy = async (
     purchase:
       | { kind: "daily"; offerId: string }
@@ -771,18 +809,17 @@ const ArenaShop = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {shop.shop.map((tierBlock) => {
-                    const visibleItems = tierBlock.items.filter(
-                      (item) => item.acquisition !== "craft",
-                    );
-                    if (visibleItems.length === 0) return null;
+                    if (tierBlock.items.length === 0) return null;
 
                     return (
                     <section key={tierBlock.tier} className="space-y-2">
-                      <h3 className="font-bold text-blue-700 dark:text-white">{tierBlock.tier} (Lv {visibleItems[0]?.unlockLevel} needed)</h3>
+                      <h3 className="font-bold text-blue-700 dark:text-white">{tierBlock.tier} (Lv {tierBlock.items[0]?.unlockLevel} needed)</h3>
                       <ol className="space-y-1">
-                        {visibleItems.map((item) => {
+                        {tierBlock.items.map((item) => {
                           const isBuying = actioningId === `buy:${item.id}`;
                           const isUsing = actioningId === `use:${item.id}`;
+                          const isCrafting = item.recipeId ? actioningId === `craft:${item.recipeId}` : false;
+                          const recipe = item.recipeId ? shop.recipes.find((r) => r.id === item.recipeId) : null;
                           return (
                             <li key={item.id} className="pb-3 last:border-b-0 last:pb-0">
                               <article className="flex items-start gap-3">
@@ -802,12 +839,14 @@ const ArenaShop = () => {
                                         </button>
                                       ) : null}
                                       {item.acquisition === "craft" ? (
-                                        <Link
-                                          to="/arena/crafting"
+                                        <button
+                                          type="button"
+                                          onClick={() => item.recipeId ? void handleCraft(item.recipeId) : null}
+                                          disabled={!recipe?.canCraft || isCrafting}
                                           className="arena-redraw-button hover:animate-wiggle"
                                         >
-                                          [ craft ]
-                                        </Link>
+                                          {isCrafting ? "[ crafting... ]" : "[ craft ]"}
+                                        </button>
                                       ) : null}
                                       {item.type === "consumable" ? (
                                         <button
@@ -824,8 +863,11 @@ const ArenaShop = () => {
                                   {item.acquisition === "buy" ? (
                                     <p className="text-xs text-slate-700">Price: {item.price} coins</p>
                                   ) : null}
-                                  {item.acquisition === "craft" && item.recipeId ? (
-                                    <p className="text-xs text-slate-700">Craft in /arena/crafting</p>
+                                  {item.acquisition === "craft" && recipe ? (
+                                    <p className="text-xs text-slate-700">
+                                      Craft: {recipe.coinCost.toLocaleString()} coins
+                                      {recipe.inputs?.length > 0 ? ` · ${recipe.inputs.map((i) => `${i.itemName || i.itemId} x${i.required}`).join(", ")}` : ""}
+                                    </p>
                                   ) : null}
                                   {item.stats ? <p className="text-xs text-blue-600">{formatStats(item.stats)}</p> : null}
                                   {item.passive ? (
@@ -838,6 +880,14 @@ const ArenaShop = () => {
                                     Owned: {item.ownedQuantity}
                                     {item.isEquipped ? " | equipped" : ""}
                                   </p>
+                                  {item.consumableEffect ? (() => {
+                                    const activeInfo = getConsumableActiveInfo(item, shop.profile.effects as Record<string, unknown>);
+                                    return activeInfo?.active ? (
+                                      <p className="text-xs font-semibold text-green-600 dark:text-green-400">
+                                        Active · {activeInfo.remaining} charge{activeInfo.remaining !== 1 ? "s" : ""} left
+                                      </p>
+                                    ) : null;
+                                  })() : null}
                                   {item.cooldownEndsAt ? (
                                     <p className="text-xs text-amber-700">
                                       Cooldown until {new Date(item.cooldownEndsAt).toLocaleString()}
@@ -868,7 +918,6 @@ const ArenaShop = () => {
                 <p>Five character cards spawn daily at midnight UTC.</p>
                 <p>Daily cards can be bought once per account; random packs stay available.</p>
                 <p>Buy gear and consumables here. Use the tabs to browse.</p>
-                <p>Craft recipes are in the dedicated crafting page.</p>
                 <p>Equip gear from your inventory to activate passives.</p>
               </div>
             </div>
