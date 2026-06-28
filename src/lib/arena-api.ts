@@ -79,20 +79,12 @@ export type ArenaPassiveRule = {
   priority: number;
   when?: ArenaPassiveCondition[];
   actions: ArenaPassiveAction[];
-  source?:
-    | {
-        itemId: string;
-        itemName: string;
-        slot: "weapon" | "armor" | "charm";
-        tier: string;
-        equippedAt?: string | null;
-      }
-    | {
-        type: "skill";
-        nodeId: string;
-        nodeName: string;
-        branch: ArenaSkillBranchId;
-      };
+  source?: {
+    type: "skill";
+    nodeId: string;
+    nodeName: string;
+    branch: ArenaSkillBranchId;
+  };
 };
 
 export type ArenaConsumableRule = {
