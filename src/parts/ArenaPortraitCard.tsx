@@ -113,6 +113,42 @@ function normalizeLevel(level: number | null | undefined) {
   return String(Math.max(1, Math.floor(Number(level)))).padStart(2, "0");
 }
 
+function positiveStat(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+}
+
+function getCardIvBonus(card: ArenaCard, boostedIv?: ArenaPortraitCardProps["boostedIv"]) {
+  const item = card.cardItemStats;
+  const affinity = card.affinity?.statBonus;
+  const base = card.iv;
+  const temporary = {
+    power: Math.max(0, positiveStat(boostedIv?.power) - positiveStat(base.power)),
+    guard: Math.max(0, positiveStat(boostedIv?.guard) - positiveStat(base.guard)),
+    speed: Math.max(0, positiveStat(boostedIv?.speed) - positiveStat(base.speed)),
+    effectHit: Math.max(0, positiveStat(boostedIv?.effectHit) - positiveStat(base.effectHit)),
+  };
+  const bonus = {
+    power: positiveStat(item?.power) + positiveStat(affinity?.power) + temporary.power,
+    guard: positiveStat(item?.guard) + positiveStat(affinity?.guard) + temporary.guard,
+    speed: positiveStat(item?.speed) + positiveStat(affinity?.speed) + temporary.speed,
+    effectHit: positiveStat(item?.effectHit) + positiveStat(affinity?.effectHit) + temporary.effectHit,
+  };
+  return {
+    ...bonus,
+    total: bonus.power + bonus.guard + bonus.speed + bonus.effectHit,
+  };
+}
+
+function renderIvStat(label: string, base: number, bonus: number) {
+  return (
+    <>
+      {label} {base}
+      {bonus > 0 ? <span className="text-amber-500">+{bonus}</span> : null}
+    </>
+  );
+}
+
 const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
   card,
   level,
@@ -133,6 +169,7 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
   const stars = "\u2605".repeat(visual.stars);
   const urTexture = card.rainbow ? "rainbow" : null;
   const { tiltStyle, onPointerMove, onPointerLeave } = useHoloTilt({ auto });
+  const ivBonus = getCardIvBonus(card, boostedIv);
 
   const rootStyle: CSSProperties = {
     "--arena-card-frame": visual.frame,
@@ -181,19 +218,19 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
         </div>
         {showIvLine ? (
           <p className="arena-portrait-card__iv">
-            {boostedIv
+            {ivBonus.total > 0
               ? (
                 <>
                   IV {card.iv.total}{" "}
-                  <span className="text-amber-500">(+{boostedIv.total - card.iv.total} → {boostedIv.total})</span>
-                  {" | "}P {card.iv.power}{" "}
-                  <span className="text-amber-500">(+{boostedIv.power - card.iv.power})</span>
-                  {" "}G {card.iv.guard}{" "}
-                  <span className="text-amber-500">(+{boostedIv.guard - card.iv.guard})</span>
-                  {" "}S {card.iv.speed}{" "}
-                  <span className="text-amber-500">(+{boostedIv.speed - card.iv.speed})</span>
-                  {" "}EH {card.iv.effectHit}{" "}
-                  <span className="text-amber-500">(+{boostedIv.effectHit - card.iv.effectHit})</span>
+                  <span className="text-amber-500">+{ivBonus.total}</span>
+                  {" | "}
+                  {renderIvStat("P", card.iv.power, ivBonus.power)}
+                  {" "}
+                  {renderIvStat("G", card.iv.guard, ivBonus.guard)}
+                  {" "}
+                  {renderIvStat("S", card.iv.speed, ivBonus.speed)}
+                  {" "}
+                  {renderIvStat("EH", card.iv.effectHit, ivBonus.effectHit)}
                 </>
               )
               : (

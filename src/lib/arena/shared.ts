@@ -98,6 +98,8 @@ export type ArenaCard = {
   isFavorite?: boolean;
   from?: string | null;
   rainbow?: boolean;
+  cardItemStats?: ArenaStatsBlock;
+  cardItemIds?: string[];
   ownedCount?: number;
   owned?: boolean;
   affinity?: ArenaCardAffinity;
@@ -472,7 +474,7 @@ export type ArenaShopItem = {
   tier: string | null;
   unlockLevel: number;
   price: number;
-  type: "gear" | "consumable" | "instant";
+  type: "gear" | "consumable" | "instant" | "card";
   acquisition?: "buy" | "craft";
   slot?: "weapon" | "armor" | "charm";
   stats?: Partial<ArenaStatsBlock>;
@@ -502,6 +504,7 @@ export type ArenaShopResponse = {
   catalogVersion: string;
   profile: ArenaProfile;
   equipment: ArenaShopItem[];
+  cardItems?: ArenaShopItem[];
   shop: ArenaShopTier[];
   recipes: ArenaShopRecipe[];
   equipped: {

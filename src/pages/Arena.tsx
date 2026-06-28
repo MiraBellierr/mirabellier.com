@@ -46,13 +46,53 @@ function isMaintenanceMessage(message: string | null) {
 function formatAffinityBonus(statBonus?: ArenaProfile["stats"]["affinity"]) {
   if (!statBonus) return "no bonus yet";
   const parts = [
-    statBonus.power ? `Power +${statBonus.power}` : "",
-    statBonus.guard ? `Guard +${statBonus.guard}` : "",
-    statBonus.speed ? `Speed +${statBonus.speed}` : "",
-    statBonus.effectHit ? `Effect Hit +${statBonus.effectHit}` : "",
-    statBonus.hp ? `Health +${statBonus.hp}` : "",
+    statBonus.power ? `Power IV +${statBonus.power}` : "",
+    statBonus.guard ? `Guard IV +${statBonus.guard}` : "",
+    statBonus.speed ? `Speed IV +${statBonus.speed}` : "",
+    statBonus.effectHit ? `Effect Hit IV +${statBonus.effectHit}` : "",
+    statBonus.hp ? `Health IV +${statBonus.hp}` : "",
   ].filter(Boolean);
   return parts.length ? parts.join(", ") : "no bonus yet";
+}
+
+function formatStatSources({
+  equipment = 0,
+  card = 0,
+  ivLabel = "IV",
+  ivBase = 0,
+  sigilIv = 0,
+  affinityIv = 0,
+}: {
+  equipment?: number;
+  card?: number;
+  ivLabel?: string;
+  ivBase?: number;
+  sigilIv?: number;
+  affinityIv?: number;
+}) {
+  const parts = [
+    equipment > 0 ? `equip +${equipment}` : "",
+    `card +${card}`,
+    `from ${ivLabel} ${ivBase}`,
+    sigilIv > 0 ? `sigil IV +${sigilIv}` : "",
+    affinityIv > 0 ? `affinity IV +${affinityIv}` : "",
+  ].filter(Boolean);
+
+  return `(${parts.join(", ")})`;
+}
+
+function getCardIvBase(card?: ArenaCard | null) {
+  const iv = card?.iv;
+  if (!iv) {
+    return { power: 0, guard: 0, speed: 0, effectHit: 0 };
+  }
+
+  return {
+    power: Math.max(0, Math.min(Number(iv.power) || 0, 31)),
+    guard: Math.max(0, Math.min(Number(iv.guard) || 0, 31)),
+    speed: Math.max(0, Math.min(Number(iv.speed) || 0, 31)),
+    effectHit: Math.max(0, Math.min(Number(iv.effectHit) || 0, 31)),
+  };
 }
 
 const Arena = () => {
@@ -81,7 +121,9 @@ const Arena = () => {
   const maxPacks = Math.floor((profile?.dailyDrawLimit ?? 10) / packSize);
   const drawsEnough = packsRemaining > 0;
   const selectedAffinity = profile?.selectedCard?.affinity || null;
-  const affinityStats = profile?.stats.affinity || selectedAffinity?.statBonus || null;
+  const affinityStats = selectedAffinity?.statBonus || null;
+  const cardItemStats = profile?.selectedCard?.cardItemStats || null;
+  const cardIvBase = getCardIvBase(profile?.selectedCard);
   const affinityProgress =
     selectedAffinity?.nextThreshold && selectedAffinity.nextThreshold > 0
       ? Math.min(100, Math.floor((selectedAffinity.fights / selectedAffinity.nextThreshold) * 100))
@@ -295,31 +337,63 @@ const Arena = () => {
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {(profile.equipmentPct?.hpPct || 0) > 0
                               ? `(+${profile.equipmentPct?.hpPct || 0}% equip → ${Math.floor(profile.stats.total.hp * (1 + (profile.equipmentPct?.hpPct || 0) / 100))})`
-                              : `(${profile.stats.equipment.hp > 0 ? `equip +${profile.stats.equipment.hp}, ` : ""}IV +${profile.stats.card.hp}${(affinityStats?.hp || 0) > 0 ? `, affinity +${affinityStats?.hp || 0}` : ""})`}
+                              : formatStatSources({
+                                equipment: profile.stats.equipment.hp,
+                                card: profile.stats.card.hp,
+                                ivLabel: "Guard IV",
+                                ivBase: cardIvBase.guard,
+                                sigilIv: cardItemStats?.guard || 0,
+                                affinityIv: affinityStats?.guard || 0,
+                              })}
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Power:</span> <b>{profile.stats.total.power}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.power > 0 ? `equip +${profile.stats.equipment.power}, ` : ""}IV +{profile.stats.card.power}{(affinityStats?.power || 0) > 0 ? `, affinity +${affinityStats?.power || 0}` : ""})
+                            {formatStatSources({
+                              equipment: profile.stats.equipment.power,
+                              card: profile.stats.card.power,
+                              ivBase: cardIvBase.power,
+                              sigilIv: cardItemStats?.power || 0,
+                              affinityIv: affinityStats?.power || 0,
+                            })}
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.guard > 0 ? `equip +${profile.stats.equipment.guard}, ` : ""}IV +{profile.stats.card.guard}{(affinityStats?.guard || 0) > 0 ? `, affinity +${affinityStats?.guard || 0}` : ""})
+                            {formatStatSources({
+                              equipment: profile.stats.equipment.guard,
+                              card: profile.stats.card.guard,
+                              ivLabel: "Guard IV",
+                              ivBase: cardIvBase.guard,
+                              sigilIv: cardItemStats?.guard || 0,
+                              affinityIv: affinityStats?.guard || 0,
+                            })}
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.speed > 0 ? `equip +${profile.stats.equipment.speed}, ` : ""}IV +{profile.stats.card.speed}{(affinityStats?.speed || 0) > 0 ? `, affinity +${affinityStats?.speed || 0}` : ""})
+                            {formatStatSources({
+                              equipment: profile.stats.equipment.speed,
+                              card: profile.stats.card.speed,
+                              ivBase: cardIvBase.speed,
+                              sigilIv: cardItemStats?.speed || 0,
+                              affinityIv: affinityStats?.speed || 0,
+                            })}
                           </span>
                         </div>
                         <div className="text-sm">
                           <span>✦ Effect Hit:</span> <b>{profile.stats.total.effectHit}</b>{" "}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
-                            ({profile.stats.equipment.effectHit > 0 ? `equip +${profile.stats.equipment.effectHit}, ` : ""}IV +{profile.stats.card.effectHit}{(affinityStats?.effectHit || 0) > 0 ? `, affinity +${affinityStats?.effectHit || 0}` : ""})
+                            {formatStatSources({
+                              equipment: profile.stats.equipment.effectHit,
+                              card: profile.stats.card.effectHit,
+                              ivBase: cardIvBase.effectHit,
+                              sigilIv: cardItemStats?.effectHit || 0,
+                              affinityIv: affinityStats?.effectHit || 0,
+                            })}
                           </span>
                         </div>
                         {(profile.equipmentPct?.dmgPct || profile.equipmentPct?.defendPct) ? (

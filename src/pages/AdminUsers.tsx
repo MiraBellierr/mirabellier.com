@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Footer from "@/parts/Footer";
@@ -20,6 +20,7 @@ type UserLookup = {
   dailyDrawsUsed: number | null;
   lastCardDrawDate: string | null;
 };
+type UserSuggestion = UserLookup;
 
 function makeAuthHeaders(token: string) {
   return {
@@ -50,12 +51,14 @@ const AdminUsers = () => {
   const [lookedUp, setLookedUp] = useState<UserLookup | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [userSuggestions, setUserSuggestions] = useState<UserSuggestion[]>([]);
 
   const [coinAmount, setCoinAmount] = useState("");
   const [addingCoins, setAddingCoins] = useState(false);
   const [coinResult, setCoinResult] = useState<string | null>(null);
 
   const [cardCount, setCardCount] = useState("1");
+  const [grantMaxIvCards, setGrantMaxIvCards] = useState(false);
   const [addingCards, setAddingCards] = useState(false);
   const [cardResult, setCardResult] = useState<string | null>(null);
 
@@ -80,6 +83,41 @@ const AdminUsers = () => {
       url: "https://mirabellier.com/admin/users",
     },
   });
+
+  useEffect(() => {
+    if (!token || !username.trim()) {
+      setUserSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      fetch(
+        joinApi(`/admin/users/suggestions?q=${encodeURIComponent(username.trim())}`),
+        {
+          credentials: "include",
+          headers: makeAuthHeaders(token),
+          cache: "no-store",
+          signal: controller.signal,
+        },
+      )
+        .then(async (response) => {
+          if (!response.ok) throw await readApiError(response);
+          return response.json() as Promise<{ users: UserSuggestion[] }>;
+        })
+        .then((data) => setUserSuggestions(data.users || []))
+        .catch((error) => {
+          if ((error as Error).name !== "AbortError") {
+            setUserSuggestions([]);
+          }
+        });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [token, username]);
 
   if (!auth.user) {
     return (
@@ -209,20 +247,28 @@ const AdminUsers = () => {
           method: "POST",
           credentials: "include",
           headers: makeAuthHeaders(token),
-          body: JSON.stringify({ count }),
+          body: JSON.stringify({ count, maxIv: grantMaxIvCards }),
           cache: "no-store",
         },
       );
       if (!response.ok) throw await readApiError(response);
       const data = (await response.json()) as {
         added: number;
-        cards: Array<{ title: string; rarity: string }>;
+        maxIv?: boolean;
+        cards: Array<{
+          title: string;
+          rarity: string;
+          iv?: { total: number; power: number; guard: number; speed: number; effectHit: number };
+        }>;
       };
       const cardList = data.cards
-        .map((c) => `${c.title} (${c.rarity})`)
+        .map((c) => {
+          const iv = c.iv ? ` IV ${c.iv.total}` : "";
+          return `${c.title} (${c.rarity}${iv})`;
+        })
         .join(", ");
       setCardResult(
-        `Added ${data.added} card(s): ${cardList || "none"}`,
+        `Added ${data.added}${data.maxIv ? " max-IV" : ""} card(s): ${cardList || "none"}`,
       );
       setCardCount("1");
     } catch (error) {
@@ -328,12 +374,22 @@ const AdminUsers = () => {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    list="admin-user-suggestions"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") void handleLookup();
                     }}
                     placeholder="e.g. mira"
                     className="flex-1 rounded border border-blue-300 bg-white p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                   />
+                  <datalist id="admin-user-suggestions">
+                    {userSuggestions.map((suggestion) => (
+                      <option key={suggestion.id} value={suggestion.username}>
+                        {suggestion.hasArenaProfile
+                          ? `Level ${suggestion.level}, ${(suggestion.coins ?? 0).toLocaleString()} coins`
+                          : "No arena profile"}
+                      </option>
+                    ))}
+                  </datalist>
                   <button
                     type="button"
                     onClick={() => void handleLookup()}
@@ -420,6 +476,15 @@ const AdminUsers = () => {
                               placeholder="Count"
                               className="w-24 rounded border border-blue-300 bg-white p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                             />
+                            <label className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-purple-100">
+                              <input
+                                type="checkbox"
+                                checked={grantMaxIvCards}
+                                onChange={(e) => setGrantMaxIvCards(e.target.checked)}
+                                className="rounded"
+                              />
+                              Max IV
+                            </label>
                             <button
                               type="button"
                               onClick={() => void handleAddCards()}

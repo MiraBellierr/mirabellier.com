@@ -55,6 +55,8 @@ type PrimarySort =
   | "rarity-asc"
   | "iv-desc"
   | "iv-asc"
+  | "affinity-desc"
+  | "affinity-asc"
   | "power-desc"
   | "guard-desc"
   | "speed-desc"
@@ -63,6 +65,7 @@ type PrimarySort =
 type SecondarySort =
   | ""
   | "iv-desc"
+  | "affinity-desc"
   | "power-desc"
   | "guard-desc"
   | "speed-desc"
@@ -312,6 +315,8 @@ const ArenaCollection = () => {
                         <option value="rarity-asc">Rarity ▲</option>
                         <option value="iv-desc">IV ▼</option>
                         <option value="iv-asc">IV ▲</option>
+                        <option value="affinity-desc">Affinity ▼</option>
+                        <option value="affinity-asc">Affinity ▲</option>
                         <option value="power-desc">Power ▼</option>
                         <option value="guard-desc">Guard ▼</option>
                         <option value="speed-desc">Speed ▼</option>
@@ -326,6 +331,7 @@ const ArenaCollection = () => {
                       >
                         <option value="">—</option>
                         <option value="iv-desc">IV ▼</option>
+                        <option value="affinity-desc">Affinity ▼</option>
                         <option value="power-desc">Power ▼</option>
                         <option value="guard-desc">Guard ▼</option>
                         <option value="speed-desc">Speed ▼</option>

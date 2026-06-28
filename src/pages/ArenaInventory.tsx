@@ -34,13 +34,14 @@ import {
 import { usePageSeo } from "@/lib/seo";
 import { useConfirm } from "@/states/ConfirmContext";
 
-type InventoryTab = "weapon" | "armor" | "charm" | "consumable";
+type InventoryTab = "weapon" | "armor" | "charm" | "consumable" | "cardItem";
 
 const TABS: Array<{ id: InventoryTab; label: string }> = [
   { id: "weapon", label: "Weapons" },
   { id: "armor", label: "Armour" },
   { id: "charm", label: "Charms" },
   { id: "consumable", label: "Consumables" },
+  { id: "cardItem", label: "Card Items" },
 ];
 
 const SUB_STAT_LABELS: Record<string, string> = {
@@ -102,6 +103,18 @@ function pieceSummary(piece: { mainStatType: string; mainStatValue: number; subS
 function flattenItems(shop: ArenaShopResponse | null) {
   if (!shop) return [] as ArenaShopItem[];
   return shop.shop.flatMap((tier) => tier.items);
+}
+
+function isMaxIvCard(card: ArenaShopResponse["profile"]["selectedCard"]) {
+  return !!card
+    && card.iv.power === 31
+    && card.iv.guard === 31
+    && card.iv.speed === 31
+    && card.iv.effectHit === 31;
+}
+
+function hasCardItem(card: ArenaShopResponse["profile"]["selectedCard"], itemId: string) {
+  return Array.isArray(card?.cardItemIds) && card.cardItemIds.includes(itemId);
 }
 
 const ArenaInventory = () => {
@@ -167,6 +180,14 @@ const ArenaInventory = () => {
     () =>
       flattenItems(shop)
         .filter((item) => item.ownedQuantity > 0 && item.type === "consumable")
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [shop],
+  );
+
+  const cardItems = useMemo(
+    () =>
+      (shop?.cardItems || [])
+        .filter((item) => item.ownedQuantity > 0 && item.type === "card")
         .sort((a, b) => a.name.localeCompare(b.name)),
     [shop],
   );
@@ -463,6 +484,7 @@ const ArenaInventory = () => {
                       <div>
                         <p className="text-lg font-semibold underline">Bag Summary</p>
                         <p>✦ Equipment pieces: {pieces.length}</p>
+                        <p>✦ Card items: {cardItems.reduce((sum, item) => sum + item.ownedQuantity, 0)}</p>
                         <p>✦ Coins: {shop.profile.coins.toLocaleString()} 🪙</p>
                       </div>
                     </div>
@@ -615,6 +637,50 @@ const ArenaInventory = () => {
                       </ol>
                     ) : (
                       <p className="text-sm text-slate-500">No consumables.</p>
+                    )
+                  ) : tab === "cardItem" ? (
+                    cardItems.length > 0 ? (
+                      <ol className="grid gap-3 sm:grid-cols-2">
+                        {cardItems.map((item) => {
+                          const isUsing = actioningId === `use:${item.id}`;
+                          const selectedCardIsMaxIv = isMaxIvCard(shop.profile.selectedCard);
+                          const selectedCardHasItem = hasCardItem(shop.profile.selectedCard, item.id);
+                          return (
+                            <li key={item.id} className="py-2">
+                              <article className="flex items-start gap-3">
+                                <ArenaItemSprite item={item} className="h-16 w-16" />
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-bold text-blue-700">{item.name}</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUse(item)}
+                                      disabled={actioningId !== null || !selectedCardIsMaxIv || selectedCardHasItem}
+                                      className="arena-redraw-button hover:animate-wiggle"
+                                    >
+                                      {isUsing ? "[ using... ]" : "[ use ]"}
+                                    </button>
+                                  </div>
+                                  <p className="text-xs text-slate-600">
+                                    Owned: {item.ownedQuantity}
+                                  </p>
+                                  {item.consumableEffect ? (
+                                    <p className="text-xs text-blue-600">
+                                      {describeConsumableEffect(item.consumableEffect)}
+                                    </p>
+                                  ) : null}
+                                  <p className="text-xs text-slate-600">
+                                    Requires selected card with P/G/S/EH IV all at 31. One use per card.
+                                    {selectedCardHasItem ? " Already used on selected card." : ""}
+                                  </p>
+                                </div>
+                              </article>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    ) : (
+                      <p className="text-sm text-slate-500">No card items.</p>
                     )
                   ) : (
                     visiblePieces.items.length > 0 ? (

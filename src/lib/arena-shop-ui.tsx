@@ -51,6 +51,7 @@ const ITEM_SPRITE_NAME_BY_ID: Record<string, string> = {
   prism_draught: "pink_flask",
   sacred_candles: "candle_lit",
   gate_key: "curved_bone",
+  apex_sigil: "gold_sparkles",
   orbit_scepter: "white_magic_staff",
   aegis_crown: "feather_crown",
   azure_core: "blue_orb",
@@ -259,6 +260,17 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
     return iCharges > 1
       ? `+${toNumber(effect.total)} total IV to selected card (${iCharges} charge${iCharges > 1 ? "s" : ""})`
       : `+${toNumber(effect.total)} total IV to selected card`;
+  }
+  if (kind === "max_iv_card_stat_bonus") {
+    const stats = effect.stats && typeof effect.stats === "object"
+      ? effect.stats as Record<string, unknown>
+      : {};
+    return [
+      `Max-IV selected card gains +${toNumber(stats.power)} Power IV`,
+      `+${toNumber(stats.guard)} Guard IV`,
+      `+${toNumber(stats.speed)} Speed IV`,
+      `+${toNumber(stats.effectHit)} Effect Hit IV`,
+    ].join(", ");
   }
   if (kind === "exp_boost") {
     return `+${toNumber(effect.pct)}% EXP gain for ${toNumber(effect.fights, 1)} fight(s)`;

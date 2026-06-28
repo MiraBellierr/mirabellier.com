@@ -56,6 +56,18 @@ function formatOfferCountdown(endsAt: string, nowMs: number) {
   return `${minutes}m ${seconds}s`;
 }
 
+function isMaxIvCard(card: ArenaCard | null | undefined) {
+  return !!card
+    && card.iv.power === 31
+    && card.iv.guard === 31
+    && card.iv.speed === 31
+    && card.iv.effectHit === 31;
+}
+
+function hasCardItem(card: ArenaCard | null | undefined, itemId: string) {
+  return Array.isArray(card?.cardItemIds) && card.cardItemIds.includes(itemId);
+}
+
 function getConsumableActiveInfo(
   item: ArenaShopItem,
   effects: Record<string, unknown> | undefined,
@@ -382,6 +394,7 @@ const ArenaShop = () => {
     if (!token || !shop) return;
 
     const item = shop.equipment?.find((i) => i.id === itemId)
+      || shop.cardItems?.find((i) => i.id === itemId)
       || shop.shop.flatMap((t) => t.items).find((i) => i.id === itemId);
     if (!item) return;
 
@@ -445,6 +458,24 @@ const ArenaShop = () => {
     if (!token || !shop) return;
 
     const effect = item.consumableEffect;
+    if (item.type === "card" && effect) {
+      const confirmed = await confirm({
+        title: `Use ${item.name}?`,
+        message: (
+          <div className="space-y-2">
+            <p>{describeConsumableEffect(effect)}</p>
+            <p className="text-sm text-slate-500">
+              This applies to your selected card:{" "}
+              <strong>{shop.profile.selectedCard?.title || "none selected"}</strong>.
+            </p>
+          </div>
+        ),
+        confirmLabel: "Use",
+        cancelLabel: "Cancel",
+      });
+      if (!confirmed) return;
+    }
+
     if (effect) {
       const kind = typeof effect.kind === "string" ? effect.kind : "";
       const charges = getConsumableChargeValue(effect);
@@ -798,6 +829,61 @@ const ArenaShop = () => {
                                 </p>
                                 <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
                                   {item.price.toLocaleString()} coins
+                                </p>
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {shop.cardItems && shop.cardItems.length > 0 ? (
+                    <section className="space-y-2">
+                      <h3 className="font-bold text-blue-700 dark:text-white">Card Items</h3>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {shop.cardItems.map((item) => {
+                          const isBuying = actioningId === `buy:${item.id}`;
+                          const isUsing = actioningId === `use:${item.id}`;
+                          const selectedCardIsMaxIv = isMaxIvCard(shop.profile.selectedCard);
+                          const selectedCardHasItem = hasCardItem(shop.profile.selectedCard, item.id);
+                          return (
+                            <article
+                              key={item.id}
+                              className="flex gap-3 rounded-xl p-3"
+                            >
+                              <ArenaItemSprite item={item} />
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-blue-700 dark:text-purple-100">{item.name}</p>
+                                  <div className="flex flex-wrap gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleBuy(item.id)}
+                                      disabled={!item.canBuy || isBuying}
+                                      className="arena-redraw-button hover:animate-wiggle"
+                                    >
+                                      {isBuying ? "[ buying... ]" : "[ buy ]"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUse(item)}
+                                      disabled={item.ownedQuantity <= 0 || isUsing || !selectedCardIsMaxIv || selectedCardHasItem}
+                                      className="arena-redraw-button hover:animate-wiggle"
+                                    >
+                                      {isUsing ? "[ using... ]" : "[ use ]"}
+                                    </button>
+                                  </div>
+                                </div>
+                                {item.consumableEffect ? (
+                                  <p className="text-xs text-blue-600">{describeConsumableEffect(item.consumableEffect)}</p>
+                                ) : null}
+                                <p className="text-xs text-slate-700 dark:text-slate-200">
+                                  Requires selected card with P/G/S/EH IV all at 31. One use per card.
+                                  {selectedCardHasItem ? " Already used on selected card." : ""}
+                                </p>
+                                <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
+                                  {item.price.toLocaleString()} coins · Owned: {item.ownedQuantity}
                                 </p>
                               </div>
                             </article>
