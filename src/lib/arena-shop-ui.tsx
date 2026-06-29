@@ -276,7 +276,8 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
     return `+${toNumber(effect.pct)}% EXP gain for ${toNumber(effect.fights, 1)} fight(s)`;
   }
   if (kind === "self_revive") {
-    return `Restore full HP when below ${toNumber(effect.hpPct)}% HP (${toNumber(effect.charges, 1)} charge)`;
+    const charges = toNumber(effect.charges, 1);
+    return `Revive to full HP after KO (${charges} charge${charges !== 1 ? "s" : ""})`;
   }
   if (kind === "streak_shield") return `Ignore ${toNumber(effect.charges, 1)} loss streak reset(s)`;
   if (kind === "shield_fight_start") {
@@ -410,7 +411,7 @@ export function formatActiveEffects(source: ArenaShopResponse | ArenaProfile) {
   }
   if (effects.firstAttackDoubleCharges > 0) rows.push(`First attack double x${effects.firstAttackDoubleCharges}`);
   if (effects.selfReviveCharges > 0 && effects.selfReviveHpThresholdPct > 0) {
-    rows.push(`Self revive at ${effects.selfReviveHpThresholdPct}% HP x${effects.selfReviveCharges}`);
+    rows.push(`KO revive x${effects.selfReviveCharges}`);
   }
   if (effects.doublePassiveTriggerFightsRemaining > 0) {
     rows.push(`Double passive trigger (${effects.doublePassiveTriggerFightsRemaining} fight)`);

@@ -232,11 +232,11 @@
 
 #### 🔴 Day 1: Critical Bug Fixes
 
-- [ ] **Fix `dailyOpponentCount` reset logic** — Reset on day rollover, not after every fight.
-- [ ] **Fix 60-turn tiebreaker** — Use HP **percentage** (`playerHp/maxPlayerHp` vs `opponentHp/maxOpponentHp`).
-- [ ] **Fix `selfRevive` trigger scope** — Clarify design: KO revive (HP ≤ 0) or low-HP heal (rename to "Last Stand").
-- [ ] **Fix leaderboard XP progress formula** — Change SQL from `40` to `25` to match `xpToNext()`.
-- [ ] **Fix `consumeFightBoostDurations` only on wins** — Decrement boost durations every fight, not just on wins.
+- [x] **Fix `dailyOpponentCount` reset logic** — Reset defender appearances on day rollover and when that player actively fights.
+- [x] **Fix 60-turn tiebreaker** — Use HP **percentage** (`playerHp/maxPlayerHp` vs `opponentHp/maxOpponentHp`).
+- [x] **Fix `selfRevive` trigger scope** — Treat Chrono Vial as a KO revive (HP ≤ 0), with Phoenix Feather taking priority when both are active.
+- [x] **Fix leaderboard XP progress formula** — Change SQL from `40` to `25` to match `xpToNext()`.
+- [x] **Fix `consumeFightBoostDurations` only on wins** — Decrement boost durations every fight, not just on wins.
 
 ---
 
@@ -303,7 +303,7 @@
 - [ ] **Remove pass-through arena module files** — 20 files in `lib/arena/` are one-liners (`module.exports = require("./arena-core")`).
 - [ ] **Extract constants block from arena-core.js top** — ~130-line header to `lib/arena/_constants.js`.
 - [ ] **Add JSDoc types to key combat functions.**
-- [ ] **Fix `dailyOpponentCount` SQL boundary** — Compare `lastOpponentDate` to a computed date boundary instead of `datetime('now', '-5 hours')`.
+- [x] **Fix `dailyOpponentCount` SQL boundary** — Compare `lastOpponentDate` to a computed date boundary instead of `datetime('now', '-5 hours')`.
 
 ---
 
