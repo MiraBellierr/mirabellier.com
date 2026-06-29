@@ -27,8 +27,6 @@ import {
   ArenaItemSprite,
   describeConsumableEffect,
   formatActiveEffects,
-  getConsumableChargeValue,
-  getEffectFieldForKind,
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
 import { usePageSeo } from "@/lib/seo";
@@ -221,39 +219,6 @@ const ArenaInventory = () => {
 
   const handleUse = async (item: ArenaShopItem) => {
     if (!token || !shop) return;
-
-    const effect = item.consumableEffect;
-    if (effect) {
-      const kind = typeof effect.kind === "string" ? effect.kind : "";
-      const charges = getConsumableChargeValue(effect);
-      const effectMeta = getEffectFieldForKind(kind);
-      if (effectMeta && charges > 0) {
-        const { field, max } = effectMeta;
-        const current =
-          Number(shop.profile.effects[field as keyof typeof shop.profile.effects]) || 0;
-        const cap = max;
-        const newValue = Math.min(current + charges, cap);
-        const wasted = current + charges - newValue;
-        if (wasted > 0) {
-          const desc = describeConsumableEffect(effect);
-          const confirmed = await confirm({
-            title: `Use ${item.name}?`,
-            message: (
-              <div className="space-y-2">
-                <p>{desc}</p>
-                <p className="text-sm text-amber-700">
-                  You already have {current} charge{current !== 1 ? "s" : ""}{" "}
-                  (cap: {cap}). {wasted} charge{wasted !== 1 ? "s" : ""} will be wasted.
-                </p>
-              </div>
-            ),
-            confirmLabel: "Use anyway",
-            cancelLabel: "Cancel",
-          });
-          if (!confirmed) return;
-        }
-      }
-    }
 
     setActioningId(`use:${item.id}`);
     setErrorMessage(null);
@@ -622,7 +587,7 @@ const ArenaInventory = () => {
                                     </button>
                                   </div>
                                   <p className="text-xs text-slate-600">
-                                    {item.tier} · Owned: {item.ownedQuantity}
+                                    Owned: {item.ownedQuantity}
                                   </p>
                                   {item.consumableEffect ? (
                                     <p className="text-xs text-blue-600">

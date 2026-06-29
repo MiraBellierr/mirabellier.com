@@ -1,30 +1,22 @@
-# What's New - June 29, 2026
+# What's New - June 30, 2026
 
-## Arena Fixes
+## Arena Balance Update
 
-**Fairer Fight Results**
+**Consumables**
 
-- Long fights now end more fairly. If a battle reaches the turn limit, the winner is decided by who has the higher percentage of HP left, instead of who has the bigger raw HP number.
-- Chrono Vial now works like a true revive. It saves you after being knocked out instead of suddenly healing you while you are still alive.
-- If you have both Phoenix Feather and Chrono Vial active, Phoenix Feather is used first.
+- All consumables and consumable recipes are now available without Arena level requirements.
+- Consumable charges and fight-duration boosts stack additively without the old soft and hard duration caps.
+- Each consumable inventory stack is capped at 99 items.
+- Only four consumable effect kinds can be active at once. Using a fifth kind replaces the oldest active kind.
+- Combined boosted damage is capped at 5x before true damage is added.
 
-**More Consistent Boosts**
+**Combat Fairness**
 
-- XP, coin, and bonus draw boosts now count down after every fight, whether you win or lose.
-- Losing a fight no longer lets those boosts last longer than intended.
+- NPC opponents now get synthetic equipment and skill-tree stat bonuses scaled by level.
+- Losing a fight now grants consolation XP instead of always giving only 1 XP.
+- Chrono Vial now revives after knockout at 50% HP.
 
-**Cleaner Arena Tracking**
+**Shop Cleanup**
 
-- Arena now spreads opponent appearances more evenly, so one player is less likely to be picked as everyone else's defender all day.
-- If you start fighting again, Arena treats you as active and clears your defender appearance count.
-- That defender appearance limit now resets properly when the day changes.
-
-**Leaderboard Fix**
-
-- Leaderboard XP progress now matches your actual Arena level progress.
-- Players should no longer appear to have less progress toward their next level than they really do.
-
-**Reliability**
-
-- Added extra checks so these fixes stay working in future updates.
-- Backend tests are passing.
+- Shop tier headings no longer show consumable level requirements.
+- Shop and inventory no longer warn about wasted consumable charges from removed duration caps.

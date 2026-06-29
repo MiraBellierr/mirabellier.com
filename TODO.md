@@ -242,11 +242,11 @@
 
 #### 🟠 Day 2: Consumable Caps & Combat Fairness
 
-- [ ] **Give NPC opponents equipment & skill tree bonuses** — Add `equipmentBonus` multiplier to NPC templates, scaled by level.
-- [ ] **Add loss consolation** — Grant 25–50% of win XP on loss.
-- [ ] **Add combined consumable damage cap** — Clamp total damage multiplier (statSteroid × damageBoost × element × crit) at 4.0–5.0×.
-- [ ] **Add consumable inventory per-item cap** — Max 99 per item type or 999 total inventory items.
-- [ ] **Limit simultaneous active consumable effects** — Max 3–4 active consumable effects at once; using a new one replaces the oldest.
+- [x] **Give NPC opponents equipment & skill tree bonuses** — Add `equipmentBonus` multiplier to NPC templates, scaled by level.
+- [x] **Add loss consolation** — Grant 25–50% of win XP on loss.
+- [x] **Add combined consumable damage cap** — Clamp total damage multiplier (statSteroid × damageBoost × element × crit) at 4.0–5.0×.
+- [x] **Add consumable inventory per-item cap** — Max 99 per item type or 999 total inventory items.
+- [x] **Limit simultaneous active consumable effects** — Max 3–4 active consumable effects at once; using a new one replaces the oldest.
 
 ---
 

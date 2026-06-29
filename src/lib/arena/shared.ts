@@ -183,6 +183,11 @@ export type ArenaProfile = {
     ivBoostCharges: number;
     selfReviveHpThresholdPct: number;
     selfReviveCharges: number;
+    activeConsumables?: Array<{
+      itemId: string;
+      kind: string;
+      activatedAt: string;
+    }>;
   };
   equipment: {
     weapon: ArenaEquippedItem | null;
