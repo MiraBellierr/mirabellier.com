@@ -155,6 +155,7 @@ export type ArenaProfile = {
     upgradeLowestRarityCharges: number;
     guaranteeSsrPlusCharges: number;
     ascensionLastPurchasedAt: string | null;
+    ascensionCount: number;
     fightStartShieldCharges: number;
     fightStartShieldAmount: number;
     evadeBoostPct: number;

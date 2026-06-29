@@ -334,6 +334,9 @@ const Arena = () => {
                         </div>
                         <div className="text-sm">
                           <span>✦ Health:</span> <b>{profile.stats.total.hp}</b>{" "}
+                          {profile.effects.ascensionCount > 0 ? (
+                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">+{profile.effects.ascensionCount} SC </span>
+                          ) : null}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {(profile.equipmentPct?.hpPct || 0) > 0
                               ? `(+${profile.equipmentPct?.hpPct || 0}% equip → ${Math.floor(profile.stats.total.hp * (1 + (profile.equipmentPct?.hpPct || 0) / 100))})`
@@ -349,6 +352,9 @@ const Arena = () => {
                         </div>
                         <div className="text-sm">
                           <span>✦ Power:</span> <b>{profile.stats.total.power}</b>{" "}
+                          {profile.effects.ascensionCount > 0 ? (
+                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">+{profile.effects.ascensionCount} SC </span>
+                          ) : null}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {formatStatSources({
                               equipment: profile.stats.equipment.power,
@@ -361,6 +367,9 @@ const Arena = () => {
                         </div>
                         <div className="text-sm">
                           <span>✦ Guard:</span> <b>{profile.stats.total.guard}</b>{" "}
+                          {profile.effects.ascensionCount > 0 ? (
+                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">+{profile.effects.ascensionCount} SC </span>
+                          ) : null}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {formatStatSources({
                               equipment: profile.stats.equipment.guard,
@@ -374,6 +383,9 @@ const Arena = () => {
                         </div>
                         <div className="text-sm">
                           <span>✦ Speed:</span> <b>{profile.stats.total.speed}</b>{" "}
+                          {profile.effects.ascensionCount > 0 ? (
+                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">+{profile.effects.ascensionCount} SC </span>
+                          ) : null}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {formatStatSources({
                               equipment: profile.stats.equipment.speed,
@@ -386,6 +398,9 @@ const Arena = () => {
                         </div>
                         <div className="text-sm">
                           <span>✦ Effect Hit:</span> <b>{profile.stats.total.effectHit}</b>{" "}
+                          {profile.effects.ascensionCount > 0 ? (
+                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">+{profile.effects.ascensionCount} SC </span>
+                          ) : null}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {formatStatSources({
                               equipment: profile.stats.equipment.effectHit,
