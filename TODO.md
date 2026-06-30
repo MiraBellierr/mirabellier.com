@@ -258,6 +258,8 @@
 - [ ] **Cap element effectiveness** — Clamp `1.3 + effectHit * 0.02 - defenderEffectHit * 0.01` at 1.8×. Give `effectHit` a secondary effect (e.g., 1% shield pierce per 10 pts).
 - [x] ~~**Reduce evasion cap** — From 60% to 44%.~~ ✅ DONE — Combat evasion clamp is now 44%.
 - [ ] **Add max-level overflow** — Convert excess XP to coins at level 70 (e.g., 1 XP = 5 coins).
+- [ ] Edit and display user-friendly UI for consumables active effects in inventory
+- [ ] Display good naming for equipments for user-friendly UI
 
 ---
 
