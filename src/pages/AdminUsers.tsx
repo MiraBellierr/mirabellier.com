@@ -68,6 +68,9 @@ const AdminUsers = () => {
   const [rerollingShop, setRerollingShop] = useState(false);
   const [shopRerollResult, setShopRerollResult] = useState<string | null>(null);
 
+  const [clearingEffects, setClearingEffects] = useState(false);
+  const [clearEffectsResult, setClearEffectsResult] = useState<string | null>(null);
+
   const [debugRandomPack, setDebugRandomPack] = useState(
     () => localStorage.getItem("debugRandomPack") === "1",
   );
@@ -337,6 +340,32 @@ const AdminUsers = () => {
     }
   };
 
+  const handleClearConsumableEffects = async () => {
+    if (!token || !lookedUp?.hasArenaProfile) return;
+    setClearingEffects(true);
+    setClearEffectsResult(null);
+    try {
+      const response = await fetch(
+        joinApi(`/admin/users/${lookedUp.id}/clear-consumable-effects`),
+        {
+          method: "POST",
+          credentials: "include",
+          headers: makeAuthHeaders(token),
+          cache: "no-store",
+        },
+      );
+      if (!response.ok) throw await readApiError(response);
+      const data = (await response.json()) as { message: string; clearedCount: number };
+      setClearEffectsResult(data.message);
+    } catch (error) {
+      setClearEffectsResult(
+        error instanceof ArenaApiError ? error.message : "Failed to clear effects",
+      );
+    } finally {
+      setClearingEffects(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col font-[sans-serif] text-blue-900 dark:text-purple-200">
       <Header />
@@ -527,6 +556,30 @@ const AdminUsers = () => {
                           {resetDrawsResult ? (
                             <p className="text-sm text-green-700 dark:text-green-400">
                               {resetDrawsResult}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="space-y-2 border-t border-red-200 pt-3 dark:border-red-900">
+                          <label className="block text-sm font-bold text-red-700 dark:text-red-400">
+                            Clear consumable effects
+                          </label>
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            Removes all active consumable buffs (damage boost, speed boost, shields, death saves, etc.). This cannot be undone.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => void handleClearConsumableEffects()}
+                            disabled={clearingEffects}
+                            className="rounded border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900"
+                          >
+                            {clearingEffects
+                              ? "[ clearing... ]"
+                              : "[ clear all consumable effects ]"}
+                          </button>
+                          {clearEffectsResult ? (
+                            <p className="text-sm text-green-700 dark:text-green-400">
+                              {clearEffectsResult}
                             </p>
                           ) : null}
                         </div>

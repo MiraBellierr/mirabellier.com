@@ -627,6 +627,7 @@ export class ArenaApiError extends Error {
   retryAfterMs: number | null;
   cooldownEndsAt: string | null;
   nextDrawAt: string | null;
+  details: Record<string, unknown>;
 
   constructor(
     message: string,
@@ -636,6 +637,7 @@ export class ArenaApiError extends Error {
       retryAfterMs?: number | null;
       cooldownEndsAt?: string | null;
       nextDrawAt?: string | null;
+      details?: Record<string, unknown>;
     },
   ) {
     super(message);
@@ -650,6 +652,7 @@ export class ArenaApiError extends Error {
       typeof input?.cooldownEndsAt === "string" ? input.cooldownEndsAt : null;
     this.nextDrawAt =
       typeof input?.nextDrawAt === "string" ? input.nextDrawAt : null;
+    this.details = input?.details ?? {};
   }
 }
 const DEFAULT_ELO_RATING = 1000;
@@ -750,6 +753,14 @@ export function normalizeLeaderboard(
 export async function readApiError(response: Response): Promise<ArenaApiError> {
   try {
     const payload = (await response.json()) as Record<string, unknown>;
+    const knownKeys = new Set(["error", "code", "retryAfterMs", "cooldownEndsAt", "nextDrawAt"]);
+    const details: Record<string, unknown> = {};
+    for (const key of Object.keys(payload)) {
+      if (!knownKeys.has(key)) {
+        details[key] = payload[key];
+      }
+    }
+
     return new ArenaApiError(
       typeof payload.error === "string" && payload.error
         ? payload.error
@@ -767,6 +778,7 @@ export async function readApiError(response: Response): Promise<ArenaApiError> {
             : null,
         nextDrawAt:
           typeof payload.nextDrawAt === "string" ? payload.nextDrawAt : null,
+        details,
       },
     );
   } catch {

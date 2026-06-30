@@ -14,6 +14,7 @@ import {
   type ArenaShopItem,
   type ArenaShopResponse,
   type ArenaSubStat,
+  ArenaApiError,
   equipArenaItem,
   fetchArenaShop,
   fodderArenaPiece,
@@ -220,12 +221,53 @@ const ArenaInventory = () => {
   const handleUse = async (item: ArenaShopItem) => {
     if (!token || !shop) return;
 
+    const tryUse = async (force: boolean) => {
+      const payload = await activateArenaConsumable(token, item.id, force);
+      setShop(payload.shop);
+    };
+
     setActioningId(`use:${item.id}`);
     setErrorMessage(null);
     try {
-      const payload = await activateArenaConsumable(token, item.id);
-      setShop(payload.shop);
+      await tryUse(false);
     } catch (error) {
+      // When the active consumable cap is reached, show a confirmation modal.
+      if (error instanceof ArenaApiError && error.code === "ARENA_CONSUMABLE_CAP_REACHED") {
+        setActioningId(null);
+        const oldestName = (error.details.oldestItemName as string) || "an older consumable";
+        const currentCount = (error.details.activeCount as number) ?? 6;
+        const max = (error.details.maxActive as number) ?? 6;
+        const confirmed = await confirm({
+          title: "Active Effect Cap Reached",
+          message: (
+            <div className="space-y-3 text-left">
+              <p>
+                You can only have <strong>{max}</strong> active consumable effects at once.
+                You currently have <strong>{currentCount}</strong>.
+              </p>
+              <p>
+                Using <strong>{item.name}</strong> will replace{" "}
+                <strong>{oldestName}</strong> (your oldest active effect),
+                removing all of its remaining charges.
+              </p>
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                This cannot be undone. Are you sure?
+              </p>
+            </div>
+          ),
+          confirmLabel: "Replace oldest & use",
+          cancelLabel: "Cancel",
+        });
+        if (!confirmed) return;
+        setActioningId(`use:${item.id}`);
+        setErrorMessage(null);
+        try {
+          await tryUse(true);
+        } catch (retryError) {
+          setErrorMessage(normalizeArenaError(retryError));
+        }
+        return;
+      }
       setErrorMessage(normalizeArenaError(error));
     } finally {
       setActioningId(null);
