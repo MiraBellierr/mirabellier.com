@@ -380,6 +380,7 @@ export function formatActiveEffects(source: ArenaShopResponse | ArenaProfile) {
     rows.push(`Guard boost +${effects.guardBoostPct}% (${effects.guardBoostFightsRemaining} fight)`);
   }
   if (effects.firstAttackDoubleCharges > 0) rows.push(`First attack double x${effects.firstAttackDoubleCharges}`);
+  if (effects.ivBoostCharges > 0) rows.push(`IV boost x${effects.ivBoostCharges}`);
   if (effects.selfReviveCharges > 0 && effects.selfReviveHpThresholdPct > 0) {
     rows.push(`KO revive x${effects.selfReviveCharges}`);
   }
