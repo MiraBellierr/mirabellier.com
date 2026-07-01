@@ -257,7 +257,7 @@
 - [x] **Add streak coin multiplier** — `+2% coins per streak, capped at +30%`.
 - [x] **Cap element effectiveness** — Clamp `1.3 + effectHit * 0.02 - defenderEffectHit * 0.01` at 1.8×. Give `effectHit` a secondary effect (e.g., 1% shield pierce per 10 pts).
 - [x] ~~**Reduce evasion cap** — From 60% to 44%.~~ ✅ DONE — Combat evasion clamp is now 44%.
-- [x] **Add max-level overflow** — Convert excess XP to coins at level 70 (e.g., 1 XP = 5 coins).
+- [x] **Add max-level overflow** — Convert excess XP to coins at level 70 (1 XP = 1 coin).
 - [x] Edit and display user-friendly UI for consumables active effects in inventory
 - [x] Display good naming for equipments for user-friendly UI
 - [x] when the user wants to buy consumable that will exceed 6 effects, make the user able to choose which consumable to be replaced.
