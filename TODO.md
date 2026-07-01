@@ -252,14 +252,15 @@
 
 #### 🟡 Day 3: Stat & Economy Balancing
 
-- [ ] **Rebalance HP formula** — Reduce guard multiplier from 1.5 to 1.0: `guard * 1.0 + (power + speed) * 0.8`.
-- [ ] **Cap win-streak XP bonus** — `Math.min(Math.log2(winStreak + 1), Math.log2(6)) * 3` (cap at streak 5).
-- [ ] **Add streak coin multiplier** — `+2% coins per streak, capped at +30%`.
-- [ ] **Cap element effectiveness** — Clamp `1.3 + effectHit * 0.02 - defenderEffectHit * 0.01` at 1.8×. Give `effectHit` a secondary effect (e.g., 1% shield pierce per 10 pts).
+- [x] **Rebalance HP formula** — Reduce guard multiplier from 1.5 to 1.0: `guard * 1.0 + (power + speed) * 0.8`.
+- [x] **Cap win-streak XP bonus** — `Math.min(Math.log2(winStreak + 1), Math.log2(6)) * 3` (cap at streak 5).
+- [x] **Add streak coin multiplier** — `+2% coins per streak, capped at +30%`.
+- [x] **Cap element effectiveness** — Clamp `1.3 + effectHit * 0.02 - defenderEffectHit * 0.01` at 1.8×. Give `effectHit` a secondary effect (e.g., 1% shield pierce per 10 pts).
 - [x] ~~**Reduce evasion cap** — From 60% to 44%.~~ ✅ DONE — Combat evasion clamp is now 44%.
-- [ ] **Add max-level overflow** — Convert excess XP to coins at level 70 (e.g., 1 XP = 5 coins).
-- [ ] Edit and display user-friendly UI for consumables active effects in inventory
-- [ ] Display good naming for equipments for user-friendly UI
+- [x] **Add max-level overflow** — Convert excess XP to coins at level 70 (e.g., 1 XP = 5 coins).
+- [x] Edit and display user-friendly UI for consumables active effects in inventory
+- [x] Display good naming for equipments for user-friendly UI
+- [x] when the user wants to buy consumable that will exceed 6 effects, make the user able to choose which consumable to be replaced.
 
 ---
 

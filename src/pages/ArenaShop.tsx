@@ -30,6 +30,7 @@ import {
   describeConsumableEffect,
   describePassive,
   formatStats,
+  getActiveConsumableReplacementChoices,
   getEffectFieldForKind,
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
@@ -476,8 +477,8 @@ const ArenaShop = () => {
       if (!confirmed) return;
     }
 
-    const tryUse = async (force: boolean) => {
-      const payload = await activateArenaConsumable(token, item.id, force);
+    const tryUse = async (force: boolean, replaceItemId?: string | null) => {
+      const payload = await activateArenaConsumable(token, item.id, { force, replaceItemId });
       setShop(payload.shop);
     };
 
@@ -486,13 +487,13 @@ const ArenaShop = () => {
     try {
       await tryUse(false);
     } catch (error) {
-      // When the active consumable cap is reached, show a confirmation modal
-      // so the user can choose whether to replace the oldest buff.
+      // When the active consumable cap is reached, let the user choose which buff to replace.
       if (error instanceof ArenaApiError && error.code === "ARENA_CONSUMABLE_CAP_REACHED") {
         setActioningId(null);
-        const oldestName = (error.details.oldestItemName as string) || "an older consumable";
         const currentCount = (error.details.activeCount as number) ?? 6;
         const max = (error.details.maxActive as number) ?? 6;
+        const replacementChoices = getActiveConsumableReplacementChoices(error.details);
+        let selectedReplaceItemId = replacementChoices[0]?.itemId || null;
         const confirmed = await confirm({
           title: "Active Effect Cap Reached",
           message: (
@@ -502,23 +503,39 @@ const ArenaShop = () => {
                 You currently have <strong>{currentCount}</strong>.
               </p>
               <p>
-                Using <strong>{item.name}</strong> will replace{" "}
-                <strong>{oldestName}</strong> (your oldest active effect),
-                removing all of its remaining charges.
+                Choose which active effect <strong>{item.name}</strong> should replace.
               </p>
+              {replacementChoices.length > 0 ? (
+                <label className="block text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  Replace
+                  <select
+                    className="mt-1 block w-full rounded border border-blue-200 bg-white px-2 py-1 text-blue-900"
+                    defaultValue={selectedReplaceItemId || undefined}
+                    onChange={(event) => {
+                      selectedReplaceItemId = event.target.value || null;
+                    }}
+                  >
+                    {replacementChoices.map((choice) => (
+                      <option key={`${choice.itemId}:${choice.kind || ""}`} value={choice.itemId}>
+                        {choice.itemName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               <p className="text-sm text-amber-600 dark:text-amber-400">
                 This cannot be undone. Are you sure?
               </p>
             </div>
           ),
-          confirmLabel: "Replace oldest & use",
+          confirmLabel: "Replace & use",
           cancelLabel: "Cancel",
         });
         if (!confirmed) return;
         setActioningId(`use:${item.id}`);
         setErrorMessage(null);
         try {
-          await tryUse(true);
+          await tryUse(true, selectedReplaceItemId);
         } catch (retryError) {
           setErrorMessage(normalizeArenaError(retryError));
         }

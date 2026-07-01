@@ -44,13 +44,21 @@ export async function buyArenaItem(
 export async function useArenaConsumable(
   token: string,
   itemId: string,
-  force = false,
+  options: boolean | { force?: boolean; replaceItemId?: string | null } = false,
 ): Promise<{ activatedItemId: string; effects: ArenaProfile["effects"]; shop: ArenaShopResponse }> {
+  const body = typeof options === "boolean"
+    ? { itemId, force: options }
+    : {
+        itemId,
+        force: Boolean(options.force),
+        replaceItemId: options.replaceItemId ?? null,
+      };
+
   const response = await fetch(joinApi("/arena/shop/use-consumable"), {
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({ itemId, force }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

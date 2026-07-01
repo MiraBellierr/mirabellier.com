@@ -148,6 +148,34 @@ function toNumber(value: unknown, fallback = 0) {
   return parsed;
 }
 
+export type ActiveConsumableReplacementChoice = {
+  itemId: string;
+  kind: string | null;
+  itemName: string;
+  activatedAt: string | null;
+};
+
+export function getActiveConsumableReplacementChoices(details: Record<string, unknown>) {
+  const rawChoices = Array.isArray(details.activeConsumables)
+    ? details.activeConsumables
+    : [];
+
+  return rawChoices.flatMap((choice): ActiveConsumableReplacementChoice[] => {
+    if (!choice || typeof choice !== "object") return [];
+    const entry = choice as Record<string, unknown>;
+    if (typeof entry.itemId !== "string" || !entry.itemId) return [];
+
+    return [{
+      itemId: entry.itemId,
+      kind: typeof entry.kind === "string" ? entry.kind : null,
+      itemName: typeof entry.itemName === "string" && entry.itemName
+        ? entry.itemName
+        : entry.itemId,
+      activatedAt: typeof entry.activatedAt === "string" ? entry.activatedAt : null,
+    }];
+  });
+}
+
 export function normalizeArenaError(error: unknown) {
   if (error instanceof ArenaApiError) {
     if (error.cooldownEndsAt) {

@@ -28,6 +28,7 @@ import {
   ArenaItemSprite,
   describeConsumableEffect,
   formatActiveEffects,
+  getActiveConsumableReplacementChoices,
   normalizeArenaError,
 } from "@/lib/arena-shop-ui";
 import { usePageSeo } from "@/lib/seo";
@@ -75,6 +76,32 @@ const SLOT_LABELS: Record<string, string> = {
   charm: "Charm",
 };
 
+const EQUIPMENT_SLOT_NAMES: Record<string, string> = {
+  weapon: "Blade",
+  armor: "Armour",
+  charm: "Charm",
+};
+
+const EQUIPMENT_MAIN_NAMES: Record<string, string> = {
+  power: "Force",
+  guard: "Aegis",
+  critRate: "Keen",
+  critDmg: "Ruin",
+};
+
+const EQUIPMENT_SUB_NAMES: Record<string, string> = {
+  hp: "Vitality",
+  power: "Power",
+  guard: "Guard",
+  speed: "Speed",
+  effectHit: "Focus",
+  hpPct: "Fortitude",
+  dmgPct: "Fury",
+  defendPct: "Bulwark",
+  crit: "Precision",
+  critDmg: "Ruin",
+};
+
 function slotSpriteItem(slot: string): ArenaShopItem {
   return {
     id: SLOT_TO_ITEM_ID[slot] || slot,
@@ -91,12 +118,36 @@ function slotSpriteItem(slot: string): ArenaShopItem {
   };
 }
 
+function statLabel(type: string) {
+  return SUB_STAT_LABELS[type] || MAIN_STAT_LABELS[type] || type;
+}
+
+function equipmentDisplayName(piece: { slot: string; mainStatType: string; subStats: ArenaSubStat[] }) {
+  const prefix = EQUIPMENT_MAIN_NAMES[piece.mainStatType] || MAIN_STAT_LABELS[piece.mainStatType] || "Balanced";
+  const base = EQUIPMENT_SLOT_NAMES[piece.slot] || SLOT_LABELS[piece.slot] || "Gear";
+  const bestSub = [...piece.subStats]
+    .sort((a, b) => Math.abs(Number(b.value) || 0) - Math.abs(Number(a.value) || 0))[0];
+  const suffix = bestSub && bestSub.type !== piece.mainStatType
+    ? ` of ${EQUIPMENT_SUB_NAMES[bestSub.type] || statLabel(bestSub.type)}`
+    : "";
+  return `${prefix} ${base}${suffix}`;
+}
+
 function pieceSummary(piece: { mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }) {
-  const main = `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} ${piece.mainStatValue}`;
+  const main = `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +${piece.mainStatValue}`;
   const subs = piece.subStats
-    .map((s) => `${SUB_STAT_LABELS[s.type] || s.type} +${s.value}`)
+    .map((s) => `${statLabel(s.type)} +${s.value}`)
     .join(" · ");
   return `${main} · ${subs}`;
+}
+
+function equippedSummary(piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }) {
+  return (
+    <>
+      <span className="font-bold">{equipmentDisplayName(piece)}</span>
+      <span className="text-blue-700"> ({pieceSummary(piece)})</span>
+    </>
+  );
 }
 
 function flattenItems(shop: ArenaShopResponse | null) {
@@ -221,8 +272,8 @@ const ArenaInventory = () => {
   const handleUse = async (item: ArenaShopItem) => {
     if (!token || !shop) return;
 
-    const tryUse = async (force: boolean) => {
-      const payload = await activateArenaConsumable(token, item.id, force);
+    const tryUse = async (force: boolean, replaceItemId?: string | null) => {
+      const payload = await activateArenaConsumable(token, item.id, { force, replaceItemId });
       setShop(payload.shop);
     };
 
@@ -234,9 +285,10 @@ const ArenaInventory = () => {
       // When the active consumable cap is reached, show a confirmation modal.
       if (error instanceof ArenaApiError && error.code === "ARENA_CONSUMABLE_CAP_REACHED") {
         setActioningId(null);
-        const oldestName = (error.details.oldestItemName as string) || "an older consumable";
         const currentCount = (error.details.activeCount as number) ?? 6;
         const max = (error.details.maxActive as number) ?? 6;
+        const replacementChoices = getActiveConsumableReplacementChoices(error.details);
+        let selectedReplaceItemId = replacementChoices[0]?.itemId || null;
         const confirmed = await confirm({
           title: "Active Effect Cap Reached",
           message: (
@@ -246,23 +298,39 @@ const ArenaInventory = () => {
                 You currently have <strong>{currentCount}</strong>.
               </p>
               <p>
-                Using <strong>{item.name}</strong> will replace{" "}
-                <strong>{oldestName}</strong> (your oldest active effect),
-                removing all of its remaining charges.
+                Choose which active effect <strong>{item.name}</strong> should replace.
               </p>
+              {replacementChoices.length > 0 ? (
+                <label className="block text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  Replace
+                  <select
+                    className="mt-1 block w-full rounded border border-blue-200 bg-white px-2 py-1 text-blue-900"
+                    defaultValue={selectedReplaceItemId || undefined}
+                    onChange={(event) => {
+                      selectedReplaceItemId = event.target.value || null;
+                    }}
+                  >
+                    {replacementChoices.map((choice) => (
+                      <option key={`${choice.itemId}:${choice.kind || ""}`} value={choice.itemId}>
+                        {choice.itemName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               <p className="text-sm text-amber-600 dark:text-amber-400">
                 This cannot be undone. Are you sure?
               </p>
             </div>
           ),
-          confirmLabel: "Replace oldest & use",
+          confirmLabel: "Replace & use",
           cancelLabel: "Cancel",
         });
         if (!confirmed) return;
         setActioningId(`use:${item.id}`);
         setErrorMessage(null);
         try {
-          await tryUse(true);
+          await tryUse(true, selectedReplaceItemId);
         } catch (retryError) {
           setErrorMessage(normalizeArenaError(retryError));
         }
@@ -467,21 +535,21 @@ const ArenaInventory = () => {
                       <div>
                         <p className="text-lg font-semibold underline">Equipped Gear</p>
                         <p>✦ Weapon: {shop.equipped.weapon
-                          ? pieceSummary(shop.equipped.weapon)
+                          ? equippedSummary(shop.equipped.weapon)
                           : "none"}{" "}
                           {shop.equipped.weapon ? (
                             <button type="button" onClick={() => void handleUnequip("weapon")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
                           ) : null}
                         </p>
                         <p>✦ Armour: {shop.equipped.armor
-                          ? pieceSummary(shop.equipped.armor)
+                          ? equippedSummary(shop.equipped.armor)
                           : "none"}{" "}
                           {shop.equipped.armor ? (
                             <button type="button" onClick={() => void handleUnequip("armor")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
                           ) : null}
                         </p>
                         <p>✦ Charm: {shop.equipped.charm
-                          ? pieceSummary(shop.equipped.charm)
+                          ? equippedSummary(shop.equipped.charm)
                           : "none"}{" "}
                           {shop.equipped.charm ? (
                             <button type="button" onClick={() => void handleUnequip("charm")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
@@ -498,7 +566,16 @@ const ArenaInventory = () => {
                     {activeEffects.length > 0 ? (
                       <div className="mt-3 border-t border-sky-200 pt-2">
                         <p className="font-semibold underline">Active Effects</p>
-                        <p>{activeEffects.join(" · ")}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {activeEffects.map((effect) => (
+                            <span
+                              key={effect}
+                              className="rounded border border-sky-200 bg-white/70 px-2 py-1 text-xs font-semibold text-blue-800"
+                            >
+                              {effect}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -566,19 +643,19 @@ const ArenaInventory = () => {
                               </div>
                               <div className="mt-1 text-blue-600">
                                 {weapon ? (
-                                  <span>✦ Weapon: {MAIN_STAT_LABELS[weapon.mainStatType] || weapon.mainStatType} {weapon.mainStatValue}</span>
+                                  <span>✦ Weapon: {equipmentDisplayName(weapon)}</span>
                                 ) : (
                                   <span className="text-blue-300">✦ Weapon: —</span>
                                 )}
                                 {" · "}
                                 {armor ? (
-                                  <span>✦ Armour: {MAIN_STAT_LABELS[armor.mainStatType] || armor.mainStatType} {armor.mainStatValue}</span>
+                                  <span>✦ Armour: {equipmentDisplayName(armor)}</span>
                                 ) : (
                                   <span className="text-blue-300">✦ Armour: —</span>
                                 )}
                                 {" · "}
                                 {charm ? (
-                                  <span>✦ Charm: {MAIN_STAT_LABELS[charm.mainStatType] || charm.mainStatType} {charm.mainStatValue}</span>
+                                  <span>✦ Charm: {equipmentDisplayName(charm)}</span>
                                 ) : (
                                   <span className="text-blue-300">✦ Charm: —</span>
                                 )}
@@ -702,8 +779,7 @@ const ArenaInventory = () => {
                                 <div className="min-w-0 flex-1 space-y-1">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <p className="font-bold text-blue-700">
-                                      {MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType}{" "}
-                                      {piece.mainStatValue}
+                                      {equipmentDisplayName(piece)}
                                     </p>
                                     {piece.equipped ? (
                                       <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-black uppercase text-pink-700 dark:bg-pink-400/20 dark:text-pink-200 dark:ring-1 dark:ring-inset dark:ring-pink-300/40">
@@ -731,11 +807,11 @@ const ArenaInventory = () => {
                                     )}
                                   </div>
                                   <p className="text-xs text-slate-600">
-                                    {piece.slot}
+                                    {SLOT_LABELS[piece.slot] || piece.slot} · {MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +{piece.mainStatValue}
                                   </p>
                                   <p className="text-xs text-blue-600">
                                     {piece.subStats
-                                      .map((s) => `${SUB_STAT_LABELS[s.type] || s.type} +${s.value}`)
+                                      .map((s) => `${statLabel(s.type)} +${s.value}`)
                                       .join(" · ")}
                                   </p>
                                 </div>
