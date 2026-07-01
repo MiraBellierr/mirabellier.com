@@ -95,6 +95,55 @@ function getCardIvBase(card?: ArenaCard | null) {
   };
 }
 
+const EQUIPMENT_SLOT_NAMES: Record<string, string> = {
+  weapon: "Blade",
+  armor: "Armour",
+  charm: "Charm",
+};
+
+const EQUIPMENT_MAIN_NAMES: Record<string, string> = {
+  power: "Force",
+  guard: "Aegis",
+  critRate: "Keen",
+  critDmg: "Ruin",
+};
+
+const EQUIPMENT_SUB_NAMES: Record<string, string> = {
+  hp: "Vitality",
+  power: "Power",
+  guard: "Guard",
+  speed: "Speed",
+  effectHit: "Focus",
+  hpPct: "Fortitude",
+  dmgPct: "Fury",
+  defendPct: "Bulwark",
+  crit: "Precision",
+  critDmg: "Ruin",
+};
+
+const EQUIPMENT_MAIN_LABELS: Record<string, string> = {
+  power: "Power",
+  guard: "Guard",
+  critRate: "Crit Rate",
+  critDmg: "Crit DMG",
+};
+
+function equipmentDisplayName(piece: NonNullable<ArenaProfile["equipment"]["weapon"]>) {
+  const prefix = EQUIPMENT_MAIN_NAMES[piece.mainStatType] || EQUIPMENT_MAIN_LABELS[piece.mainStatType] || "Balanced";
+  const base = EQUIPMENT_SLOT_NAMES[piece.slot] || "Gear";
+  const bestSub = [...piece.subStats]
+    .sort((a, b) => Math.abs(Number(b.value) || 0) - Math.abs(Number(a.value) || 0))[0];
+  const suffix = bestSub && bestSub.type !== piece.mainStatType
+    ? ` of ${EQUIPMENT_SUB_NAMES[bestSub.type] || bestSub.type}`
+    : "";
+  return `${prefix} ${base}${suffix}`;
+}
+
+function equipmentSummary(piece: NonNullable<ArenaProfile["equipment"]["weapon"]>) {
+  const main = EQUIPMENT_MAIN_LABELS[piece.mainStatType] || piece.mainStatType;
+  return `${equipmentDisplayName(piece)} (${main} +${piece.mainStatValue})`;
+}
+
 const Arena = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
@@ -442,13 +491,13 @@ const Arena = () => {
                         <p className="text-lg font-semibold underline">Gears</p>
                         </div>
                         <p><span className="font-normal">✦ Weapon:</span> {profile.equipment.weapon
-                          ? `${profile.equipment.weapon.mainStatType} ${profile.equipment.weapon.mainStatValue}`
+                          ? equipmentSummary(profile.equipment.weapon)
                           : "none"}</p>
                         <p><span className="font-normal">✦ Armor:</span> {profile.equipment.armor
-                          ? `${profile.equipment.armor.mainStatType} ${profile.equipment.armor.mainStatValue}`
+                          ? equipmentSummary(profile.equipment.armor)
                           : "none"}</p>
                         <p><span className="font-normal">✦   Charm:</span> {profile.equipment.charm
-                          ? `${profile.equipment.charm.mainStatType} ${profile.equipment.charm.mainStatValue}`
+                          ? equipmentSummary(profile.equipment.charm)
                           : "none"}</p>
 
                         <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
