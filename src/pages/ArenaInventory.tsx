@@ -301,12 +301,16 @@ const ArenaInventory = () => {
   const [page, setPage] = useState(1);
   const [loadoutName, setLoadoutName] = useState("");
   const [loadoutActionId, setLoadoutActionId] = useState<string | null>(null);
-  const [selectedFodderId, setSelectedFodderId] = useState<Record<string, string>>({});
   const [gearSort, setGearSort] = useState<GearSort>("recent");
   const [gearSubStat, setGearSubStat] = useState<SubStatKey>("hp");
   const [itemSort, setItemSort] = useState<ItemSort>("name-asc");
   const [enhanceModal, setEnhanceModal] = useState<{
     piece: ArenaEquipmentPiece;
+    fodderId: string;
+  } | null>(null);
+  const [rerollModal, setRerollModal] = useState<{
+    piece: ArenaEquipmentPiece;
+    subStatIndex: number;
     fodderId: string;
   } | null>(null);
   const [fodderSort, setFodderSort] = useState<GearSort>("recent");
@@ -356,6 +360,27 @@ const ArenaInventory = () => {
     () => shop?.profile?.equipmentPieces || [],
     [shop],
   );
+
+  const loadouts = useMemo(
+    () => shop?.profile?.equipmentLoadouts || [],
+    [shop],
+  );
+
+  const loadoutNamesByPieceId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    loadouts.forEach((loadout) => {
+      const pieceIds = [loadout.weaponPieceId, loadout.armorPieceId, loadout.charmPieceId];
+      pieceIds.forEach((pieceId) => {
+        if (!pieceId) return;
+        const names = map.get(pieceId) || [];
+        if (!names.includes(loadout.name)) {
+          names.push(loadout.name);
+        }
+        map.set(pieceId, names);
+      });
+    });
+    return map;
+  }, [loadouts]);
 
   const consumables = useMemo(
     () => {
@@ -410,11 +435,12 @@ const ArenaInventory = () => {
         candidate.id !== piece.id &&
         !candidate.equipped &&
         !candidate.locked &&
+        !loadoutNamesByPieceId.has(candidate.id) &&
         candidate.slot === piece.slot
       ));
     });
     return result;
-  }, [pieces]);
+  }, [loadoutNamesByPieceId, pieces]);
 
   const sortedFodderForModal = useMemo(() => {
     if (!enhanceModal) return [];
@@ -422,12 +448,11 @@ const ArenaInventory = () => {
     return sortGearPieces(raw, fodderSort);
   }, [enhanceModal, fodderOptionsByPieceId, fodderSort]);
 
-  const getSelectedFodderId = (piece: ArenaEquipmentPiece) => {
-    const options = fodderOptionsByPieceId[piece.id] || [];
-    const selected = selectedFodderId[piece.id];
-    if (selected && options.some((option) => option.id === selected)) return selected;
-    return options[0]?.id || "";
-  };
+  const sortedRerollFodderForModal = useMemo(() => {
+    if (!rerollModal) return [];
+    const raw = fodderOptionsByPieceId[rerollModal.piece.id] || [];
+    return sortGearPieces(raw, fodderSort);
+  }, [fodderOptionsByPieceId, fodderSort, rerollModal]);
 
   const handleUse = async (item: ArenaShopItem) => {
     if (!token || !shop) return;
@@ -543,6 +568,10 @@ const ArenaInventory = () => {
 
   const handleFodder = async (piece: ArenaEquipmentPiece) => {
     if (!token || piece.equipped) return;
+    if (loadoutNamesByPieceId.has(piece.id)) {
+      setErrorMessage("Remove this piece from saved loadouts before scrapping it.");
+      return;
+    }
     const confirmed = await confirm({
       title: "Scrap equipment?",
       message: `Scrap this ${piece.slot} for 500 coins? This cannot be undone.`,
@@ -607,44 +636,13 @@ const ArenaInventory = () => {
     }
   };
 
-  const handleRerollSubStat = async (piece: ArenaEquipmentPiece, subStatIndex: number) => {
+  const handleRerollSubStat = async (piece: ArenaEquipmentPiece, subStatIndex: number, fodderPieceId: string) => {
     if (!token) return;
     const subStat = piece.subStats[subStatIndex];
-    const fodderOptions = fodderOptionsByPieceId[piece.id] || [];
-    let fodderPieceId = getSelectedFodderId(piece);
-    if (!subStat || fodderOptions.length === 0 || !fodderPieceId) return;
+    if (!subStat || !fodderPieceId) return;
     const confirmed = await confirm({
       title: `Reroll ${statLabel(subStat.type)}?`,
-      message: (
-        <div className="space-y-3 text-left">
-          <p>
-            <strong>{equipmentDisplayName(piece)}</strong>
-          </p>
-          <p>
-            Reroll <strong>{statLabel(subStat.type)} +{subStat.value}</strong> for{" "}
-            <strong>500 coins</strong>.
-          </p>
-          <label className="block text-sm font-semibold text-blue-900 dark:text-blue-100">
-            Scrap gear
-            <select
-              className="mt-1 block w-full rounded border border-blue-200 bg-white px-2 py-1 text-blue-900"
-              defaultValue={fodderPieceId}
-              onChange={(event) => {
-                fodderPieceId = event.target.value;
-              }}
-            >
-              {fodderOptions.map((fodder) => (
-                <option key={fodder.id} value={fodder.id}>
-                  {equipmentDisplayName(fodder)} ({MAIN_STAT_LABELS[fodder.mainStatType] || fodder.mainStatType} +{mainStatValue(fodder)})
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className="text-sm text-amber-600 dark:text-amber-400">
-            The selected scrap gear will be destroyed. This cannot be undone.
-          </p>
-        </div>
-      ),
+      message: `Spend 500 coins and scrap the selected gear to reroll ${statLabel(subStat.type)} +${subStat.value}?`,
       confirmLabel: "Reroll",
       cancelLabel: "Cancel",
     });
@@ -655,11 +653,6 @@ const ArenaInventory = () => {
     try {
       const payload = await rerollArenaSubStat(token, piece.id, subStatIndex, fodderPieceId);
       setShop(payload.shop);
-      setSelectedFodderId((current) => {
-        const next = { ...current };
-        delete next[piece.id];
-        return next;
-      });
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
     } finally {
@@ -749,27 +742,10 @@ const ArenaInventory = () => {
   };
 
   const activeEffects = shop ? formatActiveEffects(shop) : [];
-  const loadouts = shop?.profile?.equipmentLoadouts || [];
   const pieceMap = useMemo(
     () => new Map((pieces).map((p) => [p.id, p])),
     [pieces],
   );
-
-  const loadoutNamesByPieceId = useMemo(() => {
-    const map = new Map<string, string[]>();
-    loadouts.forEach((loadout) => {
-      const pieceIds = [loadout.weaponPieceId, loadout.armorPieceId, loadout.charmPieceId];
-      pieceIds.forEach((pieceId) => {
-        if (!pieceId) return;
-        const names = map.get(pieceId) || [];
-        if (!names.includes(loadout.name)) {
-          names.push(loadout.name);
-        }
-        map.set(pieceId, names);
-      });
-    });
-    return map;
-  }, [loadouts]);
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -1136,7 +1112,7 @@ const ArenaInventory = () => {
                           const isFoddering = actioningId === `fodder:${piece.id}`;
                           const isEnhancing = actioningId === `enhance:${piece.id}`;
                           const isLocking = actioningId === `lock:${piece.id}`;
-                          const selectedFodder = getSelectedFodderId(piece);
+                          const isInLoadout = loadoutNamesByPieceId.has(piece.id);
                           const nextEnhanceCost = enhancementCost(piece.enhancementLevel || 0);
                           return (
                             <li key={piece.id} className="rounded-xl border border-blue-100 bg-white/50 p-3 sm:border-0 sm:bg-transparent sm:py-2">
@@ -1192,8 +1168,12 @@ const ArenaInventory = () => {
                                       <button
                                         key={`${piece.id}:${index}:${s.type}`}
                                         type="button"
-                                        onClick={() => void handleRerollSubStat(piece, index)}
-                                        disabled={actioningId !== null || !selectedFodder}
+                                        onClick={() => {
+                                          const options = fodderOptionsByPieceId[piece.id] || [];
+                                          if (options.length === 0) return;
+                                          setRerollModal({ piece, subStatIndex: index, fodderId: options[0].id });
+                                        }}
+                                        disabled={actioningId !== null}
                                         className="min-h-7 rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                                         title="Reroll this substat"
                                       >
@@ -1208,10 +1188,11 @@ const ArenaInventory = () => {
                                       <button
                                         type="button"
                                         onClick={() => void handleFodder(piece)}
-                                        disabled={actioningId !== null}
+                                        disabled={actioningId !== null || isInLoadout}
                                         className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
+                                        title={isInLoadout ? "Remove this piece from saved loadouts before scrapping it" : "Scrap this piece for coins"}
                                       >
-                                        {isFoddering ? "[ scrapping... ]" : "[ scrap +500 ]"}
+                                        {isFoddering ? "[ scrapping... ]" : isInLoadout ? "[ in loadout ]" : "[ scrap +500 ]"}
                                       </button>
                                     )}
                                     <button
@@ -1417,6 +1398,133 @@ const ArenaInventory = () => {
           </div>,
           document.body,
         )}
+
+      {rerollModal &&
+        (() => {
+          const subStat = rerollModal.piece.subStats[rerollModal.subStatIndex];
+          if (!subStat) return null;
+          return createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40 p-2 dark:bg-black/60 sm:items-center sm:p-4" onClick={() => setRerollModal(null)}>
+              <div
+                className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border-2 border-pink-200 bg-white/95 p-3 shadow-2xl backdrop-blur-sm dark:border-pink-700/60 dark:bg-slate-900/95 sm:max-h-[85vh] sm:rounded-2xl sm:p-5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-4 flex items-start justify-between gap-3 sm:gap-4">
+                  <div className="min-w-0">
+                    <h3 className="break-words text-base font-bold text-pink-700 dark:text-pink-400 sm:text-lg">
+                      ✦ Reroll {statLabel(subStat.type)}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      {equipmentDisplayName(rerollModal.piece)} · {statLabel(subStat.type)} +{subStat.value} · 500 coins
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRerollModal(null)}
+                    className="text-xl leading-none text-pink-400 transition hover:text-pink-600 dark:text-pink-500 dark:hover:text-pink-300"
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <p className="text-sm font-semibold text-pink-600 dark:text-pink-400">
+                    Select a piece to scrap as reroll fodder:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="reroll-fodder-sort" className="text-xs text-slate-400 dark:text-slate-500">sort:</label>
+                    <select
+                      id="reroll-fodder-sort"
+                      value={fodderSort}
+                      onChange={(e) => setFodderSort(e.target.value as GearSort)}
+                      className="min-w-0 flex-1 rounded border border-pink-200 bg-white px-2 py-2 text-sm text-slate-600 dark:border-pink-700/40 dark:bg-slate-800 dark:!text-purple-100 dark:[color-scheme:dark] sm:flex-none sm:py-0.5 sm:text-xs"
+                    >
+                      {(Object.keys(GEAR_SORT_LABELS) as GearSort[])
+                        .filter((key) => key !== "equipped-first")
+                        .map((key) => (
+                          <option key={key} value={key} className="dark:bg-slate-800 dark:text-slate-200">{GEAR_SORT_LABELS[key]}</option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {sortedRerollFodderForModal.length > 0 ? (
+                  <ol className="grid max-h-[48vh] grid-auto-rows-[1fr] gap-3 overflow-y-auto rounded-lg border border-pink-100 bg-pink-50/30 p-2 dark:border-pink-800/30 dark:bg-pink-950/20 sm:max-h-96 sm:grid-cols-2 sm:p-3">
+                    {sortedRerollFodderForModal.map((fodder) => {
+                      const isSelected = rerollModal.fodderId === fodder.id;
+                      return (
+                        <li key={fodder.id} className="h-full">
+                          <button
+                            type="button"
+                            onClick={() => setRerollModal({ piece: rerollModal.piece, subStatIndex: rerollModal.subStatIndex, fodderId: fodder.id })}
+                            className={`h-full w-full rounded-xl border p-3 text-left transition ring-2 ${
+                              isSelected
+                                ? "border-pink-400 bg-pink-100/80 ring-pink-300/50 dark:border-pink-500/70 dark:bg-pink-900/40 dark:ring-pink-500/30"
+                                : "border-slate-200 bg-white/70 ring-transparent hover:border-pink-200 hover:bg-pink-50/60 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-pink-700/50 dark:hover:bg-pink-950/30"
+                            }`}
+                          >
+                            <article className="flex items-start gap-3">
+                              <ArenaItemSprite item={slotSpriteItem(fodder.slot)} className="h-10 w-10 shrink-0" />
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <p className="break-words text-sm font-bold leading-tight text-blue-700 dark:text-purple-200">
+                                  {equipmentDisplayName(fodder)}
+                                </p>
+                                <p className="text-xs text-slate-600 dark:text-slate-400">
+                                  {SLOT_LABELS[fodder.slot] || fodder.slot} · {MAIN_STAT_LABELS[fodder.mainStatType] || fodder.mainStatType} +{mainStatValue(fodder)}
+                                  {(fodder.enhancementLevel || 0) > 0 ? ` · +${fodder.enhancementLevel}` : ""}
+                                </p>
+                                <div className="flex flex-wrap gap-1 text-[10px] text-blue-600 dark:text-purple-300">
+                                  {fodder.subStats.map((stat, index) => (
+                                    <span
+                                      key={`${fodder.id}:${index}:${stat.type}`}
+                                      className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 dark:border-purple-700/40 dark:bg-slate-800/80 dark:text-purple-300"
+                                    >
+                                      {statLabel(stat.type)} +{stat.value}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <span className={`mt-1 shrink-0 text-lg leading-none ${isSelected ? "text-pink-500 dark:text-pink-400" : "invisible"}`}>✓</span>
+                            </article>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <div className="rounded-xl border border-pink-100 bg-pink-50/60 p-6 text-center text-sm text-pink-400 dark:border-pink-800/30 dark:bg-pink-950/20 dark:text-pink-500/60">
+                    <p>No eligible reroll fodder pieces.</p>
+                    <p className="mt-1 text-xs">You need another unequipped, unlocked {rerollModal.piece.slot}.</p>
+                  </div>
+                )}
+
+                <div className="mt-5 grid gap-2 sm:flex sm:justify-end sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRerollModal(null)}
+                    className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
+                  >
+                    [ cancel ]
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const m = rerollModal;
+                      setRerollModal(null);
+                      await handleRerollSubStat(m.piece, m.subStatIndex, m.fodderId);
+                    }}
+                    disabled={sortedRerollFodderForModal.length === 0}
+                    className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
+                  >
+                    [ reroll 500 ]
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          );
+        })()}
     </div>
   );
 };
