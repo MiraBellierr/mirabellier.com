@@ -21,6 +21,14 @@ type UserLookup = {
   lastCardDrawDate: string | null;
 };
 type UserSuggestion = UserLookup;
+type ArenaCharacterSuggestion = {
+  malId: number;
+  title: string;
+  imageUrl: string;
+  favorites: number | null;
+  from: string | null;
+  rarity: string;
+};
 
 function makeAuthHeaders(token: string) {
   return {
@@ -70,6 +78,21 @@ const AdminUsers = () => {
 
   const [clearingEffects, setClearingEffects] = useState(false);
   const [clearEffectsResult, setClearEffectsResult] = useState<string | null>(null);
+
+  const [compTitle, setCompTitle] = useState("Arena compensation");
+  const [compMessage, setCompMessage] = useState(
+    "Thanks for playing Arena. Please accept this compensation package.",
+  );
+  const [compCoins, setCompCoins] = useState("");
+  const [compCardSearch, setCompCardSearch] = useState("");
+  const [compCardMalId, setCompCardMalId] = useState("");
+  const [compCardSuggestions, setCompCardSuggestions] = useState<ArenaCharacterSuggestion[]>([]);
+  const [compCardCount, setCompCardCount] = useState("1");
+  const [compCardMaxIv, setCompCardMaxIv] = useState(false);
+  const [compEquipmentSlot, setCompEquipmentSlot] = useState("");
+  const [compEquipmentCount, setCompEquipmentCount] = useState("1");
+  const [creatingCompensation, setCreatingCompensation] = useState(false);
+  const [compensationResult, setCompensationResult] = useState<string | null>(null);
 
   const [debugRandomPack, setDebugRandomPack] = useState(
     () => localStorage.getItem("debugRandomPack") === "1",
@@ -121,6 +144,41 @@ const AdminUsers = () => {
       controller.abort();
     };
   }, [token, username]);
+
+  useEffect(() => {
+    if (!token || !compCardSearch.trim()) {
+      setCompCardSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      fetch(
+        joinApi(`/admin/arena/characters/suggestions?q=${encodeURIComponent(compCardSearch.trim())}`),
+        {
+          credentials: "include",
+          headers: makeAuthHeaders(token),
+          cache: "no-store",
+          signal: controller.signal,
+        },
+      )
+        .then(async (response) => {
+          if (!response.ok) throw await readApiError(response);
+          return response.json() as Promise<{ characters: ArenaCharacterSuggestion[] }>;
+        })
+        .then((data) => setCompCardSuggestions(data.characters || []))
+        .catch((error) => {
+          if ((error as Error).name !== "AbortError") {
+            setCompCardSuggestions([]);
+          }
+        });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [compCardSearch, token]);
 
   if (!auth.user) {
     return (
@@ -210,7 +268,7 @@ const AdminUsers = () => {
   const handleAddCoins = async () => {
     if (!token || !lookedUp) return;
     const amount = Number(coinAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return;
+    if (!Number.isFinite(amount) || amount === 0) return;
     setAddingCoins(true);
     setCoinResult(null);
     try {
@@ -225,13 +283,15 @@ const AdminUsers = () => {
         },
       );
       if (!response.ok) throw await readApiError(response);
-      const data = (await response.json()) as { coins: number; added: number };
-      setCoinResult(`Added ${data.added.toLocaleString()} coins. New balance: ${data.coins.toLocaleString()}.`);
+      const data = (await response.json()) as { coins: number; added: number; delta?: number };
+      const delta = data.delta ?? data.added;
+      const action = delta > 0 ? "Added" : "Removed";
+      setCoinResult(`${action} ${Math.abs(delta).toLocaleString()} coins. New balance: ${data.coins.toLocaleString()}.`);
       setLookedUp({ ...lookedUp, coins: data.coins });
       setCoinAmount("");
     } catch (error) {
       setCoinResult(
-        error instanceof ArenaApiError ? error.message : "Failed to add coins",
+        error instanceof ArenaApiError ? error.message : "Failed to update coins",
       );
     } finally {
       setAddingCoins(false);
@@ -366,6 +426,81 @@ const AdminUsers = () => {
     }
   };
 
+  const handleCreateCompensation = async () => {
+    if (!token) return;
+    const coins = Math.max(0, Math.trunc(Number(compCoins) || 0));
+    const cardMalId = Math.max(0, Math.trunc(Number(compCardMalId) || 0));
+    const cardCount = cardMalId > 0
+      ? Math.min(Math.max(Math.trunc(Number(compCardCount) || 1), 1), 20)
+      : 0;
+    const equipmentCount = compEquipmentSlot
+      ? Math.min(Math.max(Math.trunc(Number(compEquipmentCount) || 1), 1), 20)
+      : 0;
+    const hasReward = coins > 0 || cardMalId > 0 || equipmentCount > 0;
+    if (!hasReward) {
+      setCompensationResult("Choose at least one reward first.");
+      return;
+    }
+
+    const summary = [
+      coins > 0 ? `${coins.toLocaleString()} coins` : "",
+      cardMalId > 0 ? `${cardCount} card(s) for MAL ID ${cardMalId}${compCardMaxIv ? " at max IV" : ""}` : "",
+      compEquipmentSlot ? `${equipmentCount} ${compEquipmentSlot} equipment piece(s)` : "",
+    ].filter(Boolean).join(", ");
+
+    const confirmed = window.confirm(
+      `Send this compensation to every existing Arena profile?\n\n${summary}`,
+    );
+    if (!confirmed) return;
+
+    setCreatingCompensation(true);
+    setCompensationResult(null);
+    try {
+      const response = await fetch(joinApi("/admin/arena/compensations"), {
+        method: "POST",
+        credentials: "include",
+        headers: makeAuthHeaders(token),
+        body: JSON.stringify({
+          title: compTitle,
+          message: compMessage,
+          coins,
+          cardMalId,
+          cardCount,
+          cardMaxIv: compCardMaxIv,
+          equipmentSlot: compEquipmentSlot || null,
+          equipmentCount,
+        }),
+        cache: "no-store",
+      });
+      if (!response.ok) throw await readApiError(response);
+      const data = (await response.json()) as {
+        compensation: {
+          recipientCount: number;
+          card?: { title?: string } | null;
+        };
+      };
+      setCompensationResult(
+        `Created compensation for ${data.compensation.recipientCount.toLocaleString()} existing Arena profile(s).`,
+      );
+      setCompCoins("");
+      setCompCardSearch("");
+      setCompCardMalId("");
+      setCompCardSuggestions([]);
+      setCompCardCount("1");
+      setCompCardMaxIv(false);
+      setCompEquipmentSlot("");
+      setCompEquipmentCount("1");
+    } catch (error) {
+      setCompensationResult(
+        error instanceof ArenaApiError
+          ? error.message
+          : "Failed to create compensation",
+      );
+    } finally {
+      setCreatingCompensation(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col font-[sans-serif] text-blue-900 dark:text-purple-200">
       <Header />
@@ -455,18 +590,17 @@ const AdminUsers = () => {
                       <>
                         <div className="space-y-2 border-t border-blue-200 pt-3 dark:border-slate-700">
                           <label className="block text-sm font-bold text-blue-700">
-                            Add coins
+                            Add/remove coins
                           </label>
                           <div className="flex gap-2">
                             <input
                               type="number"
-                              min="1"
                               value={coinAmount}
                               onChange={(e) => setCoinAmount(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") void handleAddCoins();
                               }}
-                              placeholder="Amount"
+                              placeholder="e.g. 500 or -500"
                               className="w-32 rounded border border-blue-300 bg-white p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                             />
                             <button
@@ -475,13 +609,14 @@ const AdminUsers = () => {
                               disabled={
                                 addingCoins ||
                                 !coinAmount ||
-                                Number(coinAmount) <= 0
+                                Number(coinAmount) === 0 ||
+                                !Number.isFinite(Number(coinAmount))
                               }
                               className="arena-redraw-button hover:animate-wiggle shrink-0"
                             >
                               {addingCoins
-                                ? "[ adding... ]"
-                                : "[ add coins ]"}
+                                ? "[ updating... ]"
+                                : "[ update coins ]"}
                             </button>
                           </div>
                           {coinResult ? (
@@ -628,6 +763,130 @@ const AdminUsers = () => {
                     {shopRerollResult ? (
                       <p className="mt-2 text-xs text-green-700 dark:text-green-400">
                         {shopRerollResult}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="border-t border-blue-200 pt-2 dark:border-slate-700">
+                  <h3 className="mb-2 text-sm font-bold text-blue-700">
+                    Global Arena compensation
+                  </h3>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={compTitle}
+                      onChange={(e) => setCompTitle(e.target.value)}
+                      placeholder="Popup title"
+                      className="w-full rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                    />
+                    <textarea
+                      value={compMessage}
+                      onChange={(e) => setCompMessage(e.target.value)}
+                      placeholder="Popup message"
+                      rows={3}
+                      className="w-full rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={compCoins}
+                        onChange={(e) => setCompCoins(e.target.value)}
+                        placeholder="Coins"
+                        className="rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                      />
+                      <input
+                        type="text"
+                        value={compCardSearch}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setCompCardSearch(value);
+                          const selected = compCardSuggestions.find(
+                            (character) => `${character.title} #${character.malId}` === value,
+                          );
+                          if (selected) {
+                            setCompCardMalId(String(selected.malId));
+                            return;
+                          }
+                          const idMatch = value.match(/#?(\d+)$/);
+                          setCompCardMalId(idMatch ? idMatch[1] : "");
+                        }}
+                        list="admin-arena-card-suggestions"
+                        placeholder="Find card"
+                        className="rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                      />
+                      <datalist id="admin-arena-card-suggestions">
+                        {compCardSuggestions.map((character) => (
+                          <option
+                            key={character.malId}
+                            value={`${character.title} #${character.malId}`}
+                          >
+                            {character.from
+                              ? `${character.rarity} · ${character.from}`
+                              : character.rarity}
+                          </option>
+                        ))}
+                      </datalist>
+                      <input
+                        type="number"
+                        min="0"
+                        value={compCardMalId}
+                        onChange={(e) => setCompCardMalId(e.target.value)}
+                        placeholder="MAL ID"
+                        className="rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={compCardCount}
+                        onChange={(e) => setCompCardCount(e.target.value)}
+                        placeholder="Card count"
+                        className="rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                      />
+                      <label className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-purple-100">
+                        <input
+                          type="checkbox"
+                          checked={compCardMaxIv}
+                          onChange={(e) => setCompCardMaxIv(e.target.checked)}
+                          className="rounded"
+                        />
+                        Max IV card
+                      </label>
+                      <select
+                        value={compEquipmentSlot}
+                        onChange={(e) => setCompEquipmentSlot(e.target.value)}
+                        className="rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                      >
+                        <option value="">No equipment</option>
+                        <option value="weapon">Blade</option>
+                        <option value="armor">Armour</option>
+                        <option value="charm">Charm</option>
+                      </select>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={compEquipmentCount}
+                        onChange={(e) => setCompEquipmentCount(e.target.value)}
+                        placeholder="Gear count"
+                        className="rounded border border-blue-300 bg-white p-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleCreateCompensation()}
+                      disabled={creatingCompensation}
+                      className="arena-redraw-button hover:animate-wiggle shrink-0"
+                    >
+                      {creatingCompensation
+                        ? "[ sending... ]"
+                        : "[ send compensation ]"}
+                    </button>
+                    {compensationResult ? (
+                      <p className="text-xs text-green-700 dark:text-green-400">
+                        {compensationResult}
                       </p>
                     ) : null}
                   </div>

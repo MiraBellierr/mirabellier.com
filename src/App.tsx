@@ -49,6 +49,9 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const CursorManager = lazy(() => import("./parts/CursorManager"));
 const InteractiveUiChrome = lazy(() => import("./parts/InteractiveUiChrome"));
+const ArenaCompensationPopup = lazy(
+  () => import("./parts/ArenaCompensationPopup"),
+);
 
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
@@ -174,6 +177,9 @@ function App() {
         <CursorProvider>
           <AuthProvider>
             <WebSocketProvider>
+              <Suspense fallback={null}>
+                <ArenaCompensationPopup />
+              </Suspense>
               <Suspense fallback={null}>
                 {showCursorManager ? <CursorManager /> : null}
               </Suspense>
