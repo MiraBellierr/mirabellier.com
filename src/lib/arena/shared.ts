@@ -40,6 +40,8 @@ export type ArenaEquipmentPiece = {
   slot: "weapon" | "armor" | "charm";
   mainStatType: string;
   mainStatValue: number;
+  enhancementLevel: number;
+  enhancedMainStatValue: number;
   subStats: ArenaSubStat[];
   equipped: boolean;
   createdAt: string | null;
@@ -226,6 +228,8 @@ export type ArenaEquippedItem = {
   slot: "weapon" | "armor" | "charm";
   mainStatType: string;
   mainStatValue: number;
+  enhancementLevel: number;
+  enhancedMainStatValue: number;
   subStats: ArenaSubStat[];
   createdAt: string | null;
 };

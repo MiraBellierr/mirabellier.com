@@ -62,6 +62,73 @@ export async function fodderArenaPiece(
 
   return (await response.json()) as { fodderPieceId: string; coinsGained: number };
 }
+export async function enhanceArenaPiece(
+  token: string,
+  pieceId: string,
+  fodderPieceId: string,
+): Promise<{
+  pieceId: string;
+  fodderPieceId: string;
+  previousLevel: number;
+  enhancementLevel: number;
+  coinCost: number;
+  shop: ArenaShopResponse;
+}> {
+  const response = await fetch(joinApi("/arena/shop/enhance"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ pieceId, fodderPieceId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as {
+    pieceId: string;
+    fodderPieceId: string;
+    previousLevel: number;
+    enhancementLevel: number;
+    coinCost: number;
+    shop: ArenaShopResponse;
+  };
+}
+export async function rerollArenaSubStat(
+  token: string,
+  pieceId: string,
+  subStatIndex: number,
+  fodderPieceId: string,
+): Promise<{
+  pieceId: string;
+  fodderPieceId: string;
+  subStatIndex: number;
+  oldSubStat: { type: string; value: number };
+  newSubStat: { type: string; value: number };
+  coinCost: number;
+  shop: ArenaShopResponse;
+}> {
+  const response = await fetch(joinApi("/arena/shop/reroll-substat"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ pieceId, subStatIndex, fodderPieceId }),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response);
+  }
+
+  return (await response.json()) as {
+    pieceId: string;
+    fodderPieceId: string;
+    subStatIndex: number;
+    oldSubStat: { type: string; value: number };
+    newSubStat: { type: string; value: number };
+    coinCost: number;
+    shop: ArenaShopResponse;
+  };
+}
 export async function saveEquipmentLoadout(
   token: string,
   name?: string,

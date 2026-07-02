@@ -15,9 +15,11 @@ import {
   type ArenaShopResponse,
   type ArenaSubStat,
   ArenaApiError,
+  enhanceArenaPiece,
   equipArenaItem,
   fetchArenaShop,
   fodderArenaPiece,
+  rerollArenaSubStat,
   saveEquipmentLoadout,
   restoreEquipmentLoadout,
   deleteEquipmentLoadout,
@@ -54,6 +56,7 @@ const SUB_STAT_LABELS: Record<string, string> = {
   dmgPct: "DMG%",
   defendPct: "DEF%",
   crit: "CRIT",
+  critRate: "CRIT",
   critDmg: "CDMG",
 };
 
@@ -99,8 +102,16 @@ const EQUIPMENT_SUB_NAMES: Record<string, string> = {
   dmgPct: "Fury",
   defendPct: "Bulwark",
   crit: "Precision",
+  critRate: "Precision",
   critDmg: "Ruin",
 };
+
+const MAX_ENHANCEMENT_LEVEL = 15;
+
+function enhancementCost(level: number) {
+  if (level >= MAX_ENHANCEMENT_LEVEL) return null;
+  return Math.round(350 * (1.45 ** Math.max(0, level)));
+}
 
 function slotSpriteItem(slot: string): ArenaShopItem {
   return {
@@ -133,8 +144,19 @@ function equipmentDisplayName(piece: { slot: string; mainStatType: string; subSt
   return `${prefix} ${base}${suffix}`;
 }
 
-function pieceSummary(piece: { mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }) {
-  const main = `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +${piece.mainStatValue}`;
+function mainStatValue(piece: { mainStatValue: number; enhancedMainStatValue?: number }) {
+  return piece.enhancedMainStatValue ?? piece.mainStatValue;
+}
+
+function pieceSummary(piece: {
+  mainStatType: string;
+  mainStatValue: number;
+  enhancedMainStatValue?: number;
+  enhancementLevel?: number;
+  subStats: ArenaSubStat[];
+}) {
+  const enhanced = Math.max(0, piece.enhancementLevel || 0);
+  const main = `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +${mainStatValue(piece)}${enhanced > 0 ? ` (+${enhanced})` : ""}`;
   const subs = piece.subStats
     .map((s) => `${statLabel(s.type)} +${s.value}`)
     .join(" · ");
@@ -179,6 +201,7 @@ const ArenaInventory = () => {
   const [page, setPage] = useState(1);
   const [loadoutName, setLoadoutName] = useState("");
   const [loadoutActionId, setLoadoutActionId] = useState<string | null>(null);
+  const [selectedFodderId, setSelectedFodderId] = useState<Record<string, string>>({});
   const PER_PAGE = 20;
 
   usePageSeo({
@@ -268,6 +291,25 @@ const ArenaInventory = () => {
     if (shop?.equipped?.charm?.id) map.charm = shop.equipped.charm.id;
     return map;
   }, [shop]);
+
+  const fodderOptionsByPieceId = useMemo(() => {
+    const result: Record<string, ArenaEquipmentPiece[]> = {};
+    pieces.forEach((piece) => {
+      result[piece.id] = pieces.filter((candidate) => (
+        candidate.id !== piece.id &&
+        !candidate.equipped &&
+        candidate.slot === piece.slot
+      ));
+    });
+    return result;
+  }, [pieces]);
+
+  const getSelectedFodderId = (piece: ArenaEquipmentPiece) => {
+    const options = fodderOptionsByPieceId[piece.id] || [];
+    const selected = selectedFodderId[piece.id];
+    if (selected && options.some((option) => option.id === selected)) return selected;
+    return options[0]?.id || "";
+  };
 
   const handleUse = async (item: ArenaShopItem) => {
     if (!token || !shop) return;
@@ -384,9 +426,9 @@ const ArenaInventory = () => {
   const handleFodder = async (piece: ArenaEquipmentPiece) => {
     if (!token || piece.equipped) return;
     const confirmed = await confirm({
-      title: "Fodder equipment?",
-      message: `Remove this ${piece.slot} for 500 coins? This cannot be undone.`,
-      confirmLabel: "Fodder",
+      title: "Scrap equipment?",
+      message: `Scrap this ${piece.slot} for 500 coins? This cannot be undone.`,
+      confirmLabel: "Scrap",
       cancelLabel: "Cancel",
     });
     if (!confirmed) return;
@@ -397,6 +439,96 @@ const ArenaInventory = () => {
       await fodderArenaPiece(token, piece.id);
       const refreshed = await fetchArenaShop(token);
       setShop(refreshed);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleEnhance = async (piece: ArenaEquipmentPiece) => {
+    if (!token) return;
+    const fodderPieceId = getSelectedFodderId(piece);
+    const cost = enhancementCost(piece.enhancementLevel || 0);
+    if (!fodderPieceId || cost === null) return;
+    const confirmed = await confirm({
+      title: `Enhance ${SLOT_LABELS[piece.slot] || piece.slot}?`,
+      message: `Spend ${cost.toLocaleString()} coins and scrap the selected gear for +1 ${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType}?`,
+      confirmLabel: "Enhance",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
+
+    setActioningId(`enhance:${piece.id}`);
+    setErrorMessage(null);
+    try {
+      const payload = await enhanceArenaPiece(token, piece.id, fodderPieceId);
+      setShop(payload.shop);
+      setSelectedFodderId((current) => {
+        const next = { ...current };
+        delete next[piece.id];
+        return next;
+      });
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleRerollSubStat = async (piece: ArenaEquipmentPiece, subStatIndex: number) => {
+    if (!token) return;
+    const subStat = piece.subStats[subStatIndex];
+    const fodderOptions = fodderOptionsByPieceId[piece.id] || [];
+    let fodderPieceId = getSelectedFodderId(piece);
+    if (!subStat || fodderOptions.length === 0 || !fodderPieceId) return;
+    const confirmed = await confirm({
+      title: `Reroll ${statLabel(subStat.type)}?`,
+      message: (
+        <div className="space-y-3 text-left">
+          <p>
+            <strong>{equipmentDisplayName(piece)}</strong>
+          </p>
+          <p>
+            Reroll <strong>{statLabel(subStat.type)} +{subStat.value}</strong> for{" "}
+            <strong>500 coins</strong>.
+          </p>
+          <label className="block text-sm font-semibold text-blue-900 dark:text-blue-100">
+            Scrap gear
+            <select
+              className="mt-1 block w-full rounded border border-blue-200 bg-white px-2 py-1 text-blue-900"
+              defaultValue={fodderPieceId}
+              onChange={(event) => {
+                fodderPieceId = event.target.value;
+              }}
+            >
+              {fodderOptions.map((fodder) => (
+                <option key={fodder.id} value={fodder.id}>
+                  {equipmentDisplayName(fodder)} ({MAIN_STAT_LABELS[fodder.mainStatType] || fodder.mainStatType} +{mainStatValue(fodder)})
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="text-sm text-amber-600 dark:text-amber-400">
+            The selected scrap gear will be destroyed. This cannot be undone.
+          </p>
+        </div>
+      ),
+      confirmLabel: "Reroll",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
+
+    setActioningId(`reroll:${piece.id}:${subStatIndex}`);
+    setErrorMessage(null);
+    try {
+      const payload = await rerollArenaSubStat(token, piece.id, subStatIndex, fodderPieceId);
+      setShop(payload.shop);
+      setSelectedFodderId((current) => {
+        const next = { ...current };
+        delete next[piece.id];
+        return next;
+      });
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
     } finally {
@@ -772,6 +904,10 @@ const ArenaInventory = () => {
                         <ol className="grid gap-3 sm:grid-cols-2">
                           {visiblePieces.items.map((piece) => {
                           const isEquipping = actioningId === `equip:${piece.id}`;
+                          const isEnhancing = actioningId === `enhance:${piece.id}`;
+                          const fodderOptions = fodderOptionsByPieceId[piece.id] || [];
+                          const selectedFodder = getSelectedFodderId(piece);
+                          const nextEnhanceCost = enhancementCost(piece.enhancementLevel || 0);
                           return (
                             <li key={piece.id} className="py-2">
                               <article className="flex items-start gap-3">
@@ -801,19 +937,67 @@ const ArenaInventory = () => {
                                           disabled={actioningId !== null}
                                           className="arena-redraw-button hover:animate-wiggle"
                                         >
-                                          [ fodder +500 ]
+                                          [ scrap +500 ]
                                         </button>
                                       </>
                                     )}
                                   </div>
                                   <p className="text-xs text-slate-600">
-                                    {SLOT_LABELS[piece.slot] || piece.slot} · {MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +{piece.mainStatValue}
+                                    {SLOT_LABELS[piece.slot] || piece.slot} · {MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +{mainStatValue(piece)}
+                                    {(piece.enhancementLevel || 0) > 0 ? ` · +${piece.enhancementLevel}` : ""}
                                   </p>
-                                  <p className="text-xs text-blue-600">
-                                    {piece.subStats
-                                      .map((s) => `${statLabel(s.type)} +${s.value}`)
-                                      .join(" · ")}
-                                  </p>
+                                  <div className="flex flex-wrap gap-1 text-xs text-blue-600">
+                                    {piece.subStats.map((s, index) => (
+                                      <button
+                                        key={`${piece.id}:${index}:${s.type}`}
+                                        type="button"
+                                        onClick={() => void handleRerollSubStat(piece, index)}
+                                        disabled={actioningId !== null || !selectedFodder}
+                                        className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        title="Reroll this substat"
+                                      >
+                                        {actioningId === `reroll:${piece.id}:${index}`
+                                          ? "rerolling..."
+                                          : `${statLabel(s.type)} +${s.value}`}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                                    <label className="flex items-center gap-1">
+                                      Scrap
+                                      <select
+                                        value={selectedFodder}
+                                        onChange={(event) => {
+                                          setSelectedFodderId((current) => ({
+                                            ...current,
+                                            [piece.id]: event.target.value,
+                                          }));
+                                        }}
+                                        disabled={actioningId !== null || fodderOptions.length === 0}
+                                        className="rounded border border-blue-100 bg-white/80 px-1 py-0.5 text-blue-800"
+                                      >
+                                        {fodderOptions.length === 0 ? (
+                                          <option value="">none</option>
+                                        ) : fodderOptions.map((fodder) => (
+                                          <option key={fodder.id} value={fodder.id}>
+                                            {equipmentDisplayName(fodder)} +{mainStatValue(fodder)}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleEnhance(piece)}
+                                      disabled={actioningId !== null || !selectedFodder || nextEnhanceCost === null}
+                                      className="arena-redraw-button hover:animate-wiggle"
+                                    >
+                                      {isEnhancing
+                                        ? "[ enhancing... ]"
+                                        : nextEnhanceCost === null
+                                          ? "[ max +15 ]"
+                                          : `[ enhance ${nextEnhanceCost} ]`}
+                                    </button>
+                                  </div>
                                 </div>
                               </article>
                             </li>

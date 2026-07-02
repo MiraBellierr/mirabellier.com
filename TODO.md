@@ -266,11 +266,11 @@
 
 #### 🟢 Day 4: Equipment System Improvements
 
-- [ ] **Tighten substat roll ranges** — `dmgPct: [10, 20]`, `critDmg: [15, 50]`, `defendPct: [10, 25]`, `hpPct: [3, 10]`, `crit: [8, 20]`.
-- [ ] **Add equipment enhancement system** — Spend coins + fodder pieces for +1 main stat per level, +1 to +15 with exponential costs.
-- [ ] **Add "reroll one substat" feature** — 500 coins + 1 fodder piece, pick one substat to reroll.
-- [ ] **Fix `hpPct` display in profile** — Factor `hpPct` into displayed HP in `toPublicProfile`.
-- [ ] **Rename substat `crit` → `critRate`** in `SUB_STAT_POOL` for consistency.
+- [x] **Tighten substat roll ranges** — `dmgPct: [10, 20]`, `critDmg: [15, 50]`, `defendPct: [10, 25]`, `hpPct: [3, 10]`, `critRate: [8, 20]`.
+- [x] **Add equipment enhancement system** — Spend coins + fodder pieces for +1 main stat per level, +1 to +15 with exponential costs.
+- [x] **Add "reroll one substat" feature** — 500 coins + 1 fodder piece, pick one substat to reroll.
+- [x] **Fix `hpPct` display in profile** — Factor `hpPct` into displayed HP in `toPublicProfile`.
+- [x] **Rename substat `crit` → `critRate`** in `SUB_STAT_POOL` for consistency.
 
 ---
 

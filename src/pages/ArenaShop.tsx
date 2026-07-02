@@ -213,7 +213,7 @@ function EquipmentRewardModal({
   const SUB_LABELS: Record<string, string> = {
     hp: "HP", power: "P", guard: "G", speed: "S", effectHit: "EH",
     hpPct: "HP%", dmgPct: "DMG%", defendPct: "DEF%",
-    crit: "CRIT", critDmg: "CDMG",
+    crit: "CRIT", critRate: "CRIT", critDmg: "CDMG",
   };
 
   return createPortal(
@@ -271,7 +271,7 @@ function EquipmentRewardModal({
                 onClick={() => onFodder(pieceId, Math.floor(price / 2))}
                 className="arena-redraw-button hover:animate-wiggle"
               >
-                [ fodder +{Math.floor(price / 2)} ]
+                [ scrap +{Math.floor(price / 2)} ]
               </button>
             ) : null}
           </div>
@@ -620,9 +620,9 @@ const ArenaShop = () => {
   const handleFodderReward = useCallback(async (pieceId: string, refundAmount: number) => {
     if (!token) return;
     const confirmed = await confirm({
-      title: "Fodder equipment?",
-      message: `Convert this gear to ${refundAmount} coins? This cannot be undone.`,
-      confirmLabel: "Fodder",
+      title: "Scrap equipment?",
+      message: `Scrap this gear for ${refundAmount} coins? This cannot be undone.`,
+      confirmLabel: "Scrap",
       cancelLabel: "Cancel",
     });
     if (!confirmed) return;

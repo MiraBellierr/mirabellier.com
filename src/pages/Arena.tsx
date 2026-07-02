@@ -118,6 +118,7 @@ const EQUIPMENT_SUB_NAMES: Record<string, string> = {
   dmgPct: "Fury",
   defendPct: "Bulwark",
   crit: "Precision",
+  critRate: "Precision",
   critDmg: "Ruin",
 };
 
@@ -141,7 +142,9 @@ function equipmentDisplayName(piece: NonNullable<ArenaProfile["equipment"]["weap
 
 function equipmentSummary(piece: NonNullable<ArenaProfile["equipment"]["weapon"]>) {
   const main = EQUIPMENT_MAIN_LABELS[piece.mainStatType] || piece.mainStatType;
-  return `${equipmentDisplayName(piece)} (${main} +${piece.mainStatValue})`;
+  const enhancementLevel = piece.enhancementLevel || 0;
+  const mainValue = piece.enhancedMainStatValue ?? piece.mainStatValue;
+  return `${equipmentDisplayName(piece)} (${main} +${mainValue}${enhancementLevel > 0 ? `, +${enhancementLevel}` : ""})`;
 }
 
 const Arena = () => {
@@ -388,7 +391,7 @@ const Arena = () => {
                           ) : null}
                           <span className="text-xs text-sky-600 dark:text-purple-300">
                             {(profile.equipmentPct?.hpPct || 0) > 0
-                              ? `(+${profile.equipmentPct?.hpPct || 0}% equip → ${Math.floor(profile.stats.total.hp * (1 + (profile.equipmentPct?.hpPct || 0) / 100))})`
+                              ? `(+${profile.equipmentPct?.hpPct || 0}% equip)`
                               : formatStatSources({
                                 equipment: profile.stats.equipment.hp,
                                 card: profile.stats.card.hp,
