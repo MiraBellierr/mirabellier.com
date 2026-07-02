@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
@@ -19,6 +20,8 @@ import {
   equipArenaItem,
   fetchArenaShop,
   fodderArenaPiece,
+  lockArenaPiece,
+  unlockArenaPiece,
   rerollArenaSubStat,
   saveEquipmentLoadout,
   restoreEquipmentLoadout,
@@ -38,13 +41,11 @@ import { useConfirm } from "@/states/ConfirmContext";
 
 type InventoryTab = "weapon" | "armor" | "charm" | "consumable" | "cardItem";
 
-const TABS: Array<{ id: InventoryTab; label: string }> = [
-  { id: "weapon", label: "Weapons" },
-  { id: "armor", label: "Armour" },
-  { id: "charm", label: "Charms" },
-  { id: "consumable", label: "Consumables" },
-  { id: "cardItem", label: "Card Items" },
-];
+type SubStatKey = "hp" | "power" | "guard" | "speed" | "effectHit" | "hpPct" | "dmgPct" | "defendPct" | "critRate" | "critDmg";
+type GearSort = "recent" | "mainStat-desc" | "mainStat-asc" | "enhance-desc" | "enhance-asc" | "equipped-first" | `sub-${SubStatKey}-desc` | `sub-${SubStatKey}-asc`;
+type ItemSort = "name-asc" | "name-desc" | "qty-desc" | "qty-asc";
+
+const SORTABLE_SUBSTATS: SubStatKey[] = ["hp", "power", "guard", "speed", "effectHit", "hpPct", "dmgPct", "defendPct", "critRate", "critDmg"];
 
 const SUB_STAT_LABELS: Record<string, string> = {
   hp: "HP",
@@ -59,6 +60,65 @@ const SUB_STAT_LABELS: Record<string, string> = {
   critRate: "CRIT",
   critDmg: "CDMG",
 };
+
+const GEAR_SORT_LABELS: Record<GearSort, string> = {
+  recent: "Recent",
+  "mainStat-desc": "Main Stat ▼",
+  "mainStat-asc": "Main Stat ▲",
+  "enhance-desc": "Enhance ▼",
+  "enhance-asc": "Enhance ▲",
+  "equipped-first": "Equipped first",
+  ...Object.fromEntries(
+    SORTABLE_SUBSTATS.flatMap((key) => [
+      [`sub-${key}-desc`, `${SUB_STAT_LABELS[key] || key} ▼`],
+      [`sub-${key}-asc`, `${SUB_STAT_LABELS[key] || key} ▲`],
+    ]),
+  ) as Record<`sub-${SubStatKey}-desc` | `sub-${SubStatKey}-asc`, string>,
+};
+
+type PrimaryGearSort = "recent" | "mainStat-desc" | "mainStat-asc" | "enhance-desc" | "enhance-asc" | "equipped-first" | "sub-desc" | "sub-asc";
+
+function primaryToGearSort(primary: PrimaryGearSort, subStat: SubStatKey): GearSort {
+  if (primary === "sub-desc") return `sub-${subStat}-desc`;
+  if (primary === "sub-asc") return `sub-${subStat}-asc`;
+  return primary;
+}
+
+function gearSortToPrimary(sort: GearSort): { primary: PrimaryGearSort; subStat: SubStatKey } {
+  if (sort.startsWith("sub-")) {
+    const rest = sort.slice(4);
+    const lastDash = rest.lastIndexOf("-");
+    const key = rest.slice(0, lastDash) as SubStatKey;
+    return { primary: rest.endsWith("-desc") ? "sub-desc" : "sub-asc", subStat: key };
+  }
+  return { primary: sort as PrimaryGearSort, subStat: "hp" };
+}
+
+const PRIMARY_GEAR_SORT_LABELS: Record<PrimaryGearSort, string> = {
+  recent: "Recent",
+  "mainStat-desc": "Main Stat ▼",
+  "mainStat-asc": "Main Stat ▲",
+  "enhance-desc": "Enhance ▼",
+  "enhance-asc": "Enhance ▲",
+  "equipped-first": "Equipped first",
+  "sub-desc": "Sub-stat ▼",
+  "sub-asc": "Sub-stat ▲",
+};
+
+const ITEM_SORT_LABELS: Record<ItemSort, string> = {
+  "name-asc": "Name A–Z",
+  "name-desc": "Name Z–A",
+  "qty-desc": "Qty ▼",
+  "qty-asc": "Qty ▲",
+};
+
+const TABS: Array<{ id: InventoryTab; label: string }> = [
+  { id: "weapon", label: "Weapons" },
+  { id: "armor", label: "Armour" },
+  { id: "charm", label: "Charms" },
+  { id: "consumable", label: "Consumables" },
+  { id: "cardItem", label: "Card Items" },
+];
 
 const MAIN_STAT_LABELS: Record<string, string> = {
   power: "Power",
@@ -113,6 +173,70 @@ function enhancementCost(level: number) {
   return Math.round(350 * (1.45 ** Math.max(0, level)));
 }
 
+function getSubStatValue(piece: ArenaEquipmentPiece, type: string): number {
+  const sub = piece.subStats.find((s) => s.type === type || (type === "crit" && s.type === "critRate"));
+  return sub ? sub.value : 0;
+}
+
+function sortGearPieces(pieces: ArenaEquipmentPiece[], sort: GearSort): ArenaEquipmentPiece[] {
+  const sorted = [...pieces];
+  if (sort.startsWith("sub-")) {
+    // Pattern: sub-{type}-{dir}
+    const rest = sort.slice(4); // remove "sub-"
+    const lastDash = rest.lastIndexOf("-");
+    const type = rest.slice(0, lastDash);
+    const dir = rest.slice(lastDash + 1);
+    sorted.sort((a, b) => {
+      const va = getSubStatValue(a, type);
+      const vb = getSubStatValue(b, type);
+      return dir === "desc" ? vb - va : va - vb;
+    });
+    return sorted;
+  }
+  switch (sort) {
+    case "mainStat-desc":
+      sorted.sort((a, b) => (b.enhancedMainStatValue ?? b.mainStatValue) - (a.enhancedMainStatValue ?? a.mainStatValue));
+      break;
+    case "mainStat-asc":
+      sorted.sort((a, b) => (a.enhancedMainStatValue ?? a.mainStatValue) - (b.enhancedMainStatValue ?? b.mainStatValue));
+      break;
+    case "enhance-desc":
+      sorted.sort((a, b) => (b.enhancementLevel || 0) - (a.enhancementLevel || 0));
+      break;
+    case "enhance-asc":
+      sorted.sort((a, b) => (a.enhancementLevel || 0) - (b.enhancementLevel || 0));
+      break;
+    case "equipped-first":
+      sorted.sort((a, b) => (b.equipped ? 1 : 0) - (a.equipped ? 1 : 0));
+      break;
+    case "recent":
+    default:
+      sorted.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      break;
+  }
+  return sorted;
+}
+
+function sortItems<T extends { name: string; ownedQuantity: number }>(items: T[], sort: ItemSort): T[] {
+  const sorted = [...items];
+  switch (sort) {
+    case "name-desc":
+      sorted.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    case "qty-desc":
+      sorted.sort((a, b) => b.ownedQuantity - a.ownedQuantity);
+      break;
+    case "qty-asc":
+      sorted.sort((a, b) => a.ownedQuantity - b.ownedQuantity);
+      break;
+    case "name-asc":
+    default:
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+  }
+  return sorted;
+}
+
 function slotSpriteItem(slot: string): ArenaShopItem {
   return {
     id: SLOT_TO_ITEM_ID[slot] || slot,
@@ -148,30 +272,6 @@ function mainStatValue(piece: { mainStatValue: number; enhancedMainStatValue?: n
   return piece.enhancedMainStatValue ?? piece.mainStatValue;
 }
 
-function pieceSummary(piece: {
-  mainStatType: string;
-  mainStatValue: number;
-  enhancedMainStatValue?: number;
-  enhancementLevel?: number;
-  subStats: ArenaSubStat[];
-}) {
-  const enhanced = Math.max(0, piece.enhancementLevel || 0);
-  const main = `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +${mainStatValue(piece)}${enhanced > 0 ? ` (+${enhanced})` : ""}`;
-  const subs = piece.subStats
-    .map((s) => `${statLabel(s.type)} +${s.value}`)
-    .join(" · ");
-  return `${main} · ${subs}`;
-}
-
-function equippedSummary(piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }) {
-  return (
-    <>
-      <span className="font-bold">{equipmentDisplayName(piece)}</span>
-      <span className="text-blue-700"> ({pieceSummary(piece)})</span>
-    </>
-  );
-}
-
 function flattenItems(shop: ArenaShopResponse | null) {
   if (!shop) return [] as ArenaShopItem[];
   return shop.shop.flatMap((tier) => tier.items);
@@ -202,6 +302,14 @@ const ArenaInventory = () => {
   const [loadoutName, setLoadoutName] = useState("");
   const [loadoutActionId, setLoadoutActionId] = useState<string | null>(null);
   const [selectedFodderId, setSelectedFodderId] = useState<Record<string, string>>({});
+  const [gearSort, setGearSort] = useState<GearSort>("recent");
+  const [gearSubStat, setGearSubStat] = useState<SubStatKey>("hp");
+  const [itemSort, setItemSort] = useState<ItemSort>("name-asc");
+  const [enhanceModal, setEnhanceModal] = useState<{
+    piece: ArenaEquipmentPiece;
+    fodderId: string;
+  } | null>(null);
+  const [fodderSort, setFodderSort] = useState<GearSort>("recent");
   const PER_PAGE = 20;
 
   usePageSeo({
@@ -250,28 +358,31 @@ const ArenaInventory = () => {
   );
 
   const consumables = useMemo(
-    () =>
-      flattenItems(shop)
-        .filter((item) => item.ownedQuantity > 0 && item.type === "consumable")
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [shop],
+    () => {
+      const filtered = flattenItems(shop)
+        .filter((item) => item.ownedQuantity > 0 && item.type === "consumable");
+      return sortItems(filtered, itemSort);
+    },
+    [shop, itemSort],
   );
 
   const cardItems = useMemo(
-    () =>
-      (shop?.cardItems || [])
-        .filter((item) => item.ownedQuantity > 0 && item.type === "card")
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [shop],
+    () => {
+      const filtered = (shop?.cardItems || [])
+        .filter((item) => item.ownedQuantity > 0 && item.type === "card");
+      return sortItems(filtered, itemSort);
+    },
+    [shop, itemSort],
   );
 
   const visiblePieces = useMemo(
     () => {
       const filtered = pieces.filter((p) => p.slot === tab);
+      const sorted = sortGearPieces(filtered, gearSort);
       const start = (page - 1) * PER_PAGE;
-      return { items: filtered.slice(start, start + PER_PAGE), total: filtered.length };
+      return { items: sorted.slice(start, start + PER_PAGE), total: sorted.length };
     },
-    [pieces, tab, page],
+    [pieces, tab, page, gearSort],
   );
 
   const totalPages = useMemo(
@@ -298,11 +409,18 @@ const ArenaInventory = () => {
       result[piece.id] = pieces.filter((candidate) => (
         candidate.id !== piece.id &&
         !candidate.equipped &&
+        !candidate.locked &&
         candidate.slot === piece.slot
       ));
     });
     return result;
   }, [pieces]);
+
+  const sortedFodderForModal = useMemo(() => {
+    if (!enhanceModal) return [];
+    const raw = fodderOptionsByPieceId[enhanceModal.piece.id] || [];
+    return sortGearPieces(raw, fodderSort);
+  }, [enhanceModal, fodderOptionsByPieceId, fodderSort]);
 
   const getSelectedFodderId = (piece: ArenaEquipmentPiece) => {
     const options = fodderOptionsByPieceId[piece.id] || [];
@@ -446,9 +564,27 @@ const ArenaInventory = () => {
     }
   };
 
-  const handleEnhance = async (piece: ArenaEquipmentPiece) => {
+  const handleToggleLock = async (piece: ArenaEquipmentPiece) => {
     if (!token) return;
-    const fodderPieceId = getSelectedFodderId(piece);
+    setActioningId(`lock:${piece.id}`);
+    setErrorMessage(null);
+    try {
+      if (piece.locked) {
+        await unlockArenaPiece(token, piece.id);
+      } else {
+        await lockArenaPiece(token, piece.id);
+      }
+      const refreshed = await fetchArenaShop(token);
+      setShop(refreshed);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleEnhance = async (piece: ArenaEquipmentPiece, fodderPieceId: string) => {
+    if (!token) return;
     const cost = enhancementCost(piece.enhancementLevel || 0);
     if (!fodderPieceId || cost === null) return;
     const confirmed = await confirm({
@@ -464,11 +600,6 @@ const ArenaInventory = () => {
     try {
       const payload = await enhanceArenaPiece(token, piece.id, fodderPieceId);
       setShop(payload.shop);
-      setSelectedFodderId((current) => {
-        const next = { ...current };
-        delete next[piece.id];
-        return next;
-      });
     } catch (error) {
       setErrorMessage(normalizeArenaError(error));
     } finally {
@@ -624,6 +755,22 @@ const ArenaInventory = () => {
     [pieces],
   );
 
+  const loadoutNamesByPieceId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    loadouts.forEach((loadout) => {
+      const pieceIds = [loadout.weaponPieceId, loadout.armorPieceId, loadout.charmPieceId];
+      pieceIds.forEach((pieceId) => {
+        if (!pieceId) return;
+        const names = map.get(pieceId) || [];
+        if (!names.includes(loadout.name)) {
+          names.push(loadout.name);
+        }
+        map.set(pieceId, names);
+      });
+    });
+    return map;
+  }, [loadouts]);
+
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
       <Header />
@@ -631,18 +778,18 @@ const ArenaInventory = () => {
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
-        <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">
+        <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-3 p-2 sm:gap-4 sm:p-4 lg:flex-row">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
           </div>
 
-          <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <section className="card-border space-y-4 bg-white/60 p-4">
+          <main className="w-full space-y-2 p-1 sm:p-4 lg:w-3/5">
+            <section className="card-border space-y-4 bg-white/60 p-3 sm:p-4">
               <div>
-                <h2 className="text-4xl font-bold text-blue-900">
+                <h2 className="text-3xl font-bold leading-tight text-blue-900 sm:text-4xl">
                   Inventory {`>^. .^<`}
                 </h2>
-                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+                <p className="mt-2 text-sm font-black leading-relaxed text-blue-800 sm:text-base">
                   <span className="text-pink-300">✿</span> All your Arena
                   treasures, tucked safely in one place!{" "}
                   <span className="text-pink-300">✿</span>
@@ -662,47 +809,78 @@ const ArenaInventory = () => {
                 <p className="text-blue-500">Loading inventory...</p>
               ) : shop ? (
                 <div className="space-y-4">
-                  <div className="border-y border-sky-500 p-3 text-sm text-blue-950">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <p className="text-lg font-semibold underline">Equipped Gear</p>
-                        <p>✦ Weapon: {shop.equipped.weapon
-                          ? equippedSummary(shop.equipped.weapon)
-                          : "none"}{" "}
-                          {shop.equipped.weapon ? (
-                            <button type="button" onClick={() => void handleUnequip("weapon")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
-                          ) : null}
-                        </p>
-                        <p>✦ Armour: {shop.equipped.armor
-                          ? equippedSummary(shop.equipped.armor)
-                          : "none"}{" "}
-                          {shop.equipped.armor ? (
-                            <button type="button" onClick={() => void handleUnequip("armor")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
-                          ) : null}
-                        </p>
-                        <p>✦ Charm: {shop.equipped.charm
-                          ? equippedSummary(shop.equipped.charm)
-                          : "none"}{" "}
-                          {shop.equipped.charm ? (
-                            <button type="button" onClick={() => void handleUnequip("charm")} disabled={actioningId !== null} className="arena-redraw-button hover:animate-wiggle text-xs">[ unequip ]</button>
-                          ) : null}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-semibold underline">Bag Summary</p>
-                        <p>✦ Equipment pieces: {pieces.length}</p>
-                        <p>✦ Card items: {cardItems.reduce((sum, item) => sum + item.ownedQuantity, 0)}</p>
-                        <p>✦ Coins: {shop.profile.coins.toLocaleString()} 🪙</p>
-                      </div>
+                  <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 sm:p-4">
+                    <p className="mb-3 text-lg font-bold text-sky-700">✦ Equipped Gear</p>
+                    <div>
+                      {(["weapon", "armor", "charm"] as const).map((slot) => {
+                        const piece = shop.equipped[slot];
+                        return (
+                          <div key={slot} className="py-2.5 first:pt-0 last:pb-0">
+                            <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:gap-3">
+                              <span className="w-14 shrink-0 pt-1 text-xs font-bold uppercase tracking-wide text-sky-400 sm:pt-0">
+                                {SLOT_LABELS[slot]}
+                              </span>
+                              {piece ? (
+                                <>
+                                  <ArenaItemSprite item={slotSpriteItem(piece.slot)} className="h-7 w-7 shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                      <span className="text-sm font-bold text-blue-700">
+                                        {equipmentDisplayName(piece)}
+                                      </span>
+                                      <span className="text-xs text-slate-500">
+                                        {MAIN_STAT_LABELS[piece.mainStatType]} +{mainStatValue(piece)}
+                                        {(piece.enhancementLevel || 0) > 0 ? ` · +${piece.enhancementLevel}` : ""}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                                      {piece.subStats.map((s, i) => (
+                                        <span
+                                          key={`${slot}:${i}:${s.type}`}
+                                          className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700"
+                                        >
+                                          {statLabel(s.type)} +{s.value}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleUnequip(slot)}
+                                    disabled={actioningId !== null}
+                                    className="arena-redraw-button hover:animate-wiggle basis-full text-left text-xs sm:basis-auto sm:text-right"
+                                  >
+                                    {actioningId === `unequip:${slot}` ? "[ unequipping... ]" : "[ unequip ]"}
+                                  </button>
+                                </>
+                              ) : (
+                                <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm italic text-sky-300">
+                                  <span>empty</span>
+                                  <Link to="/arena/shop" className="text-xs text-sky-500 underline not-italic">
+                                    visit shop →
+                                  </Link>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-sky-200 pt-3 text-xs text-sky-600 sm:flex sm:flex-wrap sm:gap-x-5">
+                      <span><span className="font-semibold">Pieces:</span> {pieces.length}</span>
+                      <span><span className="font-semibold">Card items:</span> {cardItems.reduce((sum, item) => sum + item.ownedQuantity, 0)}</span>
+                      <span className="col-span-2 sm:col-span-1"><span className="font-semibold">Coins:</span> {shop.profile.coins.toLocaleString()} 🪙</span>
+                    </div>
+
                     {activeEffects.length > 0 ? (
-                      <div className="mt-3 border-t border-sky-200 pt-2">
-                        <p className="font-semibold underline">Active Effects</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="mt-3 border-t border-sky-200 pt-3">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sky-500">Active Effects</p>
+                        <div className="flex flex-wrap gap-2">
                           {activeEffects.map((effect) => (
                             <span
                               key={effect}
-                              className="rounded border border-sky-200 bg-white/70 px-2 py-1 text-xs font-semibold text-blue-800"
+                              className="rounded-full border border-sky-300 bg-white/80 px-2.5 py-1 text-xs font-semibold text-sky-700"
                             >
                               {effect}
                             </span>
@@ -712,8 +890,8 @@ const ArenaInventory = () => {
                     ) : null}
                   </div>
 
-                  <div className="border-t border-sky-200 pt-3">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="rounded-xl border border-blue-100 bg-white/40 p-3 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                       <p className="text-sm font-semibold text-blue-900">Loadouts:</p>
                       <input
                         type="text"
@@ -723,14 +901,14 @@ const ArenaInventory = () => {
                           if (e.key === "Enter") void handleSaveLoadout();
                         }}
                         placeholder="loadout name..."
-                        className="rounded border border-blue-200 bg-white/80 px-2 py-1 text-xs text-blue-800 placeholder-blue-300 outline-none focus:border-blue-400"
+                        className="w-full rounded border border-blue-200 bg-white/80 px-2 py-2 text-sm text-blue-800 placeholder-blue-300 outline-none focus:border-blue-400 sm:w-auto sm:py-1 sm:text-xs"
                         disabled={loadoutActionId !== null}
                       />
                       <button
                         type="button"
                         onClick={() => void handleSaveLoadout()}
                         disabled={loadoutActionId !== null}
-                        className="arena-redraw-button hover:animate-wiggle text-xs"
+                        className="arena-redraw-button hover:animate-wiggle text-left text-xs sm:text-center"
                       >
                         {loadoutActionId === "save" ? "[ saving... ]" : "[ save loadout ]"}
                       </button>
@@ -748,9 +926,9 @@ const ArenaInventory = () => {
 
                           return (
                             <div key={loadout.id} className="rounded border border-blue-100 bg-blue-50/60 p-2 text-xs text-blue-900">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                                 <span className="font-bold">{loadout.name}</span>
-                                <span className="flex gap-1">
+                                <span className="flex flex-wrap gap-1">
                                   {hasAnyPiece ? (
                                     <button
                                       type="button"
@@ -773,23 +951,23 @@ const ArenaInventory = () => {
                                   </button>
                                 </span>
                               </div>
-                              <div className="mt-1 text-blue-600">
+                              <div className="mt-2 grid gap-1 text-blue-600 sm:block">
                                 {weapon ? (
-                                  <span>✦ Weapon: {equipmentDisplayName(weapon)}</span>
+                                  <span className="block sm:inline">✦ Weapon: {equipmentDisplayName(weapon)}</span>
                                 ) : (
-                                  <span className="text-blue-300">✦ Weapon: —</span>
+                                  <span className="block text-blue-300 sm:inline">✦ Weapon: —</span>
                                 )}
-                                {" · "}
+                                <span className="hidden sm:inline"> · </span>
                                 {armor ? (
-                                  <span>✦ Armour: {equipmentDisplayName(armor)}</span>
+                                  <span className="block sm:inline">✦ Armour: {equipmentDisplayName(armor)}</span>
                                 ) : (
-                                  <span className="text-blue-300">✦ Armour: —</span>
+                                  <span className="block text-blue-300 sm:inline">✦ Armour: —</span>
                                 )}
-                                {" · "}
+                                <span className="hidden sm:inline"> · </span>
                                 {charm ? (
-                                  <span>✦ Charm: {equipmentDisplayName(charm)}</span>
+                                  <span className="block sm:inline">✦ Charm: {equipmentDisplayName(charm)}</span>
                                 ) : (
-                                  <span className="text-blue-300">✦ Charm: —</span>
+                                  <span className="block text-blue-300 sm:inline">✦ Charm: —</span>
                                 )}
                               </div>
                             </div>
@@ -801,13 +979,13 @@ const ArenaInventory = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     {TABS.map((entry) => (
                       <button
                         key={entry.id}
                         type="button"
                         onClick={() => handleTabChange(entry.id)}
-                        className="arena-redraw-button hover:animate-wiggle"
+                        className="arena-redraw-button hover:animate-wiggle rounded-lg border border-blue-100 bg-white/50 px-2 text-center text-sm sm:border-0 sm:bg-transparent sm:px-0"
                       >
                         {tab === entry.id
                           ? `[ » ${entry.label} « ]`
@@ -816,23 +994,74 @@ const ArenaInventory = () => {
                     ))}
                   </div>
 
+                  <div className="flex flex-col gap-2 text-xs sm:flex-row sm:items-center">
+                    <label htmlFor="inventory-sort" className="text-slate-500 dark:text-slate-400">sort:</label>
+                    {tab === "consumable" || tab === "cardItem" ? (
+                      <select
+                        id="inventory-sort"
+                        value={itemSort}
+                        onChange={(event) => { setItemSort(event.target.value as ItemSort); setPage(1); }}
+                        className="w-full rounded-lg border border-blue-200 bg-white px-2 py-2 text-sm text-slate-700 dark:border-purple-700/40 dark:bg-slate-800 dark:text-purple-200 sm:w-auto sm:py-1 sm:text-xs"
+                      >
+                        {(Object.keys(ITEM_SORT_LABELS) as ItemSort[]).map((key) => (
+                          <option key={key} value={key} className="dark:bg-slate-800 dark:text-slate-200">{ITEM_SORT_LABELS[key]}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <>
+                        <select
+                          id="inventory-sort"
+                          value={gearSortToPrimary(gearSort).primary}
+                          onChange={(event) => {
+                            const primary = event.target.value as PrimaryGearSort;
+                            setGearSort(primaryToGearSort(primary, gearSubStat));
+                            setPage(1);
+                          }}
+                          className="w-full rounded-lg border border-blue-200 bg-white px-2 py-2 text-sm text-slate-700 dark:border-purple-700/40 dark:bg-slate-800 dark:text-purple-200 sm:w-auto sm:py-1 sm:text-xs"
+                        >
+                          {(Object.keys(PRIMARY_GEAR_SORT_LABELS) as PrimaryGearSort[]).map((key) => (
+                            <option key={key} value={key} className="dark:bg-slate-800 dark:text-slate-200">{PRIMARY_GEAR_SORT_LABELS[key]}</option>
+                          ))}
+                        </select>
+                        {gearSort.startsWith("sub-") && (
+                          <select
+                            id="inventory-substat"
+                            value={gearSubStat}
+                            onChange={(event) => {
+                              const key = event.target.value as SubStatKey;
+                              setGearSubStat(key);
+                              const dir = gearSort.endsWith("-desc") ? "desc" : "asc";
+                              setGearSort(`sub-${key}-${dir}` as GearSort);
+                              setPage(1);
+                            }}
+                            className="w-full rounded-lg border border-blue-200 bg-white px-2 py-2 text-sm text-slate-700 dark:border-purple-700/40 dark:bg-slate-800 dark:text-purple-200 sm:w-auto sm:py-1 sm:text-xs"
+                          >
+                            {SORTABLE_SUBSTATS.map((key) => (
+                              <option key={key} value={key} className="dark:bg-slate-800 dark:text-slate-200">{SUB_STAT_LABELS[key] || key}</option>
+                            ))}
+                          </select>
+                        )}
+                      </>
+                    )}
+                  </div>
+
                   {tab === "consumable" ? (
                     consumables.length > 0 ? (
                       <ol className="grid gap-3 sm:grid-cols-2">
                         {consumables.map((item) => {
                           const isUsing = actioningId === `use:${item.id}`;
                           return (
-                            <li key={item.id} className="py-2">
+                            <li key={item.id} className="rounded-xl border border-blue-100 bg-white/50 p-3 sm:border-0 sm:bg-transparent sm:py-2">
                               <article className="flex items-start gap-3">
-                                <ArenaItemSprite item={item} className="h-16 w-16" />
+                                <ArenaItemSprite item={item} className="h-12 w-12 shrink-0 sm:h-16 sm:w-16" />
                                 <div className="min-w-0 flex-1 space-y-1">
-                                  <div className="flex flex-wrap items-center gap-2">
+                                  <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
                                     <p className="font-bold text-blue-700">{item.name}</p>
                                     <button
                                       type="button"
                                       onClick={() => void handleUse(item)}
                                       disabled={actioningId !== null}
-                                      className="arena-redraw-button hover:animate-wiggle"
+                                      className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
                                     >
                                       {isUsing ? "[ using... ]" : "[ use ]"}
                                     </button>
@@ -862,17 +1091,17 @@ const ArenaInventory = () => {
                           const selectedCardIsMaxIv = isMaxIvCard(shop.profile.selectedCard);
                           const selectedCardHasItem = hasCardItem(shop.profile.selectedCard, item.id);
                           return (
-                            <li key={item.id} className="py-2">
+                            <li key={item.id} className="rounded-xl border border-blue-100 bg-white/50 p-3 sm:border-0 sm:bg-transparent sm:py-2">
                               <article className="flex items-start gap-3">
-                                <ArenaItemSprite item={item} className="h-16 w-16" />
+                                <ArenaItemSprite item={item} className="h-12 w-12 shrink-0 sm:h-16 sm:w-16" />
                                 <div className="min-w-0 flex-1 space-y-1">
-                                  <div className="flex flex-wrap items-center gap-2">
+                                  <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
                                     <p className="font-bold text-blue-700">{item.name}</p>
                                     <button
                                       type="button"
                                       onClick={() => void handleUse(item)}
                                       disabled={actioningId !== null || !selectedCardIsMaxIv || selectedCardHasItem}
-                                      className="arena-redraw-button hover:animate-wiggle"
+                                      className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
                                     >
                                       {isUsing ? "[ using... ]" : "[ use ]"}
                                     </button>
@@ -904,17 +1133,18 @@ const ArenaInventory = () => {
                         <ol className="grid gap-3 sm:grid-cols-2">
                           {visiblePieces.items.map((piece) => {
                           const isEquipping = actioningId === `equip:${piece.id}`;
+                          const isFoddering = actioningId === `fodder:${piece.id}`;
                           const isEnhancing = actioningId === `enhance:${piece.id}`;
-                          const fodderOptions = fodderOptionsByPieceId[piece.id] || [];
+                          const isLocking = actioningId === `lock:${piece.id}`;
                           const selectedFodder = getSelectedFodderId(piece);
                           const nextEnhanceCost = enhancementCost(piece.enhancementLevel || 0);
                           return (
-                            <li key={piece.id} className="py-2">
+                            <li key={piece.id} className="rounded-xl border border-blue-100 bg-white/50 p-3 sm:border-0 sm:bg-transparent sm:py-2">
                               <article className="flex items-start gap-3">
-                                <ArenaItemSprite item={slotSpriteItem(piece.slot)} className="h-10 w-10" />
+                                <ArenaItemSprite item={slotSpriteItem(piece.slot)} className="h-10 w-10 shrink-0" />
                                 <div className="min-w-0 flex-1 space-y-1">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className="font-bold text-blue-700">
+                                  <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+                                    <p className="break-words font-bold leading-tight text-blue-700">
                                       {equipmentDisplayName(piece)}
                                     </p>
                                     {piece.equipped ? (
@@ -922,26 +1152,37 @@ const ArenaInventory = () => {
                                         equipped
                                       </span>
                                     ) : (
-                                      <>
-                                        <button
-                                          type="button"
-                                          onClick={() => void handleEquipPiece(piece)}
-                                          disabled={actioningId !== null}
-                                          className="arena-redraw-button hover:animate-wiggle"
-                                        >
-                                          {isEquipping ? "[ equipping... ]" : "[ equip ]"}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => void handleFodder(piece)}
-                                          disabled={actioningId !== null}
-                                          className="arena-redraw-button hover:animate-wiggle"
-                                        >
-                                          [ scrap +500 ]
-                                        </button>
-                                      </>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleEquipPiece(piece)}
+                                        disabled={actioningId !== null}
+                                        className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
+                                      >
+                                        {isEquipping ? "[ equipping... ]" : "[ equip ]"}
+                                      </button>
                                     )}
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleToggleLock(piece)}
+                                      disabled={actioningId !== null}
+                                      className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
+                                      title={piece.locked ? "Unlock to allow scrapping" : "Lock to prevent accidental scrap"}
+                                    >
+                                      {isLocking ? "[ ... ]" : piece.locked ? "[ 🔒 ]" : "[ 🔓 ]"}
+                                    </button>
                                   </div>
+                                  {loadoutNamesByPieceId.has(piece.id) && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {loadoutNamesByPieceId.get(piece.id)!.map((name) => (
+                                        <span
+                                          key={name}
+                                          className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-400/20 dark:text-purple-200 dark:ring-1 dark:ring-inset dark:ring-purple-300/40"
+                                        >
+                                          {name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                   <p className="text-xs text-slate-600">
                                     {SLOT_LABELS[piece.slot] || piece.slot} · {MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +{mainStatValue(piece)}
                                     {(piece.enhancementLevel || 0) > 0 ? ` · +${piece.enhancementLevel}` : ""}
@@ -953,7 +1194,7 @@ const ArenaInventory = () => {
                                         type="button"
                                         onClick={() => void handleRerollSubStat(piece, index)}
                                         disabled={actioningId !== null || !selectedFodder}
-                                        className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="min-h-7 rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                                         title="Reroll this substat"
                                       >
                                         {actioningId === `reroll:${piece.id}:${index}`
@@ -962,34 +1203,26 @@ const ArenaInventory = () => {
                                       </button>
                                     ))}
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                                    <label className="flex items-center gap-1">
-                                      Scrap
-                                      <select
-                                        value={selectedFodder}
-                                        onChange={(event) => {
-                                          setSelectedFodderId((current) => ({
-                                            ...current,
-                                            [piece.id]: event.target.value,
-                                          }));
-                                        }}
-                                        disabled={actioningId !== null || fodderOptions.length === 0}
-                                        className="rounded border border-blue-100 bg-white/80 px-1 py-0.5 text-blue-800"
+                                  <div className="grid gap-1 text-xs text-slate-600 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+                                    {!piece.equipped && (
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleFodder(piece)}
+                                        disabled={actioningId !== null}
+                                        className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
                                       >
-                                        {fodderOptions.length === 0 ? (
-                                          <option value="">none</option>
-                                        ) : fodderOptions.map((fodder) => (
-                                          <option key={fodder.id} value={fodder.id}>
-                                            {equipmentDisplayName(fodder)} +{mainStatValue(fodder)}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </label>
+                                        {isFoddering ? "[ scrapping... ]" : "[ scrap +500 ]"}
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
-                                      onClick={() => void handleEnhance(piece)}
-                                      disabled={actioningId !== null || !selectedFodder || nextEnhanceCost === null}
-                                      className="arena-redraw-button hover:animate-wiggle"
+                                      onClick={() => {
+                                        const options = fodderOptionsByPieceId[piece.id] || [];
+                                        if (options.length === 0 || nextEnhanceCost === null) return;
+                                        setEnhanceModal({ piece, fodderId: options[0].id });
+                                      }}
+                                      disabled={actioningId !== null || (fodderOptionsByPieceId[piece.id] || []).length === 0 || nextEnhanceCost === null}
+                                      className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
                                     >
                                       {isEnhancing
                                         ? "[ enhancing... ]"
@@ -1005,12 +1238,12 @@ const ArenaInventory = () => {
                         })}
                       </ol>
                       {totalPages > 1 ? (
-                        <div className="flex items-center justify-between">
+                        <div className="grid gap-2 text-center sm:flex sm:items-center sm:justify-between">
                           <button
                             type="button"
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
                             disabled={page <= 1}
-                            className="arena-redraw-button hover:animate-wiggle"
+                            className="arena-redraw-button hover:animate-wiggle order-2 sm:order-none"
                           >
                             [ « prev ]
                           </button>
@@ -1021,7 +1254,7 @@ const ArenaInventory = () => {
                             type="button"
                             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                             disabled={page >= totalPages}
-                            className="arena-redraw-button hover:animate-wiggle"
+                            className="arena-redraw-button hover:animate-wiggle order-3 sm:order-none"
                           >
                             [ next » ]
                           </button>
@@ -1045,7 +1278,7 @@ const ArenaInventory = () => {
             <Divider />
           </main>
 
-          <aside className="mb-auto w-full space-y-4 lg:w-1/5">
+          <aside className="mb-auto w-full space-y-4 px-1 sm:px-0 lg:w-1/5">
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">
@@ -1059,6 +1292,131 @@ const ArenaInventory = () => {
         </div>
       </div>
       <Footer />
+
+      {enhanceModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40 p-2 dark:bg-black/60 sm:items-center sm:p-4" onClick={() => setEnhanceModal(null)}>
+            <div
+              className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border-2 border-pink-200 bg-white/95 p-3 shadow-2xl backdrop-blur-sm dark:border-pink-700/60 dark:bg-slate-900/95 sm:max-h-[85vh] sm:rounded-2xl sm:p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-start justify-between gap-3 sm:gap-4">
+                <div className="min-w-0">
+                  <h3 className="break-words text-base font-bold text-pink-700 dark:text-pink-400 sm:text-lg">
+                    ✦ Enhance {equipmentDisplayName(enhanceModal.piece)}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {SLOT_LABELS[enhanceModal.piece.slot]} · {MAIN_STAT_LABELS[enhanceModal.piece.mainStatType]} +{mainStatValue(enhanceModal.piece)}
+                    {(enhanceModal.piece.enhancementLevel || 0) > 0 ? ` · +${enhanceModal.piece.enhancementLevel}` : ""}
+                    {" → "}+{mainStatValue(enhanceModal.piece) + 1}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEnhanceModal(null)}
+                  className="text-xl leading-none text-pink-400 hover:text-pink-600 dark:text-pink-500 dark:hover:text-pink-300 transition"
+                  title="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <p className="text-sm font-semibold text-pink-600 dark:text-pink-400">
+                  Select a piece to scrap as fodder:
+                </p>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="fodder-sort" className="text-xs text-slate-400 dark:text-slate-500">sort:</label>
+                  <select
+                    id="fodder-sort"
+                    value={fodderSort}
+                    onChange={(e) => setFodderSort(e.target.value as GearSort)}
+                    className="min-w-0 flex-1 rounded border border-pink-200 bg-white px-2 py-2 text-sm text-slate-600 dark:border-pink-700/40 dark:bg-slate-800 dark:!text-purple-100 dark:[color-scheme:dark] sm:flex-none sm:py-0.5 sm:text-xs"
+                  >
+                    {(Object.keys(GEAR_SORT_LABELS) as GearSort[])
+                      .filter((key) => key !== "equipped-first")
+                      .map((key) => (
+                        <option key={key} value={key} className="dark:bg-slate-800 dark:text-slate-200">{GEAR_SORT_LABELS[key]}</option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              {sortedFodderForModal.length > 0 ? (
+                <ol className="grid max-h-[48vh] grid-auto-rows-[1fr] gap-3 overflow-y-auto rounded-lg border border-pink-100 bg-pink-50/30 p-2 dark:border-pink-800/30 dark:bg-pink-950/20 sm:max-h-96 sm:grid-cols-2 sm:p-3">
+                  {sortedFodderForModal.map((fodder) => {
+                    const isSelected = enhanceModal.fodderId === fodder.id;
+                    return (
+                      <li key={fodder.id} className="h-full">
+                        <button
+                          type="button"
+                          onClick={() => setEnhanceModal({ piece: enhanceModal.piece, fodderId: fodder.id })}
+                          className={`h-full w-full rounded-xl border p-3 text-left transition ring-2 ${
+                            isSelected
+                              ? "border-pink-400 bg-pink-100/80 ring-pink-300/50 dark:border-pink-500/70 dark:bg-pink-900/40 dark:ring-pink-500/30"
+                              : "border-slate-200 bg-white/70 ring-transparent hover:border-pink-200 hover:bg-pink-50/60 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-pink-700/50 dark:hover:bg-pink-950/30"
+                          }`}
+                        >
+                          <article className="flex items-start gap-3">
+                            <ArenaItemSprite item={slotSpriteItem(fodder.slot)} className="h-10 w-10 shrink-0" />
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <p className="break-words text-sm font-bold leading-tight text-blue-700 dark:text-purple-200">
+                                {equipmentDisplayName(fodder)}
+                              </p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400">
+                                {SLOT_LABELS[fodder.slot] || fodder.slot} · {MAIN_STAT_LABELS[fodder.mainStatType] || fodder.mainStatType} +{mainStatValue(fodder)}
+                                {(fodder.enhancementLevel || 0) > 0 ? ` · +${fodder.enhancementLevel}` : ""}
+                              </p>
+                              <div className="flex flex-wrap gap-1 text-[10px] text-blue-600 dark:text-purple-300">
+                                {fodder.subStats.map((s, index) => (
+                                  <span
+                                    key={`${fodder.id}:${index}:${s.type}`}
+                                    className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 dark:border-purple-700/40 dark:bg-slate-800/80 dark:text-purple-300"
+                                  >
+                                    {statLabel(s.type)} +{s.value}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <span className={`shrink-0 text-lg leading-none mt-1 ${isSelected ? "text-pink-500 dark:text-pink-400" : "invisible"}`}>✓</span>
+                          </article>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <div className="rounded-xl border border-pink-100 bg-pink-50/60 p-6 text-center text-sm text-pink-400 dark:border-pink-800/30 dark:bg-pink-950/20 dark:text-pink-500/60">
+                  <p>No eligible fodder pieces.</p>
+                  <p className="mt-1 text-xs">You need another unequipped, unlocked {enhanceModal.piece.slot} of the same type.</p>
+                </div>
+              )}
+
+              <div className="mt-5 grid gap-2 sm:flex sm:justify-end sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEnhanceModal(null)}
+                  className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
+                >
+                  [ cancel ]
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const m = enhanceModal;
+                    setEnhanceModal(null);
+                    await handleEnhance(m.piece, m.fodderId);
+                  }}
+                  disabled={sortedFodderForModal.length === 0}
+                  className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
+                >
+                  [ enhance {enhancementCost(enhanceModal.piece.enhancementLevel || 0)?.toLocaleString()} ]
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

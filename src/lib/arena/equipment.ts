@@ -44,6 +44,32 @@ export async function unequipArenaSlot(
 
   return (await response.json()) as { success: boolean; slot: string };
 }
+export async function lockArenaPiece(
+  token: string,
+  pieceId: string,
+): Promise<{ pieceId: string; locked: true }> {
+  const response = await fetch(joinApi("/arena/shop/lock"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ pieceId }),
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { pieceId: string; locked: true };
+}
+export async function unlockArenaPiece(
+  token: string,
+  pieceId: string,
+): Promise<{ pieceId: string; locked: false }> {
+  const response = await fetch(joinApi("/arena/shop/unlock"), {
+    method: "POST",
+    credentials: "include",
+    headers: makeAuthHeaders(token),
+    body: JSON.stringify({ pieceId }),
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { pieceId: string; locked: false };
+}
 export async function fodderArenaPiece(
   token: string,
   pieceId: string,

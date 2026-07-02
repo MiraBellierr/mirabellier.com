@@ -44,6 +44,7 @@ export type ArenaEquipmentPiece = {
   enhancedMainStatValue: number;
   subStats: ArenaSubStat[];
   equipped: boolean;
+  locked: boolean;
   createdAt: string | null;
 };
 export type ArenaSpriteRef = {
