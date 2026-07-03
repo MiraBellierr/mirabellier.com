@@ -26,6 +26,49 @@ function normalizeArenaError(error: unknown) {
 }
 
 type Step = "pick" | "preview";
+type MintSort =
+  | "recent"
+  | "rarity-desc"
+  | "rarity-asc"
+  | "iv-desc"
+  | "iv-asc"
+  | "power-desc"
+  | "guard-desc"
+  | "speed-desc"
+  | "effectHit-desc"
+  | "name-asc";
+
+const ELEMENTS = ["", "Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
+const RARITY_ORDER = ["C", "R", "SR", "SSR", "UR"] as const;
+const rarityRank = (rarity: string | null | undefined) =>
+  Math.max(0, RARITY_ORDER.indexOf((rarity || "C") as (typeof RARITY_ORDER)[number]));
+
+function compareMintCards(a: ArenaCard, b: ArenaCard, sort: MintSort) {
+  const recent = (b.drawnAt || "").localeCompare(a.drawnAt || "");
+  switch (sort) {
+    case "rarity-desc":
+      return rarityRank(b.rarity) - rarityRank(a.rarity) || recent;
+    case "rarity-asc":
+      return rarityRank(a.rarity) - rarityRank(b.rarity) || recent;
+    case "iv-desc":
+      return (b.iv?.total || 0) - (a.iv?.total || 0) || recent;
+    case "iv-asc":
+      return (a.iv?.total || 0) - (b.iv?.total || 0) || recent;
+    case "power-desc":
+      return (b.iv?.power || 0) - (a.iv?.power || 0) || recent;
+    case "guard-desc":
+      return (b.iv?.guard || 0) - (a.iv?.guard || 0) || recent;
+    case "speed-desc":
+      return (b.iv?.speed || 0) - (a.iv?.speed || 0) || recent;
+    case "effectHit-desc":
+      return (b.iv?.effectHit || 0) - (a.iv?.effectHit || 0) || recent;
+    case "name-asc":
+      return a.title.localeCompare(b.title) || recent;
+    case "recent":
+    default:
+      return recent;
+  }
+}
 
 function MobileSwapGhost({ slot, pos, card }: { slot: 0 | 1 | null; pos: { clientX: number; clientY: number } | null; card: ArenaCard | null }) {
   if (slot === null || !pos || !card) return null;
@@ -73,6 +116,10 @@ const ArenaMint = () => {
   const [mintedCard, setMintedCard] = useState<ArenaCard | null>(null);
   const [actioning, setActioning] = useState(false);
   const [draggedSlot, setDraggedSlot] = useState<0 | 1 | null>(null);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<MintSort>("recent");
+  const [rarityFilter, setRarityFilter] = useState("");
+  const [elementFilter, setElementFilter] = useState("");
 
   // Mobile touch drag
   const [mobileDragSlot, setMobileDragSlot] = useState<0 | 1 | null>(null);
@@ -164,12 +211,50 @@ const ArenaMint = () => {
   }, [token]);
 
   const mintable = useMemo(() => {
-    return mintGroups.map(({ malId, cards, total }) => ({
-      malId,
-      cards: cards.slice(0, 5),
-      total,
-    }));
-  }, [mintGroups]);
+    const normalizedQuery = query.trim().toLowerCase();
+    return mintGroups
+      .map(({ malId, cards, total }) => {
+        const filtered = cards
+          .filter((card) => {
+            const matchesQuery =
+              !normalizedQuery ||
+              card.title.toLowerCase().includes(normalizedQuery) ||
+              card.rarity.toLowerCase().includes(normalizedQuery) ||
+              String(card.malId).includes(normalizedQuery);
+            const matchesRarity = !rarityFilter || card.rarity === rarityFilter;
+            const matchesElement = !elementFilter || card.element === elementFilter;
+            return matchesQuery && matchesRarity && matchesElement;
+          })
+          .sort((a, b) => compareMintCards(a, b, sort));
+
+        return {
+          malId,
+          cards: filtered.slice(0, 12),
+          total,
+          visibleTotal: filtered.length,
+        };
+      })
+      .filter((group) => group.cards.length > 0)
+      .sort((a, b) => {
+        const cardA = a.cards[0];
+        const cardB = b.cards[0];
+        if (!cardA || !cardB) return b.visibleTotal - a.visibleTotal;
+        return compareMintCards(cardA, cardB, sort) || b.visibleTotal - a.visibleTotal;
+      });
+  }, [mintGroups, query, rarityFilter, elementFilter, sort]);
+
+  const visibleMintCardIds = useMemo(
+    () => new Set(mintable.flatMap((group) =>
+      group.cards
+        .map((card) => card.cardInstanceId)
+        .filter((id): id is string => !!id),
+    )),
+    [mintable],
+  );
+
+  useEffect(() => {
+    setPicked((prev) => prev.filter((id) => visibleMintCardIds.has(id)));
+  }, [visibleMintCardIds]);
 
   const togglePick = (instanceId: string) => {
     setPicked((prev) => {
@@ -301,7 +386,7 @@ const ArenaMint = () => {
                         </button>
                       </div>
                     </div>
-                  ) : !mintable.length ? (
+                  ) : !mintGroups.length ? (
                     <p className="text-blue-500">No duplicate cards found. Draw more cards to collect duplicates for minting!</p>
                   ) : step === "preview" && previewCard ? (
                     <div className="space-y-4">
@@ -389,8 +474,79 @@ const ArenaMint = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm text-blue-600">
+                          Mintable groups: {mintable.length}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <label htmlFor="mint-sort" className="text-xs text-slate-500">
+                            sort:
+                          </label>
+                          <select
+                            id="mint-sort"
+                            value={sort}
+                            onChange={(event) => setSort(event.target.value as MintSort)}
+                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
+                          >
+                            <option value="recent">Recent</option>
+                            <option value="rarity-desc">Rarity ▼</option>
+                            <option value="rarity-asc">Rarity ▲</option>
+                            <option value="iv-desc">IV ▼</option>
+                            <option value="iv-asc">IV ▲</option>
+                            <option value="power-desc">Power ▼</option>
+                            <option value="guard-desc">Guard ▼</option>
+                            <option value="speed-desc">Speed ▼</option>
+                            <option value="effectHit-desc">Effect Hit ▼</option>
+                            <option value="name-asc">Name A-Z</option>
+                          </select>
+                          <select
+                            id="mint-rarity"
+                            value={rarityFilter}
+                            onChange={(event) => setRarityFilter(event.target.value)}
+                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
+                          >
+                            <option value="">All rarity</option>
+                            {RARITY_ORDER.map((rarity) => (
+                              <option key={rarity} value={rarity}>{rarity}</option>
+                            ))}
+                          </select>
+                          <select
+                            id="mint-element"
+                            value={elementFilter}
+                            onChange={(event) => setElementFilter(event.target.value)}
+                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
+                          >
+                            {ELEMENTS.map((element) => (
+                              <option key={element || "all"} value={element}>
+                                {element || "All elements"}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            id="mint-search"
+                            type="search"
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            placeholder="Lelouch Lamperouge..."
+                            className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                          />
+                          {query || rarityFilter || elementFilter ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQuery("");
+                                setRarityFilter("");
+                                setElementFilter("");
+                              }}
+                              className="arena-redraw-button text-xs"
+                            >
+                              [ clear filters ]
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
                       <div className="max-h-[55vh] overflow-y-auto [scrollbar-gutter:stable] space-y-4 pr-1">
-                      {mintable.map(({ malId, cards, total }) => {
+                      {mintable.length > 0 ? mintable.map(({ malId, cards, total, visibleTotal }) => {
                         const characterTitle = cards[0].title;
                         const possibleFirstId = cards[0].cardInstanceId;
                         if (!possibleFirstId) return null;
@@ -399,7 +555,9 @@ const ArenaMint = () => {
                           <div key={malId} className="space-y-2">
                             <h3 className="text-blue-900 font-extrabold text-sm">
                               {characterTitle}{" "}
-                              <span className="text-blue-600 font-semibold">({total} copies)</span>
+                              <span className="text-blue-600 font-semibold">
+                                ({visibleTotal === total ? total : `${visibleTotal}/${total}`} copies)
+                              </span>
                             </h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                               {cards.map((card) => {
@@ -441,7 +599,9 @@ const ArenaMint = () => {
                             </div>
                           </div>
                         );
-                      })}
+                      }) : (
+                        <p className="text-sm text-slate-600">No duplicate cards match these filters.</p>
+                      )}
                       </div>
 
                       {pickedCards.length === 2 ? (

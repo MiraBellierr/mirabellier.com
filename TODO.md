@@ -276,16 +276,15 @@
 
 #### 🔵 Day 5: Consumable & Effect Tuning
 
-- [ ] **Normalize consumable durations** — `coinBoostWinsRemaining: 250` (was 40), `gateKeyCharges: 50+` or remove.
-- [ ] **Implement material drops** — `rollFightMaterialRewards()` returns 0–2 random materials per win based on opponent level.
-- [ ] **Add recipe inputs for consumables** — Add material requirements to make the material drop system meaningful.
-- [ ] **Document & enforce consumable stacking rules** — Additive for same-type, multiplicative across types, with global cap.
+- [x] **Remove unused consumables**.
+- [x] **Document & enforce consumable stacking rules** — Same-type values stay fixed while charges/durations increase; different effect types stack through combat with a global cap.
+- [x] **add sort, filter and search like in collection into mint page**
 
 ---
 
 #### 🟣 Day 6: AFK Quality of Life
 
-- [ ] **Add "Instant Resolve" toggle** — Skip fight animation, show result immediately. Store preference in profile.
+- [ ] **Remove hide page stop**: hiding pages wont stop the auto fight anymore. but minimizing the browser will stop it.
 - [ ] **Add auto-fight stop conditions** — Stop on loss, on level-up, after N fights.
 - [ ] **Add session summary** — "While you were away: W wins, L losses, +XP, +coins, Lv↑."
 - [ ] **Add fight speed setting** — Normal, Fast (2×), Instant.

@@ -323,7 +323,6 @@ export function describeConsumableEffect(effect: ArenaConsumableRule | null | un
   if (kind === "double_passive_trigger") {
     return `Double passive trigger chance for ${toNumber(effect.fights, 1)} fight(s)`;
   }
-  if (kind === "restore_consumable_charge") return `Restore ${toNumber(effect.charges, 1)} consumable charge`;
   if (kind === "ascension") {
     return `+1 permanent all stats (${toNumber(effect.cooldownDays, 7)} day cooldown)`;
   }
@@ -350,7 +349,6 @@ export function getEffectFieldForKind(kind: string) {
     case "first_attack_double":   return { field: "firstAttackDoubleCharges" as const };
     case "iv_boost":              return { field: "ivBoostCharges" as const };
     case "self_revive":           return { field: "selfReviveCharges" as const };
-    case "restore_consumable_charge": return null;
     default: return null;
   }
 }
