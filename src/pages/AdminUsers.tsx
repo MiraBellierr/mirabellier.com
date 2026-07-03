@@ -389,7 +389,7 @@ const AdminUsers = () => {
         deletedPurchases: number;
       };
       setShopRerollResult(
-        `Rerolled ${data.dailyOffers.length} card(s) for ${data.offerDate}. Cleared ${data.deletedOffers} offer(s) and ${data.deletedPurchases} purchase marker(s).`,
+        `Cleared ${data.deletedOffers} personal card shop offer(s) for ${data.offerDate} and ${data.deletedPurchases} purchase marker(s). Shops regenerate on next visit.`,
       );
     } catch (error) {
       setShopRerollResult(
@@ -751,7 +751,7 @@ const AdminUsers = () => {
                     <span className="text-xs font-semibold">Force random pack</span>
                   </label>
                   <div className="border-t border-blue-200 pt-2 dark:border-slate-700">
-                    <p className="mb-2 text-xs">Regenerate today's global card shop offers for everyone.</p>
+                    <p className="mb-2 text-xs">Clear today's generated personal card shop offers for everyone. New offers are generated when each player opens the shop.</p>
                     <button
                       type="button"
                       onClick={() => void handleRerollShop()}
