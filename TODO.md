@@ -284,10 +284,12 @@
 
 #### 🟣 Day 6: AFK Quality of Life
 
-- [ ] **Remove hide page stop**: hiding pages wont stop the auto fight anymore. but minimizing the browser will stop it.
-- [ ] **Add auto-fight stop conditions** — Stop on loss, on level-up, after N fights.
-- [ ] **Add session summary** — "While you were away: W wins, L losses, +XP, +coins, Lv↑."
-- [ ] **Add fight speed setting** — Normal, Fast (2×), Instant.
+- [x] **Remove hide page stop**: hiding pages wont stop the auto fight anymore. but minimizing the browser will stop it.
+- [x] **Add auto-fight stop conditions** — Stop on loss, on level-up, after N fights.
+- [x] **Add session summary** — "While you were away: W wins, L losses, +XP, +coins, Lv↑."
+- [x] **Add fight speed setting** — Normal, Fast (2×), Instant.
+- [x] change consumable effect to be capped from 6 to 4.
+
 
 ---
 

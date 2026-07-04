@@ -53,6 +53,32 @@ function normalizeArenaError(error: unknown) {
 
 type DmgFloater = { key: number; value: number; crit: boolean; x: number; y: number };
 type ElemFloater = { key: number; label: string; color: string; x: number; y: number };
+type FightSpeed = "normal" | "fast" | "instant";
+type AutoSessionSummary = {
+  fights: number;
+  wins: number;
+  losses: number;
+  xp: number;
+  coins: number;
+  levelsGained: number;
+};
+
+const FIGHT_SPEED_DELAYS_MS: Record<FightSpeed, number> = {
+  normal: 800,
+  fast: 400,
+  instant: 0,
+};
+
+function createEmptyAutoSessionSummary(): AutoSessionSummary {
+  return {
+    fights: 0,
+    wins: 0,
+    losses: 0,
+    xp: 0,
+    coins: 0,
+    levelsGained: 0,
+  };
+}
 
 function HpBar({
   current,
@@ -119,6 +145,15 @@ const ArenaFight = () => {
   const [opponentFallen, setOpponentFallen] = useState(false);
   const [autoBattle, setAutoBattle] = useState(false);
   const [nextAutoFightAt, setNextAutoFightAt] = useState<number | null>(null);
+  const [autoStopOnLoss, setAutoStopOnLoss] = useState(false);
+  const [autoStopOnLevelUp, setAutoStopOnLevelUp] = useState(false);
+  const [autoFightLimit, setAutoFightLimit] = useState(0);
+  const [fightSpeed, setFightSpeed] = useState<FightSpeed>("normal");
+  const [showAdvancedFightSettings, setShowAdvancedFightSettings] = useState(false);
+  const [autoSessionSummary, setAutoSessionSummary] = useState<AutoSessionSummary>(() =>
+    createEmptyAutoSessionSummary(),
+  );
+  const [autoStopReason, setAutoStopReason] = useState<string | null>(null);
   const [showTutorialModal, setShowTutorialModal] = useState(false);
   const playerCardRef = useRef<HTMLDivElement | null>(null);
   const opponentCardRef = useRef<HTMLDivElement | null>(null);
@@ -134,6 +169,9 @@ const ArenaFight = () => {
   const pageVisible = useRef(true);
   const advanceLockRef = useRef(false);
   const playedTurnIndices = useRef(new Set<number>());
+  const fightSpeedRef = useRef<FightSpeed>("normal");
+  const countedAutoFightIdsRef = useRef(new Set<string>());
+  const autoSessionSummaryRef = useRef<AutoSessionSummary>(createEmptyAutoSessionSummary());
 
   const boostedIv = useMemo(() => {
     if (!profile?.selectedCard?.iv || !profile.effects?.ivBoostCharges || profile.effects.ivBoostCharges <= 0) return null;
@@ -156,6 +194,7 @@ const ArenaFight = () => {
 
   tokenRef.current = token;
   activeFightRef.current = activeFight;
+  fightSpeedRef.current = fightSpeed;
 
   const activeFightId = activeFight?.fightId ?? null;
   const activeFightCursor = activeFight?.cursor ?? null;
@@ -163,8 +202,15 @@ const ArenaFight = () => {
   const activeFightPlayerHp = activeFight?.battle.currentHp.player ?? 0;
   const activeFightOpponentHp = activeFight?.battle.currentHp.opponent ?? 0;
 
-  const TURN_ADVANCE_DELAY_MS = 800;
   const isSocketConnected = fightConnected;
+
+  const resetAutoSession = useCallback((seedFinishedFightId?: string | null) => {
+    const empty = createEmptyAutoSessionSummary();
+    countedAutoFightIdsRef.current = new Set(seedFinishedFightId ? [seedFinishedFightId] : []);
+    autoSessionSummaryRef.current = empty;
+    setAutoSessionSummary(empty);
+    setAutoStopReason(null);
+  }, []);
 
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current !== null) {
@@ -226,25 +272,23 @@ const ArenaFight = () => {
     };
   }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
 
-  // Pause auto-battle when tab loses focus; reconnect handler resumes on foreground
+  // Keep auto-battle alive when switching tabs; only hard page lifecycle exits stop timers.
   useEffect(() => {
-    const onVisibility = () => {
-      pageVisible.current = document.visibilityState === "visible";
-      if (!pageVisible.current) {
-        clearAutoTimer();
-      }
-    };
     const onPageHide = () => {
+      pageVisible.current = false;
       clearAutoTimer();
       clearAdvanceTimer();
       clearSafetyTimer();
       advanceLockRef.current = false;
     };
-    document.addEventListener("visibilitychange", onVisibility);
+    const onPageShow = () => {
+      pageVisible.current = true;
+    };
     window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
     return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
     };
   }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
 
@@ -455,10 +499,15 @@ const ArenaFight = () => {
       processFightState(state);
       if (!state.isFinished) {
         clearAdvanceTimer();
+        const delayMs = FIGHT_SPEED_DELAYS_MS[fightSpeedRef.current];
         advanceTimerRef.current = window.setTimeout(() => {
           advanceTimerRef.current = null;
-          sendAdvanceRef.current();
-        }, TURN_ADVANCE_DELAY_MS);
+          if (fightSpeedRef.current === "instant") {
+            handleSkipRef.current();
+          } else {
+            sendAdvanceRef.current();
+          }
+        }, delayMs);
       } else {
         const profilePayload = await fetchArenaProfile(t);
         setProfile(profilePayload);
@@ -547,6 +596,15 @@ const ArenaFight = () => {
   const sendAdvanceRef = useRef(sendAdvance);
   sendAdvanceRef.current = sendAdvance;
 
+  const handleSkip = useCallback(() => {
+    if (advanceLockRef.current) return;
+    advanceLockRef.current = true;
+    queueFightCommand("arena:fight:skip");
+  }, [queueFightCommand]);
+
+  const handleSkipRef = useRef(handleSkip);
+  handleSkipRef.current = handleSkip;
+
   // Register fight event listeners on the dedicated socket
   useEffect(() => {
     const socket = socketRef.current;
@@ -565,10 +623,15 @@ const ArenaFight = () => {
           processFightState(state);
           if (!state.isFinished) {
             clearAdvanceTimer();
+            const delayMs = FIGHT_SPEED_DELAYS_MS[fightSpeedRef.current];
             advanceTimerRef.current = window.setTimeout(() => {
               advanceTimerRef.current = null;
-              sendAdvance();
-            }, TURN_ADVANCE_DELAY_MS);
+              if (fightSpeedRef.current === "instant") {
+                handleSkipRef.current();
+              } else {
+                sendAdvance();
+              }
+            }, delayMs);
           } else {
             clearAdvanceTimer();
             const t = tokenRef.current;
@@ -656,19 +719,51 @@ const ArenaFight = () => {
 
   handleStartFightRef.current = handleStartFight;
 
-  const handleSkip = useCallback(() => {
-    if (advanceLockRef.current) return;
-    advanceLockRef.current = true;
-    queueFightCommand("arena:fight:skip");
-  }, [queueFightCommand]);
+  const handleAutoBattleChange = useCallback((enabled: boolean) => {
+    if (enabled) {
+      resetAutoSession(activeFight?.isFinished ? activeFight.fightId : null);
+      setAutoBattle(true);
+      return;
+    }
 
-  const handleSkipRef = useRef(handleSkip);
-  handleSkipRef.current = handleSkip;
+    clearAutoTimer();
+    setAutoBattle(false);
+  }, [activeFight, clearAutoTimer, resetAutoSession]);
 
   // Auto-battle: restart when a fight finishes and auto is enabled
   useEffect(() => {
-    if (!autoBattle || !activeFightFinished || !pageVisible.current) return;
+    if (!autoBattle || !activeFightFinished || !activeFight?.fightId || !pageVisible.current) return;
     clearAutoTimer();
+    let nextSummary = autoSessionSummaryRef.current;
+    if (!countedAutoFightIdsRef.current.has(activeFight.fightId)) {
+      countedAutoFightIdsRef.current.add(activeFight.fightId);
+      nextSummary = {
+        fights: nextSummary.fights + 1,
+        wins: nextSummary.wins + (activeFight.result === "win" ? 1 : 0),
+        losses: nextSummary.losses + (activeFight.result === "loss" ? 1 : 0),
+        xp: nextSummary.xp + (activeFight.rewards?.xp ?? 0),
+        coins: nextSummary.coins + (activeFight.rewards?.coins ?? 0),
+        levelsGained: nextSummary.levelsGained + (activeFight.rewards?.levelsGained ?? 0),
+      };
+      autoSessionSummaryRef.current = nextSummary;
+      setAutoSessionSummary(nextSummary);
+    }
+
+    const stopReason =
+      autoStopOnLoss && activeFight.result === "loss"
+        ? "Auto stopped after a loss."
+        : autoStopOnLevelUp && (activeFight.rewards?.levelsGained ?? 0) > 0
+          ? "Auto stopped after a level-up."
+          : autoFightLimit > 0 && nextSummary.fights >= autoFightLimit
+            ? `Auto stopped after ${nextSummary.fights} fight${nextSummary.fights === 1 ? "" : "s"}.`
+            : null;
+
+    if (stopReason) {
+      setAutoBattle(false);
+      setAutoStopReason(stopReason);
+      return;
+    }
+
     setNextAutoFightAt(Date.now() + 1500);
     autoTimerRef.current = window.setTimeout(() => {
       autoTimerRef.current = null;
@@ -676,7 +771,15 @@ const ArenaFight = () => {
       void handleStartFightRef.current(true);
     }, 1500);
     return () => clearAutoTimer();
-  }, [activeFightFinished, autoBattle, clearAutoTimer]);
+  }, [
+    activeFight,
+    activeFightFinished,
+    autoBattle,
+    autoFightLimit,
+    autoStopOnLevelUp,
+    autoStopOnLoss,
+    clearAutoTimer,
+  ]);
 
   // ---- Derived display state ----
 
@@ -859,28 +962,41 @@ const ArenaFight = () => {
                       </div>
                     ) : null}
 
-                    {fightFinished ? (
-                      <div className={`p-3 text-center text-sm font-semibold ${activeFight?.result === "win" ? "text-emerald-700" : "text-red-700"}`}>
-                        <p>{resultText}</p>
-                        <p className="mt-1 text-xs font-bold text-blue-700 dark:text-sky-200">
-                          +{activeFight?.rewards?.xp ?? 0} EXP · +
-                          {activeFight?.rewards?.coins ?? 0} coins
-                        </p>
-                        {activeFight?.rewards?.elo?.rated ? (
-                          <p className="mt-1 text-xs font-bold text-purple-600 dark:text-purple-200">
-                            ELO {activeFight.rewards.elo.playerDelta >= 0 ? "+" : ""}
-                            {activeFight.rewards.elo.playerDelta} ·{" "}
-                            {activeFight.rewards.elo.playerAfter}
+                    <div
+                      className={`flex h-24 flex-col items-center justify-center p-3 text-center text-sm font-semibold ${
+                        fightFinished
+                          ? activeFight?.result === "win"
+                            ? "text-emerald-700"
+                            : "text-red-700"
+                          : "text-pink-400"
+                      }`}
+                      aria-live="polite"
+                    >
+                      {fightFinished ? (
+                        <>
+                          <p>{resultText}</p>
+                          <p className="mt-1 text-xs font-bold text-blue-700 dark:text-sky-200">
+                            +{activeFight?.rewards?.xp ?? 0} EXP · +
+                            {activeFight?.rewards?.coins ?? 0} coins
                           </p>
-                        ) : (
-                          <p className="mt-1 text-xs font-normal text-slate-500 dark:text-slate-300">
-                            Unrated NPC fight
-                          </p>
-                        )}
-                      </div>
-                    ) : null}
+                          {activeFight?.rewards?.elo?.rated ? (
+                            <p className="mt-1 text-xs font-bold text-purple-600 dark:text-purple-200">
+                              ELO {activeFight.rewards.elo.playerDelta >= 0 ? "+" : ""}
+                              {activeFight.rewards.elo.playerDelta} ·{" "}
+                              {activeFight.rewards.elo.playerAfter}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs font-normal text-slate-500 dark:text-slate-300">
+                              Unrated NPC fight
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p>Ready for battle! ♪(´▽｀)</p>
+                      )}
+                    </div>
 
-                    <div className="flex flex-wrap justify-center gap-2">
+                    <div className="flex min-h-11 flex-wrap items-center justify-center gap-2">
                       {!fightInProgress ? (
                         <button
                           type="button"
@@ -906,32 +1022,130 @@ const ArenaFight = () => {
                       ) : null}
                     </div>
 
-                    <div className="flex justify-center">
-                      <label
-                        className={`flex items-center gap-2 text-sm font-bold select-none ${
-                          verified
-                            ? "cursor-pointer text-blue-800"
-                            : "cursor-not-allowed text-slate-400"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={autoBattle}
-                          disabled={!verified}
-                          onChange={(e) => setAutoBattle(e.target.checked)}
-                          className="accent-blue-600 w-4 h-4 disabled:cursor-not-allowed"
-                        />
-                        Auto
-                      </label>
-                      {autoBattle && nextAutoFightAt !== null ? (
-                        <span
-                          ref={countdownRef}
-                          className="ml-3 text-sm font-bold text-blue-600 dark:text-sky-200"
-                          aria-live="polite"
-                        >
-                          Next fight in...s
-                        </span>
+                    <div className="flex min-h-5 items-center justify-center">
+                      {autoSessionSummary.fights > 0 ? (
+                        <p className="text-center text-xs font-black text-blue-700 dark:text-purple-200">
+                          While you were away: {autoSessionSummary.wins} wins, {autoSessionSummary.losses} losses, +
+                          {autoSessionSummary.xp} EXP, +{autoSessionSummary.coins} coins
+                          {autoSessionSummary.levelsGained > 0 ? `, Lv +${autoSessionSummary.levelsGained}` : ""}.
+                        </p>
                       ) : null}
+                    </div>
+
+                    {showAdvancedFightSettings ? (
+                      <div className="mx-auto max-w-md space-y-2 px-1 py-1 text-sm font-bold text-blue-800 dark:text-purple-100">
+                        <div className="flex min-h-9 flex-wrap items-center justify-between gap-3">
+                          <span className="text-blue-900 dark:text-purple-100">auto fight:</span>
+                          <div className="flex items-center gap-2">
+                            <label
+                              className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-black text-blue-800  shadow-blue-200/60 dark:text-purple-100 dark:shadow-purple-950/60 ${
+                                verified ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={autoBattle}
+                                disabled={!verified}
+                                onChange={(event) => handleAutoBattleChange(event.target.checked)}
+                                className="h-4 w-4 accent-pink-500 disabled:cursor-not-allowed"
+                              />
+                              {autoBattle ? "on" : "off"}
+                            </label>
+                            <span
+                              ref={countdownRef}
+                              className="w-32 shrink-0 truncate text-xs font-black text-pink-500 dark:text-pink-300"
+                              aria-live="polite"
+                              title={autoStopReason ?? undefined}
+                            >
+                              {autoBattle && nextAutoFightAt !== null
+                                ? "Next fight in...s"
+                                : autoBattle
+                                  ? "Running"
+                                  : autoStopReason ?? ""}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex min-h-9 flex-wrap items-center justify-between gap-3">
+                          <span className="text-blue-900 dark:text-purple-100">speed:</span>
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {(["normal", "fast", "instant"] as const).map((speed) => (
+                              <button
+                                key={speed}
+                                type="button"
+                                onClick={() => setFightSpeed(speed)}
+                                aria-pressed={fightSpeed === speed}
+                                className={`px-1 py-1 text-xs font-black transition focus:outline-none focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-300 ${
+                                  fightSpeed === speed
+                                    ? "text-pink-500 dark:text-pink-300"
+                                    : "text-blue-600 hover:text-pink-400 dark:text-purple-200 dark:hover:text-pink-300"
+                                }`}
+                              >
+                                [{speed === "normal" ? "1x" : speed === "fast" ? "2x" : "skip"}]
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <label className="flex min-h-9 flex-wrap items-center justify-between gap-3">
+                          <span className="text-blue-900 dark:text-purple-100">auto fight limit:</span>
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={999}
+                              value={autoFightLimit || ""}
+                              placeholder="0"
+                              onChange={(event) => setAutoFightLimit(Math.max(0, Math.min(999, Number(event.target.value) || 0)))}
+                              className="h-8 w-16 rounded-lg bg-white/65 px-3 text-center font-black text-blue-900 shadow-sm shadow-blue-200/60 outline-none placeholder:text-blue-300 focus:ring-2 focus:ring-pink-200 dark:bg-purple-950/35 dark:text-purple-100 dark:shadow-purple-950/60 dark:placeholder:text-purple-500 dark:focus:ring-pink-300"
+                            />
+                            <span className="text-xs font-black text-blue-500 dark:text-purple-300">fights</span>
+                          </span>
+                        </label>
+
+                        <div className="space-y-2">
+                          {[
+                            {
+                              checked: autoStopOnLoss,
+                              label: "stop on loss:",
+                              onChange: setAutoStopOnLoss,
+                            },
+                            {
+                              checked: autoStopOnLevelUp,
+                              label: "stop on level up:",
+                              onChange: setAutoStopOnLevelUp,
+                            },
+                          ].map((option) => (
+                            <div
+                              key={option.label}
+                              className="flex min-h-9 flex-wrap items-center justify-between gap-3"
+                            >
+                              <span className="text-blue-900 dark:text-purple-100">{option.label}</span>
+                              <label className="inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-black text-blue-800 shadow-blue-200/60 dark:text-purple-100 dark:shadow-purple-950/60">
+                                <input
+                                  type="checkbox"
+                                  checked={option.checked}
+                                  onChange={(event) => option.onChange(event.target.checked)}
+                                  className="h-4 w-4 accent-pink-500"
+                                />
+                                {option.checked ? "on" : "off"}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+
+                      </div>
+                    ) : null}
+
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedFightSettings((value) => !value)}
+                        className="text-xs font-black uppercase text-blue-500 transition hover:text-pink-400 dark:text-purple-300 dark:hover:text-pink-300"
+                        aria-expanded={showAdvancedFightSettings}
+                      >
+                        advanced settings {showAdvancedFightSettings ? "v" : ">"}
+                      </button>
                     </div>
 
                     {errorMessage ? (

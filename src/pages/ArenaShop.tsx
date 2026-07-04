@@ -490,8 +490,8 @@ const ArenaShop = () => {
       // When the active consumable cap is reached, let the user choose which buff to replace.
       if (error instanceof ArenaApiError && error.code === "ARENA_CONSUMABLE_CAP_REACHED") {
         setActioningId(null);
-        const currentCount = (error.details.activeCount as number) ?? 6;
-        const max = (error.details.maxActive as number) ?? 6;
+        const currentCount = (error.details.activeCount as number) ?? 4;
+        const max = (error.details.maxActive as number) ?? 4;
         const replacementChoices = getActiveConsumableReplacementChoices(error.details);
         let selectedReplaceItemId = replacementChoices[0]?.itemId || null;
         const confirmed = await confirm({
