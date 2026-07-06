@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
@@ -120,6 +121,16 @@ const ArenaMint = () => {
   const [sort, setSort] = useState<MintSort>("recent");
   const [rarityFilter, setRarityFilter] = useState("");
   const [elementFilter, setElementFilter] = useState("");
+
+  // Virtual scroll
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: mintable.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 350,
+    overscan: 3,
+    measureElement: (el) => el.getBoundingClientRect().height,
+  });
 
   // Mobile touch drag
   const [mobileDragSlot, setMobileDragSlot] = useState<0 | 1 | null>(null);
@@ -545,63 +556,89 @@ const ArenaMint = () => {
                           ) : null}
                         </div>
                       </div>
-                      <div className="max-h-[55vh] overflow-y-auto [scrollbar-gutter:stable] space-y-4 pr-1">
-                      {mintable.length > 0 ? mintable.map(({ malId, cards, total, visibleTotal }) => {
-                        const characterTitle = cards[0].title;
-                        const possibleFirstId = cards[0].cardInstanceId;
-                        if (!possibleFirstId) return null;
+                      <div
+                        ref={scrollRef}
+                        className="max-h-[55vh] overflow-y-auto [scrollbar-gutter:stable] pr-1"
+                      >
+                        {mintable.length > 0 ? (
+                          <div
+                            style={{
+                              height: `${virtualizer.getTotalSize()}px`,
+                              width: "100%",
+                              position: "relative",
+                            }}
+                          >
+                            {virtualizer.getVirtualItems().map((virtualRow) => {
+                              const group = mintable[virtualRow.index];
+                              if (!group) return null;
+                              const { malId, cards, total, visibleTotal } = group;
+                              const characterTitle = cards[0]?.title;
+                              if (!characterTitle) return null;
 
-                        return (
-                          <div key={malId} className="space-y-2">
-                            <h3 className="text-blue-900 font-extrabold text-sm">
-                              {characterTitle}{" "}
-                              <span className="text-blue-600 font-semibold">
-                                ({visibleTotal === total ? total : `${visibleTotal}/${total}`} copies)
-                              </span>
-                            </h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                              {cards.map((card) => {
-                                const cid = card.cardInstanceId;
-                                if (!cid) return null;
-                                const isPicked = picked.includes(cid);
-                                const cannotPick = !isPicked && picked.length >= 2;
+                              return (
+                                <div
+                                  key={malId}
+                                  data-index={virtualRow.index}
+                                  ref={virtualizer.measureElement}
+                                  className="space-y-2"
+                                  style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: "100%",
+                                    transform: `translateY(${virtualRow.start}px)`,
+                                  }}
+                                >
+                                  <h3 className="text-blue-900 font-extrabold text-sm">
+                                    {characterTitle}{" "}
+                                    <span className="text-blue-600 font-semibold">
+                                      ({visibleTotal === total ? total : `${visibleTotal}/${total}`} copies)
+                                    </span>
+                                  </h3>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    {cards.map((card) => {
+                                      const cid = card.cardInstanceId;
+                                      if (!cid) return null;
+                                      const isPicked = picked.includes(cid);
+                                      const cannotPick = !isPicked && picked.length >= 2;
 
-                                return (
-                                  <div
-                                    key={cid}
-                                    className={`flex flex-col items-center space-y-1 transition-all ${
-                                      cannotPick && !isPicked
-                                        ? "opacity-40"
-                                        : "opacity-85 hover:opacity-100"
-                                    }`}
-                                  >
-                                    <div className={isPicked ? "ring-2 ring-amber-400 rounded-xl" : ""}>
-                                      <ArenaPortraitCard
-                                        card={card}
-                                        level={1}
-                                        size="full"
-                                        showIvLine={true}
-                                        interactive
-                                      />
-                                    </div>
-                                    <button
-                                      className={`arena-redraw-button hover:animate-wiggle text-xs ${
-                                        isPicked ? "text-amber-600 font-bold" : ""
-                                      }`}
-                                      onClick={() => togglePick(cid)}
-                                      disabled={cannotPick}
-                                    >
-                                      {isPicked ? "[ selected ]" : "[ pick ]"}
-                                    </button>
+                                      return (
+                                        <div
+                                          key={cid}
+                                          className={`flex flex-col items-center space-y-1 transition-all ${
+                                            cannotPick && !isPicked
+                                              ? "opacity-40"
+                                              : "opacity-85 hover:opacity-100"
+                                          }`}
+                                        >
+                                          <div className={isPicked ? "ring-2 ring-amber-400 rounded-xl" : ""}>
+                                            <ArenaPortraitCard
+                                              card={card}
+                                              level={1}
+                                              size="full"
+                                              showIvLine={true}
+                                            />
+                                          </div>
+                                          <button
+                                            className={`arena-redraw-button hover:animate-wiggle text-xs ${
+                                              isPicked ? "text-amber-600 font-bold" : ""
+                                            }`}
+                                            onClick={() => togglePick(cid)}
+                                            disabled={cannotPick}
+                                          >
+                                            {isPicked ? "[ selected ]" : "[ pick ]"}
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })}
-                            </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        );
-                      }) : (
-                        <p className="text-sm text-slate-600">No duplicate cards match these filters.</p>
-                      )}
+                        ) : (
+                          <p className="text-sm text-slate-600">No duplicate cards match these filters.</p>
+                        )}
                       </div>
 
                       {pickedCards.length === 2 ? (

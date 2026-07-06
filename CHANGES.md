@@ -1,7 +1,7 @@
-# What's New - July 2, 2026
+# What's New - July 6, 2026
 
-- Arena gear enhancement is here. You can spend coins and an unused matching gear piece to upgrade equipment up to +15, adding +1 to the main stat each time.
-- You can now reroll one substat on a gear piece for 500 coins plus scrap gear. Pick the substat you want to change from your inventory.
-- New gear rolls are less painful. Damage, crit damage, defense, HP%, and crit rate substats now have tighter ranges, so low rolls should feel less tragic.
-- Crit Rate naming is cleaner across new gear. Older gear with the old crit stat still works normally.
-- Profile HP now includes equipment HP% correctly, so the number you see should better match your actual combat HP.
+- **Active passives are now visible in the fight screen.** Your skill tree passives and your opponent's passives appear in a collapsible panel on the right sidebar, showing each passive name and its trigger type (Fight Start, On Attack, etc.).
+- **Battle console is now collapsible.** Click the ▲/▼ toggle on the console panel to show or hide the fight log, giving you more control over screen space.
+- **NPC opponents with missing usernames now show "Anonymous Challenger"** instead of "Unknown" — a friendlier face for mystery opponents.
+- **Card shop random pack now clearly shows its UTC schedule.** Both when the pack is available and when it's not, you'll see "Available Sun, Tue, Thu, Sat (UTC)" so timezone confusion is a thing of the past.
+
