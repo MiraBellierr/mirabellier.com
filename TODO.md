@@ -295,10 +295,10 @@
 
 #### ⚪ Day 7: UI Polish & Visual Fixes
 
-- [ ] **Show active passives in pre-fight summary.**
-- [ ] **Fix NPC fallback display name** — Change "Unknown" to "Anonymous Challenger".
-- [ ] **Fix card shop day display for non-UTC timezones.**
-- [ ] **Make battle console expandable/collapsible.**
+- [x] **Show active passives in pre-fight summary.**
+- [x] **Fix NPC fallback display name** — Change "Unknown" to "Anonymous Challenger".
+- [x] **Fix card shop day display for non-UTC timezones.**
+- [x] **Make battle console expandable/collapsible.**
 
 ---
 

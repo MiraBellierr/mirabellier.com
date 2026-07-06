@@ -814,12 +814,19 @@ const ArenaShop = () => {
                               )}{" "}
                               · duplicates possible
                             </p>
+                            <p className="text-[0.65rem] text-slate-400 dark:text-slate-500">
+                              Available Sun, Tue, Thu, Sat (UTC)
+                            </p>
                             <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
                               {cardShop.randomOffer.price.toLocaleString()} coins
                             </p>
                           </div>
                         </article>
-                        ) : null}
+                        ) : (
+                          <p className="text-center text-xs italic text-slate-400 dark:text-slate-500 py-2">
+                            Random Pack available Sun, Tue, Thu, Sat (UTC)
+                          </p>
+                        )}
                       </div>
                     ) : null}
                   </section>

@@ -125,6 +125,32 @@ function HpBar({
   );
 }
 
+function CollapsiblePanel({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-lg font-bold text-blue-700"
+        aria-expanded={open}
+      >
+        <span>{title}</span>
+        <span className="text-xs font-normal text-blue-400">{open ? "▲" : "▼"}</span>
+      </button>
+      {open ? <div className="mt-2">{children}</div> : null}
+    </div>
+  );
+}
+
 const ArenaFight = () => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
@@ -1161,8 +1187,7 @@ const ArenaFight = () => {
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">
             {activeFight ? (
-              <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
-                <h2 className="text-center text-lg font-bold text-blue-700 mb-2">console</h2>
+              <CollapsiblePanel title="console" defaultOpen>
                 <div
                   ref={consoleRef}
                   className="max-h-80 overflow-y-auto rounded-lg border border-slate-300 bg-slate-950 p-2 font-mono text-xs text-green-300"
@@ -1175,7 +1200,7 @@ const ArenaFight = () => {
                     <p className="leading-snug">waiting for battle...</p>
                   )}
                 </div>
-              </div>
+              </CollapsiblePanel>
             ) : (
               <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
                 <div className="space-y-2 text-sm text-blue-600">
@@ -1184,6 +1209,39 @@ const ArenaFight = () => {
                 </div>
               </div>
             )}
+
+            {(profile?.activePassives?.length || activeFight?.opponent?.activePassives?.length) ? (
+              <CollapsiblePanel title="active passives" defaultOpen={false}>
+                {profile?.activePassives?.length ? (
+                  <div className="mb-2">
+                    <p className="text-xs font-bold text-blue-700 mb-1">Your Passives:</p>
+                    <ul className="space-y-0.5 text-xs text-slate-700">
+                      {profile.activePassives.map((p) => (
+                        <li key={p.key} className="flex items-center gap-1">
+                          <span className="text-[0.6rem] text-pink-500">◆</span>
+                          <span className="font-semibold">{p.source?.nodeName || p.key}</span>
+                          <span className="text-slate-400">· {p.trigger === "onFightStart" ? "Fight Start" : p.trigger === "onAttack" ? "On Attack" : p.trigger === "onDamageTaken" ? "On Dmg Taken" : p.trigger === "onDamageDealt" ? "On Dmg Dealt" : p.trigger === "onWin" ? "On Win" : p.trigger === "onLose" ? "On Lose" : p.trigger}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {activeFight?.opponent?.activePassives?.length ? (
+                  <div>
+                    <p className="text-xs font-bold text-red-700 mb-1">Opponent Passives:</p>
+                    <ul className="space-y-0.5 text-xs text-slate-700">
+                      {activeFight.opponent.activePassives.map((p) => (
+                        <li key={p.key} className="flex items-center gap-1">
+                          <span className="text-[0.6rem] text-red-400">◆</span>
+                          <span className="font-semibold">{p.source?.nodeName || p.key}</span>
+                          <span className="text-slate-400">· {p.trigger === "onFightStart" ? "Fight Start" : p.trigger === "onAttack" ? "On Attack" : p.trigger === "onDamageTaken" ? "On Dmg Taken" : p.trigger === "onDamageDealt" ? "On Dmg Dealt" : p.trigger === "onWin" ? "On Win" : p.trigger === "onLose" ? "On Lose" : p.trigger}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </CollapsiblePanel>
+            ) : null}
 
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <h2 className="text-center text-lg font-bold text-blue-700 mb-2">weakness chart</h2>
