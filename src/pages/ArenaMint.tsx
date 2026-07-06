@@ -122,15 +122,8 @@ const ArenaMint = () => {
   const [rarityFilter, setRarityFilter] = useState("");
   const [elementFilter, setElementFilter] = useState("");
 
-  // Virtual scroll
+  // Virtual scroll (ref only — virtualizer is created after mintable below)
   const scrollRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: mintable.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 350,
-    overscan: 3,
-    measureElement: (el) => el.getBoundingClientRect().height,
-  });
 
   // Mobile touch drag
   const [mobileDragSlot, setMobileDragSlot] = useState<0 | 1 | null>(null);
@@ -253,6 +246,15 @@ const ArenaMint = () => {
         return compareMintCards(cardA, cardB, sort) || b.visibleTotal - a.visibleTotal;
       });
   }, [mintGroups, query, rarityFilter, elementFilter, sort]);
+
+  // Virtual scroll — must follow mintable so .length is usable
+  const virtualizer = useVirtualizer({
+    count: mintable.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 350,
+    overscan: 3,
+    measureElement: (el) => el.getBoundingClientRect().height,
+  });
 
   const visibleMintCardIds = useMemo(
     () => new Set(mintable.flatMap((group) =>
