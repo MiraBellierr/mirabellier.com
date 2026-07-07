@@ -304,9 +304,9 @@
 
 #### ⚫ Day 8: Code Quality & Cleanup
 
-- [ ] **Remove pass-through arena module files** — 20 files in `lib/arena/` are one-liners (`module.exports = require("./arena-core")`).
-- [ ] **Extract constants block from arena-core.js top** — ~130-line header to `lib/arena/_constants.js`.
-- [ ] **Add JSDoc types to key combat functions.**
+- [x] **Remove pass-through arena module files** — 20 files in `lib/arena/` are one-liners (`module.exports = require("./arena-core")`). ✅ DONE — All `lib/arena/` files now contain real domain code after the 2026-06-28 refactor; `arena-core.js` was replaced by the module hub at `lib/arena/index.js`.
+- [x] **Extract constants block from arena-core.js top** — ~130-line header to `lib/arena/_constants.js`. ✅ DONE — Constants extracted from `utils.js` to `lib/arena/_constants.js`; `utils.js` re-exports them via destructured require.
+- [x] **Add JSDoc types to key combat functions.** ✅ DONE — JSDoc added to `calculateAttackOutcome`, `computeMaxHp`, `computeEvasionChance`, `calculateEloExchange`, `calculateRoundPower`, `resolveRoundWinner`, `loadCombatSnapshot`, `computeElementMultiplier`, `buildPassiveRuntime`, `runPassivesForTrigger`, `buildNpcOpponent`, `simulateFight`, `applyLevelUps`, `convertMaxLevelOverflowXp`, `calculateStreakXpBonus`, `calculateWinXp`, `calculateLossXp`, `calculateStreakCoinMultiplier`, `calculateWinCoins`, `computeShieldPiercePct`, `computeReviveHp`, `consumeTempGuard`, `chooseEloOpponent`, `xpToNext`, `rarityRank`, `isEloProvisional`, `getEloKFactor`.
 - [x] **Fix `dailyOpponentCount` SQL boundary** — Compare `lastOpponentDate` to a computed date boundary instead of `datetime('now', '-5 hours')`.
 
 ---
