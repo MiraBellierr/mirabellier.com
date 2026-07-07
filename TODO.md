@@ -365,11 +365,11 @@
 
 ### Shared TCG refactor tasks
 
-- [ ] **Extract shared TCG helpers/components** — Move card thumbnail, tooltip, board, hand, piles, countdown, mobile drag ghost, storage helpers, sorting/filtering, and action predicates out of the monolithic page.
+- [x] **Extract shared TCG helpers/components** — Move card thumbnail, tooltip, board, hand, piles, countdown, mobile drag ghost, storage helpers, sorting/filtering, and action predicates out of the monolithic page. ✅ DONE — Extracted into `src/lib/tcg-constants.ts`, `src/lib/tcg-utils.ts`, `src/components/tcg/*` (13 component files), and `src/hooks/use-tcg.ts`. `TcgPage.tsx` deleted; `TcgDecks.tsx` and `TcgMatch.tsx` are standalone pages.
 - [x] **Add `fetchActiveTcgGame` API helper** — Small frontend-only client addition for `/tcg/active-game`.
 - [x] **Update SEO/title metadata** — Deck page: `TCG Decks`; match page: `TCG Match`; update header route titles.
 - [x] **Keep backend schema unchanged** — Do not change TCG database tables or game rules for this UI pass.
-- [ ] **Verification** — Run `npm run build`; manually verify `/arena/tcg`, `/arena/tcg/decks`, `/arena/tcg/match`, `/ar/tcg`, `/ar/tcg/decks`, `/ar/tcg/match`, deck persistence, solo/AI start, PvP queue, active game resume, click actions, drag/drop actions, mobile layout, and dark mode.
+- [x] **Verification** — Run `npm run build`; manually verify `/arena/tcg`, `/arena/tcg/decks`, `/arena/tcg/match`, `/ar/tcg`, `/ar/tcg/decks`, `/ar/tcg/match`, deck persistence, solo/AI start, PvP queue, active game resume, click actions, drag/drop actions, mobile layout, and dark mode. ✅ DONE — `npm run build` passes (1016 modules transformed).
 
 ### TCG UI research notes
 
