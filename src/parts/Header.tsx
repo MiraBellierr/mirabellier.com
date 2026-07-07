@@ -43,6 +43,7 @@ const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/ar/archive", title: "Arena Archive" },
   { path: "/admin", title: "Admin Home" },
   { path: "/admin/arena-updates", title: "Arena Updates Admin" },
+  { path: "/admin/arena-metrics", title: "Arena Metrics Admin" },
   { path: "/admin/question-of-the-day", title: "Admin Question of the Day" },
   { path: "/admin/shrines", title: "Admin Shrines" },
   { path: "/admin/shrines/preview", title: "Admin Shrine Preview" },

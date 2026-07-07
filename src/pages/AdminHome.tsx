@@ -65,6 +65,13 @@ const adminTools = [
     action: "Open Arena updates",
   },
   {
+    title: "Arena Metrics",
+    description:
+      "Review fight volume, win rate, coin movement, and balance threshold alerts.",
+    to: "/admin/arena-metrics",
+    action: "Open Arena metrics",
+  },
+  {
     title: "Question of the Day",
     description:
       "Queue upcoming prompts, moderate answers from the public pages, and check the recent archive.",

@@ -313,21 +313,21 @@
 
 #### ⭐ Day 9: Testing & Validation
 
-- [ ] **Add unit tests for combat formulas** — `calculateAttackOutcome`, `computeMaxHp`, `computeEvasionChance`, `calculateEloExchange`.
-- [ ] **Add integration tests for passives in combat.**
-- [ ] **Add regression test for 60-turn timeout** — Verify tiebreaker uses HP% not raw HP.
-- [ ] **Add NPC opponent scaling test.**
-- [ ] **Add max-level + all-consumables scenario test** — Verify damage doesn't exceed cap.
-- [ ] **Run full backend test suite** — `cd mirabellier-backend && npm test`. 89 tests, 50 pass, 39 fail. Target: 80+/89.
+- [x] **Add unit tests for combat formulas** — `calculateAttackOutcome`, `computeMaxHp`, `computeEvasionChance`, `calculateEloExchange`.
+- [x] **Add integration tests for passives in combat.** ✅ DONE — Live combat test covers attack and damage-taken passive modifiers.
+- [x] **Add regression test for 60-turn timeout** — Verify tiebreaker uses HP% not raw HP.
+- [x] **Add NPC opponent scaling test.**
+- [x] **Add max-level + all-consumables scenario test** — Verify damage doesn't exceed cap.
+- [x] **Run full backend test suite** — `cd mirabellier-backend && npm test`. ✅ DONE — 171 tests, 171 pass.
 
 ---
 
 #### 📊 Day 10: Documentation & Monitoring
 
-- [ ] **Document all combat formulas** — Create `docs/arena-combat.md`.
-- [ ] **Add Arena admin dashboard metrics** — Fights/day, win rate, economy inflow/outflow.
-- [ ] **Add runtime balance monitoring** — Alert when player exceeds thresholds (damage > 1000, evasion > 50%, streak > 100).
-- [ ] **Document consumable stacking rules** — How effects interact, caps, limits.
+- [x] **Document all combat formulas** — Create `docs/arena-combat.md`.
+- [x] **Add Arena admin dashboard metrics** — Fights/day, win rate, economy inflow/outflow.
+- [x] **Add runtime balance monitoring** — Alert when player exceeds thresholds (damage > 1000, evasion > 50%, streak > 100).
+- [x] **Document consumable stacking rules** — How effects interact, caps, limits.
 
 ## Frontend cleanup
 
@@ -349,4 +349,5 @@
 
 ## Verification notes
 
-- `cd mirabellier-backend && npm test` currently fails: 89 tests total, 50 pass, 39 fail.
+- `cd mirabellier-backend && npm test` passes: 171 tests total, 171 pass.
+- `npm run build` passes with existing bundle-budget warnings: CSS ~130 kB over 100 kB, main JS ~474 kB over 450 kB, and `back-card-design` ~2.35 MB.
