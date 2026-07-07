@@ -329,6 +329,56 @@
 - [x] **Add runtime balance monitoring** — Alert when player exceeds thresholds (damage > 1000, evasion > 50%, streak > 100).
 - [x] **Document consumable stacking rules** — How effects interact, caps, limits.
 
+## TCG page UX cleanup
+
+### Current bugs and friction to fix
+
+- [x] **Split TCG into route-level pages** — Use `/arena/tcg/decks` for deck building and `/arena/tcg/match` for match play; redirect `/arena/tcg` to `/arena/tcg/decks`. Mirror under `/ar/tcg/decks` and `/ar/tcg/match`.
+- [x] **Use Arena subnav on TCG pages** — Add `ArenaSubNav` to deck and match pages; update the TCG subnav link to land on `/tcg/decks`.
+- [x] **Remove local tab state as navigation** — Replace the in-page `[ Decks ] | [ Match ]` tab UI with real routes so refresh/back/forward/deep links work correctly.
+- [x] **Resume active games from backend** — Add frontend API helper for existing `/tcg/active-game`; use it when `tcg_active_game` is absent or stale.
+- [x] **Fix unstable hidden-hand keys** — Replace `key={Math.random()}` in hidden opponent hand rendering with stable keys.
+- [x] **Make staging notice one-time** — Persist acknowledgement in localStorage; after acknowledgement, show only a small inline alpha/staging notice.
+- [x] **Preserve website theme and layout** — Keep `Header`, left `Navigation`, `Footer`, `Divider`, `card-border` page frame, right-side panels where useful, dark mode behavior, and existing Arena visual language.
+- [x] **Avoid generic card-style information blocks** — Do not display rules/status/instructions as standalone card-like info boxes. Use compact page bands, inline status rows, toolbars, board rails, right-side panels, and table/list rows instead.
+
+### Decks page plan
+
+- [x] **Create `TcgDecks` page** — Focus on deck construction only: selected deck, collection search/sort/filter, element spawn selection, and play CTAs.
+- [x] **Make deck readiness obvious** — Show `0/10` through `10/10` in the page header/status band; disable play CTAs until deck is valid.
+- [x] **Keep selected deck visible without card-style info panels** — Use a horizontal selected-card rail and compact toolbar, not explanatory cards.
+- [x] **Improve collection controls** — Keep search, rarity/IV/stat sorting, element filter, and duplicates filter; make controls match Arena collection/mint patterns.
+- [x] **Add clear deck actions** — `Clear deck`, `Play solo`, `Play AI`, and `Find match`; route successful starts/matches to `/arena/tcg/match`.
+- [x] **Persist user choices** — Continue using `tcg_deck` and `tcg_element_pool` localStorage keys.
+
+### Match page plan
+
+- [x] **Create `TcgMatch` page** — Own active game state, queue state, board interactions, game resume, websocket handlers, and action submission.
+- [x] **Show one dominant game status band** — Current turn, score, timer, queue state, last action, and active-player state must be visible above the board.
+- [x] **Keep drag/drop but add click alternatives** — Every important action needs a click path: draw, place, promote, assign energy, attack, switch, end turn, forfeit.
+- [x] **Make valid actions self-evident** — Highlight only valid targets/actions; disabled controls should explain what is missing with short inline text.
+- [x] **Improve mobile interaction** — Use large touch targets for action controls and energy/actions; avoid drag-only interactions on touch devices.
+- [x] **Clarify board zones** — Label attacker, support, hand, draw, discard, active energy, and score with compact zone labels that do not resize the board.
+- [x] **Reduce visual noise during play** — Keep animations purposeful: attack projectile, damage float, and shake are enough; avoid extra decorative containers.
+- [x] **Move rules/help to right panel or collapsible compact rail** — Keep the board primary; rules should not compete with live match state.
+- [x] **Keep finished state actionable** — Show final score, winner/loser label, and `Play again` / `Back to decks` actions.
+
+### Shared TCG refactor tasks
+
+- [ ] **Extract shared TCG helpers/components** — Move card thumbnail, tooltip, board, hand, piles, countdown, mobile drag ghost, storage helpers, sorting/filtering, and action predicates out of the monolithic page.
+- [x] **Add `fetchActiveTcgGame` API helper** — Small frontend-only client addition for `/tcg/active-game`.
+- [x] **Update SEO/title metadata** — Deck page: `TCG Decks`; match page: `TCG Match`; update header route titles.
+- [x] **Keep backend schema unchanged** — Do not change TCG database tables or game rules for this UI pass.
+- [ ] **Verification** — Run `npm run build`; manually verify `/arena/tcg`, `/arena/tcg/decks`, `/arena/tcg/match`, `/ar/tcg`, `/ar/tcg/decks`, `/ar/tcg/match`, deck persistence, solo/AI start, PvP queue, active game resume, click actions, drag/drop actions, mobile layout, and dark mode.
+
+### TCG UI research notes
+
+- **Status visibility:** Nielsen Norman Group emphasizes keeping users informed about current state and action feedback; apply this to turn, timer, queue, score, action pending, and last action display. Source: https://www.nngroup.com/articles/visibility-system-status/
+- **Drag/drop should not be the only path:** NN/g and drag/drop UX guidance recommend clear signifiers, feedback, and accessible alternatives; apply this with click actions plus drag/drop. Sources: https://www.nngroup.com/articles/drag-drop/ and https://www.pencilandpaper.io/articles/ux-pattern-drag-and-drop
+- **Touch targets:** Material Design recommends 7–10mm touch targets; apply this to match actions, energy assignment, draw/end/forfeit buttons, and mobile controls. Source: https://m3.material.io/foundations/designing/structure
+- **Game UI focus:** Game UI guidance stresses flexible layouts, legibility, responsive touch controls, and keeping game UI aligned with the game goal; apply this by prioritizing board state over explanatory panels. Sources: https://developer.apple.com/videos/play/meet-with-apple/243/ and https://www.gamedeveloper.com/design/upping-your-game-s-usability
+- **Card-game readability:** Card game UI/design writeups highlight clear hierarchy, icon support beyond color, large readable titles, and iteration through testing; apply this to element labels, rarity/element display, and board zone naming. Sources: https://medium.com/%40acbassettone/5-ux-ui-lessons-from-designing-a-card-game-b689d3f3187 and https://medium.com/%40impulselimited/ui-design-for-a-2d-3d-card-game-b0824867b0a3
+
 ## Frontend cleanup
 
 - Clean up remaining meaningful lint warnings:

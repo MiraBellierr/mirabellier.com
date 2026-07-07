@@ -16,7 +16,8 @@ const SLUGS = [
   { slug: "/mint", label: "Mint" },
   { slug: "/trade", label: "Trade" },
   { slug: "/skill-tree", label: "Skill Tree" },
-  { slug: "/tcg", label: "TCG (Alpha)" },
+  { slug: "/tcg/decks", label: "TCG Decks" },
+  { slug: "/tcg/match", label: "TCG Match" },
   { slug: "/inbox", label: "Inbox" },
 ];
 

@@ -50,6 +50,15 @@ export async function checkTcgQueue(token: string): Promise<TcgQueueStatus> {
   if (!response.ok) throw await readApiError(response);
   return (await response.json()) as TcgQueueStatus;
 }
+export async function fetchActiveTcgGame(token: string): Promise<{ gameId: string | null }> {
+  const response = await fetch(joinApi("/tcg/active-game"), {
+    credentials: "include",
+    headers: shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : undefined,
+    cache: "no-store",
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as { gameId: string | null };
+}
 export async function submitTcgDeck(token: string, gameId: string, cards: ArenaCard[], elementPool?: string[]): Promise<{ ok: boolean; waiting?: boolean }> {
   const response = await fetch(joinApi(`/tcg/game/${gameId}/deck`), {
     method: "POST",

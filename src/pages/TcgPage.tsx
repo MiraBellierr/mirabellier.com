@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 
 import fireIcon from "@/assets/elements/fire.png";
@@ -16,6 +16,7 @@ import Navigation from "@/parts/Navigation";
 import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ConfirmDialog from "@/parts/ConfirmDialog";
+import ArenaSubNav from "@/parts/ArenaSubNav";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -29,6 +30,7 @@ import {
   joinTcgQueue,
   leaveTcgQueue,
   checkTcgQueue,
+  fetchActiveTcgGame,
   submitTcgDeck,
   fetchTcgGameState,
   submitTcgAction,
@@ -79,6 +81,8 @@ type MobileTcgGhost = {
   clientX: number;
   clientY: number;
 };
+
+type TcgAction = { type: string; cardId?: string; slot?: string };
 
 function rarityRank(rarity: string | null | undefined) {
   const index = RARITY_ORDER.indexOf((rarity || "C") as (typeof RARITY_ORDER)[number]);
@@ -134,6 +138,21 @@ function canTcgCardSwitch(card: TcgCard | null | undefined, board: TcgPlayerStat
   return !!card && (card.assignedElements?.length || 0) >= 1 && !board.switchedCardThisTurn && board.board.support.some((support) => !!support);
 }
 
+function getAssignedEnergyText(card: TcgCard | null | undefined) {
+  const assigned = card?.assignedElements || [];
+  if (!card) return "No attacker";
+  if (assigned.length === 0) return "No energy";
+  return `${assigned.length} energy`;
+}
+
+function getActivePlayerLabel(gameState: TcgGameState) {
+  if (gameState.solo) {
+    if (gameState.mode === "ai" && gameState.currentPlayer === "p2") return "AI turn";
+    return gameState.currentPlayer === "p2" ? "P2 turn" : "P1 turn";
+  }
+  return gameState.myTurn ? "Your turn" : "Opponent turn";
+}
+
 function loadSavedDeck(): string[] {
   try {
     const raw = localStorage.getItem("tcg_deck");
@@ -155,6 +174,26 @@ function loadElementPool(): string[] {
 
 function saveElementPool(elements: string[]) {
   localStorage.setItem("tcg_element_pool", JSON.stringify(elements));
+}
+
+function clearActiveTcgGame() {
+  localStorage.removeItem("tcg_active_game");
+}
+
+function loadTcgStagingAcknowledgement() {
+  try {
+    return localStorage.getItem("tcg_staging_acknowledged") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveTcgStagingAcknowledgement() {
+  try {
+    localStorage.setItem("tcg_staging_acknowledged", "1");
+  } catch {
+    // Ignore storage failures; the modal can safely return next visit.
+  }
 }
 
 function CardDetailTooltip({ detail }: {
@@ -239,6 +278,14 @@ function CardDetailTooltip({ detail }: {
   );
 }
 
+function ZoneLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="mb-1 block h-4 text-center text-[0.55rem] font-black uppercase tracking-normal text-slate-400 dark:text-slate-500">
+      {children}
+    </span>
+  );
+}
+
 function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, touchDrag, onDragStart, onMouseEnter, onMouseLeave }: {
   card: TcgCard | ArenaCard | null;
   size?: "sm" | "md" | "lg";
@@ -253,7 +300,7 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, tou
   if (!card) {
     const dims = size === "lg" ? "w-24 h-32" : size === "md" ? "w-16 h-20" : "w-12 h-16";
     return (
-      <div className={`${dims} rounded-lg border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center text-xs text-slate-400 flex-shrink-0`}>
+      <div className={`${dims} rounded-lg border-2 border-dashed border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-500 flex items-center justify-center text-xs text-slate-400 flex-shrink-0`}>
         ?
       </div>
     );
@@ -261,7 +308,7 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, tou
   if ((card as TcgCard).hidden) {
     const dims = size === "lg" ? "w-24 h-32" : size === "md" ? "w-16 h-20" : "w-12 h-16";
     return (
-      <div className={`${dims} rounded-lg border-2 border-slate-400 flex-shrink-0 overflow-hidden`}>
+      <div className={`${dims} rounded-lg border-2 border-slate-400 dark:border-slate-600 flex-shrink-0 overflow-hidden`}>
         <img src={cardBack} alt="" className="w-full h-full object-cover" draggable={false} />
       </div>
     );
@@ -277,7 +324,7 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, tou
   return (
     <div
       className={`${dims} rounded-lg border-2 flex-shrink-0 relative overflow-hidden cursor-pointer ${
-        highlighted ? "border-yellow-400 shadow-lg shadow-yellow-200 scale-105" : "border-slate-400 hover:border-blue-400"
+        highlighted ? "border-yellow-400 shadow-lg shadow-yellow-200 scale-105" : "border-slate-400 dark:border-slate-600 hover:border-blue-400 dark:hover:border-purple-400"
       } ${isTouchDraggable ? "touch-none select-none" : ""}`}
       onClick={onClick}
       draggable={draggable}
@@ -328,7 +375,7 @@ function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, tou
 function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shakePlayerCard, attackFloaters, boardKey, onCardHover, onCardHoverLeave }: {
   board: TcgPlayerState | null;
   isTurn: boolean;
-  onAction?: (action: { type: string; cardId?: string; slot?: string }) => void;
+  onAction?: (action: TcgAction) => void;
   mirror?: boolean;
   shakeOpponentCard?: boolean;
   shakePlayerCard?: boolean;
@@ -343,20 +390,22 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
   const attackerCanDrag = attackerCanAttack || attackerCanSwitch;
   const attackerClasses = [
     "relative",
-    !board.board.attacker && isTurn ? "border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/50" : "",
+    !board.board.attacker && isTurn ? "border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-950/30" : "",
     (mirror ? shakeOpponentCard : shakePlayerCard) ? "card-shake" : "",
   ].filter(Boolean).join(" ");
   return (
     <div className={`flex items-center gap-2 ${mirror ? "flex-col-reverse" : "flex-col"}`}>
-      <div className={attackerClasses}
-        data-board-key={boardKey || ""}
-        data-slot="attacker"
-        data-tcg-drop-board={boardKey || ""}
-        data-tcg-drop-slot="attacker"
-        onDragOver={(e) => {
-          const atk = e.dataTransfer.types.length > 0; // accept if has any data
-          if (isTurn || atk) e.preventDefault();
-        }}
+      <div>
+        <ZoneLabel>attacker</ZoneLabel>
+        <div className={attackerClasses}
+          data-board-key={boardKey || ""}
+          data-slot="attacker"
+          data-tcg-drop-board={boardKey || ""}
+          data-tcg-drop-slot="attacker"
+          onDragOver={(e) => {
+            const atk = e.dataTransfer.types.length > 0; // accept if has any data
+            if (isTurn || atk) e.preventDefault();
+          }}
           onDrop={(e) => {
             e.preventDefault();
             const cid = e.dataTransfer.getData("cardId");
@@ -373,46 +422,49 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
               onAction?.({ type: "place", cardId: cid, slot: "attacker" });
           }
         }}
-      >
-        <CardThumbnail
-          card={board.board.attacker}
-          size="lg"
-          highlighted={!!board.board.attacker && isTurn && attackerCanDrag}
-          draggable={!!(isTurn && board.board.attacker && attackerCanDrag)}
-          touchDrag={isTurn && board.board.attacker && attackerCanDrag ? { kind: "attack" } : undefined}
-          onDragStart={(e) => {
-            if (isTurn && board.board.attacker && attackerCanDrag) {
-              e.dataTransfer.setData("text/plain", "tcg-attack");
-              e.dataTransfer.setData("attack", "1");
-              e.dataTransfer.effectAllowed = "move";
-            }
-          }}
-          onMouseEnter={(e) => { if (board.board.attacker && onCardHover) onCardHover(board.board.attacker, e); }}
-          onMouseLeave={onCardHoverLeave}
-        />
-        {!board.board.attacker && isTurn ? (
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-emerald-500 pointer-events-none">drop</span>
-        ) : null}
-        {attackFloaters && attackFloaters.length > 0 ? (
-          attackFloaters.filter((f) => f.defenderKey === (boardKey || "")).map((f) => (
-            <div key={f.key} className="absolute inset-0 z-50 pointer-events-none flex flex-col items-center justify-center animate-float-up">
-              <span className="text-lg font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ textShadow: "0 0 6px rgba(255,80,120,0.9), 0 0 2px #000" }}>
-                -{f.dmg}
-              </span>
-              {f.elLabel ? (
-                <span className="text-[0.5rem] font-bold mt-0.5" style={{ color: f.elColor || "#ffbe0b", textShadow: "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000" }}>
-                  {f.elLabel}
+        >
+          <CardThumbnail
+            card={board.board.attacker}
+            size="lg"
+            highlighted={!!board.board.attacker && isTurn && attackerCanDrag}
+            draggable={!!(isTurn && board.board.attacker && attackerCanDrag)}
+            touchDrag={isTurn && board.board.attacker && attackerCanDrag ? { kind: "attack" } : undefined}
+            onDragStart={(e) => {
+              if (isTurn && board.board.attacker && attackerCanDrag) {
+                e.dataTransfer.setData("text/plain", "tcg-attack");
+                e.dataTransfer.setData("attack", "1");
+                e.dataTransfer.effectAllowed = "move";
+              }
+            }}
+            onMouseEnter={(e) => { if (board.board.attacker && onCardHover) onCardHover(board.board.attacker, e); }}
+            onMouseLeave={onCardHoverLeave}
+          />
+          {!board.board.attacker && isTurn ? (
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-emerald-500 pointer-events-none">drop</span>
+          ) : null}
+          {attackFloaters && attackFloaters.length > 0 ? (
+            attackFloaters.filter((f) => f.defenderKey === (boardKey || "")).map((f) => (
+              <div key={f.key} className="absolute inset-0 z-50 pointer-events-none flex flex-col items-center justify-center animate-float-up">
+                <span className="text-lg font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ textShadow: "0 0 6px rgba(255,80,120,0.9), 0 0 2px #000" }}>
+                  -{f.dmg}
                 </span>
-              ) : null}
-            </div>
-          ))
-        ) : null}
+                {f.elLabel ? (
+                  <span className="text-[0.5rem] font-bold mt-0.5" style={{ color: f.elColor || "#ffbe0b", textShadow: "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000" }}>
+                    {f.elLabel}
+                  </span>
+                ) : null}
+              </div>
+            ))
+          ) : null}
+        </div>
       </div>
-      <div className="flex gap-3">
+      <div>
+        <ZoneLabel>support</ZoneLabel>
+        <div className="flex gap-3">
         {board.board.support.map((card, i) => (
           <div
             key={`s-${i}`}
-            className={`relative ${!card && isTurn ? "border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/50" : ""}`}
+            className={`relative ${!card && isTurn ? "border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-950/30" : ""}`}
             style={!card && isTurn ? { minWidth: "64px", minHeight: "80px" } : undefined}
             data-tcg-drop-board={boardKey || ""}
             data-tcg-drop-slot={`support_${i}`}
@@ -438,6 +490,11 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
               highlighted={!!(card && !board.board.attacker && isTurn)}
               draggable={!!(card && !board.board.attacker && isTurn)}
               touchDrag={card && !board.board.attacker && isTurn ? { kind: "promote", slot: `support_${i}` } : undefined}
+              onClick={() => {
+                if (card && !board.board.attacker && isTurn) {
+                  onAction?.({ type: "promote", slot: `support_${i}` });
+                }
+              }}
               onDragStart={(e) => {
                 if (card && !board.board.attacker && isTurn) {
                   e.dataTransfer.setData("promote", `support_${i}`);
@@ -452,6 +509,7 @@ function PlayerBoard({ board, isTurn, onAction, mirror, shakeOpponentCard, shake
             ) : null}
           </div>
         ))}
+        </div>
       </div>
     </div>
   );
@@ -461,7 +519,7 @@ function BoardHand({ board, isTurn, mirror, onAction, boardKey, onCardHover, onC
   board: TcgPlayerState | null;
   isTurn: boolean;
   mirror?: boolean;
-  onAction?: (action: { type: string }) => void;
+  onAction?: (action: TcgAction) => void;
   boardKey?: string;
   onCardHover?: (card: ArenaCard | TcgCard, e: React.MouseEvent) => void;
   onCardHoverLeave?: () => void;
@@ -470,9 +528,7 @@ function BoardHand({ board, isTurn, mirror, onAction, boardKey, onCardHover, onC
   const cards = mirror ? [...board.hand].reverse() : board.hand;
   return (
     <div className="mt-2">
-      <p className="text-xs text-slate-400 text-center">
-        Hand: {board.hand.length}
-      </p>
+      <ZoneLabel>hand · {board.hand.length}</ZoneLabel>
       <div
         className={`flex gap-2 flex-wrap mt-0.5 ${mirror ? "flex-row-reverse justify-center" : "justify-center"}`}
         data-tcg-drop-board={boardKey || ""}
@@ -488,10 +544,23 @@ function BoardHand({ board, isTurn, mirror, onAction, boardKey, onCardHover, onC
           }
         }}
       >
-        {cards.map((card) => {
-          if ((card as TcgCard).hidden) return <CardThumbnail key={Math.random()} card={card} size="md" />;
+        {cards.map((card, index) => {
+          if ((card as TcgCard).hidden) {
+            return (
+              <CardThumbnail
+                key={`${boardKey || "board"}-hidden-hand-${mirror ? "mirror" : "self"}-${index}`}
+                card={card}
+                size="md"
+              />
+            );
+          }
           const cid = toCardId(card);
           const hasSlot = (!board.board.attacker || board.board.support.some((s) => !s)) && !board.placedCardThisTurn;
+          const clickSlot = !board.board.attacker && board.board.support.every((s) => !s)
+            ? "attacker"
+            : board.board.support.findIndex((s) => !s) >= 0
+              ? `support_${board.board.support.findIndex((s) => !s)}`
+              : null;
           return (
             <CardThumbnail
               key={cid}
@@ -500,6 +569,11 @@ function BoardHand({ board, isTurn, mirror, onAction, boardKey, onCardHover, onC
               highlighted={isTurn && hasSlot}
               draggable={isTurn && hasSlot}
               touchDrag={isTurn && hasSlot ? { kind: "card", cardId: cid } : undefined}
+              onClick={() => {
+                if (isTurn && hasSlot && clickSlot) {
+                  onAction?.({ type: "place", cardId: cid, slot: clickSlot });
+                }
+              }}
               onDragStart={(e) => {
                 e.dataTransfer.setData("cardId", cid);
                 e.dataTransfer.effectAllowed = "move";
@@ -517,7 +591,7 @@ function BoardHand({ board, isTurn, mirror, onAction, boardKey, onCardHover, onC
 function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLeave }: {
   board: TcgPlayerState | null;
   isTurn?: boolean;
-  onAction?: (action: { type: string }) => void;
+  onAction?: (action: TcgAction) => void;
   turn?: number;
   onCardHover?: (card: ArenaCard | TcgCard, e: React.MouseEvent) => void;
   onCardHoverLeave?: () => void;
@@ -530,10 +604,10 @@ function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLea
     <div className="flex flex-row justify-center gap-2 sm:flex-col sm:gap-6 sm:mr-2">
       {/* Discard pile — aligned with support row */}
       <div className="flex flex-col items-center group relative">
-        <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center shadow-inner">
-          <span className="text-[0.65rem] font-bold text-red-400">{board.discardPile.length}</span>
+        <ZoneLabel>discard</ZoneLabel>
+        <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 flex items-center justify-center shadow-inner">
+          <span className="text-[0.65rem] font-bold text-red-400 dark:text-red-300">{board.discardPile.length}</span>
         </div>
-        <span className="text-[0.5rem] text-slate-400 mt-0.5">Discard</span>
         {discardCards.length > 0 ? (
           <div className="absolute bottom-full mb-1 hidden group-hover:flex flex-col gap-0.5 bg-slate-900 text-white text-[0.55rem] rounded-lg p-2 shadow-lg z-20 w-36 max-h-40 overflow-y-auto">
             {discardCards.map((c, i) => (
@@ -547,12 +621,24 @@ function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLea
       </div>
       {/* Draw pile — shows top card thumbnail */}
       <div className="flex flex-col items-center group relative">
+        <ZoneLabel>draw</ZoneLabel>
         {isTurn && board.drawPile.length > 0 && onAction ? (
           <div
-            className={`touch-none cursor-grab select-none active:cursor-grabbing ${!board.drawnCardThisTurn && (!turn || turn > 1) ? "border-2 border-yellow-400 shadow-lg shadow-yellow-200 scale-105 rounded-xl" : ""}`}
+            className={`touch-none cursor-pointer select-none active:scale-95 ${!board.drawnCardThisTurn && (!turn || turn > 1) ? "border-2 border-yellow-400 shadow-lg shadow-yellow-200 scale-105 rounded-xl" : ""}`}
             draggable
+            role="button"
+            tabIndex={0}
             data-tcg-draggable="true"
             data-tcg-drag-kind="draw"
+            onClick={() => {
+              if (!board.drawnCardThisTurn && (!turn || turn > 1)) onAction({ type: "draw" });
+            }}
+            onKeyDown={(event) => {
+              if ((event.key === "Enter" || event.key === " ") && !board.drawnCardThisTurn && (!turn || turn > 1)) {
+                event.preventDefault();
+                onAction({ type: "draw" });
+              }
+            }}
             onDragStart={(e) => {
               e.dataTransfer.setData("draw", "1");
               e.dataTransfer.effectAllowed = "move";
@@ -561,19 +647,18 @@ function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLea
             {drawCards.length > 0 ? (
               <CardThumbnail card={drawCards[0]} size="md" onMouseEnter={(e) => onCardHover?.(drawCards[0], e)} onMouseLeave={onCardHoverLeave} />
             ) : (
-              <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center shadow-inner">
-                <span className="text-[0.65rem] font-bold text-slate-600">{board.drawPile.length}</span>
+              <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 flex items-center justify-center shadow-inner">
+                <span className="text-[0.65rem] font-bold text-slate-600 dark:text-slate-400">{board.drawPile.length}</span>
               </div>
             )}
           </div>
         ) : (
-          <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center shadow-inner">
-            <span className="text-[0.65rem] font-bold text-slate-600">{board.drawPile.length}</span>
+          <div className="w-16 h-20 rounded-lg bg-slate-200 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 flex items-center justify-center shadow-inner">
+            <span className="text-[0.65rem] font-bold text-slate-600 dark:text-slate-400">{board.drawPile.length}</span>
           </div>
         )}
-        <span className="text-[0.5rem] text-slate-400 mt-0.5">Draw</span>
         {isTurn && board.drawPile.length > 0 ? (
-          <span className="text-[0.5rem] font-bold text-emerald-600">drag to draw</span>
+          <span className="text-[0.5rem] font-bold text-emerald-600">click or drag</span>
         ) : null}
         {drawCards.length > 0 ? (
           <div className="absolute bottom-full mb-1 hidden group-hover:flex flex-col gap-0.5 bg-slate-900 text-white text-[0.55rem] rounded-lg p-2 shadow-lg z-20 w-36 max-h-40 overflow-y-auto">
@@ -586,6 +671,191 @@ function BoardPiles({ board, isTurn, onAction, turn, onCardHover, onCardHoverLea
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function TcgActionRail({ gameState, myBoard, oppBoard, myKey, oppKey, actionPending, onAction }: {
+  gameState: TcgGameState;
+  myBoard: TcgPlayerState | null;
+  oppBoard: TcgPlayerState | null;
+  myKey: string;
+  oppKey: string;
+  actionPending: boolean;
+  onAction: (action: TcgAction) => void;
+}) {
+  const activeKey = gameState.solo ? (gameState.currentPlayer || "p1") : myKey;
+  const activeBoard = activeKey === myKey ? myBoard : activeKey === oppKey ? oppBoard : null;
+  const isAiTurn = gameState.mode === "ai" && activeKey === "p2";
+  const isActionTurn = gameState.solo ? !isAiTurn : gameState.myTurn;
+  const activeLabel = gameState.solo
+    ? activeKey === "p1" ? "P1" : gameState.mode === "ai" ? "AI" : "P2"
+    : "You";
+  const activeEnergy = activeBoard?.elementPool[0] || null;
+  const canDraw = !!activeBoard && activeBoard.drawPile.length > 0 && !activeBoard.drawnCardThisTurn && gameState.turn > 1;
+  const attacker = activeBoard?.board.attacker || null;
+  const support = activeBoard?.board.support || [];
+  const canPlace = !!activeBoard && !activeBoard.placedCardThisTurn && activeBoard.hand.length > 0 && (!attacker || support.some((card) => !card));
+  const assignTargets = [
+    { slot: "attacker", label: "atk", card: attacker },
+    ...support.map((card, index) => ({ slot: `support_${index}`, label: `S${index + 1}`, card })),
+  ].filter((target) => !!target.card);
+  const canAttack = canTcgCardAttack(attacker);
+  const attackReason = attacker
+    ? `Attack needs 2 matching ${attacker.element || "element"} energy. ${getAssignedEnergyText(attacker)} assigned.`
+    : "Place an attacker first.";
+  const switchTargets = activeBoard && canTcgCardSwitch(attacker, activeBoard)
+    ? support
+        .map((card, index) => ({ slot: `support_${index}`, label: index + 1, card }))
+        .filter((target) => !!target.card)
+    : [];
+  const canSwitch = switchTargets.length > 0;
+  const switchReason = !attacker
+    ? "Place an attacker first."
+    : activeBoard?.switchedCardThisTurn
+      ? "Already switched this turn."
+      : support.some((card) => !!card)
+        ? "Switch needs at least 1 energy on the attacker."
+        : "Place a support card to switch.";
+  const disabledReason = !isActionTurn
+    ? isAiTurn ? "AI is taking its turn." : "Waiting for opponent."
+    : actionPending
+      ? "Action pending."
+      : !activeBoard
+        ? "Board not ready."
+        : null;
+  const hints = [
+    canPlace ? "Click a hand card to place it." : null,
+    canDraw ? "Draw is available." : null,
+    activeEnergy && assignTargets.length > 0 ? `Assign ${activeEnergy} to a card.` : null,
+    canAttack ? "Attack is ready." : null,
+    canSwitch ? "Switch is ready." : null,
+  ].filter((hint): hint is string => !!hint);
+
+  const baseBtn = "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40 w-full text-center";
+  const readyBtn = `${baseBtn} border-emerald-300 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:border-pink-300 hover:text-pink-600 dark:border-emerald-300/50 dark:bg-emerald-950/40 dark:text-emerald-100`;
+  const idleBtn = `${baseBtn} border-blue-200 bg-white/80 text-blue-700 dark:border-purple-300/30 dark:bg-purple-950/40 dark:text-purple-100`;
+  const dangerBtn = `${baseBtn} border-red-200 bg-white/80 text-red-600 hover:bg-red-50 dark:border-red-400/30 dark:bg-red-950/20 dark:text-red-300`;
+  const disabled = !!disabledReason;
+
+  const statusText = disabledReason
+    || (attacker && !canAttack ? attackReason : null)
+    || (attacker && support.some((c) => !!c) && !canSwitch ? switchReason : null)
+    || hints[0]
+    || null;
+
+  return (
+    <div className="border-y border-sky-100 bg-sky-50/60 px-3 py-3 dark:border-purple-400/20 dark:bg-purple-950/20 space-y-3">
+      {/* ── Status line ── */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          {activeLabel}&apos;s turn
+        </span>
+        <span className="text-[0.6rem] font-semibold text-slate-400 dark:text-slate-500">
+          turn {gameState.turn || 1}
+        </span>
+      </div>
+
+      {/* ── Primary actions: Draw + Attack ── */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          className={canDraw ? readyBtn : idleBtn}
+          disabled={disabled || !canDraw}
+          title={disabledReason || (canDraw ? "Draw one card" : "Already drew this turn")}
+          onClick={() => onAction({ type: "draw" })}
+        >
+          🂠 Draw
+        </button>
+        <button
+          type="button"
+          className={canAttack ? readyBtn : idleBtn}
+          disabled={disabled || !canAttack}
+          title={canAttack ? "Attack opponent" : attackReason}
+          onClick={() => onAction({ type: "attack" })}
+        >
+          ⚔ Attack
+        </button>
+      </div>
+
+      {/* ── Energy assignment ── */}
+      {assignTargets.length > 0 ? (
+        <div>
+          <p className="mb-1.5 text-[0.6rem] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            ⚡ assign {activeEnergy || "energy"}
+          </p>
+          <div className="flex gap-1.5">
+            {assignTargets.map((target) => (
+              <button
+                key={`assign-${target.slot}`}
+                type="button"
+                className={activeEnergy ? readyBtn : idleBtn}
+                disabled={disabled || !activeEnergy}
+                title={activeEnergy ? `Assign ${activeEnergy} to ${target.label}` : "No energy available"}
+                onClick={() => onAction({ type: "assign", slot: target.slot })}
+              >
+                {target.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Switch ── */}
+      {switchTargets.length > 0 ? (
+        <div>
+          <p className="mb-1.5 text-[0.6rem] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            🔄 switch
+          </p>
+          <div className="flex gap-1.5">
+            {switchTargets.map((target) => (
+              <button
+                key={`switch-${target.slot}`}
+                type="button"
+                className={readyBtn}
+                disabled={disabled}
+                title="Switch attacker with this support card"
+                onClick={() => onAction({ type: "switch", slot: target.slot })}
+              >
+                S{target.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Turn actions: End + Forfeit ── */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          className={isActionTurn && !actionPending ? readyBtn : idleBtn}
+          disabled={disabled}
+          title={disabledReason || "End this turn"}
+          onClick={() => onAction({ type: "end" })}
+        >
+          ⏹ End turn
+        </button>
+        <button
+          type="button"
+          className={dangerBtn}
+          disabled={actionPending}
+          title="Forfeit this game"
+          onClick={() => onAction({ type: "forfeit" })}
+        >
+          🏳 Forfeit
+        </button>
+      </div>
+
+      {/* ── Hint / status message ── */}
+      {statusText ? (
+        <p className={`text-center text-[0.65rem] font-semibold leading-snug ${
+          disabledReason || (attacker && !canAttack)
+            ? "text-amber-600 dark:text-amber-300"
+            : "text-emerald-700 dark:text-emerald-200"
+        }`}>
+          {statusText}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -621,9 +891,57 @@ function CountdownTimer({ startMs, onExpire }: { startMs: number; onExpire?: () 
 
   if (left <= 0) return null;
   return (
-    <p className={`text-center text-sm font-bold ${left <= 30 ? "text-red-600 animate-pulse" : "text-slate-500"}`}>
+    <p className={`text-center text-sm font-bold ${left <= 30 ? "text-red-600 animate-pulse" : "text-slate-500 dark:text-slate-300"}`}>
       ⏱ {left}s
     </p>
+  );
+}
+
+function TcgMatchStatusBand({ gameState, queueState, actionPending, aiActionText, onExpire }: {
+  gameState: TcgGameState;
+  queueState: "idle" | "searching" | "matched";
+  actionPending: boolean;
+  aiActionText: string | null;
+  onExpire: () => void;
+}) {
+  const score = `${gameState.p1Score ?? gameState.player1Score ?? 0}-${gameState.p2Score ?? gameState.player2Score ?? 0}`;
+  const activeText = getActivePlayerLabel(gameState);
+  const activeClass = activeText.includes("Your") || activeText.includes("P1") || activeText.includes("P2")
+    ? "text-emerald-700"
+    : "text-slate-500";
+
+  return (
+    <div className="border-y border-sky-100 bg-white/75 px-3 py-2 dark:border-purple-400/20 dark:bg-purple-950/20">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-bold">
+        <span className={activeClass}>{activeText}</span>
+        <span className="text-blue-700 dark:text-blue-200">Score {score}</span>
+        <span className="text-slate-500 dark:text-slate-300">Queue {queueState === "searching" ? "searching" : gameState.solo ? "solo" : "matched"}</span>
+        {gameState.turnStartedAt && gameState.phase !== "finished" ? (
+          <CountdownTimer startMs={gameState.turnStartedAt} onExpire={onExpire} />
+        ) : null}
+        {actionPending ? <span className="text-amber-600 dark:text-amber-300">Action pending</span> : null}
+      </div>
+      {aiActionText || gameState.lastAction ? (
+        <p className={`mt-1 text-center text-xs font-semibold ${aiActionText ? "text-purple-600 animate-pulse" : "text-slate-500"}`}>
+          {aiActionText || gameState.lastAction}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function TcgMatchHelpRail() {
+  return (
+    <details className="border-y border-sky-100 bg-sky-50/40 px-3 py-2 text-xs text-blue-700 dark:border-purple-400/20 dark:bg-purple-950/20 dark:text-purple-100">
+      <summary className="cursor-pointer text-center font-black">quick rules</summary>
+      <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[0.7rem] font-semibold text-slate-600 dark:text-purple-100/80">
+        <span>1 attacker + 3 support</span>
+        <span>Energy can go on any card</span>
+        <span>Attack with 2 matching energy</span>
+        <span>Off-element energy can switch</span>
+        <span>First to 3 points wins</span>
+      </div>
+    </details>
   );
 }
 
@@ -676,11 +994,19 @@ function MobileDragGhost({ ghost, card }: { ghost: MobileTcgGhost | null; card?:
   );
 }
 
-const TcgPage = () => {
+type TcgPageMode = "decks" | "match";
+
+const TcgPage = ({ mode }: { mode: TcgPageMode }) => {
   const auth = useOptionalAuth();
   const token = auth?.token || null;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const arenaPrefix = location.pathname === "/ar" || location.pathname.startsWith("/ar/")
+    ? "/ar"
+    : "/arena";
+  const decksPath = `${arenaPrefix}/tcg/decks`;
+  const matchPath = `${arenaPrefix}/tcg/match`;
 
-  const [tab, setTab] = useState<"decks" | "match">("decks");
   const [gameId, setGameId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<TcgGameState | null>(null);
   const [eligibleCards, setEligibleCards] = useState<ArenaCard[]>([]);
@@ -695,7 +1021,7 @@ const TcgPage = () => {
   const [errorState, setErrorState] = useState<"hidden" | "pending" | "entering" | "visible" | "leaving">("hidden");
   const [aiActionText, setAiActionText] = useState<string | null>(null);
   const [queueState, setQueueState] = useState<"idle" | "searching" | "matched">("idle");
-  const [showStagingModal, setShowStagingModal] = useState(true);
+  const [showStagingModal, setShowStagingModal] = useState(() => !loadTcgStagingAcknowledgement());
 
   const tokenRef = useRef(token);
   tokenRef.current = token;
@@ -771,9 +1097,20 @@ const TcgPage = () => {
   }, []);
 
   usePageSeo({
-    canonical: "https://mirabellier.com/arena/tcg",
+    canonical: `https://mirabellier.com/arena/tcg/${mode}`,
     structuredDataId: "tcg-structured-data",
-    structuredData: { "@context": "https://schema.org", "@type": "WebPage", name: "TCG Showdown", url: "https://mirabellier.com/arena/tcg" },
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: mode === "decks" ? "TCG Decks" : "TCG Match",
+      url: `https://mirabellier.com/arena/tcg/${mode}`,
+    },
+    socialMeta: {
+      title: mode === "decks" ? "TCG Decks" : "TCG Match",
+      description: "Build a 10-card Arena deck and play Mirabellier TCG alpha matches.",
+      url: `https://mirabellier.com/arena/tcg/${mode}`,
+      image: "https://mirabellier.com/background.jpg",
+    },
   });
 
   useEffect(() => {
@@ -808,25 +1145,47 @@ const TcgPage = () => {
     fetchTcgEligibleCards(token).then(({ cards }) => setEligibleCards(cards)).catch(() => {});
   }, [token]);
 
-  // ── Auto-resume active game on mount ──
+  // ── Auto-resume active game on match route ──
   useEffect(() => {
-    if (!token) return;
-    const savedGameId = localStorage.getItem("tcg_active_game");
-    if (savedGameId) {
-      fetchTcgGameState(token, savedGameId).then((state) => {
-        if (state?.board) {
-          setGameId(savedGameId);
+    if (!token || mode !== "match") return;
+    let cancelled = false;
+
+    const resumeGameId = async (candidateGameId: string | null) => {
+      if (!candidateGameId) return false;
+      try {
+        const state = await fetchTcgGameState(token, candidateGameId);
+        if (cancelled) return true;
+        if (state?.board && !state.winner && state.phase !== "finished") {
+          setGameId(candidateGameId);
           setGameState(state);
-          setTab("match");
-          if (state.winner || state.phase === "finished") {
-            localStorage.removeItem("tcg_active_game");
-          }
-        } else {
-          localStorage.removeItem("tcg_active_game");
+          localStorage.setItem("tcg_active_game", candidateGameId);
+          return true;
         }
-      }).catch(() => localStorage.removeItem("tcg_active_game"));
-    }
-  }, [token]);
+      } catch {
+        // Fall through to the backend active-game lookup.
+      }
+      if (!cancelled) clearActiveTcgGame();
+      return false;
+    };
+
+    const resume = async () => {
+      const savedGameId = localStorage.getItem("tcg_active_game");
+      if (await resumeGameId(savedGameId)) return;
+
+      try {
+        const active = await fetchActiveTcgGame(token);
+        if (!cancelled) await resumeGameId(active.gameId);
+      } catch {
+        // No active game is fine; the match route can show start actions.
+      }
+    };
+
+    void resume();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, token]);
 
   const refreshActiveGameState = useCallback(async () => {
     if (!token || !gameId) return;
@@ -834,8 +1193,7 @@ const TcgPage = () => {
       const state = await fetchTcgGameState(token, gameId);
       setGameState(state);
       if (state.winner || state.phase === "finished") {
-        localStorage.removeItem("tcg_active_game");
-        setTab("match");
+        clearActiveTcgGame();
       }
     } catch {
       // Keep the current board visible; websocket/action refresh may still recover.
@@ -855,7 +1213,7 @@ const TcgPage = () => {
       const { gameId: gid } = await startTcgSoloGame(token, elementPool, deckCards, mode);
       setGameId(gid);
       localStorage.setItem("tcg_active_game", gid);
-      setTab("match");
+      navigate(matchPath);
       const state = await fetchTcgGameState(token, gid);
       setGameState(state);
     } catch (err) { showError(normalizeArenaError(err)); }
@@ -885,7 +1243,7 @@ const TcgPage = () => {
         await submitTcgDeck(token, result.gameId, deckCards, elementPool);
         setGameId(result.gameId);
         localStorage.setItem("tcg_active_game", result.gameId);
-        setTab("match");
+        navigate(matchPath);
         const state = await fetchTcgGameState(token, result.gameId);
         setGameState(state);
       } else {
@@ -923,7 +1281,7 @@ const TcgPage = () => {
       await submitTcgDeck(t, matchedGameId, deckCards, elementPoolRef.current);
       setGameId(matchedGameId);
       localStorage.setItem("tcg_active_game", matchedGameId);
-      setTab("match");
+      navigate(matchPath);
       const state = await fetchTcgGameState(t, matchedGameId);
       setGameState(state);
     } catch (err) {
@@ -1009,6 +1367,7 @@ const TcgPage = () => {
   // ── WebSocket: game finished ──
   const handleGameFinished = useCallback((data: unknown) => {
     const { winner, p1Score, p2Score } = data as { winner: string; p1Score: number; p2Score: number; gameId: string };
+    clearActiveTcgGame();
     setGameState((prev) => prev ? { ...prev, winner, p1Score, p2Score, phase: "finished" as const } : null);
   }, []);
 
@@ -1083,6 +1442,9 @@ const TcgPage = () => {
         }
       }
       const state = await fetchTcgGameState(token, gameId);
+      if (state.winner || state.phase === "finished" || action.type === "forfeit") {
+        clearActiveTcgGame();
+      }
       // Immediately animate any opponent attack we haven't seen yet
       if (state.lastAttackResult && state.lastAttackResult.attackerKey !== myKey) {
         const ar = state.lastAttackResult;
@@ -1198,6 +1560,7 @@ const TcgPage = () => {
     });
     return sortDeckCards(filtered, deckSort);
   }, [deckDuplicateIds, deckDuplicatesFilter, deckFilterEl, deckSearch, deckSort, eligibleCards, selectedDeck]);
+  const hasDeckFilters = deckSearch.trim().length > 0 || !!deckFilterEl || deckDuplicatesFilter;
 
   return (
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
@@ -1208,7 +1571,10 @@ const TcgPage = () => {
           message={<>You are on the <strong>staging stage</strong> of the website. Expect bugs, broken features, and unfinished content.<br /><br />Contact <span className="font-semibold text-pink-600">Mira</span> if you encounter any bugs.</>}
           confirmLabel="I Understand"
           cancelLabel="Go Back"
-          onConfirm={() => setShowStagingModal(false)}
+          onConfirm={() => {
+            saveTcgStagingAcknowledgement();
+            setShowStagingModal(false);
+          }}
           onCancel={() => window.history.back()}
         />
       ) : null}
@@ -1219,7 +1585,7 @@ const TcgPage = () => {
             <Navigation />
           </div>
           <main className="w-full space-y-2 p-2 sm:p-4 lg:w-3/5">
-            <section className="card-border space-y-3 sm:space-y-4 bg-white/60 p-3 sm:p-4">
+            <section className="card-border space-y-3 sm:space-y-4 bg-white/60 p-3 sm:p-4 dark:bg-purple-950/20">
               {/* Projectile overlay */}
               {projectile ? (
                 <div
@@ -1240,6 +1606,12 @@ const TcgPage = () => {
               ) : null}
               <MobileDragGhost ghost={mobileDragGhost} card={mobileDragGhostCard} />
               <h2 className="text-2xl sm:text-4xl font-bold text-blue-900">TCG Showdown</h2>
+              <ArenaSubNav />
+              {!showStagingModal ? (
+                <p className="text-center text-xs font-semibold text-amber-700 dark:text-amber-200">
+                  Alpha build: matches and deck tools may still change.
+                </p>
+              ) : null}
 
               {!token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 text-center">
@@ -1248,35 +1620,51 @@ const TcgPage = () => {
                 </div>
               ) : (
                 <>
-                  {/* ── Tab Nav ── */}
-                  <div className="flex justify-center gap-4 pb-3 border-b border-sky-100">
-                    <button
-                      onClick={() => setTab("decks")}
-                      className={`arena-redraw-button hover:animate-wiggle ${tab === "decks" ? "font-bold text-pink-600" : ""}`}
-                    >
-                      [ Decks ]
-                    </button>
-                    <span className="font-bold self-center">|</span>
-                    <button
-                      onClick={() => setTab("match")}
-                      className={`arena-redraw-button hover:animate-wiggle ${tab === "match" ? "font-bold text-pink-600" : ""}`}
-                    >
-                      [ Match ]
-                    </button>
-                  </div>
-
-                  {/* ── Decks Tab ── */}
-                  {tab === "decks" ? (
+                  {/* ── Decks Route ── */}
+                  {mode === "decks" ? (
                     <div className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 pb-3 dark:border-purple-400/20">
+                        <div>
+                          <p className="text-sm font-black text-blue-800 dark:text-purple-100">
+                            Deck readiness: {selectedDeck.size}/{DECK_SIZE}
+                          </p>
+                          <p className="text-xs font-semibold text-slate-500">
+                            {selectedDeck.size >= DECK_SIZE ? "Ready to play." : `${DECK_SIZE - selectedDeck.size} more card${DECK_SIZE - selectedDeck.size === 1 ? "" : "s"} needed.`}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => handleStartSolo("solo")}
+                            disabled={loading || selectedDeck.size < DECK_SIZE}
+                            className="arena-redraw-button hover:animate-wiggle text-xs"
+                          >
+                            {loading ? "[ Starting... ]" : "[ Play Solo ]"}
+                          </button>
+                          <button
+                            onClick={() => handleStartSolo("ai")}
+                            disabled={loading || selectedDeck.size < DECK_SIZE}
+                            className="arena-redraw-button hover:animate-wiggle text-xs"
+                          >
+                            {loading ? "[ Starting... ]" : "[ Play AI ]"}
+                          </button>
+                          <button
+                            onClick={handleFindMatch}
+                            disabled={loading || selectedDeck.size < DECK_SIZE}
+                            className="arena-redraw-button hover:animate-wiggle text-xs"
+                          >
+                            {loading ? "[ Searching... ]" : "[ Find Match ]"}
+                          </button>
+                        </div>
+                      </div>
                       {/* Selected deck — horizontal scroll */}
                       {selectedDeck.size > 0 ? (
-                        <div className="border border-blue-200 rounded-xl bg-blue-50/60 p-3">
+                        <div className="border border-blue-200 rounded-xl bg-blue-50/60 p-3 dark:border-purple-400/20 dark:bg-purple-950/30">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-bold text-blue-700">
+                            <p className="text-xs font-bold text-blue-700 dark:text-purple-100">
                               Your Deck ({selectedDeck.size}/{DECK_SIZE})
                             </p>
                             <div className="flex items-center gap-1">
-                              <span className="text-[0.55rem] font-semibold text-slate-500">elements:</span>
+                              <span className="text-[0.55rem] font-semibold text-slate-500 dark:text-slate-400">elements:</span>
                               {elementPool.map((el) => (
                                 <img
                                   key={el}
@@ -1310,14 +1698,15 @@ const TcgPage = () => {
                       ) : null}
 
                       {/* Element spawn selector — choose which elements appear during match */}
-                      <div className="flex flex-wrap items-center gap-2 bg-amber-50/60 border border-amber-200 rounded-lg p-2">
-                        <span className="text-xs font-bold text-amber-700">⚡ Elements to spawn:</span>
+                      <div className="flex flex-wrap items-center gap-2 bg-amber-50/60 border border-amber-200 rounded-lg p-2 dark:bg-amber-950/20 dark:border-amber-800/40">
+                        <span className="text-xs font-bold text-amber-700 dark:text-amber-200">⚡ Elements to spawn:</span>
                         {ELEMENTS.map((el) => {
                           const active = elementPool.includes(el);
                           return (
                             <button
                               key={el}
                               type="button"
+                              aria-pressed={active}
                               onClick={() => {
                                 const next = active
                                   ? elementPool.filter((e) => e !== el)
@@ -1331,37 +1720,44 @@ const TcgPage = () => {
                                 borderColor: ELEMENT_COLORS[el],
                                 color: active ? "#fff" : ELEMENT_COLORS[el],
                               }}
-                              className="text-xs font-bold px-2.5 py-1 rounded-full border-2 transition hover:scale-105"
+                              className={`text-xs font-bold px-2.5 py-1 rounded-full border-2 transition hover:scale-105 ${
+                                active
+                                  ? "ring-2 ring-amber-300 ring-offset-1 shadow-md"
+                                  : "opacity-70 hover:opacity-100"
+                              }`}
                             >
+                              {active ? "✓ " : ""}
                               {el}
                             </button>
                           );
                         })}
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm text-blue-600">
-                          Cards available: {filteredDeckCards.length}
-                        </p>
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="text-sm text-blue-600 dark:text-purple-100/70">
+                            Cards available: {filteredDeckCards.length}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-end gap-2">
                           <label htmlFor="tcg-deck-sort" className="sr-only">
                             Sort deck cards
                           </label>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">sort:</span>
                           <select
                             id="tcg-deck-sort"
                             value={deckSort}
                             onChange={(event) => setDeckSort(event.target.value as CollectionSort)}
-                            className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-purple-400/30 dark:bg-purple-950/40 dark:text-purple-100"
                           >
-                            <option value="recent">Collection order</option>
-                            <option value="rarity-desc">Rarity: highest first</option>
-                            <option value="rarity-asc">Rarity: lowest first</option>
-                            <option value="iv-desc">IV: highest first</option>
-                            <option value="iv-asc">IV: lowest first</option>
-                            <option value="power-desc">Power: highest first</option>
-                            <option value="guard-desc">Guard: highest first</option>
-                            <option value="speed-desc">Speed: highest first</option>
-                            <option value="effectHit-desc">Effect Hit: highest first</option>
+                            <option value="recent">Recent</option>
+                            <option value="rarity-desc">Rarity ▼</option>
+                            <option value="rarity-asc">Rarity ▲</option>
+                            <option value="iv-desc">IV ▼</option>
+                            <option value="iv-asc">IV ▲</option>
+                            <option value="power-desc">Power ▼</option>
+                            <option value="guard-desc">Guard ▼</option>
+                            <option value="speed-desc">Speed ▼</option>
+                            <option value="effectHit-desc">Effect Hit ▼</option>
                           </select>
                           <input
                             id="tcg-deck-search"
@@ -1369,50 +1765,64 @@ const TcgPage = () => {
                             value={deckSearch}
                             onChange={(event) => setDeckSearch(event.target.value)}
                             placeholder="Lelouch Lamperouge..."
-                            className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                            className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/30 dark:bg-purple-950/40 dark:text-purple-100"
                           />
+                          {hasDeckFilters ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeckSearch("");
+                                setDeckFilterEl("");
+                                setDeckDuplicatesFilter(false);
+                              }}
+                              className="arena-redraw-button text-xs"
+                            >
+                              [ clear filters ]
+                            </button>
+                          ) : null}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">element:</span>
+                          {ELEMENTS.map((el) => {
+                            const active = deckFilterEl === el;
+                            return (
+                              <button
+                                key={el}
+                                type="button"
+                                onClick={() => setDeckFilterEl(active ? "" : el)}
+                                style={{
+                                  backgroundColor: active ? ELEMENT_COLORS[el] : "transparent",
+                                  borderColor: ELEMENT_COLORS[el],
+                                  color: active ? "#fff" : ELEMENT_COLORS[el],
+                                }}
+                                className="text-xs font-bold px-2 py-0.5 rounded-full border transition"
+                              >
+                                {el}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">show:</span>
+                          <button
+                            type="button"
+                            onClick={() => setDeckDuplicatesFilter((prev) => !prev)}
+                            className={`text-xs font-bold px-2 py-0.5 rounded-full border transition ${
+                              deckDuplicatesFilter
+                                ? "bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300"
+                                : "text-purple-500 border-purple-300 hover:bg-purple-50"
+                            }`}
+                          >
+                            duplicates only
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-500 mr-1">element:</span>
-                        {ELEMENTS.map((el) => {
-                          const active = deckFilterEl === el;
-                          return (
-                            <button
-                              key={el}
-                              type="button"
-                              onClick={() => setDeckFilterEl(active ? "" : el)}
-                              style={{
-                                backgroundColor: active ? ELEMENT_COLORS[el] : "transparent",
-                                borderColor: ELEMENT_COLORS[el],
-                                color: active ? "#fff" : ELEMENT_COLORS[el],
-                              }}
-                              className="text-xs font-bold px-2 py-0.5 rounded-full border transition"
-                            >
-                              {el}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-500 mr-1">show:</span>
-                        <button
-                          type="button"
-                          onClick={() => setDeckDuplicatesFilter((prev) => !prev)}
-                          className={`text-xs font-bold px-2 py-0.5 rounded-full border transition ${
-                            deckDuplicatesFilter
-                              ? "bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300"
-                              : "text-purple-500 border-purple-300 hover:bg-purple-50"
-                          }`}
-                        >
-                          duplicates only
-                        </button>
-                      </div>
-
                       {eligibleCards.length === 0 ? (
-                        <p className="text-sm text-slate-500">Loading cards...</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Loading cards...</p>
                       ) : (
                         <>
                           <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 max-h-96 overflow-y-auto select-none" onContextMenu={(e) => e.preventDefault()}>
@@ -1435,7 +1845,7 @@ const TcgPage = () => {
                             })}
                           </div>
                           {filteredDeckCards.length === 0 ? (
-                            <p className="text-sm text-slate-600">No cards match your search.</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">No cards match your search.</p>
                           ) : null}
                         </>
                       )}
@@ -1445,24 +1855,32 @@ const TcgPage = () => {
                             onClick={() => { setSelectedDeck(new Set()); saveDeck([]); }}
                             className="arena-redraw-button hover:animate-wiggle text-xs"
                           >
-                            [ Clear ]
+                            [ Clear deck ]
                           </button>
                         ) : null}
                       </div>
                     </div>
                   ) : null}
 
-                  {/* ── Match Tab ── */}
-                  {tab === "match" ? (
+                  {/* ── Match Route ── */}
+                  {mode === "match" ? (
                     <>
                       {/* No game active — show start button */}
                       {!gameId && queueState !== "searching" ? (
                         <div className="space-y-4 text-center">
-                          <p className="text-lg font-bold text-blue-700">TCG Showdown</p>
-                          <p className="text-sm text-slate-600">
+                          <p className="text-lg font-bold text-blue-700 dark:text-blue-200">TCG Showdown</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
                             {selectedDeck.size >= DECK_SIZE
                               ? "Deck ready!"
-                              : `Need ${DECK_SIZE} cards in your deck. Go to [ Decks ] first.`}
+                              : (
+                                <>
+                                  Need {DECK_SIZE} cards in your deck.{" "}
+                                  <Link to={decksPath} className="font-bold text-pink-600 underline">
+                                    Go to Decks
+                                  </Link>
+                                  .
+                                </>
+                              )}
                           </p>
                           <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
                             <button
@@ -1490,7 +1908,7 @@ const TcgPage = () => {
                         </div>
                       ) : queueState === "searching" ? (
                         <div className="space-y-4 text-center">
-                          <p className="text-lg font-bold text-blue-700 animate-pulse">Searching for opponent...</p>
+                          <p className="text-lg font-bold text-blue-700 dark:text-blue-200 animate-pulse">Searching for opponent...</p>
                           <button onClick={handleCancelQueue} className="arena-redraw-button hover:animate-wiggle">
                             [ Cancel ]
                           </button>
@@ -1545,57 +1963,30 @@ const TcgPage = () => {
                               stopBoardDrag();
                             }}
                           >
-                            {/* Turn indicator */}
-                            {gameState.solo ? (
-                              <p className="text-center text-sm font-bold">
-                                <span className="text-emerald-600">
-                                  {gameState.mode === "ai"
-                                    ? `${gameState.currentPlayer === "p1" ? "Your" : "AI"} turn`
-                                    : `Solo — ${gameState.currentPlayer === "p1" ? "P1" : "P2"}'s turn`}
-                                </span>
-                              </p>
-                            ) : gameState.myTurn ? (
-                              <p className="text-center text-sm font-bold">
-                                <span className="text-emerald-600">Your Turn</span>
-                              </p>
-                            ) : (
-                              <p className="text-center text-sm font-bold">
-                                <span className="text-slate-400 animate-pulse">Waiting for opponent...</span>
-                              </p>
-                            )}
-                            {gameState?.lastAction ? (
-                              <p className="text-center text-xs text-slate-500 italic">{gameState.lastAction}</p>
-                            ) : null}
-                            {aiActionText ? (
-                              <p className="text-center text-sm font-bold text-purple-600 animate-pulse">{aiActionText}</p>
-                            ) : null}
-                            {gameState?.turnStartedAt && gameState.phase !== "finished" ? (
-                              <CountdownTimer startMs={gameState.turnStartedAt} onExpire={refreshActiveGameState} />
-                            ) : null}
                             {/* Top Player (P2 in solo, Opponent in PvP) */}
                           {gameState.solo ? (
-                            <div className={`border rounded-lg p-2 sm:p-3 ${gameState.currentPlayer === "p2" ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50"}`}>
+                            <div className={`border-y p-2 sm:p-3 ${gameState.currentPlayer === "p2" ? "border-blue-300 bg-blue-50/70 dark:border-purple-400/30 dark:bg-purple-950/30" : "border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30"}`}>
                               <p className="text-xs font-bold text-center mb-2">
-                                <span className={gameState.currentPlayer === "p2" ? "text-blue-700" : "text-slate-500"}>
+                                <span className={gameState.currentPlayer === "p2" ? "text-blue-700 dark:text-blue-200" : "text-slate-500 dark:text-slate-300"}>
                                   P2{gameState.currentPlayer === "p2" ? " (active)" : ""}{gameState.mode === "ai" ? " 🤖" : ""}
                                 </span>
                                 {" · Score: "}{gameState.p2Score}
                               </p>
                               {gameState.elementPools?.[oppKey] && gameState.elementPools[oppKey].length > 0 ? (
                                 <div className="flex items-center justify-center gap-1 mb-1">
-                                  <span className="text-[0.5rem] text-slate-400">pool:</span>
+                                  <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">pool:</span>
                                   {gameState.elementPools[oppKey].map((el) => (
                                     <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />
                                   ))}
                                 </div>
                               ) : null}
                               <div className="flex items-center justify-center gap-1 mb-2">
-                                <span className="text-[0.5rem] text-slate-400">active:</span>
+                                <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">active energy:</span>
                                 {oppBoard && oppBoard.elementPool.length > 0
                                   ? oppBoard.elementPool.map((el, i) => (
                                       <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />
                                     ))
-                                  : <span className="text-slate-400 text-[0.65rem]">none</span>}
+                                  : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
                               </div>
                                 <div className="relative mx-auto w-fit max-w-full">
                                   <div className="static mb-2 flex justify-center sm:absolute sm:top-0 sm:left-full sm:mb-0 sm:ml-2">
@@ -1662,25 +2053,25 @@ const TcgPage = () => {
                                 </div>
                               </div>
                           ) : (
-                            <div className="border border-slate-200 rounded-lg p-2 sm:p-3 bg-slate-50">
-                              <p className="text-xs font-bold text-slate-500 mb-1 text-center">
+                            <div className="border-y border-slate-200 p-2 sm:p-3 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30">
+                              <p className="text-xs font-bold text-slate-500 dark:text-slate-300 mb-1 text-center">
                                 {gameState?.opponentName || "Opponent"} · Score: {gameState?.p2Score ?? gameState?.player2Score ?? 0}
                               </p>
                               {gameState.elementPools?.[oppKey] && gameState.elementPools[oppKey].length > 0 ? (
                                 <div className="flex items-center justify-center gap-1 mb-1">
-                                  <span className="text-[0.5rem] text-slate-400">pool:</span>
+                                  <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">pool:</span>
                                   {gameState.elementPools[oppKey].map((el) => (
                                     <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />
                                   ))}
                                 </div>
                               ) : null}
                               <div className="flex items-center justify-center gap-1 mb-2">
-                                <span className="text-[0.5rem] text-slate-400">active:</span>
+                                <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">active energy:</span>
                                 {oppBoard && oppBoard.elementPool.length > 0
                                   ? oppBoard.elementPool.map((el, i) => (
                                       <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />
                                     ))
-                                  : <span className="text-slate-400 text-[0.65rem]">none</span>}
+                                  : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
                               </div>
                                   <div className="relative mx-auto w-fit max-w-full">
                                     <div>
@@ -1695,7 +2086,7 @@ const TcgPage = () => {
                                         onCardHover={onCardHover}
                                         onCardHoverLeave={onCardHoverLeave}
                                       />
-                                      <p className="text-xs text-slate-400 mt-1 text-center">
+                                      <p className="text-xs text-slate-400 mt-1 text-center dark:text-slate-500">
                                         Hand: {oppBoard?.hand.length ?? 0}
                                       </p>
                                     </div>
@@ -1707,30 +2098,30 @@ const TcgPage = () => {
                           )}
 
                           {/* Bottom Player (P1 in solo, You in PvP) */}
-                            <div className={`border-2 rounded-lg p-2 sm:p-3 ${gameState.solo && gameState.currentPlayer === "p1" ? "border-blue-400 bg-blue-50" : "border-blue-300 bg-blue-50"}`}>
+                            <div className={`border-y p-2 sm:p-3 ${gameState.solo && gameState.currentPlayer === "p1" ? "border-blue-300 bg-blue-50/80 dark:border-purple-400/30 dark:bg-purple-950/40" : "border-blue-200 bg-blue-50/70 dark:border-purple-400/20 dark:bg-purple-950/30"}`}>
                             <p className="text-xs font-bold text-center mb-2">
                               {gameState.solo ? (
-                                <span className={gameState.currentPlayer === "p1" ? "text-blue-700" : "text-slate-500"}>
+                                <span className={gameState.currentPlayer === "p1" ? "text-blue-700 dark:text-blue-200" : "text-slate-500 dark:text-slate-300"}>
                                   P1{gameState.currentPlayer === "p1" ? " (active)" : ""}
                                 </span>
-                              ) : "You"}
-                              {" · Score: "}{gameState.p1Score}
+                              ) : <span className="dark:text-purple-100">You</span>}
+                              <span className="dark:text-slate-300">{" · Score: "}{gameState.p1Score}</span>
                             </p>
                             {gameState.elementPools?.[myKey] && gameState.elementPools[myKey].length > 0 ? (
                               <div className="flex items-center justify-center gap-1 mb-1">
-                                <span className="text-[0.5rem] text-slate-400">pool:</span>
+                                <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">pool:</span>
                                 {gameState.elementPools[myKey].map((el) => (
                                   <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />
                                 ))}
                               </div>
                             ) : null}
                             <div className="flex items-center justify-center gap-1 mb-2">
-                              <span className="text-[0.5rem] text-slate-400">active:</span>
+                              <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">active energy:</span>
                               {myBoard && myBoard.elementPool.length > 0
                                 ? myBoard.elementPool.map((el, i) => (
                                     <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />
                                   ))
-                                : <span className="text-slate-400 text-[0.65rem]">none</span>}
+                                : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
                             </div>
                             <div className="relative mx-auto w-fit max-w-full">
                               <div className="static mb-2 flex justify-center sm:absolute sm:top-0 sm:right-full sm:mb-0 sm:mr-2">
@@ -1794,32 +2185,34 @@ const TcgPage = () => {
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="flex flex-wrap justify-center gap-2">
-                            {gameState.myTurn || gameState.solo ? (
-                              <button onClick={() => handleAction({ type: "end" })} className="arena-redraw-button hover:animate-wiggle text-xs font-bold">
-                                [ End Turn ]
-                              </button>
-                            ) : null}
-                            <button onClick={() => handleAction({ type: "forfeit" })} className="arena-redraw-button hover:animate-wiggle text-xs text-red-600 font-bold">
-                              [ Forfeit ]
-                            </button>
-                          </div>
                         </div>
                       ) : null}
 
                       {/* Finished */}
                       {gameState?.winner ? (
-                        <div className="space-y-4 text-center">
-                          <p className="text-2xl font-bold text-blue-700">
+                        <div className="space-y-3 border-y border-sky-100 bg-white/75 py-5 text-center dark:border-purple-400/20 dark:bg-purple-950/20">
+                          <p className="text-xs font-black uppercase tracking-normal text-slate-500 dark:text-slate-300">match finished</p>
+                          <p className="text-2xl font-bold text-blue-700 dark:text-blue-200">
                             {gameState.winner === myKey ? "You Win!" : "You Lose!"}
-                            <span className="text-base ml-3 text-slate-600">
-                              {gameState.p1Score}-{gameState.p2Score}
-                            </span>
                           </p>
-                          <button onClick={() => { setGameId(null); setGameState(null); localStorage.removeItem("tcg_active_game"); }} className="arena-redraw-button hover:animate-wiggle">
-                            [ Play Again ]
-                          </button>
+                          <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                            Final score: {gameState.p1Score}-{gameState.p2Score}
+                          </p>
+                          {gameState.lastAction ? (
+                            <p className="mx-auto max-w-xl px-3 text-xs font-semibold text-slate-500 dark:text-slate-300">{gameState.lastAction}</p>
+                          ) : null}
+                          <div className="flex flex-wrap justify-center gap-2">
+                            <button onClick={() => { setGameId(null); setGameState(null); clearActiveTcgGame(); }} className="arena-redraw-button hover:animate-wiggle">
+                              [ Play again ]
+                            </button>
+                            <Link
+                              to={decksPath}
+                              onClick={() => { setGameId(null); setGameState(null); clearActiveTcgGame(); }}
+                              className="arena-redraw-button hover:animate-wiggle"
+                            >
+                              [ Back to decks ]
+                            </Link>
+                          </div>
                         </div>
                       ) : null}
                     </>
@@ -1845,41 +2238,77 @@ const TcgPage = () => {
             <Divider />
           </main>
 
-          <aside className="mb-auto w-full space-y-4 hidden sm:block lg:w-1/5">
-            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
-              <h2 className="text-center text-lg font-bold text-blue-700 mb-2">weakness chart</h2>
-              <div className="space-y-1 text-xs">
-                {[
-                  { el: "Fire", beats: "Earth" },
-                  { el: "Water", beats: "Fire" },
-                  { el: "Earth", beats: "Water" },
-                  { el: "Wind", beats: "Light" },
-                  { el: "Light", beats: "Dark" },
-                  { el: "Dark", beats: "Wind" },
-                ].map((row) => (
-                  <div key={row.el} className="flex items-center gap-1.5">
-                    <span className="inline-block w-14 px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.el] }}>
-                      {row.el}
-                    </span>
-                    <span className="text-slate-500">beats</span>
-                    <span className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.beats] }}>
-                      {row.beats}
-                    </span>
+          <aside className="w-full space-y-4 sm:block lg:w-1/5">
+            <div className="sticky top-4 space-y-4">
+              {/* Match mode: score, controls, and rules */}
+              {mode === "match" && gameId && gameState?.board && !gameState?.winner ? (
+                <>
+                  <div className="right-side-panel rounded-xl border border-blue-300 bg-white/80 p-3 opacity-95 shadow-md dark:border-purple-400/30 dark:bg-purple-950/40">
+                    <h2 className="text-center text-sm font-bold text-blue-700 mb-2 dark:text-purple-100">score board</h2>
+                    <TcgMatchStatusBand
+                      gameState={gameState}
+                      queueState={queueState}
+                      actionPending={actionPending}
+                      aiActionText={aiActionText}
+                      onExpire={refreshActiveGameState}
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
-            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
-              <div className="space-y-2 text-sm text-blue-600">
-                <h2 className="text-center text-lg font-bold text-blue-700">tcg rules</h2>
-                <p>10-card deck. 1 attacker + 3 support.</p>
-                <p>Energy can go on any card.</p>
-                <p>Attack with 2 matching energy.</p>
-                <p>Off-element energy can switch.</p>
-                <p>Each turn spawns 1 random element type.</p>
-                <p>Super-effective = 3x damage!</p>
-                <p>First to 3 points wins.</p>
-              </div>
+                  <div className="right-side-panel rounded-xl border border-blue-300 bg-white/80 p-3 opacity-95 shadow-md dark:border-purple-400/30 dark:bg-purple-950/40">
+                    <h2 className="text-center text-sm font-bold text-blue-700 mb-2 dark:text-purple-100">controls</h2>
+                    <TcgActionRail
+                      gameState={gameState}
+                      myBoard={myBoard}
+                      oppBoard={oppBoard}
+                      myKey={myKey}
+                      oppKey={oppKey}
+                      actionPending={actionPending}
+                      onAction={handleAction}
+                    />
+                  </div>
+                  <div className="right-side-panel rounded-xl border border-blue-300 bg-sky-50/60 p-3 opacity-95 shadow-md dark:border-purple-400/30 dark:bg-purple-950/30">
+                    <h2 className="text-center text-sm font-bold text-blue-700 mb-2 dark:text-purple-100">rules</h2>
+                    <TcgMatchHelpRail />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-purple-950/40 dark:text-purple-100">
+                    <h2 className="text-center text-lg font-bold text-blue-700 mb-2 dark:text-purple-100">weakness chart</h2>
+                    <div className="space-y-1 text-xs">
+                      {[
+                        { el: "Fire", beats: "Earth" },
+                        { el: "Water", beats: "Fire" },
+                        { el: "Earth", beats: "Water" },
+                        { el: "Wind", beats: "Light" },
+                        { el: "Light", beats: "Dark" },
+                        { el: "Dark", beats: "Wind" },
+                      ].map((row) => (
+                        <div key={row.el} className="flex items-center gap-1.5">
+                          <span className="inline-block w-14 px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.el] }}>
+                            {row.el}
+                          </span>
+                          <span className="text-slate-500">beats</span>
+                          <span className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.beats] }}>
+                            {row.beats}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-purple-950/40">
+                    <div className="space-y-2 text-sm text-blue-600 dark:text-purple-100/80">
+                      <h2 className="text-center text-lg font-bold text-blue-700 dark:text-purple-100">tcg rules</h2>
+                      <p>10-card deck. 1 attacker + 3 support.</p>
+                      <p>Energy can go on any card.</p>
+                      <p>Attack with 2 matching energy.</p>
+                      <p>Off-element energy can switch.</p>
+                      <p>Each turn spawns 1 random element type.</p>
+                      <p>Super-effective = 3x damage!</p>
+                      <p>First to 3 points wins.</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </aside>
         </div>

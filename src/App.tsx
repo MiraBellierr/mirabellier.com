@@ -26,7 +26,8 @@ const ArenaMarket = lazy(() => import("./pages/ArenaMarket"));
 const ArenaMint = lazy(() => import("./pages/ArenaMint"));
 const ArenaSkillTree = lazy(() => import("./pages/ArenaSkillTree"));
 const ArenaTrade = lazy(() => import("./pages/ArenaTrade"));
-const TcgPage = lazy(() => import("./pages/TcgPage"));
+const TcgDecks = lazy(() => import("./pages/TcgDecks"));
+const TcgMatch = lazy(() => import("./pages/TcgMatch"));
 const Guestbook = lazy(() => import("./pages/Guestbook"));
 const GuestbookSign = lazy(() => import("./pages/GuestbookSign"));
 const QuestionOfTheDay = lazy(() => import("./pages/QuestionOfTheDay"));
@@ -118,7 +119,9 @@ function App() {
       <Route path="/arena/mint" element={<ArenaMint />} />
       <Route path="/arena/skill-tree" element={<ArenaSkillTree />} />
       <Route path="/arena/trade" element={<ArenaTrade />} />
-      <Route path="/arena/tcg" element={<TcgPage />} />
+      <Route path="/arena/tcg" element={<Navigate to="/arena/tcg/decks" replace />} />
+      <Route path="/arena/tcg/decks" element={<TcgDecks />} />
+      <Route path="/arena/tcg/match" element={<TcgMatch />} />
       <Route path="/ar" element={<Arena />} />
       <Route path="/ar/fight" element={<ArenaFight />} />
       <Route path="/ar/hall-of-fame" element={<ArenaHallOfFame />} />
@@ -132,8 +135,10 @@ function App() {
       <Route path="/ar/mint" element={<ArenaMint />} />
       <Route path="/ar/skill-tree" element={<ArenaSkillTree />} />
       <Route path="/ar/trade" element={<ArenaTrade />} />
-      <Route path="/ar/tcg" element={<TcgPage />} />
-      <Route path="/staging/tcg" element={<Navigate to="/arena/tcg" replace />} />
+      <Route path="/ar/tcg" element={<Navigate to="/ar/tcg/decks" replace />} />
+      <Route path="/ar/tcg/decks" element={<TcgDecks />} />
+      <Route path="/ar/tcg/match" element={<TcgMatch />} />
+      <Route path="/staging/tcg" element={<Navigate to="/arena/tcg/decks" replace />} />
       <Route path="/shrine" element={<Shrine />} />
       <Route path="/shrine/kanna" element={<Kanna />} />
       <Route path="/shrine/rossina" element={<Rossina />} />
