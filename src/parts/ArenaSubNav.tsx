@@ -1,28 +1,53 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 
-const SLUGS = [
-  { slug: "", label: "Arena Home" },
-  { slug: "/fight", label: "Fight" },
-  { slug: "/hall-of-fame", label: "Hall of Fame" },
-  { slug: "/shop", label: "Shop" },
-  { slug: "/inventory", label: "Inventory" },
-  { slug: "/leaderboard", label: "Leaderboard" },
-  { slug: "/collection", label: "Collection" },
-  { slug: "/archive", label: "Archive" },
-  { slug: "/market", label: "Market" },
-  { slug: "/mint", label: "Mint" },
-  { slug: "/trade", label: "Trade" },
-  { slug: "/skill-tree", label: "Skill Tree" },
-  { slug: "/tcg/decks", label: "TCG Decks" },
-  { slug: "/tcg/match", label: "TCG Match" },
-  { slug: "/inbox", label: "Inbox" },
+type NavLink = { slug: string; label: string };
+type NavGroup = { name: string; links: NavLink[] };
+
+const HOME: NavLink = { slug: "", label: "Arena Home" };
+
+const GROUPS: NavGroup[] = [
+  {
+    name: "Battle",
+    links: [
+      { slug: "/fight", label: "Fight" },
+      { slug: "/skill-tree", label: "Skill Tree" },
+      { slug: "/tcg/decks", label: "TCG Decks" },
+      { slug: "/tcg/match", label: "TCG Match" },
+    ],
+  },
+  {
+    name: "Cards",
+    links: [
+      { slug: "/inventory", label: "Inventory" },
+      { slug: "/collection", label: "Collection" },
+      { slug: "/archive", label: "Archive" },
+    ],
+  },
+  {
+    name: "Market",
+    links: [
+      { slug: "/shop", label: "Shop" },
+      { slug: "/market", label: "Market" },
+      { slug: "/mint", label: "Mint" },
+      { slug: "/trade", label: "Trade" },
+    ],
+  },
+  {
+    name: "Community",
+    links: [
+      { slug: "/hall-of-fame", label: "Hall of Fame" },
+      { slug: "/leaderboard", label: "Leaderboard" },
+      { slug: "/inbox", label: "Inbox" },
+    ],
+  },
 ];
 
 export default function ArenaSubNav() {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [openGroupName, setOpenGroupName] = useState<string | null>(null);
   const { pathname } = useLocation();
   const prefix = pathname === "/ar" || pathname.startsWith("/ar/") ? "/ar" : "/arena";
 
@@ -31,18 +56,60 @@ export default function ArenaSubNav() {
     setUnreadCount(payload.count);
   });
 
+  useEffect(() => {
+    setOpenGroupName(null);
+  }, [pathname]);
+
+  const toggleGroup = (name: string) =>
+    setOpenGroupName((current) => (current === name ? null : name));
+
+  const linkLabel = (label: string) =>
+    label === "Inbox" && unreadCount > 0
+      ? `[ Inbox (${unreadCount}) ]`
+      : `[ ${label} ]`;
+
+  const openGroup = GROUPS.find((group) => group.name === openGroupName);
+
   return (
-    <div className="flex flex-wrap justify-center gap-3 border-b border-sky-100 pb-3 dark:border-purple-400/20">
-      {SLUGS.map((link, i) => (
-        <span key={link.slug} className="contents">
-          {i > 0 && <span className="font-bold">|</span>}
-          <Link to={`${prefix}${link.slug}`} className="arena-redraw-button hover:animate-wiggle">
-            {link.label === "Inbox" && unreadCount > 0
-              ? `[ Inbox (${unreadCount}) ]`
-              : `[ ${link.label} ]`}
-          </Link>
-        </span>
-      ))}
+    <div className="space-y-2 border-b border-sky-100 pb-3 dark:border-purple-400/20">
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link to={`${prefix}${HOME.slug}`} className="arena-redraw-button hover:animate-wiggle">
+          {linkLabel(HOME.label)}
+        </Link>
+        {GROUPS.map((group) => {
+          const isOpen = openGroupName === group.name;
+          return (
+            <span key={group.name} className="contents">
+              <span className="font-bold">|</span>
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                onClick={() => toggleGroup(group.name)}
+                className={`arena-redraw-button hover:animate-wiggle${
+                  isOpen ? " !text-pink-600 dark:!text-pink-300" : ""
+                }`}
+              >
+                [ {group.name} ]
+              </button>
+            </span>
+          );
+        })}
+      </div>
+      {openGroup ? (
+        <div
+          key={openGroup.name}
+          className="animate-fade-in flex flex-wrap items-center justify-center gap-3 border-t border-sky-100 pt-2 dark:border-purple-400/20"
+        >
+          {openGroup.links.map((link, i) => (
+            <span key={link.slug} className="contents">
+              {i > 0 && <span className="font-bold">|</span>}
+              <Link to={`${prefix}${link.slug}`} className="arena-redraw-button hover:animate-wiggle">
+                {linkLabel(link.label)}
+              </Link>
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
