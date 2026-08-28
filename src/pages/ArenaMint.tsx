@@ -279,6 +279,12 @@ const ArenaMint = () => {
     });
   };
 
+  const clearFilters = () => {
+    setQuery("");
+    setRarityFilter("");
+    setElementFilter("");
+  };
+
   const pickedCards = useMemo(() => {
     const allCards = mintGroups.flatMap((g) => g.cards);
     return picked
@@ -359,10 +365,10 @@ const ArenaMint = () => {
             <Navigation />
           </div>
           <main className="w-full space-y-2 p-2 sm:p-4 lg:w-3/5">
-            <section className="card-border space-y-4 bg-white/60 p-2 sm:p-4">
-              <div className="">
-                <h2 className="text-4xl font-bold text-blue-900">Card Minting Forge {`>^. .^<`}</h2>
-                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base">
+            <section className="card-border space-y-4 bg-white/60 p-3 sm:p-4">
+              <div className="text-center sm:text-left">
+                <h2 className="text-3xl font-bold text-blue-900 sm:text-4xl">Card Minting Forge {`>^. .^<`}</h2>
+                <p className="mt-1 text-sm text-blue-600">
                   <span className="text-pink-300">✿</span> Combine two identical cards to forge a rainbow variant!{" "}
                   <span className="text-pink-300">✿</span>
                 </p>
@@ -400,11 +406,21 @@ const ArenaMint = () => {
                       </div>
                     </div>
                   ) : !mintGroups.length ? (
-                    <p className="text-blue-500">No duplicate cards found. Draw more cards to collect duplicates for minting!</p>
+                    <div className="rounded-xl border border-dashed border-blue-200 bg-white/60 p-6 text-center">
+                      <p className="text-2xl text-pink-300">✿</p>
+                      <p className="mt-1 text-sm text-blue-600">No duplicate cards found yet.</p>
+                      <p className="text-xs text-blue-400">Draw more cards daily to collect duplicates for minting!</p>
+                      <Link
+                        to="/arena"
+                        className="arena-redraw-button mt-2 inline-block text-sm"
+                      >
+                        [ Draw more cards ]
+                      </Link>
+                    </div>
                   ) : step === "preview" && previewCard ? (
                     <div className="space-y-4">
                       <h3 className="text-lg font-black text-blue-900">Preview Rainbow Card</h3>
-                      <div className="flex flex-wrap items-center justify-center gap-4">
+                      <div className="grid grid-cols-1 items-center justify-items-center gap-4 sm:grid-cols-[1fr_auto_1fr_auto_1fr]">
                         <div
                           ref={slot0Ref}
                           className={`flex flex-col items-center gap-1 rounded-xl p-1 transition ${draggedSlot === 1 || mobileDragSlot === 1 ? "ring-2 ring-amber-300" : ""}`}
@@ -427,7 +443,7 @@ const ArenaMint = () => {
                           onTouchStart={(e) => handleMobileTouchStart(0, e)}
                           title="Tap or drag to swap mint base"
                         >
-                          <span className="text-xs font-bold text-blue-700">Left base</span>
+                          <span className="mint-chip rounded-full bg-blue-100 px-2 py-0.5 text-[0.65rem] font-bold text-blue-700">Left base</span>
                           <ArenaPortraitCard card={pickedCards[0]} level={1} interactive />
                           <span className="text-xs text-blue-600">
                             IV {pickedCards[0].iv.total}
@@ -456,7 +472,7 @@ const ArenaMint = () => {
                           onTouchStart={(e) => handleMobileTouchStart(1, e)}
                           title="Tap or drag to swap mint base"
                         >
-                          <span className="text-xs font-bold text-blue-700">Right material</span>
+                          <span className="mint-chip rounded-full bg-blue-100 px-2 py-0.5 text-[0.65rem] font-bold text-blue-700">Right material</span>
                           <ArenaPortraitCard card={pickedCards[1]} level={1} interactive />
                           <span className="text-xs text-blue-600">
                             IV {pickedCards[1].iv.total}
@@ -464,9 +480,9 @@ const ArenaMint = () => {
                         </div>
                         <span className="text-2xl font-bold text-blue-400">=</span>
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs font-bold text-green-600">Result</span>
+                          <span className="mint-chip mint-chip--green rounded-full bg-green-100 px-2 py-0.5 text-[0.65rem] font-bold text-green-700">Result</span>
                           <ArenaPortraitCard card={previewCard} level={1} interactive showIvLine />
-                          <span className="text-xs text-amber-500">+5 random IV bonus</span>
+                          <span className="text-xs font-semibold text-amber-600">+5 random IV bonus</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-center gap-3">
@@ -487,19 +503,16 @@ const ArenaMint = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm text-blue-600">
-                          Mintable groups: {mintable.length}
-                        </p>
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          <label htmlFor="mint-sort" className="text-xs text-slate-500">
+                      <div className="rounded-xl border border-blue-200 bg-white/70 p-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label htmlFor="mint-sort" className="text-xs font-semibold text-slate-500">
                             sort:
                           </label>
                           <select
                             id="mint-sort"
                             value={sort}
                             onChange={(event) => setSort(event.target.value as MintSort)}
-                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
+                            className="h-8 rounded-lg border border-blue-200 bg-white px-2 text-xs text-slate-700"
                           >
                             <option value="recent">Recent</option>
                             <option value="rarity-desc">Rarity ▼</option>
@@ -512,22 +525,28 @@ const ArenaMint = () => {
                             <option value="effectHit-desc">Effect Hit ▼</option>
                             <option value="name-asc">Name A-Z</option>
                           </select>
+                          <label htmlFor="mint-rarity" className="text-xs font-semibold text-slate-500">
+                            rarity:
+                          </label>
                           <select
                             id="mint-rarity"
                             value={rarityFilter}
                             onChange={(event) => setRarityFilter(event.target.value)}
-                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
+                            className="h-8 rounded-lg border border-blue-200 bg-white px-2 text-xs text-slate-700"
                           >
                             <option value="">All rarity</option>
                             {RARITY_ORDER.map((rarity) => (
                               <option key={rarity} value={rarity}>{rarity}</option>
                             ))}
                           </select>
+                          <label htmlFor="mint-element" className="text-xs font-semibold text-slate-500">
+                            element:
+                          </label>
                           <select
                             id="mint-element"
                             value={elementFilter}
                             onChange={(event) => setElementFilter(event.target.value)}
-                            className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700"
+                            className="h-8 rounded-lg border border-blue-200 bg-white px-2 text-xs text-slate-700"
                           >
                             {ELEMENTS.map((element) => (
                               <option key={element || "all"} value={element}>
@@ -540,17 +559,13 @@ const ArenaMint = () => {
                             type="search"
                             value={query}
                             onChange={(event) => setQuery(event.target.value)}
-                            placeholder="Lelouch Lamperouge..."
-                            className="w-48 rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700"
+                            placeholder="search by name..."
+                            className="h-8 min-w-40 flex-1 rounded-lg border border-blue-200 bg-white px-3 text-sm text-slate-700"
                           />
                           {query || rarityFilter || elementFilter ? (
                             <button
                               type="button"
-                              onClick={() => {
-                                setQuery("");
-                                setRarityFilter("");
-                                setElementFilter("");
-                              }}
+                              onClick={clearFilters}
                               className="arena-redraw-button text-xs"
                             >
                               [ clear filters ]
@@ -558,9 +573,12 @@ const ArenaMint = () => {
                           ) : null}
                         </div>
                       </div>
+                      <p className="text-sm text-blue-600">
+                        Mintable groups: <span className="font-bold">{mintable.length}</span>
+                      </p>
                       <div
                         ref={scrollRef}
-                        className="max-h-[55vh] overflow-y-auto [scrollbar-gutter:stable] pr-1"
+                        className="max-h-[55vh] overflow-y-auto pb-2 pr-1 [scrollbar-gutter:stable]"
                       >
                         {mintable.length > 0 ? (
                           <div
@@ -591,13 +609,13 @@ const ArenaMint = () => {
                                     transform: `translateY(${virtualRow.start}px)`,
                                   }}
                                 >
-                                  <h3 className="text-blue-900 font-extrabold text-sm">
-                                    {characterTitle}{" "}
-                                    <span className="text-blue-600 font-semibold">
-                                      ({visibleTotal === total ? total : `${visibleTotal}/${total}`} copies)
+                                  <h3 className="flex flex-wrap items-center gap-2 border-b border-blue-200/70 pb-1.5 text-sm font-extrabold text-blue-900">
+                                    <span>{characterTitle}</span>
+                                    <span className="mint-chip rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                                      {visibleTotal === total ? `${total} copies` : `${visibleTotal}/${total} copies`}
                                     </span>
                                   </h3>
-                                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                                     {cards.map((card) => {
                                       const cid = card.cardInstanceId;
                                       if (!cid) return null;
@@ -610,15 +628,15 @@ const ArenaMint = () => {
                                           className={`flex flex-col items-center space-y-1 transition-all ${
                                             cannotPick && !isPicked
                                               ? "opacity-40"
-                                              : "opacity-85 hover:opacity-100"
+                                              : "hover:-translate-y-0.5"
                                           }`}
                                         >
-                                          <div className={isPicked ? "ring-2 ring-amber-400 rounded-xl" : ""}>
+                                          <div className={isPicked ? "rounded-xl ring-2 ring-amber-400" : "rounded-xl"}>
                                             <ArenaPortraitCard
                                               card={card}
                                               level={1}
                                               size="full"
-                                              showIvLine={true}
+                                              showIvLine={false}
                                             />
                                           </div>
                                           <button
@@ -639,7 +657,19 @@ const ArenaMint = () => {
                             })}
                           </div>
                         ) : (
-                          <p className="text-sm text-slate-600">No duplicate cards match these filters.</p>
+                          <div className="rounded-xl border border-dashed border-blue-200 bg-white/60 p-6 text-center">
+                            <p className="text-2xl text-pink-300">✿</p>
+                            <p className="mt-1 text-sm text-slate-600">No duplicate cards match these filters.</p>
+                            {query || rarityFilter || elementFilter ? (
+                              <button
+                                type="button"
+                                onClick={clearFilters}
+                                className="arena-redraw-button mt-2 text-xs"
+                              >
+                                [ clear filters ]
+                              </button>
+                            ) : null}
+                          </div>
                         )}
                       </div>
 
@@ -664,7 +694,6 @@ const ArenaMint = () => {
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
               <div className="space-y-2 text-sm text-blue-600">
                 <h2 className="text-center text-lg font-bold text-blue-700">minting info</h2>
-                <p>Combine two identical non-rainbow cards of the same character.</p>
                 <p>The resulting rainbow card inherits the left card's IVs plus a random <span className="font-bold">+5 bonus</span> distributed across stats.</p>
                 <p>Rainbow cards keep their original rarity and work in <span className="font-bold">fight, trade, and market</span> normally.</p>
                 <p className="text-xs text-blue-400">Tip: Draw more cards daily to collect duplicates for minting!</p>

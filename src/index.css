@@ -559,6 +559,16 @@ h6 {
   color: rgba(240, 230, 255, 0.9) !important;
 }
 
+.dark .card-border .mint-chip {
+  background: rgba(96, 165, 250, 0.2) !important;
+  color: rgb(191, 219, 254) !important;
+}
+
+.dark .card-border .mint-chip--green {
+  background: rgba(74, 222, 128, 0.18) !important;
+  color: rgb(187, 247, 208) !important;
+}
+
 /* Dark mode input fields */
 .dark input[type="text"],
 .dark input[type="email"],
