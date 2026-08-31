@@ -50,6 +50,7 @@
    - `resetDailyOpponentCount(db, current.userId)` resets the attacker's count every fight — but this counter tracks how often you've been *used as an opponent* (defender). The reset should apply to the opponent or only trigger on day rollover.
    - `incrementDailyOpponentCount` uses `datetime('now', '-5 hours')` as a SQL literal — timezone/boundary edge cases possible.
    - *Files:* `arena-core.js` ~L6311, ~L8060.
+   - ✅ FIXED — Defender increment targets the opponent (`combat.js` ~L2318, `playback.js` ~L529); the attacker's own count resets on every active fight (PvP or NPC — active fighters re-earn defender eligibility, keeping the pool alive when only NPCs are available); `resetDailyOpponentCount` clears `lastOpponentDate` too; day boundary uses `getCurrentRecordedDate`/`toRecordedIso` with an optional `ARENA_DAY_UTC_OFFSET_MINUTES` env offset (default UTC midnight); dead `resetAllDefenderCaps` removed. Tests: `arena-service.test.js`.
 
 2. **NPC opponents missing equipment & skill tree stats**
    - `buildNpcOpponent()` provides only base profile stats × `statScale`. No equipment pieces, no skill tree bonuses.
@@ -399,6 +400,6 @@
 
 ## Verification notes
 
-- `cd mirabellier-backend && npm test` passes: 171 tests total, 171 pass.
+- `cd mirabellier-backend && npm test` passes: 174 tests total, 174 pass.
 - `npm test` passes: 19 tests total, 19 pass (`src/lib/arena-fight-resume.test.ts`).
 - `npm run build` passes with existing bundle-budget warnings: CSS ~130 kB over 100 kB, main JS ~474 kB over 450 kB, and `back-card-design` ~2.35 MB.
