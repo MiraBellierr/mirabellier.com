@@ -167,6 +167,12 @@ const ArenaInbox = () => {
     [token, navigate],
   );
 
+  const markRequestResolved = useCallback((requestId: string) => {
+    if (resolvedTradeRequestIds.has(requestId)) return;
+    resolvedTradeRequestIds.add(requestId);
+    setResolveTick((t) => t + 1);
+  }, []);
+
   const handleAcceptTrade = useCallback(
     async (notification: ArenaNotification) => {
       if (!token) return;
@@ -219,7 +225,7 @@ const ArenaInbox = () => {
       }
       setActioning(null);
     },
-    [token, navigate],
+    [token, navigate, markRequestResolved],
   );
 
   const handleDenyTrade = useCallback(
@@ -268,19 +274,13 @@ const ArenaInbox = () => {
       }
       setActioning(null);
     },
-    [token],
+    [token, markRequestResolved],
   );
 
   const [actioning, setActioning] = useState<string | null>(null);
   const [successCard, setSuccessCard] = useState<ArenaCard | null>(null);
   const [confirmAcceptNotification, setConfirmAcceptNotification] = useState<ArenaNotification | null>(null);
   const [resolveTick, setResolveTick] = useState(0);
-
-  const markRequestResolved = useCallback((requestId: string) => {
-    if (resolvedTradeRequestIds.has(requestId)) return;
-    resolvedTradeRequestIds.add(requestId);
-    setResolveTick((t) => t + 1);
-  }, []);
 
   const handleMarkAllRead = useCallback(async () => {
     if (!token) return;

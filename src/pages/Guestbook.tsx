@@ -150,6 +150,27 @@ const Guestbook = () => {
     };
   }, []);
 
+  const persistNotePosition = useCallback((id: string, x: number, y: number) => {
+    const nextNonce = (noteSaveNonceRef.current.get(id) ?? 0) + 1;
+    noteSaveNonceRef.current.set(id, nextNonce);
+
+    void updateGuestbookEntryPosition(id, x, y)
+      .then((updated) => {
+        if (noteSaveNonceRef.current.get(id) !== nextNonce) return;
+
+        setEntries((current) =>
+          current.map((entry) =>
+            entry.id === updated.id ? { ...entry, x: updated.x, y: updated.y } : entry,
+          ),
+        );
+      })
+      .catch((err) => {
+        setError(
+          err instanceof Error ? err.message : "Failed to save note position",
+        );
+      });
+  }, []);
+
   useEffect(() => {
     if (!draggingNoteId && !isPanning) return;
 
@@ -213,7 +234,7 @@ const Guestbook = () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [draggingNoteId, isPanning]);
+  }, [draggingNoteId, isPanning, persistNotePosition]);
 
   const toggleFullscreen = async () => {
     const node = boardShellRef.current;
@@ -279,27 +300,6 @@ const Guestbook = () => {
     () => getFriendlyFetchMessage("Guestbook board", loadError),
     [loadError],
   );
-
-  const persistNotePosition = useCallback((id: string, x: number, y: number) => {
-    const nextNonce = (noteSaveNonceRef.current.get(id) ?? 0) + 1;
-    noteSaveNonceRef.current.set(id, nextNonce);
-
-    void updateGuestbookEntryPosition(id, x, y)
-      .then((updated) => {
-        if (noteSaveNonceRef.current.get(id) !== nextNonce) return;
-
-        setEntries((current) =>
-          current.map((entry) =>
-            entry.id === updated.id ? { ...entry, x: updated.x, y: updated.y } : entry,
-          ),
-        );
-      })
-      .catch((err) => {
-        setError(
-          err instanceof Error ? err.message : "Failed to save note position",
-        );
-      });
-  }, []);
 
   const moveNoteByDelta = useCallback(
     (entryId: string, deltaX: number, deltaY: number) => {

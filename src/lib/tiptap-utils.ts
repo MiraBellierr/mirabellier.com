@@ -252,6 +252,7 @@ type ProtocolConfig = Array<ProtocolOptions | string>;
 
  
 const ATTR_WHITESPACE = new RegExp(
+  // eslint-disable-next-line no-control-regex -- intentionally matches control characters (incl. NUL), mirrors ProseMirror
   "[\\u0000-\\u0020\\u00A0\\u1680\\u180E\\u2000-\\u2029\\u205F\\u3000]",
   "g",
 );

@@ -364,8 +364,7 @@ const Blog = () => {
                                   </h2>
                                   <p className="blog-card-meta text-sm text-blue-500">
                                     By{" "}
-                                    {(post as any).userId ? (
-                                      <Link
+                                    {post.userId ? (                                      <Link
                                         to={`/profile/${post.author}`}
                                         className="hover:underline font-medium"
                                       >
@@ -417,7 +416,7 @@ const Blog = () => {
                           </Link>
 
                           {auth?.user?.id &&
-                          String(auth.user.id) === String((post as any).userId) ? (
+                          String(auth.user.id) === String(post.userId) ? (
                             <div className="relative ml-2">
                               <button
                                 onClick={(e) => toggleMenu(post.id, e)}

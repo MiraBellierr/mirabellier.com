@@ -83,6 +83,7 @@ const Settings = () => {
       setAvatarFile(null);
       setBannerFile(null);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
       setMessage("Update failed");
     } finally {

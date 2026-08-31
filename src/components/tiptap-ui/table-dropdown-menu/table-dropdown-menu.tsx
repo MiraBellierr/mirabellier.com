@@ -329,7 +329,7 @@ export function TableDropdownMenu({
       tableSections.filter(
         (section) => !section.requiresTable || isTableActive,
       ),
-    [isTableActive],
+    [isTableActive, tableSections],
   );
 
   const handleOpenChange = React.useCallback(

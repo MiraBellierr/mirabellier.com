@@ -216,7 +216,7 @@ const useToolbarSwipeScroll = (
         isDragging: false,
       };
     },
-    [clearSuppressClickTimeout, toolbarRef],
+    [clearSuppressClickTimeout],
   );
 
   const onTouchStartCapture = React.useCallback<

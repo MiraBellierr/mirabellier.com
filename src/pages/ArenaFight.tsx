@@ -25,6 +25,11 @@ import {
   fetchFightState,
   verifyArena,
 } from "@/lib/arena";
+import {
+  FightResumeMachine,
+  type FightResumeEffect,
+  type FightSpeed,
+} from "@/lib/arena-fight-resume";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
 
 const ELEMENT_COLORS: Record<string, string> = {
@@ -53,7 +58,6 @@ function normalizeArenaError(error: unknown) {
 
 type DmgFloater = { key: number; value: number; crit: boolean; x: number; y: number };
 type ElemFloater = { key: number; label: string; color: string; x: number; y: number };
-type FightSpeed = "normal" | "fast" | "instant";
 type AutoSessionSummary = {
   fights: number;
   wins: number;
@@ -61,12 +65,6 @@ type AutoSessionSummary = {
   xp: number;
   coins: number;
   levelsGained: number;
-};
-
-const FIGHT_SPEED_DELAYS_MS: Record<FightSpeed, number> = {
-  normal: 800,
-  fast: 400,
-  instant: 0,
 };
 
 function createEmptyAutoSessionSummary(): AutoSessionSummary {
@@ -187,17 +185,14 @@ const ArenaFight = () => {
   const consoleRef = useRef<HTMLDivElement | null>(null);
 
   const lastCursor = useRef(0);
-  const needsResumeRef = useRef(false);
   const autoTimerRef = useRef<number | null>(null);
-  const advanceTimerRef = useRef<number | null>(null);
-  const safetyTimerRef = useRef<number | null>(null);
-  const resumeRetryRef = useRef<number | null>(null);
   const pageVisible = useRef(true);
-  const advanceLockRef = useRef(false);
   const playedTurnIndices = useRef(new Set<number>());
   const fightSpeedRef = useRef<FightSpeed>("normal");
   const countedAutoFightIdsRef = useRef(new Set<string>());
   const autoSessionSummaryRef = useRef<AutoSessionSummary>(createEmptyAutoSessionSummary());
+  const machineRef = useRef<FightResumeMachine | null>(null);
+  const advanceViaHttpFallbackRef = useRef<() => void>(() => {});
 
   const boostedIv = useMemo(() => {
     if (!profile?.selectedCard?.iv || !profile.effects?.ivBoostCharges || profile.effects.ivBoostCharges <= 0) return null;
@@ -238,20 +233,6 @@ const ArenaFight = () => {
     setAutoStopReason(null);
   }, []);
 
-  const clearAdvanceTimer = useCallback(() => {
-    if (advanceTimerRef.current !== null) {
-      window.clearTimeout(advanceTimerRef.current);
-      advanceTimerRef.current = null;
-    }
-  }, []);
-
-  const clearSafetyTimer = useCallback(() => {
-    if (safetyTimerRef.current !== null) {
-      window.clearTimeout(safetyTimerRef.current);
-      safetyTimerRef.current = null;
-    }
-  }, []);
-
   const clearAutoTimer = useCallback(() => {
     if (autoTimerRef.current !== null) {
       window.clearTimeout(autoTimerRef.current);
@@ -259,22 +240,6 @@ const ArenaFight = () => {
     }
     setNextAutoFightAt(null);
   }, []);
-
-  const queueFightCommand = useCallback(
-    (type: "arena:fight:advance" | "arena:fight:skip" | "arena:fight:start") => {
-      const socket = socketRef.current;
-      if (!socket?.connected) {
-        advanceLockRef.current = false;
-        startPendingRef.current = false;
-        setStarting(false);
-        setErrorMessage("Connection lost. Please refresh and try again.");
-        return false;
-      }
-      socket.emit("message", { type });
-      return true;
-    },
-    [],
-  );
 
   useEffect(() => {
     if (nextAutoFightAt === null) return;
@@ -293,22 +258,21 @@ const ArenaFight = () => {
   useEffect(() => {
     return () => {
       clearAutoTimer();
-      clearAdvanceTimer();
-      clearSafetyTimer();
+      machineRef.current?.dispose();
+      machineRef.current = null;
     };
-  }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
+  }, [clearAutoTimer]);
 
   // Keep auto-battle alive when switching tabs; only hard page lifecycle exits stop timers.
   useEffect(() => {
     const onPageHide = () => {
       pageVisible.current = false;
       clearAutoTimer();
-      clearAdvanceTimer();
-      clearSafetyTimer();
-      advanceLockRef.current = false;
+      machineRef.current?.onPageVisibility(true);
     };
     const onPageShow = () => {
       pageVisible.current = true;
+      machineRef.current?.onPageVisibility(false);
     };
     window.addEventListener("pagehide", onPageHide);
     window.addEventListener("pageshow", onPageShow);
@@ -316,7 +280,7 @@ const ArenaFight = () => {
       window.removeEventListener("pagehide", onPageHide);
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [clearAutoTimer, clearAdvanceTimer, clearSafetyTimer]);
+  }, [clearAutoTimer]);
 
   // Page-load verification — verify Turnstile token once
   useEffect(() => {
@@ -325,6 +289,11 @@ const ArenaFight = () => {
       .then(() => setVerified(true))
       .catch(() => setTurnstileToken(null)); // reset widget on failure
   }, [token, turnstileToken, verified]);
+
+  // Keep the resume gate in sync with Turnstile verification.
+  useEffect(() => {
+    machineRef.current?.setVerified(verified);
+  }, [verified]);
 
   // Auto-battle must stay off while Cloudflare is asking for verification.
   useEffect(() => {
@@ -362,10 +331,8 @@ const ArenaFight = () => {
         if (payload.activeFight) {
           setActiveFight(payload.activeFight);
           lastCursor.current = payload.activeFight.cursor;
-          if (!payload.activeFight.isFinished) {
-            needsResumeRef.current = true;
-          }
         }
+        machineRef.current?.setFight(payload.activeFight ?? null);
       } catch (error) {
         if (cancelled) return;
         setErrorMessage(normalizeArenaError(error));
@@ -468,36 +435,6 @@ const ArenaFight = () => {
     playedTurnIndices.current.clear();
   }, [activeFightCursor, activeFightId]);
 
-  // Resume fight loop when returning to an in-progress fight
-  useEffect(() => {
-    if (!activeFightId || activeFightFinished || !needsResumeRef.current) return;
-    needsResumeRef.current = false;
-
-    let attempts = 0;
-    const tryResume = () => {
-      if (advanceLockRef.current) {
-        if (attempts >= 20) {
-          advanceLockRef.current = false;
-          attempts = 0;
-        }
-        attempts++;
-        resumeRetryRef.current = window.setTimeout(tryResume, 500);
-        return;
-      }
-      advanceLockRef.current = true;
-      queueFightCommand("arena:fight:advance");
-    };
-
-    tryResume();
-
-    return () => {
-      if (resumeRetryRef.current !== null) {
-        window.clearTimeout(resumeRetryRef.current);
-        resumeRetryRef.current = null;
-      }
-    };
-  }, [activeFightFinished, activeFightId, queueFightCommand]);
-
   // ---- WebSocket event handlers ----
 
   const processFightState = useCallback((state: ArenaActiveFight) => {
@@ -514,52 +451,44 @@ const ArenaFight = () => {
     const t = tokenRef.current;
     const fight = activeFightRef.current;
     if (!t || !fight || fight.isFinished) {
-      advanceLockRef.current = false;
+      machineRef.current?.onFallbackAborted();
       return;
     }
 
     try {
       const state = await advanceFightTurn(t);
-      advanceLockRef.current = false;
-      clearSafetyTimer();
       processFightState(state);
-      if (!state.isFinished) {
-        clearAdvanceTimer();
-        const delayMs = FIGHT_SPEED_DELAYS_MS[fightSpeedRef.current];
-        advanceTimerRef.current = window.setTimeout(() => {
-          advanceTimerRef.current = null;
-          if (fightSpeedRef.current === "instant") {
-            handleSkipRef.current();
-          } else {
-            sendAdvanceRef.current();
-          }
-        }, delayMs);
-      } else {
-        const profilePayload = await fetchArenaProfile(t);
-        setProfile(profilePayload);
-        if (profilePayload.level >= 5 && !profilePayload.tutorialComplete) {
-          setShowTutorialModal(true);
-        }
-      }
+      machineRef.current?.onFallbackResult(state, true);
     } catch {
-      advanceLockRef.current = false;
       try {
         const fresh = await fetchFightState(t);
         if (fresh.activeFight) processFightState(fresh.activeFight);
+        machineRef.current?.onFallbackResult(fresh.activeFight ?? null, true);
       } catch {
-        setErrorMessage("Fight sync stalled. Please refresh and resume the battle.");
+        machineRef.current?.onFallbackResult(null, false);
       }
     }
-  }, [clearAdvanceTimer, clearSafetyTimer, processFightState]);
+  }, [processFightState]);
+
+  advanceViaHttpFallbackRef.current = () => void advanceViaHttpFallback();
 
   // ---- Dedicated Socket.IO setup for fight ----
 
   useEffect(() => {
     const socket = createDedicatedSocket();
 
-    socket.on("connect", () => setFightConnected(true));
-    socket.on("disconnect", () => setFightConnected(false));
-    socket.on("connect_error", () => setFightConnected(false));
+    socket.on("connect", () => {
+      setFightConnected(true);
+      machineRef.current?.setConnected(true);
+    });
+    socket.on("disconnect", () => {
+      setFightConnected(false);
+      machineRef.current?.setConnected(false);
+    });
+    socket.on("connect_error", () => {
+      setFightConnected(false);
+      machineRef.current?.setConnected(false);
+    });
 
     socketRef.current = socket;
 
@@ -598,38 +527,83 @@ const ArenaFight = () => {
       .then(({ activeFight: fresh }) => {
         if (!fresh || fresh.fightId !== fight.fightId) return;
         processFightState(fresh);
-        if (!fresh.isFinished && !advanceLockRef.current) {
-          advanceLockRef.current = true;
-          queueFightCommand("arena:fight:advance");
-        }
+        machineRef.current?.onReconnectSync(fresh, fresh.fightId === fight.fightId);
       })
       .catch(() => {});
-  }, [fightConnected, processFightState, queueFightCommand]);
+  }, [fightConnected, processFightState]);
+
+  // ---- Machine wiring: map resume-machine effects to socket/HTTP actions ----
+
+  const handleMachineEffect = (effect: FightResumeEffect) => {
+    const machine = machineRef.current;
+    if (!machine) return;
+    const socket = socketRef.current;
+    switch (effect.type) {
+      case "advance":
+        if (!socket?.connected) {
+          machine.confirmAdvance(false);
+          return;
+        }
+        socket.emit("message", { type: "arena:fight:advance" });
+        machine.confirmAdvance(true);
+        return;
+      case "skip":
+        if (!socket?.connected) {
+          machine.confirmSkip(false);
+          return;
+        }
+        socket.emit("message", { type: "arena:fight:skip" });
+        machine.confirmSkip(true);
+        return;
+      case "start":
+        if (!socket?.connected) {
+          machine.confirmStart(false);
+          startPendingRef.current = false;
+          setStarting(false);
+          return;
+        }
+        socket.emit("message", { type: "arena:fight:start" });
+        machine.confirmStart(true);
+        return;
+      case "http-fallback":
+        advanceViaHttpFallbackRef.current();
+        return;
+      case "finished": {
+        const t = tokenRef.current;
+        if (!t) return;
+        fetchArenaProfile(t)
+          .then((p) => {
+            setProfile(p);
+            if (p.level >= 5 && !p.tutorialComplete) setShowTutorialModal(true);
+          })
+          .catch(() => {});
+        return;
+      }
+      case "stall-error":
+        setErrorMessage("Fight sync stalled. Please refresh and resume the battle.");
+        return;
+      case "connection-error":
+        startPendingRef.current = false;
+        setStarting(false);
+        setErrorMessage("Connection lost. Please refresh and try again.");
+        return;
+    }
+  };
+
+  if (machineRef.current === null) {
+    machineRef.current = new FightResumeMachine({
+      scheduler: {
+        setTimeout: (fn, ms) => {
+          const id = window.setTimeout(fn, ms);
+          return () => window.clearTimeout(id);
+        },
+      },
+      getSpeed: () => fightSpeedRef.current,
+      onEffect: handleMachineEffect,
+    });
+  }
 
   // ---- WS action helpers ----
-
-  const sendAdvance = useCallback(() => {
-    if (advanceLockRef.current) return;
-    advanceLockRef.current = true;
-    if (!queueFightCommand("arena:fight:advance")) return;
-    clearSafetyTimer();
-    safetyTimerRef.current = window.setTimeout(() => {
-      safetyTimerRef.current = null;
-      void advanceViaHttpFallback();
-    }, 10000);
-  }, [advanceViaHttpFallback, clearSafetyTimer, queueFightCommand]);
-
-  const sendAdvanceRef = useRef(sendAdvance);
-  sendAdvanceRef.current = sendAdvance;
-
-  const handleSkip = useCallback(() => {
-    if (advanceLockRef.current) return;
-    advanceLockRef.current = true;
-    queueFightCommand("arena:fight:skip");
-  }, [queueFightCommand]);
-
-  const handleSkipRef = useRef(handleSkip);
-  handleSkipRef.current = handleSkip;
 
   // Register fight event listeners on the dedicated socket
   useEffect(() => {
@@ -640,53 +614,26 @@ const ArenaFight = () => {
       switch (msg.type) {
         case "arena:fight:turn": {
           const state = msg.data as ArenaActiveFight;
-          advanceLockRef.current = false;
-          clearSafetyTimer();
+          machineRef.current?.onTurn(state);
           if (startPendingRef.current) {
             startPendingRef.current = false;
             setStarting(false);
           }
           processFightState(state);
-          if (!state.isFinished) {
-            clearAdvanceTimer();
-            const delayMs = FIGHT_SPEED_DELAYS_MS[fightSpeedRef.current];
-            advanceTimerRef.current = window.setTimeout(() => {
-              advanceTimerRef.current = null;
-              if (fightSpeedRef.current === "instant") {
-                handleSkipRef.current();
-              } else {
-                sendAdvance();
-              }
-            }, delayMs);
-          } else {
-            clearAdvanceTimer();
-            const t = tokenRef.current;
-            if (t) fetchArenaProfile(t).then((p) => {
-              setProfile(p);
-              if (p.level >= 5 && !p.tutorialComplete) setShowTutorialModal(true);
-            }).catch(() => {});
-          }
           break;
         }
         case "arena:fight:finished": {
           const state = msg.data as ArenaActiveFight;
-          advanceLockRef.current = false;
-          clearSafetyTimer();
+          machineRef.current?.onFinished(state);
           if (startPendingRef.current) {
             startPendingRef.current = false;
             setStarting(false);
           }
           processFightState(state);
-          const t = tokenRef.current;
-          if (t) fetchArenaProfile(t).then((p) => {
-            setProfile(p);
-            if (p.level >= 5 && !p.tutorialComplete) setShowTutorialModal(true);
-          }).catch(() => {});
           break;
         }
         case "arena:fight:error": {
-          advanceLockRef.current = false;
-          clearSafetyTimer();
+          machineRef.current?.onError();
           if (startPendingRef.current) {
             startPendingRef.current = false;
             setStarting(false);
@@ -714,7 +661,7 @@ const ArenaFight = () => {
 
     socket.on("message", handler);
     return () => { socket.off("message", handler); };
-  }, [processFightState, sendAdvance, clearAdvanceTimer, clearSafetyTimer]);
+  }, [processFightState]);
 
   // ---- User actions ----
 
@@ -728,19 +675,16 @@ const ArenaFight = () => {
       return;
     }
 
-    needsResumeRef.current = false;
     setStarting(true);
     setErrorMessage(null);
     startPendingRef.current = true;
     isAutoStartRef.current = automatic;
-    advanceLockRef.current = true;
-    queueFightCommand("arena:fight:start");
+    machineRef.current?.onStartFight();
   }, [
     token,
     starting,
     activeFight,
     isSocketConnected,
-    queueFightCommand,
   ]);
 
   handleStartFightRef.current = handleStartFight;

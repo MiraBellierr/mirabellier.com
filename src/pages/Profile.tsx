@@ -84,6 +84,7 @@ const Profile = () => {
           setLoading(false);
         })
         .catch((err) => {
+          // eslint-disable-next-line no-console
           console.error("Failed to fetch user:", err);
           setError(err.message || "User not found");
           setLoading(false);
@@ -97,6 +98,7 @@ const Profile = () => {
           setLoading(false);
         })
         .catch((err) => {
+          // eslint-disable-next-line no-console
           console.error("Failed to fetch stats:", err);
           setLoading(false);
         });

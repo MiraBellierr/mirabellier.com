@@ -5,8 +5,8 @@
 - ~~Add card sacrifice/fodder for coins.~~ ✅ DONE — `sacrificeCollectionCards`, `calculateCardSacrificePayout`, route at `/arena/collection/sacrifice`.
 - ~~Add friendship/affinity for frequently used characters.~~ ✅ DONE — `AFFINITY_THRESHOLDS`, `recordCardAffinityFight`, `getCardAffinity`, shown in `toPublicProfile`.
 - ~~Add drag support to switch between left and right cards to Arena minting.~~ ✅ DONE — `draggable` + `onDragStart`/`onDragOver`/`onDragEnd` in `ArenaMint.tsx`.
-- Investigate ArenaFight hook dependency warnings in `src/pages/ArenaFight.tsx`; stale `activeFight` or HP deps could cause resume/animation state to desync.
-- Make active fight resume/retry behavior testable so interrupted fights cannot get stuck between active and finished states.
+- ~~Investigate ArenaFight hook dependency warnings in `src/pages/ArenaFight.tsx`; stale `activeFight` or HP deps could cause resume/animation state to desync.~~ ✅ DONE — Lint is clean (no exhaustive-deps warnings). Fixed the real desync found: resume advance now waits for `fightConnected` + `verified` before consuming `needsResumeRef`, and the reconnect sync releases stale advance locks and re-advances via `sendAdvanceRef` (with safety timer/HTTP fallback) so interrupted fights can't wedge between active and finished states.
+- ~~Make active fight resume/retry behavior testable so interrupted fights cannot get stuck between active and finished states.~~ ✅ DONE — Extracted the resume/advance/safety-fallback cycle into a dependency-injected `FightResumeMachine` (`src/lib/arena-fight-resume.ts`); `ArenaFight.tsx` now maps machine effects to socket/HTTP actions. 19 unit tests (`npm test`, node:test) cover resume gating, stale-lock release, safety fallback, stall recovery (fallback→sync now keeps advancing instead of wedging), finished-state termination, page hide, and reconnect re-advance.
 
 ---
 
@@ -400,4 +400,5 @@
 ## Verification notes
 
 - `cd mirabellier-backend && npm test` passes: 171 tests total, 171 pass.
+- `npm test` passes: 19 tests total, 19 pass (`src/lib/arena-fight-resume.test.ts`).
 - `npm run build` passes with existing bundle-budget warnings: CSS ~130 kB over 100 kB, main JS ~474 kB over 450 kB, and `back-card-design` ~2.35 MB.

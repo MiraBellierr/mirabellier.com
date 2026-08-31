@@ -6,6 +6,7 @@
   "homepage": "https://mirabellier.com",
   "scripts": {
     "dev": "vite",
+    "test": "node --test \"src/lib/**/*.test.ts\"",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=512 tsc -b && cross-env NODE_OPTIONS=--max-old-space-size=512 vite build",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -1,6 +1,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { mergeAttributes } from "@tiptap/core";
+import type { AnyExtension } from "@tiptap/core";
 import { Image } from "@tiptap/extension-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TextAlign } from "@tiptap/extension-text-align";
@@ -263,7 +264,7 @@ const Post = ({ html }: { html: PostContent }) => {
         Typography,
         Superscript,
         Subscript,
-      ] as any[];
+      ] as AnyExtension[];
 
       if (tableExtensions) {
         baseExtensions.push(

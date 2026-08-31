@@ -105,6 +105,7 @@ const BlogEdit = () => {
         const normalized = normalizeTags(data).slice(0, MAX_TAGS);
         setTags(normalized);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error("Failed to load post for edit", err);
         setToastMessage("❌ Failed to load post");
         setShowToast(true);
@@ -114,7 +115,7 @@ const BlogEdit = () => {
     };
 
     load();
-  }, [location.search, auth?.user]);
+  }, [location.search, auth?.user, navigate]);
 
   useEffect(() => {
     fetchTagSuggestions().then(setSuggestions);

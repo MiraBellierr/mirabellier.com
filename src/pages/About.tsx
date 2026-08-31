@@ -147,6 +147,7 @@ const About = () => {
         }
       } catch (error) {
         if (!cancelled) {
+          // eslint-disable-next-line no-console
           console.error("Failed to load guestbook entries:", error);
         }
       } finally {

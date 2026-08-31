@@ -58,6 +58,7 @@ const QuestionOfTheDay = () => {
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [refreshTick, setRefreshTick] = useState(0);
   const isOwner = canModerateQuestionOfTheDay(auth?.user);
+  const isLoggedIn = !!auth?.user;
 
   usePageSeo({
     canonical: "https://mirabellier.com/question-of-the-day",
@@ -82,7 +83,7 @@ const QuestionOfTheDay = () => {
       setLoading(true);
 
       try {
-        const guestToken = auth?.user ? null : ensureQuestionGuestToken();
+        const guestToken = isLoggedIn ? null : ensureQuestionGuestToken();
         const [current, archive] = await Promise.all([
           fetchCurrentQuestionOfTheDay({
             token: auth?.token ?? null,
@@ -115,7 +116,7 @@ const QuestionOfTheDay = () => {
     return () => {
       cancelled = true;
     };
-  }, [auth?.token, auth?.user?.id, refreshTick]);
+  }, [auth?.token, isLoggedIn, refreshTick]);
 
   const remainingCharacters = 500 - answer.length;
   const activeQuestionRecordedDate =

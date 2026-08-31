@@ -294,7 +294,7 @@ export function useTcg(mode: TcgPageMode) {
       setQueueState("idle");
       showError(normalizeArenaError(err));
     }
-  }, [showError]);
+  }, [showError, matchPath, navigate]);
 
   const handleQueueMatched = useCallback(async (data: unknown) => {
     const { gameId: matchedGameId } = data as { gameId: string };
