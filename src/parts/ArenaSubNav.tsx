@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 
@@ -45,10 +45,19 @@ const GROUPS: NavGroup[] = [
   },
 ];
 
+function groupForPath(prefix: string, pathname: string): NavGroup | undefined {
+  return GROUPS.find((group) =>
+    group.links.some((link) => {
+      const target = `${prefix}${link.slug}`;
+      return pathname === target || pathname.startsWith(`${target}/`);
+    }),
+  );
+}
+
 export default function ArenaSubNav() {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [openGroupName, setOpenGroupName] = useState<string | null>(null);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const prefix = pathname === "/ar" || pathname.startsWith("/ar/") ? "/ar" : "/arena";
 
   useWebSocketEvent("arena:notification:unread-count", (data) => {
@@ -56,19 +65,16 @@ export default function ArenaSubNav() {
     setUnreadCount(payload.count);
   });
 
-  useEffect(() => {
-    setOpenGroupName(null);
-  }, [pathname]);
-
-  const toggleGroup = (name: string) =>
-    setOpenGroupName((current) => (current === name ? null : name));
+  const goToGroupFirstPage = (group: NavGroup) => {
+    navigate(`${prefix}${group.links[0].slug}`);
+  };
 
   const linkLabel = (label: string) =>
     label === "Inbox" && unreadCount > 0
       ? `[ Inbox (${unreadCount}) ]`
       : `[ ${label} ]`;
 
-  const openGroup = GROUPS.find((group) => group.name === openGroupName);
+  const openGroup = groupForPath(prefix, pathname);
 
   return (
     <div className="space-y-2 border-b border-sky-100 pb-3 dark:border-purple-400/20">
@@ -77,14 +83,14 @@ export default function ArenaSubNav() {
           {linkLabel(HOME.label)}
         </Link>
         {GROUPS.map((group) => {
-          const isOpen = openGroupName === group.name;
+          const isOpen = openGroup?.name === group.name;
           return (
             <span key={group.name} className="contents">
               <span className="font-bold">|</span>
               <button
                 type="button"
                 aria-expanded={isOpen}
-                onClick={() => toggleGroup(group.name)}
+                onClick={() => goToGroupFirstPage(group)}
                 className={`arena-redraw-button hover:animate-wiggle${
                   isOpen ? " !text-pink-600 dark:!text-pink-300" : ""
                 }`}
