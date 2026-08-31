@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import Divider from "@/parts/Divider";
 import Footer from "@/parts/Footer";
@@ -91,6 +92,7 @@ type PhotoCardProps = {
   className?: string;
   loading?: "eager" | "lazy";
   imageClassName?: string;
+  hoverPreview?: boolean;
 };
 
 function PhotoCard({
@@ -98,19 +100,63 @@ function PhotoCard({
   className = "",
   loading = "lazy",
   imageClassName = "h-full w-full rounded-[1.2rem] object-cover object-top",
+  hoverPreview = false,
 }: PhotoCardProps) {
+  const [previewPosition, setPreviewPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
   return (
     <figure
       className={`overflow-hidden ${className}`}
+      onMouseEnter={
+        hoverPreview
+          ? (event) =>
+              setPreviewPosition({ x: event.clientX, y: event.clientY })
+          : undefined
+      }
+      onMouseMove={
+        hoverPreview
+          ? (event) =>
+              setPreviewPosition({ x: event.clientX, y: event.clientY })
+          : undefined
+      }
+      onMouseLeave={hoverPreview ? () => setPreviewPosition(null) : undefined}
     >
       <img
-        className={imageClassName}
+        className={`${imageClassName} ${hoverPreview ? "cursor-zoom-in" : ""}`}
         src={image.src}
         alt={image.alt}
         loading={loading}
         fetchPriority={loading === "eager" ? "high" : undefined}
         decoding="async"
       />
+
+      {hoverPreview && previewPosition &&
+        createPortal(
+          <div
+            className="shrine-image-float pointer-events-none fixed z-[300000] flex w-60 max-w-[70vw] flex-col items-center gap-1"
+            style={{
+              left: previewPosition.x,
+              top: previewPosition.y,
+              transform: "translate(-50%, 24px)",
+            }}
+          >
+            <img
+              className="max-h-[45vh] w-full rounded-xl border-2 border-blue-100/80 object-contain object-top shadow-2xl"
+              src={image.src}
+              alt={image.alt}
+              decoding="async"
+            />
+            {image.caption && (
+              <p className="rounded-full bg-blue-900/80 px-3 py-0.5 text-xs font-semibold text-blue-100">
+                {image.caption}
+              </p>
+            )}
+          </div>,
+          document.body,
+        )}
     </figure>
   );
 }
@@ -157,6 +203,7 @@ function GalleryGroup({ group }: { group: ShrineGalleryGroup }) {
               image={item}
               loading={index === 0 ? "eager" : "lazy"}
               imageClassName="h-56 w-full rounded-[1.2rem] object-cover object-top"
+              hoverPreview
             />
           ))}
         </div>
@@ -225,6 +272,7 @@ const CharacterShrinePage = ({ shrine }: CharacterShrinePageProps) => {
                     image={image}
                     loading={index === 0 ? "eager" : "lazy"}
                     imageClassName="h-48 w-full rounded-[1.2rem] object-cover object-top"
+                    hoverPreview
                   />
                 ))}
               </div>

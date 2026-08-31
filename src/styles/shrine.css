@@ -229,10 +229,29 @@
   color: #d8c4ff !important;
 }
 
+.shrine-image-float {
+  animation: shrine-image-float-in 220ms ease-out;
+}
+
+.shrine-image-float img {
+  animation: shrine-float 7s ease-in-out infinite;
+}
+
+@keyframes shrine-image-float-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shrine-glow,
   .shrine-frame,
-  .shrine-candle::before {
+  .shrine-candle::before,
+  .shrine-image-float,
+  .shrine-image-float img {
     animation: none !important;
   }
 }
