@@ -14,6 +14,7 @@ const BlogEdit = lazy(() => import("./pages/BlogEdit"));
 const Quotes = lazy(() => import("./pages/Quotes"));
 const Anime = lazy(() => import("./pages/Anime"));
 const Fanart = lazy(() => import("./pages/Fanart"));
+const Twitch = lazy(() => import("./pages/Twitch"));
 const Arena = lazy(() => import("./pages/Arena"));
 const ArenaFight = lazy(() => import("./pages/ArenaFight"));
 const ArenaHallOfFame = lazy(() => import("./pages/ArenaHallOfFame"));
@@ -43,6 +44,7 @@ const AdminQuestionOfTheDay = lazy(
 const AdminShrines = lazy(() => import("./pages/AdminShrines"));
 const AdminShrinePreview = lazy(() => import("./pages/AdminShrinePreview"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminTwitch = lazy(() => import("./pages/AdminTwitch"));
 const ShrineEntry = lazy(() => import("./pages/ShrineEntry"));
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -108,6 +110,7 @@ function App() {
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />
       <Route path="/fanart" element={<Fanart />} />
+      <Route path="/twitch" element={<Twitch />} />
       <Route path="/arena" element={<Arena />} />
       <Route path="/arena/fight" element={<ArenaFight />} />
       <Route path="/arena/hall-of-fame" element={<ArenaHallOfFame />} />
@@ -170,6 +173,7 @@ function App() {
       <Route path="/admin/shrines" element={<AdminShrines />} />
       <Route path="/admin/shrines/preview" element={<AdminShrinePreview />} />
       <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/twitch" element={<AdminTwitch />} />
       <Route path="/login" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/settings" element={<Settings />} />

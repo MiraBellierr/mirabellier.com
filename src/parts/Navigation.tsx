@@ -30,6 +30,8 @@ const NAV_ICON_QUOTES =
   "https://cdn.discordapp.com/emojis/761014368476332079.webp?size=40&animated=true";
 const NAV_ICON_ARENA =
   "https://cdn.discordapp.com/emojis/1077057865098997800.webp?size=40";
+const NAV_ICON_TWITCH =
+  "https://static.twitchcdn.net/assets/favicon-32-d6025c14e900565d6177.png";
 
 const navSections: Array<{ label: string; items: NavItem[] }> = [
   {
@@ -94,6 +96,12 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         to: "/fanart",
         icon: NAV_ICON_SHRINE,
         isActive: (pathname) => pathname === "/fanart",
+      },
+      {
+        label: "twitch",
+        to: "/twitch",
+        icon: NAV_ICON_TWITCH,
+        isActive: (pathname) => pathname === "/twitch",
       },
       {
         label: "arena",

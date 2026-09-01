@@ -92,6 +92,13 @@ const adminTools = [
     to: "/admin/users",
     action: "Open user admin",
   },
+  {
+    title: "Twitch Channels",
+    description:
+      "Track Twitch channels for the /twitch stream prediction page — add, remove, and backfill stream history.",
+    to: "/admin/twitch",
+    action: "Open Twitch admin",
+  },
 ];
 
 const AdminHome = () => {
