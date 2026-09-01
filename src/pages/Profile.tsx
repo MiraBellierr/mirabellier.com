@@ -3,6 +3,7 @@ import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
 import { API_BASE } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
+import { canAccessAdminPanel } from "@/lib/user-permissions";
 import {
   deleteReel,
   fetchUserReels,
@@ -72,6 +73,7 @@ const Profile = () => {
   // Determine which user to display
   const user = username ? profileUser : auth.user;
   const isOwnProfile = auth.user && user && auth.user.id === user.id;
+  const isAdmin = canAccessAdminPanel(auth.user);
 
   useEffect(() => {
     setLoading(true);
@@ -554,7 +556,7 @@ const Profile = () => {
                               {new Date(reel.createdAt).toLocaleDateString()}
                             </p>
                           </div>
-                          {isOwnProfile && (
+                          {(isOwnProfile || isAdmin) && (
                             <button
                               type="button"
                               aria-label="Delete video"

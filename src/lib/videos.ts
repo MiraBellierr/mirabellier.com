@@ -46,12 +46,26 @@ export function resolveAvatarUrl(avatar?: string | null): string | null {
   return `${base}${avatar.startsWith("/") ? "" : "/"}${avatar}`;
 }
 
-export async function fetchReelsFeed(): Promise<Reel[]> {
-  const res = await fetch(`${API_BASE}/videos/feed`, {
+export async function fetchReelsFeed(includeId?: string): Promise<Reel[]> {
+  const query = includeId
+    ? `?include=${encodeURIComponent(includeId)}`
+    : "";
+  const res = await fetch(`${API_BASE}/videos/feed${query}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to load reels");
   return res.json() as Promise<Reel[]>;
+}
+
+export async function markReelViewed(id: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/videos/${id}/view`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // Best effort — viewing history should never block the feed.
+  }
 }
 
 export async function fetchUserReels(userId: string): Promise<Reel[]> {
@@ -218,6 +232,31 @@ export function uploadAdminReel(input: AdminUploadReelInput): Promise<Reel> {
     xhr.ontimeout = () => reject(new Error("Upload timed out"));
     xhr.send(formData);
   });
+}
+
+export interface TikTokVideoInfo {
+  username: string;
+  avatarUrl: string;
+  caption: string;
+  hashtags: string[];
+  durationSeconds: number | null;
+  coverUrl: string | null;
+}
+
+export async function resolveTikTokVideo(url: string): Promise<TikTokVideoInfo> {
+  const res = await fetch(`${API_BASE}/videos/admin/tiktok-resolve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ url }),
+  });
+  const data = (await res.json().catch(() => null)) as
+    | (TikTokVideoInfo & { error?: string })
+    | null;
+  if (!res.ok || !data) {
+    throw new Error(data?.error || "Failed to resolve TikTok video");
+  }
+  return data;
 }
 
 export async function fetchReelComments(id: string): Promise<ReelComment[]> {

@@ -5,9 +5,11 @@ import { useToast } from "@/states/ToastContext";
 import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import {
+  deleteReel,
   deleteReelComment,
   fetchReelComments,
   fetchReelsFeed,
+  markReelViewed,
   postReelComment,
   resolveAvatarUrl,
   resolveVideoUrl,
@@ -61,6 +63,25 @@ const ShareIcon = () => (
     <circle cx="18" cy="19" r="3" />
     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="30"
+    height="30"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <line x1="10" y1="11" x2="10" y2="17" />
+    <line x1="14" y1="11" x2="14" y2="17" />
   </svg>
 );
 
@@ -265,7 +286,7 @@ const Reels = () => {
 
   useEffect(() => {
     let cancelled = false;
-    fetchReelsFeed()
+    fetchReelsFeed(sharedVideoId)
       .then((data) => {
         if (cancelled) return;
         setReels(data);
@@ -287,6 +308,16 @@ const Reels = () => {
       cancelled = true;
     };
   }, [sharedVideoId]);
+
+  // Mark the active pixie as watched so it stays out of future feeds.
+  const markedViewedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const reel = reels[activeIndex];
+    if (!reel || !auth?.user) return;
+    if (markedViewedRef.current.has(reel.id)) return;
+    markedViewedRef.current.add(reel.id);
+    void markReelViewed(reel.id);
+  }, [activeIndex, reels, auth?.user]);
 
   const clampIndex = useCallback(
     (index: number) => Math.max(0, Math.min(reels.length - 1, index)),
@@ -601,6 +632,23 @@ const Reels = () => {
     }
   };
 
+  const handleDeleteReel = async (reel: Reel) => {
+    try {
+      await deleteReel(reel.id);
+      const next = reels.filter((entry) => entry.id !== reel.id);
+      if (next.length === 0) {
+        activeIndexRef.current = 0;
+      } else if (activeIndexRef.current >= next.length) {
+        activeIndexRef.current = next.length - 1;
+      }
+      setActiveIndex(activeIndexRef.current);
+      setReels(next);
+      showToast("Video deleted");
+    } catch {
+      showToast("Could not delete video");
+    }
+  };
+
   const handleDeleteComment = async (reel: Reel, commentId: string) => {
     try {
       await deleteReelComment(reel.id, commentId);
@@ -887,6 +935,19 @@ const Reels = () => {
                     <ShareIcon />
                     <span className="text-xs font-bold drop-shadow">share</span>
                   </button>
+                  {isActive && canAccessAdminPanel(auth?.user) && (
+                    <button
+                      onClick={() => void handleDeleteReel(reel)}
+                      aria-label="Delete"
+                      className="flex flex-col items-center gap-1 text-white/80 transition hover:scale-110 hover:text-red-400"
+                      type="button"
+                    >
+                      <TrashIcon />
+                      <span className="text-xs font-bold drop-shadow">
+                        delete
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Double-tap hearts */}

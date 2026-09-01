@@ -9,7 +9,9 @@ import {
   MAX_VIDEO_TAGS,
   MAX_VIDEO_TITLE_LENGTH,
   normalizeVideoTags,
+  resolveTikTokVideo,
   uploadAdminReel,
+  type TikTokVideoInfo,
 } from "@/lib/videos";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
@@ -33,6 +35,10 @@ const AdminReels = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpload, setLastUpload] = useState<string | null>(null);
+  const [tiktokUrl, setTiktokUrl] = useState("");
+  const [isFetchingTikTok, setIsFetchingTikTok] = useState(false);
+  const [fetchedInfo, setFetchedInfo] = useState<TikTokVideoInfo | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   usePageSeo({
     canonical: "https://mirabellier.com/admin/pixies",
@@ -141,6 +147,29 @@ const AdminReels = () => {
     }
   };
 
+  const handleTikTokFetch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = tiktokUrl.trim();
+    if (!trimmed || isFetchingTikTok) return;
+    setIsFetchingTikTok(true);
+    setFetchError(null);
+    setFetchedInfo(null);
+    try {
+      const resolved = await resolveTikTokVideo(trimmed);
+      setFetchedInfo(resolved);
+      setUsername(resolved.username);
+      setAvatarUrl(resolved.avatarUrl || "");
+      setVideoTitle(resolved.caption || "");
+      setTags(normalizeVideoTags(resolved.hashtags));
+    } catch (err) {
+      setFetchError(
+        err instanceof Error ? err.message : "Failed to fetch TikTok info",
+      );
+    } finally {
+      setIsFetchingTikTok(false);
+    }
+  };
+
   if (!auth.user || !isOwner) {
     return (
       <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
@@ -210,7 +239,8 @@ const AdminReels = () => {
           </div>
 
           <main className="w-full lg:w-3/5 p-4">
-            <div className="card-border rounded-2xl p-6 shadow-lg bg-white/90 dark:bg-purple-900/80">
+            <div className="space-y-6">
+              <div className="card-border rounded-2xl p-6 shadow-lg bg-white/90 dark:bg-purple-900/80">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-purple-200 flex items-center gap-2">
                   <span>🎬</span>
@@ -224,10 +254,78 @@ const AdminReels = () => {
                 </Link>
               </div>
               <p className="mt-1 text-sm text-blue-500 dark:text-purple-300">
-                Upload a pixie attributed to any username. New usernames get
-                the avatar URL you provide; existing users keep their own
-                avatar.
+                Paste a TikTok link to auto-fill the details below, or fill
+                them manually. Download the video with{" "}
+                <a
+                  href="https://snaptik.app/en3"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-pink-500 hover:underline"
+                >
+                  snaptik
+                </a>
+                , then choose the file below. New usernames get the avatar URL
+                you provide; existing users keep their own avatar.
               </p>
+
+              <form
+                onSubmit={handleTikTokFetch}
+                className="mt-4 flex gap-2"
+              >
+                <input
+                  value={tiktokUrl}
+                  onChange={(e) => setTiktokUrl(e.target.value)}
+                  placeholder="https://www.tiktok.com/@user/video/123..."
+                  type="url"
+                  className="flex-1 p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
+                />
+                <button
+                  type="submit"
+                  disabled={!tiktokUrl.trim() || isFetchingTikTok}
+                  className="shrink-0 bg-pink-500 text-white px-4 py-2 rounded-full shadow-sm hover:scale-105 transform transition disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {isFetchingTikTok ? "Fetching..." : "Fetch info"}
+                </button>
+              </form>
+
+              {fetchError && (
+                <div className="mt-2 text-red-600 dark:text-pink-300">
+                  {fetchError}
+                </div>
+              )}
+
+              {fetchedInfo && !fetchError && (
+                <div className="mt-3 flex items-center gap-3 rounded-xl border border-blue-200 dark:border-purple-600 bg-blue-50/60 dark:bg-purple-800/40 p-3">
+                  {fetchedInfo.coverUrl && (
+                    <img
+                      src={fetchedInfo.coverUrl}
+                      alt="video cover"
+                      className="h-14 w-21 rounded-lg border border-blue-200 dark:border-purple-600 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-blue-700 dark:text-purple-200 truncate">
+                      @{fetchedInfo.username}
+                      {fetchedInfo.durationSeconds != null
+                        ? ` · ${Math.round(fetchedInfo.durationSeconds)}s`
+                        : ""}
+                    </p>
+                    <p className="text-xs text-blue-500 dark:text-purple-300">
+                      Details filled in below — attach the downloaded file to
+                      upload.
+                    </p>
+                    {!fetchedInfo.avatarUrl && (
+                      <p className="text-xs text-amber-600 dark:text-amber-300">
+                        No avatar found — paste the avatar URL below if you
+                        have one.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                 <div>
@@ -406,6 +504,7 @@ const AdminReels = () => {
                   {isUploading ? "Uploading..." : "Upload video"}
                 </button>
               </form>
+            </div>
             </div>
           </main>
 
