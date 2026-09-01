@@ -113,8 +113,8 @@ const AdminReels = () => {
       setMessage("Add at least one tag so people can find this video");
       return;
     }
-    if (!/^[^\s/\\]{3,32}$/u.test(username.trim())) {
-      setMessage("Username must be 3-32 characters without spaces or slashes");
+    if (!/^[^/\\]{3,32}$/u.test(username.trim())) {
+      setMessage("Username must be 3-32 characters without slashes");
       return;
     }
     setIsUploading(true);
