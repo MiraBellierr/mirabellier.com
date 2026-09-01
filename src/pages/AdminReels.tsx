@@ -7,6 +7,7 @@ import { canAccessAdminPanel } from "@/lib/user-permissions";
 import {
   fetchVideoTagSuggestions,
   MAX_VIDEO_TAGS,
+  MAX_VIDEO_TITLE_LENGTH,
   normalizeVideoTags,
   uploadAdminReel,
 } from "@/lib/videos";
@@ -34,14 +35,14 @@ const AdminReels = () => {
   const [lastUpload, setLastUpload] = useState<string | null>(null);
 
   usePageSeo({
-    canonical: "https://mirabellier.com/admin/reels",
-    structuredDataId: "admin-reels-structured-data",
+    canonical: "https://mirabellier.com/admin/pixies",
+    structuredDataId: "admin-pixies-structured-data",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      name: "Admin Reels",
-      description: "Upload reels on behalf of any username.",
-      url: "https://mirabellier.com/admin/reels",
+      name: "Admin Pixies",
+      description: "Upload pixies on behalf of any username.",
+      url: "https://mirabellier.com/admin/pixies",
     },
   });
 
@@ -216,14 +217,14 @@ const AdminReels = () => {
                   <span>Upload as anyone</span>
                 </h2>
                 <Link
-                  to="/reels"
+                  to="/pixies"
                   className="text-sm font-bold text-pink-500 hover:underline"
                 >
-                  view reels →
+                  view pixies →
                 </Link>
               </div>
               <p className="mt-1 text-sm text-blue-500 dark:text-purple-300">
-                Upload a reel attributed to any username. New usernames get
+                Upload a pixie attributed to any username. New usernames get
                 the avatar URL you provide; existing users keep their own
                 avatar.
               </p>
@@ -296,13 +297,18 @@ const AdminReels = () => {
                   <label className="block text-sm font-medium text-blue-600 dark:text-purple-300">
                     Caption
                   </label>
-                  <input
+                  <textarea
                     value={videoTitle}
                     onChange={(e) => setVideoTitle(e.target.value)}
                     placeholder="Say something about this video..."
-                    maxLength={200}
-                    className="w-full p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
+                    rows={4}
+                    maxLength={MAX_VIDEO_TITLE_LENGTH}
+                    className="w-full p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200 resize-y"
                   />
+                  <p className="mt-1 text-xs text-blue-500 dark:text-purple-400">
+                    {videoTitle.length}/{MAX_VIDEO_TITLE_LENGTH} — press enter
+                    for a new line.
+                  </p>
                 </div>
 
                 <div>

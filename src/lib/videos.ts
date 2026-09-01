@@ -72,6 +72,7 @@ export interface UploadReelInput {
 
 export const MAX_VIDEO_TAGS = 10;
 export const MAX_TAG_LENGTH = 20;
+export const MAX_VIDEO_TITLE_LENGTH = 4000;
 
 export function normalizeVideoTags(values: Array<string | unknown>): string[] {
   const seen = new Set<string>();

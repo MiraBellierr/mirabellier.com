@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useToast } from "@/states/ToastContext";
 import { usePageSeo } from "@/lib/seo";
@@ -164,10 +164,49 @@ const PlayIcon = () => (
   </svg>
 );
 
+const ReelCaptionText = ({
+  id,
+  title,
+  expanded,
+  onOverflowChange,
+}: {
+  id: string;
+  title: string;
+  expanded: boolean;
+  onOverflowChange: (id: string, overflows: boolean) => void;
+}) => {
+  const captionRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    const el = captionRef.current;
+    if (!el) return;
+    const measure = () => {
+      onOverflowChange(id, el.scrollHeight > el.clientHeight + 1);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+    };
+  }, [id, title, expanded, onOverflowChange]);
+
+  return (
+    <p
+      ref={captionRef}
+      className={`text-sm leading-snug text-white/90 drop-shadow whitespace-pre-line break-words ${
+        expanded ? "max-h-[40vh] overflow-y-auto pr-2" : "line-clamp-1"
+      }`}
+    >
+      {title}
+    </p>
+  );
+};
+
 const Reels = () => {
   const auth = useOptionalAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { videoId: sharedVideoId } = useParams<{ videoId?: string }>();
 
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,31 +226,40 @@ const Reels = () => {
     Record<string, number>
   >({});
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [overflowCaptions, setOverflowCaptions] = useState<Set<string>>(
+    new Set(),
+  );
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [hearts, setHearts] = useState<
     Array<{ id: number; x: number; y: number }>
   >([]);
+  const [shareTarget, setShareTarget] = useState<Reel | null>(null);
 
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
   const activeIndexRef = useRef(0);
   const commentPanelOpenRef = useRef(false);
+  const shareOpenRef = useRef(false);
   const touchStartRef = useRef<{ y: number } | null>(null);
   const wheelAccumRef = useRef(0);
   const lastWheelNavRef = useRef(0);
   const lastTapRef = useRef(0);
   const tapTimeoutRef = useRef<number | null>(null);
 
+  const sharePageUrl = sharedVideoId
+    ? `https://mirabellier.com/pixies/${sharedVideoId}`
+    : "https://mirabellier.com/pixies";
+
   usePageSeo({
-    canonical: "https://mirabellier.com/reels",
-    structuredDataId: "reels-structured-data",
+    canonical: sharePageUrl,
+    structuredDataId: "pixies-structured-data",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      name: "Reels",
+      name: "Pixies",
       description: "Short videos and clips from the Mirabellier community",
-      url: "https://mirabellier.com/reels",
+      url: sharePageUrl,
     },
   });
 
@@ -221,17 +269,24 @@ const Reels = () => {
       .then((data) => {
         if (cancelled) return;
         setReels(data);
+        if (sharedVideoId) {
+          const index = data.findIndex((reel) => reel.id === sharedVideoId);
+          if (index >= 0) {
+            activeIndexRef.current = index;
+            setActiveIndex(index);
+          }
+        }
         setLoading(false);
       })
       .catch(() => {
         if (cancelled) return;
-        setError("Could not load reels");
+        setError("Could not load pixies");
         setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sharedVideoId]);
 
   const clampIndex = useCallback(
     (index: number) => Math.max(0, Math.min(reels.length - 1, index)),
@@ -280,6 +335,12 @@ const Reels = () => {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (shareOpenRef.current) {
+        if (event.key === "Escape") {
+          closeShare();
+        }
+        return;
+      }
       if (commentPanelOpenRef.current) {
         if (event.key === "Escape") {
           closeComments();
@@ -303,8 +364,16 @@ const Reels = () => {
   useEffect(() => {
     const handleWheel = (event: WheelEvent) => {
       if (commentPanelOpenRef.current) return;
+      if (shareOpenRef.current) return;
       if (reels.length <= 1) return;
       if (event.ctrlKey) return;
+      if (
+        (event.target as HTMLElement | null)?.closest?.(
+          "[data-scrollable-caption]",
+        )
+      ) {
+        return;
+      }
       event.preventDefault();
       wheelAccumRef.current += event.deltaY;
       const now = Date.now();
@@ -324,18 +393,32 @@ const Reels = () => {
 
   const handleTouchStart = (event: React.TouchEvent) => {
     if (commentPanelOpenRef.current) return;
+    if (shareOpenRef.current) return;
+    if (
+      (event.target as HTMLElement | null)?.closest?.(
+        "[data-scrollable-caption]",
+      )
+    ) {
+      return;
+    }
     touchStartRef.current = { y: event.touches[0].clientY };
     setIsDragging(true);
   };
 
   const handleTouchMove = (event: React.TouchEvent) => {
-    if (commentPanelOpenRef.current || !touchStartRef.current) return;
+    if (
+      commentPanelOpenRef.current ||
+      shareOpenRef.current ||
+      !touchStartRef.current
+    ) {
+      return;
+    }
     const offset = event.touches[0].clientY - touchStartRef.current.y;
     setDragOffset(offset);
   };
 
   const handleTouchEnd = () => {
-    if (commentPanelOpenRef.current) return;
+    if (commentPanelOpenRef.current || shareOpenRef.current) return;
     const start = touchStartRef.current;
     touchStartRef.current = null;
     if (!start) {
@@ -450,19 +533,24 @@ const Reels = () => {
     }
   };
 
-  const handleShare = async (reel: Reel) => {
-    const shareUrl = `${window.location.origin}/reels`;
-    const shareTitle =
-      reel.title || `${reel.author?.username ?? "someone"}'s reel`;
-    if (navigator.share) {
-      navigator
-        .share({ title: shareTitle, text: shareTitle, url: shareUrl })
-        .catch(() => {});
-      return;
-    }
+  const shareUrlFor = (reel: Reel) =>
+    `${window.location.origin}/pixies/${reel.id}`;
+
+  const closeShare = useCallback(() => {
+    shareOpenRef.current = false;
+    setShareTarget(null);
+  }, []);
+
+  const handleShare = (reel: Reel) => {
+    shareOpenRef.current = true;
+    setShareTarget(reel);
+  };
+
+  const copyShareLink = async () => {
+    if (!shareTarget) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      showToast("Reels link copied to clipboard!");
+      await navigator.clipboard.writeText(shareUrlFor(shareTarget));
+      showToast("Pixies link copied to clipboard!");
     } catch {
       showToast("Failed to copy link");
     }
@@ -566,6 +654,20 @@ const Reels = () => {
     });
   };
 
+  const handleCaptionOverflow = useCallback(
+    (id: string, overflows: boolean) => {
+      setOverflowCaptions((current) => {
+        const has = current.has(id);
+        if (has === overflows) return current;
+        const next = new Set(current);
+        if (overflows) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    },
+    [],
+  );
+
   return (
     <>
       <style>{`
@@ -585,16 +687,16 @@ const Reels = () => {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-4 pb-10 pt-4">
         <Link
           to="/"
-          aria-label="Close reels"
+          aria-label="Close pixies"
           className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/25"
         >
           <CloseIcon />
         </Link>
         <span className="text-lg font-bold tracking-widest drop-shadow">
-          reels
+          pixies
         </span>
         <Link
-          to={auth?.user ? "/reels/upload" : "/login"}
+          to={auth?.user ? "/pixies/upload" : "/login"}
           aria-label="Upload a video"
           className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/25"
         >
@@ -623,12 +725,12 @@ const Reels = () => {
         <div className="flex h-full items-center justify-center p-6">
           <div className="rounded-2xl bg-white/10 p-8 text-center">
             <div className="mb-3 text-5xl">🎬</div>
-            <h2 className="mb-2 text-xl font-bold">No reels yet</h2>
+            <h2 className="mb-2 text-xl font-bold">No pixies yet</h2>
             <p className="mb-5 text-sm text-white/70">
               Be the first to share a video clip!
             </p>
             <Link
-              to={auth?.user ? "/reels/upload" : "/login"}
+              to={auth?.user ? "/pixies/upload" : "/login"}
               className="inline-block rounded-full bg-pink-500 px-6 py-2 font-bold transition hover:bg-pink-600"
             >
               {auth?.user ? "Upload a video" : "Login to upload"}
@@ -701,14 +803,18 @@ const Reels = () => {
                     </span>
                   </Link>
                   {reel.title && (
-                    <div className="pointer-events-auto">
-                      <p
-                        className={`text-sm leading-snug text-white/90 drop-shadow ${
-                          !isExpanded(reel.id) ? "line-clamp-2" : ""
-                        }`}
-                      >
-                        {reel.title}
-                      </p>
+                    <div
+                      className="pointer-events-auto"
+                      data-scrollable-caption={
+                        isExpanded(reel.id) ? "true" : undefined
+                      }
+                    >
+                      <ReelCaptionText
+                        id={reel.id}
+                        title={reel.title}
+                        expanded={isExpanded(reel.id)}
+                        onOverflowChange={handleCaptionOverflow}
+                      />
                     </div>
                   )}
                   {reel.tags && reel.tags.length > 0 && (
@@ -733,7 +839,9 @@ const Reels = () => {
                       </div>
                     </div>
                   )}
-                  {(reel.title.length > 100 || reel.tags.length > 3) && (
+                  {(isExpanded(reel.id) ||
+                    overflowCaptions.has(reel.id) ||
+                    reel.tags.length > 3) && (
                     <button
                       type="button"
                       onClick={() => toggleExpand(reel.id)}
@@ -771,7 +879,7 @@ const Reels = () => {
                     </span>
                   </button>
                   <button
-                    onClick={() => void handleShare(reel)}
+                    onClick={() => handleShare(reel)}
                     aria-label="Share"
                     className="flex flex-col items-center gap-1 text-white transition hover:scale-110"
                     type="button"
@@ -939,6 +1047,74 @@ const Reels = () => {
                     {commentSubmitting ? "..." : "post"}
                   </button>
                 </form>
+              </div>
+            </>
+          )}
+
+          {/* Share popup */}
+          {shareTarget && (
+            <>
+              <div
+                className="absolute inset-0 z-40 bg-black/60"
+                onClick={closeShare}
+                aria-hidden="true"
+              />
+              <div className="absolute inset-x-0 bottom-0 z-50 rounded-t-2xl bg-neutral-900/95 backdrop-blur sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                  <span className="font-bold">Share pixie</span>
+                  <button
+                    onClick={closeShare}
+                    aria-label="Close share popup"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/25"
+                    type="button"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+                <div className="p-4">
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-pink-500 text-center text-lg leading-10">
+                      {resolveAvatarUrl(shareTarget.author?.avatar) ? (
+                        <img
+                          src={
+                            resolveAvatarUrl(shareTarget.author?.avatar) ?? ""
+                          }
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        "😺"
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">
+                        @{shareTarget.author?.username ?? "unknown"}
+                      </p>
+                      <p className="truncate text-xs text-white/60">
+                        {shareTarget.title || "Untitled pixie"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      readOnly
+                      value={shareUrlFor(shareTarget)}
+                      onFocus={(event) => event.currentTarget.select()}
+                      aria-label="Share link"
+                      className="min-w-0 flex-1 rounded-full bg-white/10 px-4 py-2 text-sm text-white placeholder-white/40 outline-none focus:bg-white/15"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void copyShareLink()}
+                      className="rounded-full bg-pink-500 px-4 py-2 text-sm font-bold transition hover:bg-pink-600"
+                    >
+                      copy
+                    </button>
+                  </div>
+                  <p className="mt-2 text-center text-xs text-white/50">
+                    Anyone with the link can watch this pixie.
+                  </p>
+                </div>
               </div>
             </>
           )}

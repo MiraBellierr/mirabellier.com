@@ -100,11 +100,11 @@ const adminTools = [
     action: "Open Twitch admin",
   },
   {
-    title: "Reel Uploads",
+    title: "Pixie Uploads",
     description:
-      "Upload reels attributed to any username with a custom avatar URL — for streamer and community clips.",
-    to: "/admin/reels",
-    action: "Open reel admin",
+      "Upload pixies attributed to any username with a custom avatar URL — for streamer and community clips.",
+    to: "/admin/pixies",
+    action: "Open pixies admin",
   },
 ];
 

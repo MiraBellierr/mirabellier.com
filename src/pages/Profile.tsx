@@ -508,7 +508,7 @@ const Profile = () => {
                   </h3>
                   {isOwnProfile && (
                     <Link
-                      to="/reels/upload"
+                      to="/pixies/upload"
                       className="mb-4 text-sm font-bold text-pink-500 hover:underline"
                     >
                       + upload
@@ -533,7 +533,10 @@ const Profile = () => {
                           key={reel.id}
                           className="relative rounded-lg overflow-hidden bg-blue-50 dark:bg-purple-800/50 group"
                         >
-                          <Link to="/reels" aria-label="Watch in reels">
+                          <Link
+                            to={`/pixies/${reel.id}`}
+                            aria-label="Watch in pixies"
+                          >
                             <video
                               src={resolveVideoUrl(reel.url)}
                               className="w-full h-36 object-cover"

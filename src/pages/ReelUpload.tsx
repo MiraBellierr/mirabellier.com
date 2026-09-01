@@ -6,6 +6,7 @@ import { usePageSeo } from "@/lib/seo";
 import {
   fetchVideoTagSuggestions,
   MAX_VIDEO_TAGS,
+  MAX_VIDEO_TITLE_LENGTH,
   normalizeVideoTags,
   uploadReel,
 } from "@/lib/videos";
@@ -30,14 +31,14 @@ const ReelUpload = () => {
   const [message, setMessage] = useState<string | null>(null);
 
   usePageSeo({
-    canonical: "https://mirabellier.com/reels/upload",
-    structuredDataId: "reel-upload-structured-data",
+    canonical: "https://mirabellier.com/pixies/upload",
+    structuredDataId: "pixies-upload-structured-data",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      name: "Upload a Reel",
+      name: "Upload a Pixie",
       description: "Share a short video clip with the Mirabellier community",
-      url: "https://mirabellier.com/reels/upload",
+      url: "https://mirabellier.com/pixies/upload",
     },
   });
 
@@ -119,7 +120,7 @@ const ReelUpload = () => {
       setTags([]);
       setTagInput("");
       showToast("Video uploaded!");
-      navigate("/reels");
+      navigate("/pixies");
     } catch {
       setMessage("Video upload failed");
     } finally {
@@ -200,17 +201,17 @@ const ReelUpload = () => {
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-purple-200 flex items-center gap-2">
                   <span>🎬</span>
-                  <span>Upload a Reel</span>
+                  <span>Upload a Pixie</span>
                 </h2>
                 <Link
-                  to="/reels"
+                  to="/pixies"
                   className="text-sm font-bold text-pink-500 hover:underline"
                 >
-                  ← back to reels
+                  ← back to pixies
                 </Link>
               </div>
               <p className="mt-1 text-sm text-blue-500 dark:text-purple-300">
-                Your video will appear on your profile and in the reels feed.
+                Your video will appear on your profile and in the pixies feed.
               </p>
 
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -238,13 +239,18 @@ const ReelUpload = () => {
                   <label className="block text-sm font-medium text-blue-600 dark:text-purple-300">
                     Caption
                   </label>
-                  <input
+                  <textarea
                     value={videoTitle}
                     onChange={(e) => setVideoTitle(e.target.value)}
                     placeholder="Say something about this video..."
-                    maxLength={200}
-                    className="w-full p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
+                    rows={4}
+                    maxLength={MAX_VIDEO_TITLE_LENGTH}
+                    className="w-full p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200 resize-y"
                   />
+                  <p className="mt-1 text-xs text-blue-500 dark:text-purple-400">
+                    {videoTitle.length}/{MAX_VIDEO_TITLE_LENGTH} — press enter
+                    for a new line.
+                  </p>
                 </div>
 
                 <div>
@@ -345,7 +351,7 @@ const ReelUpload = () => {
 
           <aside className="right-side-panel w-full lg:w-1/5 mb-auto bg-blue-50 dark:bg-purple-950/30 border border-blue-200 dark:border-purple-500/30 rounded-xl shadow-sm p-4 hidden lg:block">
             <h3 className="text-blue-700 dark:text-purple-200 font-bold text-lg text-center mb-2">
-              Reel Tips
+              Pixie Tips
             </h3>
             <ul className="text-sm text-blue-600 dark:text-purple-300 space-y-2">
               <li>• Short clips work best — up to a few minutes.</li>

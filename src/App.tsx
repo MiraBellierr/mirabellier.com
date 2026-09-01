@@ -177,14 +177,42 @@ function App() {
       <Route path="/admin/shrines/preview" element={<AdminShrinePreview />} />
       <Route path="/admin/users" element={<AdminUsers />} />
       <Route path="/admin/twitch" element={<AdminTwitch />} />
-      <Route path="/admin/reels" element={<AdminReels />} />
+      <Route path="/admin/pixies" element={<AdminReels />} />
+      <Route
+        path="/admin/poloroid"
+        element={<Navigate to="/admin/pixies" replace />}
+      />
+      <Route
+        path="/admin/loops"
+        element={<Navigate to="/admin/pixies" replace />}
+      />
+      <Route
+        path="/admin/reels"
+        element={<Navigate to="/admin/pixies" replace />}
+      />
       <Route path="/login" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/profile/:username" element={<Profile />} />
-      <Route path="/reels" element={<Reels />} />
-      <Route path="/reels/upload" element={<ReelUpload />} />
+      <Route path="/pixies" element={<Reels />} />
+      <Route path="/pixies/:videoId" element={<Reels />} />
+      <Route path="/pixies/upload" element={<ReelUpload />} />
+      <Route path="/poloroid" element={<Navigate to="/pixies" replace />} />
+      <Route
+        path="/poloroid/upload"
+        element={<Navigate to="/pixies/upload" replace />}
+      />
+      <Route path="/loops" element={<Navigate to="/pixies" replace />} />
+      <Route
+        path="/loops/upload"
+        element={<Navigate to="/pixies/upload" replace />}
+      />
+      <Route path="/reels" element={<Navigate to="/pixies" replace />} />
+      <Route
+        path="/reels/upload"
+        element={<Navigate to="/pixies/upload" replace />}
+      />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
     </Routes>
