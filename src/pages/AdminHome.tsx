@@ -99,6 +99,13 @@ const adminTools = [
     to: "/admin/twitch",
     action: "Open Twitch admin",
   },
+  {
+    title: "Reel Uploads",
+    description:
+      "Upload reels attributed to any username with a custom avatar URL — for streamer and community clips.",
+    to: "/admin/reels",
+    action: "Open reel admin",
+  },
 ];
 
 const AdminHome = () => {

@@ -104,6 +104,12 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) => pathname === "/twitch",
       },
       {
+        label: "reels",
+        to: "/reels",
+        icon: NAV_ICON_ANIME,
+        isActive: (pathname) => pathname === "/reels",
+      },
+      {
         label: "arena",
         to: "/arena",
         icon: NAV_ICON_ARENA,
@@ -341,6 +347,21 @@ const Navigation = () => {
                       {location.pathname.startsWith("/profile")
                         ? "[profile]"
                         : "profile"}
+                    </Link>
+                    <Link
+                      aria-current={
+                        location.pathname === "/reels/upload"
+                          ? "page"
+                          : undefined
+                      }
+                      className={accountLinkClass(
+                        location.pathname === "/reels/upload",
+                      )}
+                      to="/reels/upload"
+                    >
+                      {location.pathname === "/reels/upload"
+                        ? "[upload]"
+                        : "upload"}
                     </Link>
                     <Link
                       aria-current={

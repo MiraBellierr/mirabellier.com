@@ -84,7 +84,7 @@ function FanArtCard({
       <figcaption className="space-y-1 px-1 pt-2 pb-1 text-sm">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate font-bold text-blue-700 dark:text-purple-100">
-            {item.artist}
+            {item.artist || "???"}
           </span>
         </div>
         {item.artistUrl ? (
@@ -160,7 +160,7 @@ function FanArtLightbox({
       className="fanart-lightbox fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={`Full image by ${item.artist}`}
+      aria-label={`Full image by ${item.artist || "???"}`}
       onClick={onClose}
     >
       <button
@@ -247,7 +247,7 @@ function FanArtLightbox({
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm text-white">
-          <span className="font-bold">{item.artist}</span>
+          <span className="font-bold">{item.artist || "???"}</span>
           <span
             className={`fanart-site-badge fanart-site-badge--${item.site} rounded-full border-2 px-2 py-0.5 text-xs font-bold uppercase tracking-wide`}
           >

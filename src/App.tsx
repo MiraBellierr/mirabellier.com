@@ -45,10 +45,13 @@ const AdminShrines = lazy(() => import("./pages/AdminShrines"));
 const AdminShrinePreview = lazy(() => import("./pages/AdminShrinePreview"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminTwitch = lazy(() => import("./pages/AdminTwitch"));
+const AdminReels = lazy(() => import("./pages/AdminReels"));
 const ShrineEntry = lazy(() => import("./pages/ShrineEntry"));
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
+const Reels = lazy(() => import("./pages/Reels"));
+const ReelUpload = lazy(() => import("./pages/ReelUpload"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -174,11 +177,14 @@ function App() {
       <Route path="/admin/shrines/preview" element={<AdminShrinePreview />} />
       <Route path="/admin/users" element={<AdminUsers />} />
       <Route path="/admin/twitch" element={<AdminTwitch />} />
+      <Route path="/admin/reels" element={<AdminReels />} />
       <Route path="/login" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/profile/:username" element={<Profile />} />
+      <Route path="/reels" element={<Reels />} />
+      <Route path="/reels/upload" element={<ReelUpload />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
     </Routes>

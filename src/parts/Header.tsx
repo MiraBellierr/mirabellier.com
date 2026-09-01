@@ -51,10 +51,13 @@ const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/admin/question-of-the-day", title: "Admin Question of the Day" },
   { path: "/admin/shrines", title: "Admin Shrines" },
   { path: "/admin/shrines/preview", title: "Admin Shrine Preview" },
+  { path: "/admin/reels", title: "Admin Reels" },
   { path: "/login", title: "Login" },
   { path: "/settings", title: "Settings" },
   { path: "/profile", title: "Profile" },
   { path: "/profile/:username", title: "Profile" },
+  { path: "/reels", title: "Reels" },
+  { path: "/reels/upload", title: "Upload a Reel" },
   { path: "/privacy", title: "Privacy Policy" },
   { path: "/terms", title: "Terms of Service" },
 ];

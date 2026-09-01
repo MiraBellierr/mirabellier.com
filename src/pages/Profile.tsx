@@ -3,11 +3,19 @@ import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
 import { API_BASE } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
+import {
+  deleteReel,
+  fetchUserReels,
+  resolveVideoUrl,
+  type Reel,
+} from "@/lib/videos";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import { Link, useParams } from "react-router-dom";
 import kobayashiMaidDragon from "@/assets/anime/kobayashi-maid-dragon.webp";
+
+const VIDEOS_PER_PAGE = 10;
 
 interface Stats {
   postsCount: number;
@@ -34,6 +42,9 @@ const Profile = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [videos, setVideos] = useState<Reel[]>([]);
+  const [videosLoading, setVideosLoading] = useState(true);
+  const [videosPage, setVideosPage] = useState(1);
   const profileUserForSeo = username ? profileUser : auth.user;
   const profileCanonical = username
     ? `https://mirabellier.com/profile/${username}`
@@ -123,6 +134,69 @@ const Profile = () => {
     } catch {
       showToast("Failed to copy profile link");
     }
+  };
+
+  // Fetch the user's videos whenever the displayed user changes
+  useEffect(() => {
+    if (!user?.id) {
+      setVideos([]);
+      setVideosLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setVideosLoading(true);
+    fetchUserReels(user.id)
+      .then((reels) => {
+        if (cancelled) return;
+        setVideos(reels);
+        setVideosPage(1);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setVideos([]);
+      })
+      .finally(() => {
+        if (!cancelled) setVideosLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const handleDeleteReel = async (id: string) => {
+    try {
+      await deleteReel(id);
+      setVideos((current) => current.filter((reel) => reel.id !== id));
+      showToast("Video deleted");
+    } catch {
+      showToast("Could not delete video");
+    }
+  };
+
+  const totalVideoPages = Math.max(
+    1,
+    Math.ceil(videos.length / VIDEOS_PER_PAGE),
+  );
+  const visibleVideos = videos.slice(
+    (videosPage - 1) * VIDEOS_PER_PAGE,
+    videosPage * VIDEOS_PER_PAGE,
+  );
+
+  const buildPageNumbers = (): Array<number | "gap"> => {
+    const pages: Array<number | "gap"> = [];
+    const window = 2;
+    for (let page = 1; page <= totalVideoPages; page += 1) {
+      if (
+        page === 1 ||
+        page === totalVideoPages ||
+        (page >= videosPage - window && page <= videosPage + window)
+      ) {
+        pages.push(page);
+      } else if (pages[pages.length - 1] !== "gap") {
+        pages.push("gap");
+      }
+    }
+    return pages;
   };
 
   if (!user && !loading) {
@@ -422,6 +496,125 @@ const Profile = () => {
                     <div className="text-4xl mb-2">🌟</div>
                     <p>No posts yet. Start creating!</p>
                   </div>
+                )}
+              </div>
+
+              {/* Videos Section */}
+              <div className="mt-6 card-border rounded-2xl p-6 bg-white/90 dark:bg-purple-900/80">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-xl font-bold text-blue-700 dark:text-purple-200 mb-4 flex items-center gap-2">
+                    <span>🎬</span>
+                    <span>Videos</span>
+                  </h3>
+                  {isOwnProfile && (
+                    <Link
+                      to="/reels/upload"
+                      className="mb-4 text-sm font-bold text-pink-500 hover:underline"
+                    >
+                      + upload
+                    </Link>
+                  )}
+                </div>
+                {videosLoading ? (
+                  <div className="text-center text-blue-500 dark:text-purple-300 py-8">
+                    <div className="text-4xl mb-2">⏳</div>
+                    <p>Loading...</p>
+                  </div>
+                ) : videos.length === 0 ? (
+                  <div className="text-center text-blue-500 dark:text-purple-300 py-8">
+                    <div className="text-4xl mb-2">🎥</div>
+                    <p>No videos yet.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {visibleVideos.map((reel) => (
+                        <div
+                          key={reel.id}
+                          className="relative rounded-lg overflow-hidden bg-blue-50 dark:bg-purple-800/50 group"
+                        >
+                          <Link to="/reels" aria-label="Watch in reels">
+                            <video
+                              src={resolveVideoUrl(reel.url)}
+                              className="w-full h-36 object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                          </Link>
+                          <div className="p-2">
+                            <p className="truncate text-xs font-medium text-blue-700 dark:text-purple-200">
+                              {reel.title || "Untitled video"}
+                            </p>
+                            <p className="text-[11px] text-blue-500 dark:text-purple-400 mt-0.5">
+                              ❤️ {reel.likesCount} ·{" "}
+                              {new Date(reel.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          {isOwnProfile && (
+                            <button
+                              type="button"
+                              aria-label="Delete video"
+                              onClick={() => void handleDeleteReel(reel.id)}
+                              className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-xs text-white opacity-0 transition group-hover:opacity-100 hover:bg-red-600"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {totalVideoPages > 1 && (
+                      <div className="mt-5 flex items-center justify-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          disabled={videosPage <= 1}
+                          onClick={() =>
+                            setVideosPage((page) => Math.max(1, page - 1))
+                          }
+                          className="rounded-full px-3 py-1.5 text-sm font-bold text-blue-600 dark:text-purple-200 hover:bg-blue-100 dark:hover:bg-purple-800/60 disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                          ←
+                        </button>
+                        {buildPageNumbers().map((entry, index) =>
+                          entry === "gap" ? (
+                            <span
+                              key={`gap-${index}`}
+                              className="px-1.5 text-sm text-blue-400 dark:text-purple-400"
+                            >
+                              …
+                            </span>
+                          ) : (
+                            <button
+                              key={entry}
+                              type="button"
+                              onClick={() => setVideosPage(entry)}
+                              className={`h-8 min-w-8 rounded-full px-2 text-sm font-bold transition ${
+                                entry === videosPage
+                                  ? "bg-pink-500 text-white"
+                                  : "text-blue-600 dark:text-purple-200 hover:bg-blue-100 dark:hover:bg-purple-800/60"
+                              }`}
+                            >
+                              {entry}
+                            </button>
+                          ),
+                        )}
+                        <button
+                          type="button"
+                          disabled={videosPage >= totalVideoPages}
+                          onClick={() =>
+                            setVideosPage((page) =>
+                              Math.min(totalVideoPages, page + 1),
+                            )
+                          }
+                          className="rounded-full px-3 py-1.5 text-sm font-bold text-blue-600 dark:text-purple-200 hover:bg-blue-100 dark:hover:bg-purple-800/60 disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                          →
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
