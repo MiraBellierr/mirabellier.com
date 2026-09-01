@@ -46,13 +46,23 @@ export function resolveAvatarUrl(avatar?: string | null): string | null {
   return `${base}${avatar.startsWith("/") ? "" : "/"}${avatar}`;
 }
 
-export async function fetchReelsFeed(includeId?: string): Promise<Reel[]> {
-  const query = includeId
-    ? `?include=${encodeURIComponent(includeId)}`
-    : "";
-  const res = await fetch(`${API_BASE}/videos/feed${query}`, {
-    credentials: "include",
-  });
+export async function fetchReelsFeed(
+  includeId?: string,
+  options?: { limit?: number; exclude?: string[] },
+): Promise<Reel[]> {
+  const params = new URLSearchParams();
+  if (includeId) params.set("include", includeId);
+  if (options?.limit != null) params.set("limit", String(options.limit));
+  if (options?.exclude && options.exclude.length > 0) {
+    params.set("exclude", options.exclude.join(","));
+  }
+  const query = params.toString();
+  const res = await fetch(
+    `${API_BASE}/videos/feed${query ? `?${query}` : ""}`,
+    {
+      credentials: "include",
+    },
+  );
   if (!res.ok) throw new Error("Failed to load reels");
   return res.json() as Promise<Reel[]>;
 }

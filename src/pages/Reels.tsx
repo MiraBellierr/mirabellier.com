@@ -24,6 +24,8 @@ const RENDER_WINDOW_AFTER = 4;
 const SWIPE_THRESHOLD_PX = 60;
 const WHEEL_THRESHOLD_PX = 60;
 const WHEEL_COOLDOWN_MS = 650;
+const FEED_BATCH_SIZE = 10;
+const FEED_FETCH_AHEAD = 2;
 
 interface LikeState {
   liked: boolean;
@@ -172,16 +174,86 @@ const UploadIcon = () => (
   </svg>
 );
 
-const PlayIcon = () => (
+const PlayIcon = ({ size = 64 }: { size?: number }) => (
   <svg
     viewBox="0 0 24 24"
-    width="64"
-    height="64"
+    width={size}
+    height={size}
     fill="rgba(255,255,255,0.85)"
     stroke="none"
     aria-hidden="true"
   >
     <polygon points="6 3 21 12 6 21 6 3" />
+  </svg>
+);
+
+const PauseIcon = ({ size = 64 }: { size?: number }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={size}
+    height={size}
+    fill="rgba(255,255,255,0.85)"
+    stroke="none"
+    aria-hidden="true"
+  >
+    <rect x="5" y="3" width="5" height="18" rx="1" />
+    <rect x="14" y="3" width="5" height="18" rx="1" />
+  </svg>
+);
+
+const SeekBackIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="26"
+    height="26"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="1 4 1 10 7 10" />
+    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    <text
+      x="11"
+      y="16.5"
+      textAnchor="middle"
+      fontSize="8"
+      fontWeight="700"
+      fill="currentColor"
+      stroke="none"
+    >
+      5
+    </text>
+  </svg>
+);
+
+const SeekForwardIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="26"
+    height="26"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="23 4 23 10 17 10" />
+    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    <text
+      x="13"
+      y="16.5"
+      textAnchor="middle"
+      fontSize="8"
+      fontWeight="700"
+      fill="currentColor"
+      stroke="none"
+    >
+      5
+    </text>
   </svg>
 );
 
@@ -256,10 +328,12 @@ const Reels = () => {
     Array<{ id: number; x: number; y: number }>
   >([]);
   const [shareTarget, setShareTarget] = useState<Reel | null>(null);
+  const [hasMore, setHasMore] = useState(false);
 
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
   const activeIndexRef = useRef(0);
+  const lastActiveIndexRef = useRef(-1);
   const commentPanelOpenRef = useRef(false);
   const shareOpenRef = useRef(false);
   const touchStartRef = useRef<{ y: number } | null>(null);
@@ -267,6 +341,9 @@ const Reels = () => {
   const lastWheelNavRef = useRef(0);
   const lastTapRef = useRef(0);
   const tapTimeoutRef = useRef<number | null>(null);
+  const autoplayMutedRef = useRef(false);
+  const audioUnlockAtRef = useRef(0);
+  const fetchingMoreRef = useRef(false);
 
   const sharePageUrl = sharedVideoId
     ? `https://mirabellier.com/pixies/${sharedVideoId}`
@@ -286,10 +363,12 @@ const Reels = () => {
 
   useEffect(() => {
     let cancelled = false;
-    fetchReelsFeed(sharedVideoId)
+    fetchingMoreRef.current = false;
+    fetchReelsFeed(sharedVideoId, { limit: FEED_BATCH_SIZE })
       .then((data) => {
         if (cancelled) return;
         setReels(data);
+        setHasMore(data.length >= FEED_BATCH_SIZE);
         if (sharedVideoId) {
           const index = data.findIndex((reel) => reel.id === sharedVideoId);
           if (index >= 0) {
@@ -309,7 +388,32 @@ const Reels = () => {
     };
   }, [sharedVideoId]);
 
-  // Mark the active pixie as watched so it stays out of future feeds.
+  // Fetch the next batch in real time once we get within 2 videos of the end.
+  useEffect(() => {
+    if (loading) return;
+    if (!hasMore) return;
+    if (reels.length - activeIndex > FEED_FETCH_AHEAD) return;
+    if (fetchingMoreRef.current) return;
+    fetchingMoreRef.current = true;
+    const excludeIds = reels.map((reel) => reel.id);
+    fetchReelsFeed(undefined, { limit: FEED_BATCH_SIZE, exclude: excludeIds })
+      .then((data) => {
+        setHasMore(data.length >= FEED_BATCH_SIZE);
+        setReels((current) => {
+          const known = new Set(current.map((reel) => reel.id));
+          const fresh = data.filter((reel) => !known.has(reel.id));
+          return fresh.length > 0 ? [...current, ...fresh] : current;
+        });
+      })
+      .catch(() => {
+        // Keep hasMore so the next scroll retries the fetch.
+      })
+      .finally(() => {
+        fetchingMoreRef.current = false;
+      });
+  }, [activeIndex, reels, hasMore, loading]);
+
+  // Mark the active pixie as watched so unwatched pixies come first in future feeds.
   const markedViewedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const reel = reels[activeIndex];
@@ -345,23 +449,70 @@ const Reels = () => {
 
   // Keep playback in sync with the active slide
   useEffect(() => {
+    const activeChanged = lastActiveIndexRef.current !== activeIndex;
     videoRefs.current.forEach((video, index) => {
       if (!video) return;
       if (index === activeIndex) {
+        if (activeChanged) {
+          // Every navigation (up or down) starts the video from the beginning.
+          video.currentTime = 0;
+        }
         video.muted = muted;
         void video.play().catch(() => {
+          // Browsers can block unmuted autoplay on a fresh load or refresh.
+          // Play muted for now, then unmute on the first user gesture.
+          autoplayMutedRef.current = true;
           video.muted = true;
+          void video.play().catch(() => {});
           setMuted(true);
         });
       } else {
         video.pause();
-        if (index > activeIndex + PRELOAD_WINDOW_AHEAD) {
+        if (
+          index > activeIndex + PRELOAD_WINDOW_AHEAD ||
+          index < activeIndex - PRELOAD_WINDOW_AHEAD
+        ) {
           video.currentTime = 0;
         }
       }
     });
+    lastActiveIndexRef.current = activeIndex;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, reels]);
+
+  // Auto-unmute as soon as the user interacts with the page,
+  // unless they used the mute toggle themselves.
+  useEffect(() => {
+    const unlockAudio = (event: Event) => {
+      if (!autoplayMutedRef.current) return;
+      if (
+        (event.target as HTMLElement | null)?.closest?.(
+          "[data-mute-toggle]",
+        )
+      ) {
+        autoplayMutedRef.current = false;
+        return;
+      }
+      autoplayMutedRef.current = false;
+      audioUnlockAtRef.current = Date.now();
+      const video = videoRefs.current[activeIndexRef.current];
+      if (video) {
+        video.muted = false;
+        void video.play().catch(() => {});
+      }
+      setMuted(false);
+    };
+    window.addEventListener("pointerdown", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
+    window.addEventListener("wheel", unlockAudio);
+    window.addEventListener("touchstart", unlockAudio);
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+      window.removeEventListener("wheel", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+    };
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
@@ -472,6 +623,26 @@ const Reels = () => {
     setIsDragging(false);
   };
 
+  const togglePlayPause = () => {
+    const video = videoRefs.current[activeIndexRef.current];
+    if (!video) return;
+    if (video.paused) {
+      void video.play().catch(() => {});
+      setPaused(false);
+    } else {
+      video.pause();
+      setPaused(true);
+    }
+  };
+
+  const seekBy = (seconds: number) => {
+    const video = videoRefs.current[activeIndexRef.current];
+    if (!video) return;
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const current = Number.isFinite(video.currentTime) ? video.currentTime : 0;
+    video.currentTime = Math.max(0, Math.min(duration, current + seconds));
+  };
+
   const handleTap = (
     event: React.PointerEvent<HTMLVideoElement>,
   ) => {
@@ -503,16 +674,13 @@ const Reels = () => {
       lastTapRef.current = now;
       tapTimeoutRef.current = window.setTimeout(() => {
         tapTimeoutRef.current = null;
-        // Single tap — toggle play/pause
-        const video = videoRefs.current[activeIndex];
-        if (!video) return;
-        if (video.paused) {
-          void video.play().catch(() => {});
-          setPaused(false);
-        } else {
-          video.pause();
-          setPaused(true);
+        // Skip the tap that just unlocked audio so it doesn't pause the video.
+        if (now - audioUnlockAtRef.current < 600) {
+          audioUnlockAtRef.current = 0;
+          return;
         }
+        // Single tap — toggle play/pause
+        togglePlayPause();
       }, 300);
     }
   };
@@ -529,6 +697,7 @@ const Reels = () => {
   const handleToggleMute = () => {
     const video = videoRefs.current[activeIndex];
     const next = !muted;
+    autoplayMutedRef.current = false;
     if (video) {
       video.muted = next;
       if (!next) {
@@ -980,11 +1149,42 @@ const Reels = () => {
           <button
             onClick={handleToggleMute}
             aria-label={muted ? "Unmute" : "Mute"}
+            data-mute-toggle
             className="absolute bottom-5 right-3 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white/90 transition hover:bg-black/60"
             type="button"
           >
             {muted ? <VolumeOffIcon size={18} /> : <VolumeOnIcon size={18} />}
           </button>
+
+          {/* Playback controls: back 5s / play-pause / forward 5s */}
+          {paused && (
+            <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3">
+              <button
+                onClick={() => seekBy(-5)}
+                aria-label="Back 5 seconds"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white/90 transition hover:bg-black/60"
+                type="button"
+              >
+                <SeekBackIcon />
+              </button>
+              <button
+                onClick={togglePlayPause}
+                aria-label={paused ? "Play" : "Pause"}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-white transition hover:bg-black/60"
+                type="button"
+              >
+                {paused ? <PlayIcon size={30} /> : <PauseIcon size={30} />}
+              </button>
+              <button
+                onClick={() => seekBy(5)}
+                aria-label="Forward 5 seconds"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white/90 transition hover:bg-black/60"
+                type="button"
+              >
+                <SeekForwardIcon />
+              </button>
+            </div>
+          )}
 
           {/* Playback progress */}
           <div className="absolute inset-x-0 bottom-0 z-20 h-0.5 bg-white/25">
