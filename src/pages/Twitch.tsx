@@ -16,9 +16,13 @@ import { usePageSeo } from "@/lib/seo";
 import "@/styles/shrine.css";
 import {
   TwitchApiError,
+  fetchPushStatus,
   fetchTwitchChannels,
   fetchTwitchPrediction,
   fetchTwitchProfile,
+  fetchVapidPublicKey,
+  subscribeToLiveNotification,
+  unsubscribeFromLiveNotification,
   type TwitchChannelProfile,
   type TwitchChannelStats,
   type TwitchChannelSummary,
@@ -77,6 +81,26 @@ function formatViewers(count: number | null) {
   return `${thousands >= 10 ? Math.round(thousands) : thousands.toFixed(1)}k`;
 }
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i += 1) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function supportsPushNotifications() {
+  return (
+    typeof window !== "undefined" &&
+    "Notification" in window &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window
+  );
+}
+
 function formatCompactNumber(value: number | null) {
   if (value == null) return "—";
   if (value < 1000) return String(value);
@@ -132,45 +156,126 @@ function resolveTwitchThumbnail(thumbnailUrl: string, width: number, height: num
     .replace("{height}", String(height));
 }
 
+const TOTAL_SLOTS = 7 * HEATMAP_COLUMNS;
+const WEEK_MINUTES = 7 * 24 * 60;
+
+function browserTimezoneOffsetMinutes() {
+  return -new Date().getTimezoneOffset();
+}
+
+function shiftHeatmapToLocal(heatmap: number[]) {
+  if (heatmap.length !== TOTAL_SLOTS) return heatmap;
+
+  const offsetMinutes = browserTimezoneOffsetMinutes();
+  const shifted = new Array<number>(TOTAL_SLOTS);
+  for (let localSlot = 0; localSlot < TOTAL_SLOTS; localSlot += 1) {
+    const utcWeekMinute =
+      (((localSlot * 15 - offsetMinutes) % WEEK_MINUTES) + WEEK_MINUTES) %
+      WEEK_MINUTES;
+    shifted[localSlot] = heatmap[Math.floor(utcWeekMinute / 15)];
+  }
+  return shifted;
+}
+
+function buildLocalDistributions(starts: number[]) {
+  const byDayOfWeek = new Array(7).fill(0);
+  const byHourOfDay = new Array(24).fill(0);
+  const byMonthMap = new Map<string, number>();
+
+  for (const timestampMs of starts) {
+    const date = new Date(timestampMs);
+    byDayOfWeek[date.getDay()] += 1;
+    byHourOfDay[date.getHours()] += 1;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    byMonthMap.set(key, (byMonthMap.get(key) || 0) + 1);
+  }
+
+  const monthLabels: string[] = [];
+  const anchor = new Date();
+  anchor.setDate(1);
+  anchor.setHours(0, 0, 0, 0);
+  for (let index = 11; index >= 0; index -= 1) {
+    const month = new Date(anchor);
+    month.setMonth(anchor.getMonth() - index);
+    monthLabels.push(
+      `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`,
+    );
+  }
+
+  return {
+    byDayOfWeek,
+    byHourOfDay,
+    byMonth: monthLabels.map((month) => ({
+      month,
+      count: byMonthMap.get(month) || 0,
+    })),
+  };
+}
+
 function BarChart({
   title,
   values,
   labels,
   step = 1,
+  unit = "",
 }: {
   title: string;
   values: number[];
   labels: string[];
   step?: number;
+  unit?: string;
 }) {
+  const [hovered, setHovered] = useState<number | null>(null);
   const max = values.reduce((top, value) => Math.max(top, value), 0) || 1;
+  const tooltipLeft =
+    hovered == null
+      ? 0
+      : Math.min(Math.max(((hovered + 0.5) / values.length) * 100, 10), 90);
 
   return (
     <div>
       <h4 className="mb-2 text-xs font-bold text-blue-600 dark:text-purple-200">
         {title}
       </h4>
-      <div className="flex h-20 items-end gap-px">
-        {values.map((value, index) => (
+      <div className="relative">
+        <div className="flex h-20 items-end gap-px">
+          {values.map((value, index) => (
+            <div
+              key={index}
+              onMouseEnter={() => setHovered(index)}
+              onMouseLeave={() => setHovered(null)}
+              className={`flex-1 rounded-t transition-colors ${
+                hovered === index
+                  ? "bg-pink-500"
+                  : value > 0
+                    ? "bg-blue-400/70 dark:bg-purple-400/70"
+                    : "bg-blue-200/50 dark:bg-purple-800/40"
+              }`}
+              style={{
+                height: `${value > 0 ? Math.max((value / max) * 100, 4) : 2}%`,
+              }}
+            />
+          ))}
+        </div>
+        {hovered != null ? (
           <div
-            key={index}
-            title={`${labels[index] ?? index}: ${value}`}
-            className={`flex-1 rounded-t ${
-              value > 0
-                ? "bg-blue-400/70 dark:bg-purple-400/70"
-                : "bg-blue-200/50 dark:bg-purple-800/40"
-            }`}
-            style={{
-              height: `${value > 0 ? Math.max((value / max) * 100, 4) : 2}%`,
-            }}
-          />
-        ))}
+            className="pointer-events-none absolute -top-9 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-blue-900/95 px-2 py-1 text-[10px] font-bold text-white shadow-md dark:bg-purple-950/95"
+            style={{ left: `${tooltipLeft}%` }}
+          >
+            {labels[hovered]} — {values[hovered]}
+            {unit ? ` ${unit}` : ""}
+          </div>
+        ) : null}
       </div>
       <div className="mt-1 flex">
         {labels.map((label, index) => (
           <span
             key={index}
-            className="flex-1 overflow-hidden text-center text-[9px] font-semibold text-blue-400 dark:text-purple-300"
+            className={`flex-1 overflow-hidden text-center text-[9px] font-semibold transition-colors ${
+              hovered === index
+                ? "text-pink-600 dark:text-pink-300"
+                : "text-blue-400 dark:text-purple-300"
+            }`}
           >
             {index % step === 0 ? label : ""}
           </span>
@@ -429,10 +534,19 @@ function ScheduleSection({ profile }: { profile: TwitchChannelProfile }) {
 }
 
 function HistorySection({ stats }: { stats: TwitchChannelStats }) {
-  const dayValues = stats.byDayOfWeek;
-  const hourValues = stats.byHourOfDay;
-  const monthValues = stats.byMonth;
+  const local = useMemo(
+    () =>
+      Array.isArray(stats.starts) && stats.starts.length > 0
+        ? buildLocalDistributions(stats.starts)
+        : null,
+    [stats],
+  );
+
+  const dayValues = local?.byDayOfWeek ?? stats.byDayOfWeek;
+  const hourValues = local?.byHourOfDay ?? stats.byHourOfDay;
+  const monthValues = local?.byMonth ?? stats.byMonth;
   const durationValues = stats.durationHistogram;
+  const timezoneLabel = local ? "local time" : "UTC";
 
   return (
     <SectionCard
@@ -455,26 +569,30 @@ function HistorySection({ stats }: { stats: TwitchChannelStats }) {
 
       <div className="space-y-5 pt-2">
         <BarChart
-          title="streams by day of week (UTC)"
+          title={`streams by day of week (${timezoneLabel})`}
           values={dayValues}
           labels={DAY_LABELS}
+          unit="streams"
         />
         <BarChart
-          title="streams by hour of day (UTC)"
+          title={`streams by hour of day (${timezoneLabel})`}
           values={hourValues}
           labels={hourValues.map((_, hour) => `${hour}:00`)}
           step={3}
+          unit="streams"
         />
         <BarChart
-          title="streams per month"
+          title={`streams per month (${timezoneLabel})`}
           values={monthValues.map((entry) => entry.count)}
           labels={monthValues.map((entry) => formatMonthKey(entry.month))}
           step={2}
+          unit="streams"
         />
         <BarChart
           title="stream length distribution"
           values={durationValues.map((entry) => entry.count)}
           labels={durationValues.map((entry) => entry.label)}
+          unit="streams"
         />
       </div>
     </SectionCard>
@@ -689,6 +807,136 @@ function ChannelTab({
   );
 }
 
+function NotifyButton({
+  channelLogin,
+  displayName,
+}: {
+  channelLogin: string;
+  displayName: string;
+}) {
+  const [permission, setPermission] = useState<string>(
+    typeof window !== "undefined" && "Notification" in window
+      ? Notification.permission
+      : "unsupported",
+  );
+  const [subscribed, setSubscribed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (permission === "unsupported" || permission !== "granted") return;
+
+    let cancelled = false;
+    const restore = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (!subscription) return;
+        const status = await fetchPushStatus(channelLogin, subscription.endpoint);
+        if (!cancelled) setSubscribed(status.subscribed);
+      } catch {
+        // Ignore restore failures; the button still works.
+      }
+    };
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [channelLogin, permission]);
+
+  if (!supportsPushNotifications()) return null;
+
+  const enable = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await navigator.serviceWorker.register("/sw.js");
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      if (result !== "granted") return;
+
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        const publicKey = await fetchVapidPublicKey();
+        if (!publicKey) {
+          setError("Notifications are not configured on the server yet.");
+          return;
+        }
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+      }
+
+      await subscribeToLiveNotification(channelLogin, subscription.toJSON());
+      setSubscribed(true);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to enable notifications",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await unsubscribeFromLiveNotification(
+          channelLogin,
+          subscription.endpoint,
+        ).catch(() => undefined);
+      }
+      setSubscribed(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (permission === "denied") {
+    return (
+      <button
+        type="button"
+        disabled
+        title="Notifications are blocked for this site. Allow them in your browser settings."
+        className="cursor-not-allowed rounded-full bg-gray-200 px-4 py-1.5 text-sm font-bold text-gray-500"
+      >
+        notifications blocked in browser settings
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={subscribed ? disable : enable}
+        disabled={busy}
+        title={`${displayName} — live notifications`}
+        className={`rounded-full px-4 py-1.5 text-sm font-bold transition disabled:opacity-60 ${
+          subscribed
+            ? "bg-pink-500 text-white shadow-sm hover:bg-pink-600"
+            : "border border-pink-400 bg-white/70 text-pink-600 hover:bg-pink-100 dark:bg-purple-900/40 dark:text-purple-200 dark:hover:bg-purple-900/60"
+        }`}
+      >
+        {busy
+          ? "please wait..."
+          : subscribed
+            ? "notifications on — tap to stop"
+            : "notify me when live"}
+      </button>
+      {error ? (
+        <span className="text-xs font-semibold text-red-500">{error}</span>
+      ) : null}
+    </div>
+  );
+}
+
 function CurveChart({
   payload,
   nowMs,
@@ -716,32 +964,51 @@ function CurveChart({
 
   const maxP = bars.reduce((max, bar) => Math.max(max, bar.p), 0) || 1;
   const predictedAt = payload.prediction.nextStartAt;
+  const [hovered, setHovered] = useState<number | null>(null);
+  const tooltipLeft =
+    hovered == null
+      ? 0
+      : Math.min(Math.max(((hovered + 0.5) / bars.length) * 100, 8), 92);
 
   return (
     <div>
       <h3 className="mb-2 text-sm font-bold text-blue-600 dark:text-purple-200">
         next 48 hours — chance of going live
       </h3>
-      <div className="flex h-24 items-end gap-px">
-        {bars.map((bar) => {
-          const height = Math.max((bar.p / maxP) * 100, bar.p > 0 ? 3 : 1);
-          const isPredicted =
-            predictedAt != null &&
-            bar.atMs <= predictedAt &&
-            predictedAt < bar.atMs + HOUR_MS;
-          return (
-            <div
-              key={bar.atMs}
-              title={`${formatShortDate(bar.atMs)} — ${(bar.p * 100).toFixed(1)}%`}
-              className={`flex-1 rounded-t ${
-                isPredicted
-                  ? "bg-pink-500"
-                  : "bg-blue-400/70 dark:bg-purple-400/70"
-              }`}
-              style={{ height: `${height}%` }}
-            />
-          );
-        })}
+      <div className="relative">
+        <div className="flex h-24 items-end gap-px">
+          {bars.map((bar, index) => {
+            const height = Math.max((bar.p / maxP) * 100, bar.p > 0 ? 3 : 1);
+            const isPredicted =
+              predictedAt != null &&
+              bar.atMs <= predictedAt &&
+              predictedAt < bar.atMs + HOUR_MS;
+            return (
+              <div
+                key={bar.atMs}
+                onMouseEnter={() => setHovered(index)}
+                onMouseLeave={() => setHovered(null)}
+                className={`flex-1 rounded-t transition-colors ${
+                  hovered === index
+                    ? "bg-pink-600"
+                    : isPredicted
+                      ? "bg-pink-500"
+                      : "bg-blue-400/70 dark:bg-purple-400/70"
+                }`}
+                style={{ height: `${height}%` }}
+              />
+            );
+          })}
+        </div>
+        {hovered != null ? (
+          <div
+            className="pointer-events-none absolute -top-9 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-blue-900/95 px-2 py-1 text-[10px] font-bold text-white shadow-md dark:bg-purple-950/95"
+            style={{ left: `${tooltipLeft}%` }}
+          >
+            {formatShortDate(bars[hovered].atMs)} —{" "}
+            {(bars[hovered].p * 100).toFixed(1)}% chance
+          </div>
+        ) : null}
       </div>
       <div className="mt-1 flex justify-between text-[10px] font-semibold text-blue-400 dark:text-purple-300">
         <span>now</span>
@@ -753,35 +1020,77 @@ function CurveChart({
 }
 
 function Heatmap({ heatmap }: { heatmap: number[] }) {
+  const [hovered, setHovered] = useState<{ day: number; slot: number } | null>(
+    null,
+  );
+
   if (heatmap.length !== HEATMAP_COLUMNS * 7) {
     return null;
   }
 
+  const hoveredValue =
+    hovered == null
+      ? 0
+      : heatmap[hovered.day * HEATMAP_COLUMNS + hovered.slot];
+  const tooltipLeft =
+    hovered == null
+      ? 0
+      : Math.min(
+          Math.max(((hovered.slot + 0.5) / HEATMAP_COLUMNS) * 100, 12),
+          88,
+        );
+
   return (
     <div>
       <h3 className="mb-2 text-sm font-bold text-blue-600 dark:text-purple-200">
-        usual streaming hours (UTC, all time)
+        usual streaming hours (local time, all time)
       </h3>
-      <div className="space-y-px">
-        {DAY_LABELS.map((label, day) => (
-          <div key={label} className="flex items-center gap-2">
-            <span className="w-9 text-right text-[10px] font-bold text-blue-400 dark:text-purple-300">
-              {label}
-            </span>
-            <div className="grid flex-1 gap-px" style={{ gridTemplateColumns: `repeat(${HEATMAP_COLUMNS}, minmax(0, 1fr))` }}>
-              {heatmap.slice(day * HEATMAP_COLUMNS, (day + 1) * HEATMAP_COLUMNS).map((value, index) => (
-                <div
-                  key={index}
-                  title={`${label} ${String(Math.floor((index * 15) / 60)).padStart(2, "0")}:${String((index * 15) % 60).padStart(2, "0")} UTC`}
-                  className="h-3 rounded-[2px]"
-                  style={{
-                    backgroundColor: `rgba(236, 72, 153, ${value > 0 ? 0.12 + value * 0.88 : 0.05})`,
-                  }}
-                />
-              ))}
-            </div>
+      <div className="relative">
+        {hovered != null ? (
+          <div
+            className="pointer-events-none absolute -top-9 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-blue-900/95 px-2 py-1 text-[10px] font-bold text-white shadow-md dark:bg-purple-950/95"
+            style={{ left: `${tooltipLeft}%` }}
+          >
+            {DAY_LABELS[hovered.day]}{" "}
+            {String(Math.floor((hovered.slot * 15) / 60)).padStart(2, "0")}:
+            {String((hovered.slot * 15) % 60).padStart(2, "0")} —{" "}
+            {Math.round(hoveredValue * 100)}%
           </div>
-        ))}
+        ) : null}
+        <div className="space-y-px">
+          {DAY_LABELS.map((label, day) => (
+            <div key={label} className="flex items-center gap-2">
+              <span
+                className={`w-9 text-right text-[10px] font-bold transition-colors ${
+                  hovered?.day === day
+                    ? "text-pink-600 dark:text-pink-300"
+                    : "text-blue-400 dark:text-purple-300"
+                }`}
+              >
+                {label}
+              </span>
+              <div className="grid flex-1 gap-px" style={{ gridTemplateColumns: `repeat(${HEATMAP_COLUMNS}, minmax(0, 1fr))` }}>
+                {heatmap.slice(day * HEATMAP_COLUMNS, (day + 1) * HEATMAP_COLUMNS).map((value, index) => {
+                  const isHovered =
+                    hovered?.day === day && hovered.slot === index;
+                  return (
+                    <div
+                      key={index}
+                      onMouseEnter={() => setHovered({ day, slot: index })}
+                      onMouseLeave={() => setHovered(null)}
+                      className={`h-3 rounded-[2px] transition-transform ${
+                        isHovered ? "relative z-10 scale-y-125 ring-1 ring-pink-500" : ""
+                      }`}
+                      style={{
+                        backgroundColor: `rgba(236, 72, 153, ${value > 0 ? 0.12 + value * 0.88 : 0.05})`,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -863,7 +1172,7 @@ function PredictionSection({
 
       <div className="space-y-5 pt-2">
         <CurveChart payload={payload} nowMs={nowMs} />
-        <Heatmap heatmap={prediction.heatmap} />
+        <Heatmap heatmap={shiftHeatmapToLocal(prediction.heatmap)} />
       </div>
     </SectionCard>
   );
@@ -1059,6 +1368,15 @@ const Twitch = () => {
                   ))}
                 </div>
               )}
+
+              {selectedChannel ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <NotifyButton
+                    channelLogin={selectedChannel.login}
+                    displayName={selectedChannel.displayName}
+                  />
+                </div>
+              ) : null}
 
               {loading ? (
                 <p className="py-4 text-center text-sm text-blue-400">

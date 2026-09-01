@@ -123,6 +123,7 @@ export type TwitchChannelStats = {
     max: number;
     count: number;
   }>;
+  starts?: number[];
 };
 
 export type TwitchProfilePayload = {
@@ -272,4 +273,73 @@ export async function fetchTwitchProfile(login: string) {
   }
 
   return (await response.json()) as TwitchProfilePayload;
+}
+
+export async function fetchVapidPublicKey() {
+  const response = await fetch(joinApi("/twitch/push/vapid-public-key"), {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new TwitchApiError("Failed to load push configuration", {
+      status: response.status,
+    });
+  }
+
+  const data = (await response.json()) as { publicKey: string | null };
+  return data.publicKey;
+}
+
+export async function subscribeToLiveNotification(
+  channelLogin: string,
+  subscription: PushSubscriptionJSON,
+) {
+  const response = await fetch(joinApi("/twitch/push/subscribe"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ channelLogin, subscription }),
+  });
+
+  if (!response.ok) {
+    const error = await readApiError(response, "Failed to enable notifications");
+    throw new TwitchApiError(error.message, {
+      code: error.code,
+      status: response.status,
+    });
+  }
+
+  return (await response.json()) as { ok: boolean; channelLogin: string };
+}
+
+export async function unsubscribeFromLiveNotification(
+  channelLogin: string,
+  endpoint: string,
+) {
+  const params = new URLSearchParams({ channelLogin, endpoint });
+  const response = await fetch(joinApi(`/twitch/push/subscribe?${params.toString()}`), {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await readApiError(response, "Failed to disable notifications");
+    throw new TwitchApiError(error.message, {
+      code: error.code,
+      status: response.status,
+    });
+  }
+
+  return (await response.json()) as { ok: boolean };
+}
+
+export async function fetchPushStatus(channelLogin: string, endpoint: string) {
+  const params = new URLSearchParams({ channelLogin, endpoint });
+  const response = await fetch(joinApi(`/twitch/push/status?${params.toString()}`), {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return { subscribed: false };
+  }
+
+  return (await response.json()) as { subscribed: boolean };
 }
