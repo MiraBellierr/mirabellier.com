@@ -2278,3 +2278,38 @@ h6 {
   .animate-bounce-in, .animate-bounce-out { animation: none !important; }
   .animate-float-up { animation: none !important; }
 }
+
+/* Fan art lightbox site badges: the global [class*="border-"][class*="rounded"]
+   rule would repaint these pills, so scope explicit colors here. */
+.fanart-lightbox .fanart-site-badge {
+  border-style: solid;
+  border-width: 2px;
+  background: #ffffff !important;
+  border-color: #0096fa !important;
+  color: rgb(23 37 84) !important;
+}
+.fanart-lightbox .fanart-site-badge--gelbooru { border-color: #2d94c4 !important; }
+.fanart-lightbox .fanart-site-badge--safebooru { border-color: #c98200 !important; }
+.fanart-lightbox .fanart-site-badge--danbooru { border-color: #c23a3a !important; }
+
+.dark .fanart-lightbox .fanart-site-badge {
+  background: #0096fa !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+.dark .fanart-lightbox .fanart-site-badge--gelbooru { background: #44b8e7 !important; }
+.dark .fanart-lightbox .fanart-site-badge--safebooru { background: #f7a800 !important; }
+.dark .fanart-lightbox .fanart-site-badge--danbooru { background: #e05a5a !important; }
+
+/* Global dark-mode text fix: blue text shades become light purples. */
+.dark .text-blue-950 { color: rgb(237 233 254) !important; }
+.dark .text-blue-900,
+.dark .text-blue-800 { color: rgb(243 232 255) !important; }
+.dark .text-blue-700 { color: rgb(233 213 255) !important; }
+.dark .text-blue-600,
+.dark .text-blue-500,
+.dark .text-blue-400,
+.dark .text-blue-300 { color: rgb(216 180 254) !important; }
+.dark .text-blue-200,
+.dark .text-blue-100 { color: rgb(233 213 255) !important; }
+.dark .text-blue-50 { color: rgb(245 243 255) !important; }

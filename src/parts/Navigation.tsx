@@ -90,6 +90,12 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) => pathname === "/quotes",
       },
       {
+        label: "fan art",
+        to: "/fanart",
+        icon: NAV_ICON_SHRINE,
+        isActive: (pathname) => pathname === "/fanart",
+      },
+      {
         label: "arena",
         to: "/arena",
         icon: NAV_ICON_ARENA,

@@ -13,6 +13,7 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const BlogEdit = lazy(() => import("./pages/BlogEdit"));
 const Quotes = lazy(() => import("./pages/Quotes"));
 const Anime = lazy(() => import("./pages/Anime"));
+const Fanart = lazy(() => import("./pages/Fanart"));
 const Arena = lazy(() => import("./pages/Arena"));
 const ArenaFight = lazy(() => import("./pages/ArenaFight"));
 const ArenaHallOfFame = lazy(() => import("./pages/ArenaHallOfFame"));
@@ -106,6 +107,7 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />
+      <Route path="/fanart" element={<Fanart />} />
       <Route path="/arena" element={<Arena />} />
       <Route path="/arena/fight" element={<ArenaFight />} />
       <Route path="/arena/hall-of-fame" element={<ArenaHallOfFame />} />

@@ -12,6 +12,7 @@ const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/about", title: "About" },
   { path: "/projects", title: "Projects" },
   { path: "/anime", title: "Anime" },
+  { path: "/fanart", title: "Fan Art Search" },
   { path: "/shrine", title: "Shrine" },
   { path: "/shrine/kanna", title: "Kanna Shrine" },
   { path: "/shrine/rossina", title: "Rossina Shrine" },
