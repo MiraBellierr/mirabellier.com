@@ -491,6 +491,7 @@ const Reels = () => {
           if (forceUnmuteOnActivateRef.current) {
             // Page entry or a shared pixie link: unmute first, then play.
             forceUnmuteOnActivateRef.current = false;
+            video.pause();
             video.muted = false;
             setMuted(false);
           } else {
@@ -500,9 +501,7 @@ const Reels = () => {
           video.muted = muted;
         }
         void video.play().catch(() => {
-          // Browsers can block unmuted autoplay on a fresh load or refresh.
-          // Keep the video unmuted and wait for the first user gesture,
-          // then start playback with sound.
+          // Playback was blocked; wait for the next user gesture to resume.
           audioUnlockNeededRef.current = true;
           setPaused(true);
         });
@@ -1030,9 +1029,9 @@ const Reels = () => {
                   }}
                   src={resolveVideoUrl(reel.url)}
                   className="h-full w-full cursor-pointer object-contain"
-                  loop
                   playsInline
                   muted={muted}
+                  loop
                   preload={preloadFor(index)}
                   onPointerUp={handleTap}
                   onTimeUpdate={handleTimeUpdate}
