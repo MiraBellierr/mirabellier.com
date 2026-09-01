@@ -1,6 +1,6 @@
 import { joinApi } from "@/lib/config";
 
-export type FanArtSite = "safebooru" | "gelbooru" | "danbooru" | "pixiv";
+export type FanArtSite = "safebooru" | "pixiv";
 
 export type FanArtItem = {
   id: string;
@@ -61,7 +61,7 @@ function readNullableNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-const KNOWN_SITES: FanArtSite[] = ["safebooru", "gelbooru", "danbooru", "pixiv"];
+const KNOWN_SITES: FanArtSite[] = ["safebooru", "pixiv"];
 
 function proxyImageUrl(value: string) {
   if (!value) {
@@ -79,8 +79,7 @@ function normalizeItem(value: unknown): FanArtItem {
   const site = (KNOWN_SITES as string[]).includes(rawSite)
     ? (rawSite as FanArtSite)
     : "safebooru";
-  const isProxied =
-    site === "pixiv" || site === "danbooru" || site === "gelbooru";
+  const isProxied = site === "pixiv";
   const thumbnailUrl = readString(source.thumbnailUrl);
   const sampleUrl = readNullableString(source.sampleUrl);
   const imageUrl = readString(source.imageUrl);

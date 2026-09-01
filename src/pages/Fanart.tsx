@@ -16,12 +16,10 @@ import {
 } from "@/lib/fanart-api";
 
 const FANART_DESCRIPTION =
-  "Search anime fan art across Safebooru, Gelbooru, Danbooru, and Pixiv, with links back to each artist's original post.";
+  "Search anime fan art across Safebooru and Pixiv, with links back to each artist's original post.";
 
 const SITE_OPTIONS: Array<{ value: FanArtSite; label: string }> = [
   { value: "safebooru", label: "Safebooru" },
-  { value: "gelbooru", label: "Gelbooru" },
-  { value: "danbooru", label: "Danbooru" },
   { value: "pixiv", label: "Pixiv" },
 ];
 
@@ -333,10 +331,6 @@ const Fanart = () => {
   }, [showNsfwWarning]);
 
   const toggleSite = (site: FanArtSite) => {
-    if (site === "gelbooru" && rating === "safe") {
-      return;
-    }
-
     setSites((current) =>
       current.includes(site)
         ? current.filter((value) => value !== site)
@@ -345,17 +339,11 @@ const Fanart = () => {
   };
 
   const activeSites = (() => {
-    const selected = sites.filter((site) =>
-      rating === "safe" ? site !== "gelbooru" : true,
-    );
-
-    if (selected.length > 0) {
-      return selected;
+    if (sites.length > 0) {
+      return sites;
     }
 
-    return rating === "safe"
-      ? (["safebooru", "danbooru", "pixiv"] as FanArtSite[])
-      : (["safebooru", "gelbooru", "danbooru", "pixiv"] as FanArtSite[]);
+    return ["safebooru", "pixiv"] as FanArtSite[];
   })();
 
   const runSearch = async (input: { query: string; page?: number }) => {
@@ -470,40 +458,20 @@ const Fanart = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                  {SITE_OPTIONS.map((option) => {
-                    const isGelbooruLocked =
-                      option.value === "gelbooru" && rating === "safe";
-
-                    return (
-                      <label
-                        key={option.value}
-                        className={`flex items-center gap-1.5 ${
-                          isGelbooruLocked
-                            ? "cursor-not-allowed opacity-50"
-                            : "cursor-pointer"
-                        } text-blue-700 dark:text-purple-200`}
-                        title={
-                          isGelbooruLocked
-                            ? "Gelbooru is only available with the all ratings filter"
-                            : undefined
-                        }
-                      >
-                        <input
-                          type="checkbox"
-                          className="accent-blue-600"
-                          checked={sites.includes(option.value)}
-                          disabled={isGelbooruLocked}
-                          onChange={() => toggleSite(option.value)}
-                        />
-                        {option.label}
-                        {isGelbooruLocked ? (
-                          <span className="text-xs text-blue-400 dark:text-purple-300">
-                            (all ratings only)
-                          </span>
-                        ) : null}
-                      </label>
-                    );
-                  })}
+                  {SITE_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className="flex cursor-pointer items-center gap-1.5 text-blue-700 dark:text-purple-200"
+                    >
+                      <input
+                        type="checkbox"
+                        className="accent-blue-600"
+                        checked={sites.includes(option.value)}
+                        onChange={() => toggleSite(option.value)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
 
                   <select
                     className="ml-auto rounded-lg border border-blue-200 bg-white/80 px-2 py-1 text-sm text-blue-700 outline-none focus:border-blue-400 dark:border-purple-400/30 dark:bg-purple-900/40 dark:text-purple-200"
@@ -609,15 +577,15 @@ const Fanart = () => {
                   fan art notes
                 </h2>
                 <p>
-                  Results come from Safebooru, Gelbooru, and Danbooru tag
-                  searches, plus Pixiv when it is configured on the server.
+                  Results come from Safebooru tag searches, plus Pixiv when it
+                  is configured on the server.
                 </p>
                 <p>
                   Artwork stays on the original sites — this page only links to
                   the artist posts, it does not host anything.
                 </p>
                 <p>
-                  The safe rating filter is on by default. Gelbooru with “all
+                  The safe rating filter is on by default. Switching to “all
                   ratings” can include adult content.
                 </p>
               </div>
@@ -646,7 +614,7 @@ const Fanart = () => {
             </p>
             <p className="text-sm leading-relaxed">
               the safe only filter is on by default, but switching to all
-              ratings or enabling gelbooru can show explicit material.
+              ratings can show explicit material.
             </p>
             <p className="text-sm leading-relaxed">
               safe only does not guarantee safe results either — mislabeled or

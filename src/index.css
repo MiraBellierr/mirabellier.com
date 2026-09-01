@@ -2288,18 +2288,14 @@ h6 {
   border-color: #0096fa !important;
   color: rgb(23 37 84) !important;
 }
-.fanart-lightbox .fanart-site-badge--gelbooru { border-color: #2d94c4 !important; }
 .fanart-lightbox .fanart-site-badge--safebooru { border-color: #c98200 !important; }
-.fanart-lightbox .fanart-site-badge--danbooru { border-color: #c23a3a !important; }
 
 .dark .fanart-lightbox .fanart-site-badge {
   background: #0096fa !important;
   border-color: transparent !important;
   color: #ffffff !important;
 }
-.dark .fanart-lightbox .fanart-site-badge--gelbooru { background: #44b8e7 !important; }
 .dark .fanart-lightbox .fanart-site-badge--safebooru { background: #f7a800 !important; }
-.dark .fanart-lightbox .fanart-site-badge--danbooru { background: #e05a5a !important; }
 
 /* Global dark-mode text fix: blue text shades become light purples. */
 .dark .text-blue-950 { color: rgb(237 233 254) !important; }
