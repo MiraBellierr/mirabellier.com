@@ -341,9 +341,12 @@ const Reels = () => {
   const lastWheelNavRef = useRef(0);
   const lastTapRef = useRef(0);
   const tapTimeoutRef = useRef<number | null>(null);
-  const autoplayMutedRef = useRef(false);
+  const audioUnlockNeededRef = useRef(false);
   const audioUnlockAtRef = useRef(0);
   const fetchingMoreRef = useRef(false);
+  const forceUnmuteOnActivateRef = useRef(true);
+  const mutedRef = useRef(false);
+  const preplayedIndexRef = useRef(-1);
 
   const sharePageUrl = sharedVideoId
     ? `https://mirabellier.com/pixies/${sharedVideoId}`
@@ -364,6 +367,8 @@ const Reels = () => {
   useEffect(() => {
     let cancelled = false;
     fetchingMoreRef.current = false;
+    forceUnmuteOnActivateRef.current = true;
+    lastActiveIndexRef.current = -1;
     fetchReelsFeed(sharedVideoId, { limit: FEED_BATCH_SIZE })
       .then((data) => {
         if (cancelled) return;
@@ -447,6 +452,30 @@ const Reels = () => {
     goTo(activeIndexRef.current - 1);
   }, [goTo]);
 
+  // Start the newly active video synchronously inside the navigation gesture.
+  // Browsers (especially iOS) only allow unmuted playback tied to a user gesture.
+  const playActiveImmediately = useCallback(() => {
+    const index = activeIndexRef.current;
+    if (lastActiveIndexRef.current === index) return;
+    const video = videoRefs.current[index];
+    if (!video) return;
+    videoRefs.current.forEach((entry, entryIndex) => {
+      if (entryIndex !== index && entry) entry.pause();
+    });
+    video.currentTime = 0;
+    video.muted = mutedRef.current;
+    preplayedIndexRef.current = index;
+    void video.play().catch(() => {
+      audioUnlockNeededRef.current = true;
+      setPaused(true);
+    });
+  }, []);
+
+  // Keep mutedRef in sync so gesture handlers never read a stale mute state.
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
+
   // Keep playback in sync with the active slide
   useEffect(() => {
     const activeChanged = lastActiveIndexRef.current !== activeIndex;
@@ -454,17 +483,28 @@ const Reels = () => {
       if (!video) return;
       if (index === activeIndex) {
         if (activeChanged) {
-          // Every navigation (up or down) starts the video from the beginning.
-          video.currentTime = 0;
+          // Every navigation (up or down) starts the video from the beginning,
+          // unless playback already started synchronously in the gesture.
+          if (preplayedIndexRef.current !== index) {
+            video.currentTime = 0;
+          }
+          if (forceUnmuteOnActivateRef.current) {
+            // Page entry or a shared pixie link: unmute first, then play.
+            forceUnmuteOnActivateRef.current = false;
+            video.muted = false;
+            setMuted(false);
+          } else {
+            video.muted = muted;
+          }
+        } else {
+          video.muted = muted;
         }
-        video.muted = muted;
         void video.play().catch(() => {
           // Browsers can block unmuted autoplay on a fresh load or refresh.
-          // Play muted for now, then unmute on the first user gesture.
-          autoplayMutedRef.current = true;
-          video.muted = true;
-          void video.play().catch(() => {});
-          setMuted(true);
+          // Keep the video unmuted and wait for the first user gesture,
+          // then start playback with sound.
+          audioUnlockNeededRef.current = true;
+          setPaused(true);
         });
       } else {
         video.pause();
@@ -480,20 +520,20 @@ const Reels = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, reels]);
 
-  // Auto-unmute as soon as the user interacts with the page,
+  // Start playback with sound as soon as the user interacts with the page,
   // unless they used the mute toggle themselves.
   useEffect(() => {
     const unlockAudio = (event: Event) => {
-      if (!autoplayMutedRef.current) return;
+      if (!audioUnlockNeededRef.current) return;
       if (
         (event.target as HTMLElement | null)?.closest?.(
           "[data-mute-toggle]",
         )
       ) {
-        autoplayMutedRef.current = false;
+        audioUnlockNeededRef.current = false;
         return;
       }
-      autoplayMutedRef.current = false;
+      audioUnlockNeededRef.current = false;
       audioUnlockAtRef.current = Date.now();
       const video = videoRefs.current[activeIndexRef.current];
       if (video) {
@@ -501,6 +541,7 @@ const Reels = () => {
         void video.play().catch(() => {});
       }
       setMuted(false);
+      setPaused(false);
     };
     window.addEventListener("pointerdown", unlockAudio);
     window.addEventListener("keydown", unlockAudio);
@@ -532,15 +573,17 @@ const Reels = () => {
       if (event.key === "ArrowDown") {
         event.preventDefault();
         goNext();
+        playActiveImmediately();
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
         goPrev();
+        playActiveImmediately();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goNext, goPrev]);
+  }, [goNext, goPrev, playActiveImmediately]);
 
   // Wheel navigation (native listener so we can preventDefault)
   useEffect(() => {
@@ -566,12 +609,13 @@ const Reels = () => {
       } else {
         goPrev();
       }
+      playActiveImmediately();
       wheelAccumRef.current = 0;
       lastWheelNavRef.current = now;
     };
     window.addEventListener("wheel", handleWheel, { passive: false });
     return () => window.removeEventListener("wheel", handleWheel);
-  }, [reels.length, goNext, goPrev]);
+  }, [reels.length, goNext, goPrev, playActiveImmediately]);
 
   const handleTouchStart = (event: React.TouchEvent) => {
     if (commentPanelOpenRef.current) return;
@@ -619,6 +663,7 @@ const Reels = () => {
     } else {
       goTo(activeIndexRef.current - 1);
     }
+    playActiveImmediately();
     setDragOffset(0);
     setIsDragging(false);
   };
@@ -626,6 +671,11 @@ const Reels = () => {
   const togglePlayPause = () => {
     const video = videoRefs.current[activeIndexRef.current];
     if (!video) return;
+    // Ignore the click that just unlocked audio playback.
+    if (Date.now() - audioUnlockAtRef.current < 600) {
+      audioUnlockAtRef.current = 0;
+      return;
+    }
     if (video.paused) {
       void video.play().catch(() => {});
       setPaused(false);
@@ -697,7 +747,7 @@ const Reels = () => {
   const handleToggleMute = () => {
     const video = videoRefs.current[activeIndex];
     const next = !muted;
-    autoplayMutedRef.current = false;
+    audioUnlockNeededRef.current = false;
     if (video) {
       video.muted = next;
       if (!next) {
