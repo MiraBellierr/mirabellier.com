@@ -42,7 +42,11 @@ const STAGE_TIPS: Record<string, string[]> = {
     "Rate limits may slow the download down — hanging tight…",
     "Grabbing the best quality available…",
   ],
-  process: ["Optimizing the avatar…", "Polishing metadata…"],
+  process: [
+    "Converting the video so iPhones and iPads can play it…",
+    "Re-encoding to H.264 for maximum device support…",
+    "Polishing the video container…",
+  ],
   store: ["Saving the video to the library…", "Attaching the author…"],
   done: ["All done!", "Ready!"],
 };
