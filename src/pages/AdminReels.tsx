@@ -4,19 +4,92 @@ import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
 import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
+import { API_BASE } from "@/lib/config";
 import {
+  fetchSocialImportStatus,
+  fetchVideoResolveStatus,
   fetchVideoTagSuggestions,
   MAX_VIDEO_TAGS,
   MAX_VIDEO_TITLE_LENGTH,
   normalizeVideoTags,
-  resolveTikTokVideo,
+  resolveAvatarUrl,
+  startSocialImport,
+  startVideoResolve,
   uploadAdminReel,
-  type TikTokVideoInfo,
+  type ResolvedVideoInfo,
 } from "@/lib/videos";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import kannaPolice from "@/assets/anime/kanna-police.webp";
+
+type JobView = {
+  progress: number;
+  message: string;
+  state: string;
+  stage: string;
+};
+
+const STAGE_TIPS: Record<string, string[]> = {
+  queued: ["Starting up…", "Queuing the request…"],
+  resolve: [
+    "Looking up the video and its author…",
+    "Fetching username, caption and avatar…",
+    "Platforms throttle scrapes in waves — retrying automatically…",
+  ],
+  download: [
+    "Streaming the video down to the server…",
+    "Rate limits may slow the download down — hanging tight…",
+    "Grabbing the best quality available…",
+  ],
+  process: ["Optimizing the avatar…", "Polishing metadata…"],
+  store: ["Saving the video to the library…", "Attaching the author…"],
+  done: ["All done!", "Ready!"],
+};
+
+function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function ProgressBlock({ job }: { job: JobView | null }) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!job) return;
+    const interval = window.setInterval(() => setTick((t) => t + 1), 1000);
+    return () => window.clearInterval(interval);
+  }, [job]);
+  if (!job) return null;
+
+  const tips = STAGE_TIPS[job.stage] || STAGE_TIPS.queued;
+  const liveDescription = tips[tick % tips.length];
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-3 text-xs text-blue-600 dark:text-purple-300">
+        <span className="flex items-center gap-2">
+          <span
+            className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-pink-500 border-t-transparent"
+            aria-hidden
+          />
+          <span>{job.message}</span>
+        </span>
+        <span className="font-bold tabular-nums">
+          {Math.round(job.progress)}%
+        </span>
+      </div>
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-blue-100 dark:bg-purple-800">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-pink-400 to-pink-600 transition-all duration-500 ease-linear"
+          style={{ width: `${job.progress}%` }}
+        />
+      </div>
+      <p className="text-xs text-blue-400 dark:text-purple-400">
+        {liveDescription} ({formatElapsed(tick)})
+      </p>
+    </div>
+  );
+}
 
 const AdminReels = () => {
   const auth = useAuth();
@@ -32,13 +105,18 @@ const AdminReels = () => {
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [importJob, setImportJob] = useState<JobView | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpload, setLastUpload] = useState<string | null>(null);
-  const [tiktokUrl, setTiktokUrl] = useState("");
-  const [isFetchingTikTok, setIsFetchingTikTok] = useState(false);
-  const [fetchedInfo, setFetchedInfo] = useState<TikTokVideoInfo | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [resolvedUrl, setResolvedUrl] = useState("");
+  const [isResolving, setIsResolving] = useState(false);
+  const [resolvedInfo, setResolvedInfo] = useState<ResolvedVideoInfo | null>(
+    null,
+  );
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [resolveJob, setResolveJob] = useState<JobView | null>(null);
 
   usePageSeo({
     canonical: "https://mirabellier.com/admin/pixies",
@@ -107,34 +185,63 @@ const AdminReels = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!videoFile) return;
+    if (!videoFile && !(resolvedUrl && resolvedInfo)) return;
     const normalizedTags = normalizeVideoTags([...tags, tagInput]);
-    if (normalizedTags.length === 0) {
-      setMessage("Add at least one tag so people can find this video");
+    if (!username.trim()) {
+      setMessage("Username cannot be empty");
       return;
     }
-    if (!/^[^/\\]{3,32}$/u.test(username.trim())) {
-      setMessage("Username must be 3-32 characters without slashes");
+    if (Array.from(username.trim()).length > 32) {
+      setMessage("Username must be 32 characters or fewer");
       return;
     }
     setIsUploading(true);
     setUploadProgress(0);
+    setImportJob(null);
     setMessage(null);
     try {
-      const durationSeconds = await readVideoDuration(videoFile);
-      await uploadAdminReel({
-        file: videoFile,
-        title: videoTitle,
-        tags: normalizedTags,
-        username,
-        avatarUrl,
-        durationSeconds,
-        onProgress: setUploadProgress,
-      });
-      setVideoFile(null);
+      if (videoFile) {
+        const durationSeconds = await readVideoDuration(videoFile);
+        await uploadAdminReel({
+          file: videoFile,
+          title: videoTitle,
+          tags: normalizedTags,
+          username,
+          avatarUrl,
+          durationSeconds,
+          onProgress: setUploadProgress,
+        });
+        setVideoFile(null);
+      } else {
+        const { jobId } = await startSocialImport({
+          url: resolvedUrl,
+          title: videoTitle,
+          tags: normalizedTags,
+          username: username.trim(),
+          avatarUrl,
+        });
+        for (;;) {
+          const status = await fetchSocialImportStatus(jobId);
+          setImportJob({
+            progress: status.progress,
+            message: status.message,
+            state: status.state,
+            stage: status.stage,
+          });
+          if (status.state === "done") break;
+          if (status.state === "error") {
+            throw new Error(status.error || "Import failed");
+          }
+          await new Promise((resolve) => setTimeout(resolve, 700));
+        }
+      }
       setVideoTitle("");
       setTags([]);
       setTagInput("");
+      setSourceUrl("");
+      setResolvedUrl("");
+      setResolvedInfo(null);
+      setResolveError(null);
       setLastUpload(username.trim());
       showToast("Video uploaded!");
     } catch (error) {
@@ -144,29 +251,52 @@ const AdminReels = () => {
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
+      setImportJob(null);
     }
   };
 
-  const handleTikTokFetch = async (e: React.FormEvent) => {
+  const handleResolve = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = tiktokUrl.trim();
-    if (!trimmed || isFetchingTikTok) return;
-    setIsFetchingTikTok(true);
-    setFetchError(null);
-    setFetchedInfo(null);
+    const trimmed = sourceUrl.trim();
+    if (!trimmed || isResolving || isUploading) return;
+    setIsResolving(true);
+    setResolveError(null);
+    setResolvedInfo(null);
+    setResolveJob(null);
+    setResolvedUrl("");
     try {
-      const resolved = await resolveTikTokVideo(trimmed);
-      setFetchedInfo(resolved);
-      setUsername(resolved.username);
-      setAvatarUrl(resolved.avatarUrl || "");
-      setVideoTitle(resolved.caption || "");
-      setTags(normalizeVideoTags(resolved.hashtags));
+      const { jobId } = await startVideoResolve(trimmed);
+      for (;;) {
+        const status = await fetchVideoResolveStatus(jobId);
+        setResolveJob({
+          progress: status.progress,
+          message: status.message,
+          state: status.state,
+          stage: status.stage,
+        });
+        if (status.state === "done") {
+          const resolved = status.result;
+          if (!resolved) throw new Error("No details returned");
+          setResolvedUrl(trimmed);
+          setResolvedInfo(resolved);
+          setUsername(Array.from(resolved.username).slice(0, 32).join(""));
+          setAvatarUrl(resolved.avatarUrl || "");
+          setVideoTitle(resolved.caption || "");
+          setTags(normalizeVideoTags(resolved.hashtags));
+          break;
+        }
+        if (status.state === "error") {
+          throw new Error(status.error || "Failed to fetch video info");
+        }
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      }
     } catch (err) {
-      setFetchError(
-        err instanceof Error ? err.message : "Failed to fetch TikTok info",
+      setResolveError(
+        err instanceof Error ? err.message : "Failed to fetch video info",
       );
     } finally {
-      setIsFetchingTikTok(false);
+      setIsResolving(false);
+      setResolveJob(null);
     }
   };
 
@@ -254,51 +384,48 @@ const AdminReels = () => {
                 </Link>
               </div>
               <p className="mt-1 text-sm text-blue-500 dark:text-purple-300">
-                Paste a TikTok link to auto-fill the details below, or fill
-                them manually. Download the video with{" "}
-                <a
-                  href="https://snaptik.app/en3"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-pink-500 hover:underline"
-                >
-                  snaptik
-                </a>
-                , then choose the file below. New usernames get the avatar URL
-                you provide; existing users keep their own avatar.
+                Paste a TikTok, Instagram reel, or YouTube Shorts link to
+                auto-fill the details below — the video downloads and imports
+                automatically when you submit. You can also fill the form
+                manually and upload a file instead. The avatar URL updates the
+                author's avatar when they're a placeholder author; real
+                registered accounts always keep their own avatar.
               </p>
 
-              <form
-                onSubmit={handleTikTokFetch}
-                className="mt-4 flex gap-2"
-              >
+              <form onSubmit={handleResolve} className="mt-4 flex gap-2">
                 <input
-                  value={tiktokUrl}
-                  onChange={(e) => setTiktokUrl(e.target.value)}
-                  placeholder="https://www.tiktok.com/@user/video/123..."
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  placeholder="TikTok / Instagram reel / YouTube Shorts link..."
                   type="url"
                   className="flex-1 p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
                 />
                 <button
                   type="submit"
-                  disabled={!tiktokUrl.trim() || isFetchingTikTok}
+                  disabled={!sourceUrl.trim() || isResolving || isUploading}
                   className="shrink-0 bg-pink-500 text-white px-4 py-2 rounded-full shadow-sm hover:scale-105 transform transition disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  {isFetchingTikTok ? "Fetching..." : "Fetch info"}
+                  {isResolving ? "Fetching..." : "Fetch info"}
                 </button>
               </form>
 
-              {fetchError && (
-                <div className="mt-2 text-red-600 dark:text-pink-300">
-                  {fetchError}
+              {resolveJob && !importJob && uploadProgress === null && (
+                <div className="mt-3">
+                  <ProgressBlock job={resolveJob} />
                 </div>
               )}
 
-              {fetchedInfo && !fetchError && (
+              {resolveError && (
+                <div className="mt-2 text-red-600 dark:text-pink-300">
+                  {resolveError}
+                </div>
+              )}
+
+              {resolvedInfo && !resolveError && (
                 <div className="mt-3 flex items-center gap-3 rounded-xl border border-blue-200 dark:border-purple-600 bg-blue-50/60 dark:bg-purple-800/40 p-3">
-                  {fetchedInfo.coverUrl && (
+                  {resolvedInfo.coverUrl && (
                     <img
-                      src={fetchedInfo.coverUrl}
+                      src={resolvedInfo.coverUrl}
                       alt="video cover"
                       className="h-14 w-21 rounded-lg border border-blue-200 dark:border-purple-600 object-cover"
                       onError={(e) => {
@@ -308,16 +435,19 @@ const AdminReels = () => {
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-blue-700 dark:text-purple-200 truncate">
-                      @{fetchedInfo.username}
-                      {fetchedInfo.durationSeconds != null
-                        ? ` · ${Math.round(fetchedInfo.durationSeconds)}s`
+                      @{resolvedInfo.username}
+                      {resolvedInfo.durationSeconds != null
+                        ? ` · ${Math.round(resolvedInfo.durationSeconds)}s`
+                        : ""}
+                      {resolvedInfo.platform
+                        ? ` · ${resolvedInfo.platform}`
                         : ""}
                     </p>
                     <p className="text-xs text-blue-500 dark:text-purple-300">
-                      Details filled in below — attach the downloaded file to
-                      upload.
+                      Details filled in below — submitting downloads and
+                      imports the video automatically.
                     </p>
-                    {!fetchedInfo.avatarUrl && (
+                    {!resolvedInfo.avatarUrl && (
                       <p className="text-xs text-amber-600 dark:text-amber-300">
                         No avatar found — paste the avatar URL below if you
                         have one.
@@ -330,7 +460,10 @@ const AdminReels = () => {
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-blue-600 dark:text-purple-300">
-                    Video file
+                    Video file{" "}
+                    {!resolvedUrl && (
+                      <span className="text-pink-500">*</span>
+                    )}
                   </label>
                   <input
                     type="file"
@@ -340,6 +473,11 @@ const AdminReels = () => {
                     }
                     className="mt-2"
                   />
+                  {resolvedUrl && !videoFile && (
+                    <p className="mt-1 text-xs text-blue-500 dark:text-purple-400">
+                      Leave empty to download the video from the link above.
+                    </p>
+                  )}
                   {videoFile && (
                     <p className="mt-1 text-xs text-blue-500 dark:text-purple-400">
                       {videoFile.name} (
@@ -375,21 +513,26 @@ const AdminReels = () => {
                   </div>
                 </div>
 
-                {avatarUrl.trim() && /^https?:\/\//.test(avatarUrl.trim()) && (
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={avatarUrl.trim()}
-                      alt="avatar preview"
-                      className="h-10 w-10 rounded-full border border-blue-200 dark:border-purple-600 object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                    <p className="text-xs text-blue-500 dark:text-purple-400">
-                      Avatar preview
-                    </p>
-                  </div>
-                )}
+                {avatarUrl.trim() &&
+                  /^(\/images\/|https?:\/\/)/.test(avatarUrl.trim()) && (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={
+                          avatarUrl.trim().startsWith("/")
+                            ? (resolveAvatarUrl(avatarUrl.trim()) ?? "")
+                            : `${API_BASE}/videos/admin/avatar-proxy?url=${encodeURIComponent(avatarUrl.trim())}`
+                        }
+                        alt="avatar preview"
+                        className="h-10 w-10 rounded-full border border-blue-200 dark:border-purple-600 object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      <p className="text-xs text-blue-500 dark:text-purple-400">
+                        Avatar preview
+                      </p>
+                    </div>
+                  )}
 
                 <div>
                   <label className="block text-sm font-medium text-blue-600 dark:text-purple-300">
@@ -411,7 +554,7 @@ const AdminReels = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-blue-600 dark:text-purple-300">
-                    Tags <span className="text-pink-500">*</span>
+                    Tags
                   </label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {tags.map((tag) => (
@@ -447,7 +590,7 @@ const AdminReels = () => {
                       }}
                       placeholder={
                         tags.length === 0
-                          ? "Add at least one tag, e.g. gaming, anime..."
+                          ? "Add a tag (optional), e.g. gaming, anime..."
                           : "Add another tag..."
                       }
                       maxLength={20}
@@ -470,6 +613,10 @@ const AdminReels = () => {
                     )}
                   </div>
                 </div>
+
+                {importJob && !resolveJob && (
+                  <ProgressBlock job={importJob} />
+                )}
 
                 {uploadProgress !== null && (
                   <div className="h-2 w-full overflow-hidden rounded-full bg-blue-100 dark:bg-purple-800">
@@ -495,13 +642,19 @@ const AdminReels = () => {
                 <button
                   type="submit"
                   disabled={
-                    !videoFile ||
+                    (!videoFile && !(resolvedUrl && resolvedInfo)) ||
                     isUploading ||
-                    (tags.length === 0 && !tagInput.trim())
+                    isResolving
                   }
                   className="inline-flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-full shadow-sm hover:scale-105 transform transition disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  {isUploading ? "Uploading..." : "Upload video"}
+                  {isUploading
+                    ? videoFile
+                      ? "Uploading..."
+                      : "Downloading & importing..."
+                    : videoFile
+                      ? "Upload video"
+                      : "Download & import"}
                 </button>
               </form>
             </div>
@@ -515,14 +668,32 @@ const AdminReels = () => {
                   admin notes
                 </h2>
                 <p>
+                  • Paste a TikTok / Instagram reel / YouTube Shorts link and
+                  press "Download & import" to download and upload the video
+                  in one go.
+                </p>
+                <p>
+                  • If automatic download is blocked, download the video
+                  manually and upload it as a file instead.
+                </p>
+                <p>
                   • Videos are attributed to the username you enter — if it
                   doesn't exist yet, a new author is created with your avatar
                   URL.
                 </p>
                 <p>
-                  • Existing usernames keep their current profile avatar.
+                  • Placeholder authors (no registered account) get their
+                  avatar refreshed on every new upload; real registered
+                  accounts always keep their own avatar.
                 </p>
-                <p>• Tags are required so the video can appear in feeds.</p>
+                <p>
+                  • Tags are optional — hashtags from the link are removed
+                  from the caption and offered as tag suggestions instead.
+                </p>
+                <p>
+                  • Resolved avatars are converted to PNG and hosted
+                  locally.
+                </p>
               </div>
             </div>
           </aside>

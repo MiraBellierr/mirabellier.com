@@ -244,7 +244,10 @@ export function uploadAdminReel(input: AdminUploadReelInput): Promise<Reel> {
   });
 }
 
-export interface TikTokVideoInfo {
+export type VideoPlatform = "tiktok" | "instagram" | "youtube";
+
+export interface ResolvedVideoInfo {
+  platform?: VideoPlatform;
   username: string;
   avatarUrl: string;
   caption: string;
@@ -253,20 +256,147 @@ export interface TikTokVideoInfo {
   coverUrl: string | null;
 }
 
-export async function resolveTikTokVideo(url: string): Promise<TikTokVideoInfo> {
-  const res = await fetch(`${API_BASE}/videos/admin/tiktok-resolve`, {
+function isTikTokUrl(url: string): boolean {
+  try {
+    return new URL(url)
+      .hostname.replace(/^www\./, "")
+      .endsWith("tiktok.com");
+  } catch {
+    return false;
+  }
+}
+
+export async function resolveSocialVideo(url: string): Promise<ResolvedVideoInfo> {
+  const res = await fetch(`${API_BASE}/videos/admin/resolve`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({ url }),
   });
   const data = (await res.json().catch(() => null)) as
-    | (TikTokVideoInfo & { error?: string })
+    | (ResolvedVideoInfo & { error?: string })
     | null;
   if (!res.ok || !data) {
-    throw new Error(data?.error || "Failed to resolve TikTok video");
+    if (res.status === 404 && isTikTokUrl(url)) {
+      const legacy = await fetch(`${API_BASE}/videos/admin/tiktok-resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ url }),
+      });
+      const legacyData = (await legacy.json().catch(() => null)) as
+        | (ResolvedVideoInfo & { error?: string })
+        | null;
+      if (!legacy.ok || !legacyData) {
+        throw new Error(legacyData?.error || "Failed to resolve video");
+      }
+      return legacyData;
+    }
+    throw new Error(data?.error || "Failed to resolve video");
   }
   return data;
+}
+
+export interface ImportSocialReelInput {
+  url: string;
+  title: string;
+  tags: string[];
+  username: string;
+  avatarUrl: string;
+}
+
+export interface SocialImportStatus {
+  jobId: string;
+  state: "queued" | "running" | "done" | "error";
+  stage: string;
+  message: string;
+  progress: number;
+  error?: string | null;
+  reel?: Reel | null;
+}
+
+export interface VideoResolveResult {
+  platform?: VideoPlatform;
+  username: string;
+  avatarUrl: string;
+  caption: string;
+  hashtags: string[];
+  durationSeconds: number | null;
+  coverUrl: string;
+}
+
+export interface VideoJobStatus {
+  jobId: string;
+  state: "queued" | "running" | "done" | "error";
+  stage: string;
+  message: string;
+  progress: number;
+  error?: string | null;
+  result?: VideoResolveResult | null;
+  reel?: Reel | null;
+}
+
+async function startVideoJob(
+  endpoint: string,
+  body: unknown,
+): Promise<{ jobId: string }> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => null)) as
+    | ({ jobId?: string } & { error?: string })
+    | null;
+  if (!res.ok || !data || typeof data.jobId !== "string") {
+    throw new Error(data?.error || "Failed to start job");
+  }
+  return { jobId: data.jobId };
+}
+
+async function fetchVideoJobStatus(
+  jobId: string,
+  endpoint: string,
+): Promise<VideoJobStatus> {
+  const res = await fetch(`${API_BASE}${endpoint}/${jobId}`, {
+    credentials: "include",
+  });
+  const data = (await res.json().catch(() => null)) as
+    | (VideoJobStatus & { error?: string })
+    | null;
+  if (!res.ok || !data) {
+    throw new Error(data?.error || "Failed to load job status");
+  }
+  return data;
+}
+
+export function startVideoResolve(url: string): Promise<{ jobId: string }> {
+  return startVideoJob("/videos/admin/resolve", { url });
+}
+
+export function fetchVideoResolveStatus(
+  jobId: string,
+): Promise<VideoJobStatus> {
+  return fetchVideoJobStatus(jobId, "/videos/admin/resolve/status");
+}
+
+export function startSocialImport(
+  input: ImportSocialReelInput,
+): Promise<{ jobId: string }> {
+  return startVideoJob("/videos/admin/import", {
+    url: input.url,
+    title: input.title,
+    tags: input.tags,
+    username: input.username,
+    avatarUrl: input.avatarUrl,
+  });
+}
+
+export function fetchSocialImportStatus(
+  jobId: string,
+): Promise<VideoJobStatus> {
+  return fetchVideoJobStatus(jobId, "/videos/admin/import/status");
 }
 
 export async function fetchReelComments(id: string): Promise<ReelComment[]> {
