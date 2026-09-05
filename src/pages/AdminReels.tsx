@@ -375,8 +375,8 @@ const AdminReels = () => {
           <main className="w-full lg:w-3/5 p-4">
             <div className="space-y-6">
               <div className="card-border rounded-2xl p-6 shadow-lg bg-white/90 dark:bg-purple-900/80">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-2xl font-bold text-blue-700 dark:text-purple-200 flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                <h2 className="text-xl sm:text-2xl font-bold text-blue-700 dark:text-purple-200 flex items-center gap-2">
                   <span>🎬</span>
                   <span>Upload as anyone</span>
                 </h2>
@@ -396,13 +396,13 @@ const AdminReels = () => {
                 registered accounts always keep their own avatar.
               </p>
 
-              <form onSubmit={handleResolve} className="mt-4 flex gap-2">
+              <form onSubmit={handleResolve} className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <input
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
                   placeholder="TikTok / Instagram reel / YouTube Shorts link..."
                   type="url"
-                  className="flex-1 p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
+                  className="min-w-0 flex-1 p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
                 />
                 <button
                   type="submit"
@@ -483,7 +483,7 @@ const AdminReels = () => {
                     </p>
                   )}
                   {videoFile && (
-                    <p className="mt-1 text-xs text-blue-500 dark:text-purple-400">
+                    <p className="mt-1 break-words text-xs text-blue-500 dark:text-purple-400">
                       {videoFile.name} (
                       {(videoFile.size / (1024 * 1024)).toFixed(1)} MB)
                     </p>
