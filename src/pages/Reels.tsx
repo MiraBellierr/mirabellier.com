@@ -454,6 +454,24 @@ const Reels = () => {
 
   // Start the newly active video synchronously inside the navigation gesture.
   // Browsers (especially iOS) only allow unmuted playback tied to a user gesture.
+  const startPlayback = useCallback(
+    (index: number, onBlocked?: () => void) => {
+      const video = videoRefs.current[index];
+      if (!video) return;
+      void video.play().catch((error: unknown) => {
+        // The browser aborts a pending play() with AbortError when the video
+        // is paused because the slide changed before playback started. That is
+        // not a failure and must not touch the paused state.
+        if ((error as DOMException | undefined)?.name === "AbortError") return;
+        // Only apply the fallback if this video is still the active one; a late
+        // rejection from a superseded slide must not stale out the controls.
+        if (videoRefs.current[activeIndexRef.current] !== video) return;
+        onBlocked?.();
+      });
+    },
+    [],
+  );
+
   const playActiveImmediately = useCallback(() => {
     const index = activeIndexRef.current;
     if (lastActiveIndexRef.current === index) return;
@@ -465,11 +483,11 @@ const Reels = () => {
     video.currentTime = 0;
     video.muted = mutedRef.current;
     preplayedIndexRef.current = index;
-    void video.play().catch(() => {
+    startPlayback(index, () => {
       audioUnlockNeededRef.current = true;
       setPaused(true);
     });
-  }, []);
+  }, [startPlayback]);
 
   // Keep mutedRef in sync so gesture handlers never read a stale mute state.
   useEffect(() => {
@@ -500,8 +518,7 @@ const Reels = () => {
         } else {
           video.muted = muted;
         }
-        void video.play().catch(() => {
-          // Playback was blocked; wait for the next user gesture to resume.
+        startPlayback(index, () => {
           audioUnlockNeededRef.current = true;
           setPaused(true);
         });
@@ -537,7 +554,7 @@ const Reels = () => {
       const video = videoRefs.current[activeIndexRef.current];
       if (video) {
         video.muted = false;
-        void video.play().catch(() => {});
+        startPlayback(activeIndexRef.current);
       }
       setMuted(false);
       setPaused(false);
@@ -552,6 +569,7 @@ const Reels = () => {
       window.removeEventListener("wheel", unlockAudio);
       window.removeEventListener("touchstart", unlockAudio);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Keyboard navigation
@@ -676,7 +694,7 @@ const Reels = () => {
       return;
     }
     if (video.paused) {
-      void video.play().catch(() => {});
+      startPlayback(activeIndexRef.current, () => setPaused(true));
       setPaused(false);
     } else {
       video.pause();
@@ -750,7 +768,7 @@ const Reels = () => {
     if (video) {
       video.muted = next;
       if (!next) {
-        void video.play().catch(() => {
+        startPlayback(activeIndexRef.current, () => {
           video.muted = true;
           setMuted(true);
         });
@@ -1033,6 +1051,16 @@ const Reels = () => {
                   muted={muted}
                   loop
                   preload={preloadFor(index)}
+                  onPlay={() => {
+                    // Keep the control visibility in sync with the real
+                    // playback state of the active video.
+                    if (index !== activeIndexRef.current) return;
+                    setPaused(false);
+                  }}
+                  onPause={() => {
+                    if (index !== activeIndexRef.current) return;
+                    setPaused(true);
+                  }}
                   onPointerUp={handleTap}
                   onTimeUpdate={handleTimeUpdate}
                 />
