@@ -12,6 +12,7 @@ import {
   MAX_VIDEO_TAGS,
   MAX_VIDEO_TITLE_LENGTH,
   normalizeVideoTags,
+  pollVideoJob,
   resolveAvatarUrl,
   startSocialImport,
   startVideoResolve,
@@ -121,6 +122,8 @@ const AdminReels = () => {
   );
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [resolveJob, setResolveJob] = useState<JobView | null>(null);
+  const [resolveNotice, setResolveNotice] = useState<string | null>(null);
+  const [importNotice, setImportNotice] = useState<string | null>(null);
 
   usePageSeo({
     canonical: "https://mirabellier.com/admin/pixies",
@@ -202,6 +205,7 @@ const AdminReels = () => {
     setIsUploading(true);
     setUploadProgress(0);
     setImportJob(null);
+    setImportNotice(null);
     setMessage(null);
     try {
       if (videoFile) {
@@ -217,27 +221,34 @@ const AdminReels = () => {
         });
         setVideoFile(null);
       } else {
-        const { jobId } = await startSocialImport({
-          url: resolvedUrl,
-          title: videoTitle,
-          tags: normalizedTags,
-          username: username.trim(),
-          avatarUrl,
-        });
-        for (;;) {
-          const status = await fetchSocialImportStatus(jobId);
-          setImportJob({
-            progress: status.progress,
-            message: status.message,
-            state: status.state,
-            stage: status.stage,
-          });
-          if (status.state === "done") break;
-          if (status.state === "error") {
-            throw new Error(status.error || "Import failed");
-          }
-          await new Promise((resolve) => setTimeout(resolve, 700));
-        }
+        await pollVideoJob(
+          () =>
+            startSocialImport({
+              url: resolvedUrl,
+              title: videoTitle,
+              tags: normalizedTags,
+              username: username.trim(),
+              avatarUrl,
+            }),
+          fetchSocialImportStatus,
+          (current) =>
+            setImportJob({
+              progress: current.progress,
+              message: current.message,
+              state: current.state,
+              stage: current.stage,
+            }),
+          {
+            onRestart: () => {
+              // The backend restarted mid-import and the job vanished —
+              // restart it transparently (pollVideoJob starts a new job).
+              setImportJob(null);
+              setImportNotice(
+                "The server restarted while importing — retrying automatically…",
+              );
+            },
+          },
+        );
       }
       setVideoTitle("");
       setTags([]);
@@ -256,6 +267,7 @@ const AdminReels = () => {
       setIsUploading(false);
       setUploadProgress(null);
       setImportJob(null);
+      setImportNotice(null);
     }
   };
 
@@ -265,35 +277,40 @@ const AdminReels = () => {
     if (!trimmed || isResolving || isUploading) return;
     setIsResolving(true);
     setResolveError(null);
+    setResolveNotice(null);
     setResolvedInfo(null);
     setResolveJob(null);
     setResolvedUrl("");
     try {
-      const { jobId } = await startVideoResolve(trimmed);
-      for (;;) {
-        const status = await fetchVideoResolveStatus(jobId);
-        setResolveJob({
-          progress: status.progress,
-          message: status.message,
-          state: status.state,
-          stage: status.stage,
-        });
-        if (status.state === "done") {
-          const resolved = status.result;
-          if (!resolved) throw new Error("No details returned");
-          setResolvedUrl(trimmed);
-          setResolvedInfo(resolved);
-          setUsername(Array.from(resolved.username).slice(0, 32).join(""));
-          setAvatarUrl(resolved.avatarUrl || "");
-          setVideoTitle(resolved.caption || "");
-          setTags(normalizeVideoTags(resolved.hashtags));
-          break;
-        }
-        if (status.state === "error") {
-          throw new Error(status.error || "Failed to fetch video info");
-        }
-        await new Promise((resolve) => setTimeout(resolve, 700));
-      }
+      const status = await pollVideoJob(
+        () => startVideoResolve(trimmed),
+        fetchVideoResolveStatus,
+        (current) =>
+          setResolveJob({
+            progress: current.progress,
+            message: current.message,
+            state: current.state,
+            stage: current.stage,
+          }),
+        {
+          onRestart: () => {
+            // The backend restarted mid-fetch and the job vanished — restart
+            // it transparently (pollVideoJob starts a new job).
+            setResolveJob(null);
+            setResolveNotice(
+              "The server restarted while fetching — retrying automatically…",
+            );
+          },
+        },
+      );
+      const resolved = status.result;
+      if (!resolved) throw new Error("No details returned");
+      setResolvedUrl(trimmed);
+      setResolvedInfo(resolved);
+      setUsername(Array.from(resolved.username).slice(0, 32).join(""));
+      setAvatarUrl(resolved.avatarUrl || "");
+      setVideoTitle(resolved.caption || "");
+      setTags(normalizeVideoTags(resolved.hashtags));
     } catch (err) {
       setResolveError(
         err instanceof Error ? err.message : "Failed to fetch video info",
@@ -301,6 +318,7 @@ const AdminReels = () => {
     } finally {
       setIsResolving(false);
       setResolveJob(null);
+      setResolveNotice(null);
     }
   };
 
@@ -422,6 +440,12 @@ const AdminReels = () => {
               {resolveError && (
                 <div className="mt-2 text-red-600 dark:text-pink-300">
                   {resolveError}
+                </div>
+              )}
+
+              {!resolveError && resolveNotice && (
+                <div className="mt-2 text-xs text-amber-600 dark:text-amber-300">
+                  {resolveNotice}
                 </div>
               )}
 
@@ -620,6 +644,12 @@ const AdminReels = () => {
 
                 {importJob && !resolveJob && (
                   <ProgressBlock job={importJob} />
+                )}
+
+                {importJob && !resolveJob && importNotice && (
+                  <p className="text-xs text-amber-600 dark:text-amber-300">
+                    {importNotice}
+                  </p>
                 )}
 
                 {uploadProgress !== null && (

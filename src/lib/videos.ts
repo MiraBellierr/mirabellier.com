@@ -399,6 +399,49 @@ export function fetchSocialImportStatus(
   return fetchVideoJobStatus(jobId, "/videos/admin/import/status");
 }
 
+// Message the backend returns when the job map no longer knows the job id
+// (it was pruned after 15 minutes — or, more often, the server restarted
+// between "start job" and "poll job", since jobs are in-memory only).
+export const VIDEO_JOB_LOST_MESSAGE = "Job not found";
+
+function isVideoJobLostError(err: unknown): boolean {
+  return err instanceof Error && err.message === VIDEO_JOB_LOST_MESSAGE;
+}
+
+/**
+ * Starts a background video job and polls it until it reaches a terminal
+ * state. If the backend restarts mid-job (dev servers reload on file
+ * changes, deployments restart the process), the in-memory job disappears
+ * and every poll answers "Job not found" — this helper then transparently
+ * starts the job again instead of failing the whole action.
+ */
+export async function pollVideoJob(
+  start: () => Promise<{ jobId: string }>,
+  fetchStatus: (jobId: string) => Promise<VideoJobStatus>,
+  onUpdate?: (status: VideoJobStatus) => void,
+  options?: { onRestart?: () => void; maxRestarts?: number },
+): Promise<VideoJobStatus> {
+  const maxRestarts = Math.max(0, options?.maxRestarts ?? 2);
+  for (let attempt = 0; ; attempt += 1) {
+    const { jobId } = await start();
+    try {
+      for (;;) {
+        const status = await fetchStatus(jobId);
+        onUpdate?.(status);
+        if (status.state === "done") return status;
+        if (status.state === "error") {
+          throw new Error(status.error || "The task failed");
+        }
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      }
+    } catch (err) {
+      if (!isVideoJobLostError(err) || attempt >= maxRestarts) throw err;
+      options?.onRestart?.();
+      // Outer loop restarts the job with fresh inputs.
+    }
+  }
+}
+
 export async function fetchReelComments(id: string): Promise<ReelComment[]> {
   const res = await fetch(`${API_BASE}/videos/${id}/comments`);
   if (!res.ok) throw new Error("Failed to load comments");

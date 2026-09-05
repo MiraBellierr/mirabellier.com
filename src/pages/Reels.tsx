@@ -1087,6 +1087,12 @@ const Reels = () => {
                           src={authorAvatar}
                           alt=""
                           className="h-full w-full object-cover"
+                          onError={(e) => {
+                            // Expired social-CDN avatar URLs 403 in browsers —
+                            // fall back to the plain circle instead of a
+                            // broken-image icon.
+                            e.currentTarget.style.display = "none";
+                          }}
                         />
                       ) : (
                         "😺"
@@ -1324,6 +1330,9 @@ const Reels = () => {
                                 src={commentAvatar}
                                 alt=""
                                 className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             ) : (
                               "😺"
@@ -1419,6 +1428,9 @@ const Reels = () => {
                           }
                           alt=""
                           className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
                         />
                       ) : (
                         "😺"
