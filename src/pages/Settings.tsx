@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/states/AuthContext";
 import { API_BASE } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
+import AvatarImage from "../parts/AvatarImage";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
@@ -118,15 +119,11 @@ const Settings = () => {
             <div className="w-full max-w-lg backdrop-blur-sm card-border rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">
-                  {preview ? (
-                    <img
-                      src={resolveAsset(preview) || undefined}
-                      alt="avatar preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-3xl">😺</div>
-                  )}
+                  <AvatarImage
+                    src={resolveAsset(preview) || undefined}
+                    alt="avatar preview"
+                    iconClassName="text-blue-300"
+                  />
                 </div>
 
                 <div>

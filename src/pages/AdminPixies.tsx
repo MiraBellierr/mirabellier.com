@@ -8,17 +8,24 @@ import { API_BASE } from "@/lib/config";
 import {
   fetchSocialImportStatus,
   fetchVideoResolveStatus,
-  fetchVideoTagSuggestions,
-  MAX_VIDEO_TAGS,
+  MAX_AUTHOR_USERNAME_LENGTH,
   MAX_VIDEO_TITLE_LENGTH,
+  newImportKey,
   normalizeVideoTags,
   pollVideoJob,
+  readVideoDuration,
   resolveAvatarUrl,
   startSocialImport,
   startVideoResolve,
-  uploadAdminReel,
+  truncateCodePoints,
+  uploadAdminPixie,
   type ResolvedVideoInfo,
-} from "@/lib/videos";
+} from "@/lib/pixies";
+import AuthGateShell from "../parts/AuthGateShell";
+import AvatarImage from "../parts/AvatarImage";
+import VerifiedBadge from "../parts/VerifiedBadge";
+import TagInput from "../parts/TagInput";
+import { useVideoTagInput } from "../parts/useVideoTagInput";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
@@ -48,7 +55,6 @@ const STAGE_TIPS: Record<string, string[]> = {
     "Re-encoding to H.264 for maximum device support…",
     "Polishing the video container…",
   ],
-  store: ["Saving the video to the library…", "Attaching the author…"],
   done: ["All done!", "Ready!"],
 };
 
@@ -60,11 +66,19 @@ function formatElapsed(seconds: number): string {
 
 function ProgressBlock({ job }: { job: JobView | null }) {
   const [tick, setTick] = useState(0);
+  // Depend on whether a job is active, not on the job object itself: a fresh
+  // object literal arrives on every poll (~700 ms), which is faster than the
+  // 1000 ms interval, so keying the effect on `job` tore the timer down before
+  // it could ever fire — freezing both the elapsed clock and the rotating tips.
+  const active = Boolean(job);
   useEffect(() => {
-    if (!job) return;
+    if (!active) {
+      setTick(0);
+      return;
+    }
     const interval = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(interval);
-  }, [job]);
+  }, [active]);
   if (!job) return null;
 
   const tips = STAGE_TIPS[job.stage] || STAGE_TIPS.queued;
@@ -72,14 +86,14 @@ function ProgressBlock({ job }: { job: JobView | null }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3 text-xs text-blue-600 dark:text-purple-300">
-        <span className="flex items-center gap-2">
+        <span className="flex min-w-0 items-center gap-2">
           <span
-            className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-pink-500 border-t-transparent"
+            className="inline-block h-3 w-3 flex-shrink-0 animate-spin rounded-full border-2 border-pink-500 border-t-transparent"
             aria-hidden
           />
-          <span>{job.message}</span>
+          <span className="truncate">{job.message}</span>
         </span>
-        <span className="font-bold tabular-nums">
+        <span className="flex-shrink-0 font-bold tabular-nums">
           {Math.round(job.progress)}%
         </span>
       </div>
@@ -96,24 +110,19 @@ function ProgressBlock({ job }: { job: JobView | null }) {
   );
 }
 
-const AdminReels = () => {
+const AdminPixies = () => {
   const auth = useAuth();
   const { showToast } = useToast();
   const isOwner = canAccessAdminPanel(auth.user);
 
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
-  const [tagInputFocused, setTagInputFocused] = useState(false);
-  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [importJob, setImportJob] = useState<JobView | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [lastUpload, setLastUpload] = useState<string | null>(null);
   const [sourceUrl, setSourceUrl] = useState("");
   const [resolvedUrl, setResolvedUrl] = useState("");
   const [isResolving, setIsResolving] = useState(false);
@@ -124,6 +133,9 @@ const AdminReels = () => {
   const [resolveJob, setResolveJob] = useState<JobView | null>(null);
   const [resolveNotice, setResolveNotice] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
+
+  const tagField = useVideoTagInput({ onMessage: setMessage });
+  const { tags, setTags, tagInput, setTagInput } = tagField;
 
   usePageSeo({
     canonical: "https://mirabellier.com/admin/pixies",
@@ -137,59 +149,6 @@ const AdminReels = () => {
     },
   });
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchVideoTagSuggestions().then((suggestions) => {
-      if (!cancelled) setTagSuggestions(suggestions);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const addTag = (raw: string) => {
-    const normalized = normalizeVideoTags([raw]);
-    if (normalized.length === 0) return;
-    const tag = normalized[0];
-    if (tags.includes(tag)) {
-      setTagInput("");
-      return;
-    }
-    if (tags.length >= MAX_VIDEO_TAGS) {
-      setMessage(`You can add up to ${MAX_VIDEO_TAGS} tags`);
-      setTagInput("");
-      return;
-    }
-    setTags((current) => [...current, tag]);
-    setTagInput("");
-    setMessage(null);
-  };
-
-  const handleTagKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" || event.key === ",") {
-      event.preventDefault();
-      addTag(tagInput);
-    } else if (event.key === "Backspace" && !tagInput && tags.length > 0) {
-      setTags((current) => current.slice(0, -1));
-    }
-  };
-
-  const readVideoDuration = (file: File): Promise<number | null> =>
-    new Promise((resolve) => {
-      const video = document.createElement("video");
-      const url = URL.createObjectURL(file);
-      video.preload = "metadata";
-      video.onloadedmetadata = () => {
-        URL.revokeObjectURL(url);
-        resolve(Number.isFinite(video.duration) ? video.duration : null);
-      };
-      video.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve(null);
-      };
-      video.src = url;
-    });
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!videoFile && !(resolvedUrl && resolvedInfo)) return;
@@ -198,8 +157,12 @@ const AdminReels = () => {
       setMessage("Username cannot be empty");
       return;
     }
-    if (Array.from(username.trim()).length > 32) {
-      setMessage("Username must be 32 characters or fewer");
+    if (
+      Array.from(username.trim()).length > MAX_AUTHOR_USERNAME_LENGTH
+    ) {
+      setMessage(
+        `Username must be ${MAX_AUTHOR_USERNAME_LENGTH} characters or fewer`,
+      );
       return;
     }
     setIsUploading(true);
@@ -207,20 +170,27 @@ const AdminReels = () => {
     setImportJob(null);
     setImportNotice(null);
     setMessage(null);
+    const authorVerified = resolvedInfo?.verified === true;
     try {
       if (videoFile) {
         const durationSeconds = await readVideoDuration(videoFile);
-        await uploadAdminReel({
+        await uploadAdminPixie({
           file: videoFile,
           title: videoTitle,
           tags: normalizedTags,
           username,
           avatarUrl,
           durationSeconds,
+          verified: authorVerified,
           onProgress: setUploadProgress,
         });
         setVideoFile(null);
       } else {
+        // One key for the whole attempt: pollVideoJob may call this closure
+        // again if the backend restarts mid-import, and reusing the key lets
+        // the server recognise an already-imported video instead of inserting
+        // a duplicate.
+        const importKey = newImportKey();
         await pollVideoJob(
           () =>
             startSocialImport({
@@ -229,6 +199,8 @@ const AdminReels = () => {
               tags: normalizedTags,
               username: username.trim(),
               avatarUrl,
+              importKey,
+              verified: authorVerified,
             }),
           fetchSocialImportStatus,
           (current) =>
@@ -257,8 +229,7 @@ const AdminReels = () => {
       setResolvedUrl("");
       setResolvedInfo(null);
       setResolveError(null);
-      setLastUpload(username.trim());
-      showToast("Video uploaded!");
+      showToast(`Uploaded as ${username.trim()}! 🎉`);
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Video upload failed",
@@ -307,7 +278,9 @@ const AdminReels = () => {
       if (!resolved) throw new Error("No details returned");
       setResolvedUrl(trimmed);
       setResolvedInfo(resolved);
-      setUsername(Array.from(resolved.username).slice(0, 32).join(""));
+      setUsername(
+        truncateCodePoints(resolved.username, MAX_AUTHOR_USERNAME_LENGTH),
+      );
       setAvatarUrl(resolved.avatarUrl || "");
       setVideoTitle(resolved.caption || "");
       setTags(normalizeVideoTags(resolved.hashtags));
@@ -324,48 +297,22 @@ const AdminReels = () => {
 
   if (!auth.user || !isOwner) {
     return (
-      <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
-        <Header />
-        <div
-          className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
-          style={{ backgroundImage: "var(--page-bg)" }}
-        >
-          <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
-            <div className="left-side-rail flex-grow flex-col">
-              <Navigation />
-            </div>
-            <main className="w-full lg:w-3/5 p-4">
-              <section className="card-border p-6 bg-white/55 text-center">
-                <h2 className="text-2xl font-bold text-blue-700">
-                  {!auth.user ? "Please log in" : "Not authorized"}
-                </h2>
-                <p className="mt-3 text-blue-500">
-                  {!auth.user
-                    ? "You need to log in with the owner account before using the admin pages."
-                    : "This page is only available to the site owner account."}
-                </p>
-                <Link
-                  to={!auth.user ? "/login" : "/"}
-                  className="mt-5 inline-flex rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600"
-                >
-                  {!auth.user ? "Go to login" : "Back to home"}
-                </Link>
-              </section>
-            </main>
-          </div>
-        </div>
-        <Footer />
-      </div>
+      <AuthGateShell
+        icon={!auth.user ? "🔒" : "🚫"}
+        title={!auth.user ? "Please log in" : "Not authorized"}
+        message={
+          !auth.user
+            ? "You need to log in with the owner account before using the admin pages."
+            : "This page is only available to the site owner account."
+        }
+        action={
+          !auth.user
+            ? { to: "/login", label: "Go to login" }
+            : { to: "/", label: "Back to home" }
+        }
+      />
     );
   }
-
-  const filteredSuggestions = tagSuggestions
-    .filter(
-      (suggestion) =>
-        suggestion.includes(tagInput.trim().toLowerCase()) &&
-        !tags.includes(suggestion),
-    )
-    .slice(0, 8);
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
@@ -383,16 +330,16 @@ const AdminReels = () => {
               <img
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
                 src={kannaPolice}
-                width="320"
-                height="427"
-                alt="kanna police"
+                width="498"
+                height="280"
+                alt="Kanna police"
               />
             </div>
           </div>
 
-          <main className="w-full lg:w-3/5 p-4">
+          <main className="w-full min-w-0 lg:w-3/5 p-4">
             <div className="space-y-6">
-              <div className="card-border rounded-2xl p-6 shadow-lg bg-white/90 dark:bg-purple-900/80">
+              <div className="card-border rounded-2xl p-4 sm:p-6 shadow-lg bg-white/90 dark:bg-purple-900/80">
               <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                 <h2 className="text-xl sm:text-2xl font-bold text-blue-700 dark:text-purple-200 flex items-center gap-2">
                   <span>🎬</span>
@@ -406,7 +353,7 @@ const AdminReels = () => {
                 </Link>
               </div>
               <p className="mt-1 text-sm text-blue-500 dark:text-purple-300">
-                Paste a TikTok, Instagram reel, or YouTube Shorts link to
+                Paste a TikTok, Instagram pixie, or YouTube Shorts link to
                 auto-fill the details below — the video downloads and imports
                 automatically when you submit. You can also fill the form
                 manually and upload a file instead. The avatar URL updates the
@@ -418,7 +365,7 @@ const AdminReels = () => {
                 <input
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
-                  placeholder="TikTok / Instagram reel / YouTube Shorts link..."
+                  placeholder="TikTok / Instagram pixie / YouTube Shorts link..."
                   type="url"
                   className="min-w-0 flex-1 p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
                 />
@@ -455,7 +402,7 @@ const AdminReels = () => {
                     <img
                       src={resolvedInfo.coverUrl}
                       alt="video cover"
-                      className="h-14 w-21 rounded-lg border border-blue-200 dark:border-purple-600 object-cover"
+                      className="h-14 w-24 rounded-lg border border-blue-200 dark:border-purple-600 object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                       }}
@@ -464,6 +411,12 @@ const AdminReels = () => {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-blue-700 dark:text-purple-200 truncate">
                       @{resolvedInfo.username}
+                      {resolvedInfo.verified && (
+                        <VerifiedBadge
+                          className="ml-1"
+                          title={`Verified on ${resolvedInfo.platform ?? "the source platform"}`}
+                        />
+                      )}
                       {resolvedInfo.durationSeconds != null
                         ? ` · ${Math.round(resolvedInfo.durationSeconds)}s`
                         : ""}
@@ -499,7 +452,7 @@ const AdminReels = () => {
                     onChange={(e) =>
                       setVideoFile(e.target.files?.[0] || null)
                     }
-                    className="mt-2"
+                    className="mt-2 block w-full max-w-full text-sm text-blue-600 dark:text-purple-300"
                   />
                   {resolvedUrl && !videoFile && (
                     <p className="mt-1 text-xs text-blue-500 dark:text-purple-400">
@@ -521,9 +474,15 @@ const AdminReels = () => {
                     </label>
                     <input
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) =>
+                        setUsername(
+                          truncateCodePoints(
+                            e.target.value,
+                            MAX_AUTHOR_USERNAME_LENGTH,
+                          ),
+                        )
+                      }
                       placeholder="e.g. mira"
-                      maxLength={32}
                       className="w-full p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
                     />
                   </div>
@@ -544,18 +503,16 @@ const AdminReels = () => {
                 {avatarUrl.trim() &&
                   /^(\/images\/|https?:\/\/)/.test(avatarUrl.trim()) && (
                     <div className="flex items-center gap-3">
-                      <img
-                        src={
-                          avatarUrl.trim().startsWith("/")
-                            ? (resolveAvatarUrl(avatarUrl.trim()) ?? "")
-                            : `${API_BASE}/videos/admin/avatar-proxy?url=${encodeURIComponent(avatarUrl.trim())}`
-                        }
-                        alt="avatar preview"
-                        className="h-10 w-10 rounded-full border border-blue-200 dark:border-purple-600 object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-blue-200 dark:border-purple-600 bg-pink-500">
+                        <AvatarImage
+                          src={
+                            avatarUrl.trim().startsWith("/")
+                              ? resolveAvatarUrl(avatarUrl.trim())
+                              : `${API_BASE}/pixies/admin/avatar-proxy?url=${encodeURIComponent(avatarUrl.trim())}`
+                          }
+                          alt="avatar preview"
+                        />
+                      </span>
                       <p className="text-xs text-blue-500 dark:text-purple-400">
                         Avatar preview
                       </p>
@@ -580,67 +537,11 @@ const AdminReels = () => {
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-blue-600 dark:text-purple-300">
-                    Tags
-                  </label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-1 rounded-full bg-pink-100 dark:bg-purple-700/60 px-3 py-1 text-sm font-medium text-pink-700 dark:text-purple-100"
-                      >
-                        #{tag}
-                        <button
-                          type="button"
-                          aria-label={`Remove tag ${tag}`}
-                          onClick={() =>
-                            setTags((current) =>
-                              current.filter((entry) => entry !== tag),
-                            )
-                          }
-                          className="font-bold text-pink-500 dark:text-purple-300 hover:text-pink-700 dark:hover:text-purple-100"
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="relative mt-2">
-                    <input
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleTagKeyDown}
-                      onFocus={() => setTagInputFocused(true)}
-                      onBlur={() => {
-                        setTagInputFocused(false);
-                        if (tagInput.trim()) addTag(tagInput);
-                      }}
-                      placeholder={
-                        tags.length === 0
-                          ? "Add a tag (optional), e.g. gaming, anime..."
-                          : "Add another tag..."
-                      }
-                      maxLength={20}
-                      className="w-full p-3 border border-blue-200 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-blue-200"
-                    />
-                    {tagInputFocused && filteredSuggestions.length > 0 && (
-                      <div className="absolute z-10 mt-1 w-full rounded-lg border border-blue-200 dark:border-purple-600 bg-white dark:bg-purple-900 shadow-md">
-                        {filteredSuggestions.map((suggestion) => (
-                          <button
-                            key={suggestion}
-                            type="button"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => addTag(suggestion)}
-                            className="block w-full px-3 py-2 text-left text-sm text-blue-700 dark:text-purple-200 hover:bg-blue-50 dark:hover:bg-purple-800"
-                          >
-                            #{suggestion}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <TagInput
+                  field={tagField}
+                  label="Tags"
+                  emptyPlaceholder="Add a tag (optional), e.g. gaming, anime..."
+                />
 
                 {importJob && !resolveJob && (
                   <ProgressBlock job={importJob} />
@@ -664,12 +565,6 @@ const AdminReels = () => {
                 {message && (
                   <div className="text-red-600 dark:text-pink-300">
                     {message}
-                  </div>
-                )}
-
-                {lastUpload && !message && (
-                  <div className="text-green-600 dark:text-green-400">
-                    Uploaded as {lastUpload}! 🎉
                   </div>
                 )}
 
@@ -702,7 +597,7 @@ const AdminReels = () => {
                   admin notes
                 </h2>
                 <p>
-                  • Paste a TikTok / Instagram reel / YouTube Shorts link and
+                  • Paste a TikTok / Instagram pixie / YouTube Shorts link and
                   press "Download & import" to download and upload the video
                   in one go.
                 </p>
@@ -739,4 +634,4 @@ const AdminReels = () => {
   );
 };
 
-export default AdminReels;
+export default AdminPixies;

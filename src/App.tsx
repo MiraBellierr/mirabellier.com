@@ -45,13 +45,13 @@ const AdminShrines = lazy(() => import("./pages/AdminShrines"));
 const AdminShrinePreview = lazy(() => import("./pages/AdminShrinePreview"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminTwitch = lazy(() => import("./pages/AdminTwitch"));
-const AdminReels = lazy(() => import("./pages/AdminReels"));
+const AdminPixies = lazy(() => import("./pages/AdminPixies"));
 const ShrineEntry = lazy(() => import("./pages/ShrineEntry"));
 const Login = lazy(() => import("./pages/Login"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
-const Reels = lazy(() => import("./pages/Reels"));
-const ReelUpload = lazy(() => import("./pages/ReelUpload"));
+const Pixies = lazy(() => import("./pages/Pixies"));
+const PixieUpload = lazy(() => import("./pages/PixieUpload"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -61,6 +61,7 @@ const ArenaCompensationPopup = lazy(
   () => import("./parts/ArenaCompensationPopup"),
 );
 
+import { rememberPostLoginRedirect } from "./lib/post-login-redirect";
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
 import { WebSocketProvider } from "./states/WebSocketProvider";
@@ -74,6 +75,12 @@ function App() {
   const location = useLocation();
   const isHomePath = HOME_PATHS.has(location.pathname);
   const [showCursorManager, setShowCursorManager] = useState(false);
+
+  // Remember the current page so a Discord login started from here returns
+  // here afterwards (auth-flow routes are ignored inside the helper).
+  useEffect(() => {
+    rememberPostLoginRedirect(`${location.pathname}${location.search}`);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     let timeoutId: number | null = null;
@@ -177,7 +184,7 @@ function App() {
       <Route path="/admin/shrines/preview" element={<AdminShrinePreview />} />
       <Route path="/admin/users" element={<AdminUsers />} />
       <Route path="/admin/twitch" element={<AdminTwitch />} />
-      <Route path="/admin/pixies" element={<AdminReels />} />
+      <Route path="/admin/pixies" element={<AdminPixies />} />
       <Route
         path="/admin/poloroid"
         element={<Navigate to="/admin/pixies" replace />}
@@ -195,9 +202,9 @@ function App() {
       <Route path="/settings" element={<Settings />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/profile/:username" element={<Profile />} />
-      <Route path="/pixies" element={<Reels />} />
-      <Route path="/pixies/:videoId" element={<Reels />} />
-      <Route path="/pixies/upload" element={<ReelUpload />} />
+      <Route path="/pixies" element={<Pixies />} />
+      <Route path="/pixies/:videoId" element={<Pixies />} />
+      <Route path="/pixies/upload" element={<PixieUpload />} />
       <Route path="/poloroid" element={<Navigate to="/pixies" replace />} />
       <Route
         path="/poloroid/upload"

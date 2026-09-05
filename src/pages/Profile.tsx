@@ -5,11 +5,13 @@ import { API_BASE } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import {
-  deleteReel,
-  fetchUserReels,
+  deletePixie,
+  fetchUserPixies,
   resolveVideoUrl,
-  type Reel,
-} from "@/lib/videos";
+  type Pixie,
+} from "@/lib/pixies";
+import AuthGateShell from "../parts/AuthGateShell";
+import AvatarImage from "../parts/AvatarImage";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
@@ -43,7 +45,7 @@ const Profile = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [videos, setVideos] = useState<Reel[]>([]);
+  const [videos, setVideos] = useState<Pixie[]>([]);
   const [videosLoading, setVideosLoading] = useState(true);
   const [videosPage, setVideosPage] = useState(1);
   const profileUserForSeo = username ? profileUser : auth.user;
@@ -147,10 +149,10 @@ const Profile = () => {
     }
     let cancelled = false;
     setVideosLoading(true);
-    fetchUserReels(user.id)
-      .then((reels) => {
+    fetchUserPixies(user.id)
+      .then((pixies) => {
         if (cancelled) return;
-        setVideos(reels);
+        setVideos(pixies);
         setVideosPage(1);
       })
       .catch(() => {
@@ -165,11 +167,13 @@ const Profile = () => {
     };
   }, [user?.id]);
 
-  const handleDeleteReel = async (id: string) => {
+  const handleDeletePixie = async (id: string) => {
     try {
-      await deleteReel(id);
-      setVideos((current) => current.filter((reel) => reel.id !== id));
+      await deletePixie(id);
+      setVideos((current) => current.filter((pixie) => pixie.id !== id));
       showToast("Video deleted");
+      // Header stats (`postsCount` / `likesCount` / `commentsCount`) count blog
+      // posts, not videos, so there is nothing to decrement there.
     } catch {
       showToast("Could not delete video");
     }
@@ -179,6 +183,11 @@ const Profile = () => {
     1,
     Math.ceil(videos.length / VIDEOS_PER_PAGE),
   );
+  // Deleting the last video on a page shrinks the page count — don't strand the
+  // viewer on a now-empty page.
+  useEffect(() => {
+    if (videosPage > totalVideoPages) setVideosPage(totalVideoPages);
+  }, [videosPage, totalVideoPages]);
   const visibleVideos = videos.slice(
     (videosPage - 1) * VIDEOS_PER_PAGE,
     videosPage * VIDEOS_PER_PAGE,
@@ -203,69 +212,21 @@ const Profile = () => {
 
   if (!user && !loading) {
     return (
-      <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
-        <Header />
-        <div
-          className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
-          style={{ backgroundImage: "var(--page-bg)" }}
-        >
-          <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-            <div className="left-side-rail flex-grow flex-col">
-              <Navigation />
-            </div>
-            <main className="w-full lg:w-3/5 flex items-center justify-center p-4">
-              <div className="card-border rounded-2xl p-8 text-center bg-white/90 dark:bg-purple-900/80">
-                <div className="text-4xl mb-4">{error ? "🚫" : "🔒"}</div>
-                <h2 className="text-2xl font-bold text-blue-700 dark:text-purple-200 mb-2">
-                  {error || "Profile Not Found"}
-                </h2>
-                <p className="text-blue-500 dark:text-purple-300 mb-4">
-                  {username
-                    ? "This user does not exist."
-                    : "Please log in to view your profile."}
-                </p>
-                {!username && (
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-full hover:bg-pink-600 transition-colors"
-                  >
-                    Login
-                  </Link>
-                )}
-              </div>
-            </main>
-          </div>
-        </div>
-        <Footer />
-      </div>
+      <AuthGateShell
+        icon={error ? "🚫" : "🔒"}
+        title={error || "Profile Not Found"}
+        message={
+          username
+            ? "This user does not exist."
+            : "Please log in to view your profile."
+        }
+        action={username ? undefined : { to: "/login", label: "Login" }}
+      />
     );
   }
 
   if (!user || loading) {
-    return (
-      <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
-        <Header />
-        <div
-          className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
-          style={{ backgroundImage: "var(--page-bg)" }}
-        >
-          <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
-            <div className="left-side-rail flex-grow flex-col">
-              <Navigation />
-            </div>
-            <main className="w-full lg:w-3/5 flex items-center justify-center p-4">
-              <div className="card-border rounded-2xl p-8 text-center bg-white/90 dark:bg-purple-900/80">
-                <div className="text-4xl mb-4">⏳</div>
-                <p className="text-blue-500 dark:text-purple-300">
-                  Loading profile...
-                </p>
-              </div>
-            </main>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
+    return <AuthGateShell icon="⏳" message="Loading profile..." />;
   }
 
   return (
@@ -320,15 +281,11 @@ const Profile = () => {
                   <div className="flex flex-col items-center -mt-16">
                     <div className="w-32 h-32 rounded-full bg-white dark:bg-gray-800 p-2 border-4 border-white dark:border-purple-700">
                       <div className="w-full h-full rounded-full bg-pink-100 dark:bg-purple-700 flex items-center justify-center overflow-hidden">
-                        {user.avatar ? (
-                          <img
-                            src={resolveAsset(user.avatar) || undefined}
-                            alt={user.username}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="text-5xl">😺</div>
-                        )}
+                        <AvatarImage
+                          src={resolveAsset(user.avatar) || undefined}
+                          alt={user.username}
+                          iconClassName="text-pink-400 dark:text-purple-200"
+                        />
                       </div>
                     </div>
 
@@ -530,17 +487,17 @@ const Profile = () => {
                 ) : (
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {visibleVideos.map((reel) => (
+                      {visibleVideos.map((pixie) => (
                         <div
-                          key={reel.id}
+                          key={pixie.id}
                           className="relative rounded-lg overflow-hidden bg-blue-50 dark:bg-purple-800/50 group"
                         >
                           <Link
-                            to={`/pixies/${reel.id}`}
+                            to={`/pixies/${pixie.id}`}
                             aria-label="Watch in pixies"
                           >
                             <video
-                              src={resolveVideoUrl(reel.url)}
+                              src={resolveVideoUrl(pixie.url)}
                               className="w-full h-36 object-cover"
                               muted
                               playsInline
@@ -549,18 +506,18 @@ const Profile = () => {
                           </Link>
                           <div className="p-2">
                             <p className="truncate text-xs font-medium text-blue-700 dark:text-purple-200">
-                              {reel.title || "Untitled video"}
+                              {pixie.title || "Untitled video"}
                             </p>
                             <p className="text-[11px] text-blue-500 dark:text-purple-400 mt-0.5">
-                              ❤️ {reel.likesCount} ·{" "}
-                              {new Date(reel.createdAt).toLocaleDateString()}
+                              ❤️ {pixie.likesCount} ·{" "}
+                              {new Date(pixie.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                           {(isOwnProfile || isAdmin) && (
                             <button
                               type="button"
                               aria-label="Delete video"
-                              onClick={() => void handleDeleteReel(reel.id)}
+                              onClick={() => void handleDeletePixie(pixie.id)}
                               className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-xs text-white opacity-0 transition group-hover:opacity-100 hover:bg-red-600"
                             >
                               ✕
