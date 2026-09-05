@@ -23,6 +23,7 @@ interface ImportMetaEnv {
   readonly DEV: boolean;
   readonly PROD: boolean;
   readonly VITE_API_BASE?: string;
+  readonly VITE_SITE_ORIGIN?: string;
   readonly VITE_ANIME_STORAGE_KEY?: string;
   readonly VITE_TURNSTILE_SITE_KEY?: string;
 }
