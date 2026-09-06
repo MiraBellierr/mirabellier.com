@@ -11,7 +11,13 @@ arena frontend. Nothing below is caught by the existing checks.
 
 ## Bugs
 
-### 1. Coin minting via `/arena/shop/fodder` — CRITICAL
+### 1. Coin minting via `/arena/shop/fodder` — CRITICAL — ✅ FIXED
+
+**Resolution:** `fodderEquipmentPiece` no longer accepts `refundAmount`; the payout is
+derived server-side by `getFodderRefund(slot)` (half the slot's `ROLLABLE_EQUIPMENT` price,
+fallback 500). The route stopped parsing `req.body.refundAmount`, and the frontend
+(`fodderArenaPiece` + call sites) no longer sends it. Also resolves #4 — both scrap paths
+now pay the same server-derived amount. All 211 backend tests pass.
 
 **Where:** `mirabellier-backend/lib/arena/equipment.js:291`, reached from
 `mirabellier-backend/routes/arena/index.js:561`
@@ -33,7 +39,12 @@ ignore the body field entirely.
 
 ---
 
-### 2. `draw-pack` reports cards it never granted — HIGH
+### 2. `draw-pack` reports cards it never granted — HIGH — ✅ FIXED
+
+**Resolution:** `pulled` is now hoisted out of the transaction and the response
+(`cardsWithOwned`) maps over it instead of `drawnCards`, so only inserted cards are
+returned. Added regression test *"draw-pack only reports the cards it actually granted
+near the daily limit"* (`test/arena-service.test.js`). 212 backend tests pass.
 
 **Where:** `mirabellier-backend/lib/arena/card-shop.js:81-114`
 
@@ -53,7 +64,20 @@ pack-opening modal.
 
 ---
 
-### 3. Turnstile verification is decorative for fights — HIGH
+### 3. Turnstile verification is decorative for fights — HIGH — ✅ FIXED
+
+**Resolution:** Added `mirabellier-backend/lib/arena-fight-verification.js` — an
+in-memory store (same trade-off as `arena-fight-guard.js`: dropped on restart, not
+shared across instances) keyed by user id with a 30-minute sliding expiry.
+`POST /arena/verify` now requires auth and calls `markArenaFightVerified(user.id)` after
+the Turnstile check passes. Both fight transports enforce it:
+`requireArenaFightVerified` gates `/fight`, `/fight/start`, `/fight/advance`,
+`/fight/skip` in `routes/arena/index.js`, and `app.js`'s WebSocket `handleMessage`
+rejects `arena:fight:{start,advance,skip}` from unverified users with
+`ARENA_VERIFICATION_REQUIRED`. Frontend (`ArenaFight.tsx`) drops back to the widget on
+that code; the `arena-fight-resume.ts` doc comment now points at the server gate.
+Tests: `test/arena-fight-verification.test.js` (7 unit) + a route integration test in
+`arena-service.test.js`. 220 backend tests pass.
 
 **Where:** `mirabellier-backend/routes/arena/index.js:117-125`
 

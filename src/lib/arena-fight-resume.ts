@@ -58,7 +58,10 @@ export interface FightResumeMachineState {
  * Invariants enforced here:
  * - A resume is only consumed once the fight socket is connected AND the
  *   user passed Turnstile verification, otherwise the advance command would
- *   be dropped and the fight would wedge between active and finished.
+ *   be dropped and the fight would wedge between active and finished. The
+ *   server independently rejects unverified fight messages with
+ *   ARENA_VERIFICATION_REQUIRED (see lib/arena-fight-verification.js); this
+ *   gate is only the client-side UX half.
  * - A stale advance lock is force-released after the retry budget so an
  *   interrupted fight always gets another advance attempt.
  * - An unanswered advance falls back to HTTP after the safety timeout; a

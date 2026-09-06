@@ -639,6 +639,14 @@ const ArenaFight = () => {
             setStarting(false);
           }
           const err = (msg.data || {}) as { code?: string; message?: string; retryAfterMs?: number };
+          if (err?.code === "ARENA_VERIFICATION_REQUIRED") {
+            // Server-side Turnstile window lapsed — drop back to the widget.
+            setVerified(false);
+            setTurnstileToken(null);
+            setAutoBattle(false);
+            setErrorMessage(err.message || "Please verify you're human to keep fighting.");
+            break;
+          }
           if (err?.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
             const retryAfterMs = Math.max(err.retryAfterMs || 250, 250);
             if (autoTimerRef.current !== null) {
