@@ -820,15 +820,27 @@ const Pixies = () => {
   }, []);
 
   // The viewer is a full-screen dark surface — force dark mode while it's open
-  // (so `dark:` styles in the onboarding / shared parts resolve dark) and
-  // restore the viewer's real theme preference on exit.
+  // (so `dark:` styles in the onboarding / shared parts resolve dark). On exit,
+  // restore whatever theme the viewer actually prefers rather than assuming it
+  // was dark: a refresh straight onto /pixies loads dark from index.html, so
+  // "was it dark before mount?" is not a reliable signal.
   useEffect(() => {
     const root = document.documentElement;
-    const addedDark = !root.classList.contains("dark");
-    if (addedDark) root.classList.add("dark");
+    root.classList.add("dark");
     root.style.colorScheme = "dark";
     return () => {
-      if (addedDark) root.classList.remove("dark");
+      let stored: string | null = null;
+      try {
+        stored = window.localStorage.getItem("mirabellier-theme");
+      } catch {
+        stored = null;
+      }
+      const prefersDark =
+        stored === "dark" ||
+        (stored !== "light" &&
+          typeof window.matchMedia === "function" &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+      root.classList.toggle("dark", prefersDark);
       root.style.colorScheme = "";
     };
   }, []);
