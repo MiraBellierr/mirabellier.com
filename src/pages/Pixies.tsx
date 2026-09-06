@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { useToast } from "@/states/ToastContext";
 import { usePageSeo } from "@/lib/seo";
 import { SITE_ORIGIN } from "@/lib/config";
@@ -249,7 +250,7 @@ const MenuIcon = ({ children }: { children: React.ReactNode }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
     aria-hidden="true"
-    className="flex-shrink-0 text-white/85"
+    className="flex-shrink-0 text-neutral-600 dark:text-white/85"
   >
     {children}
   </svg>
@@ -287,18 +288,16 @@ const DownloadIcon = () => (
   </MenuIcon>
 );
 
-const ShareArrowIcon = () => (
+const ThemeIcon = ({ dark }: { dark: boolean }) => (
   <MenuIcon>
-    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
-    <polyline points="16 6 12 2 8 6" />
-    <line x1="12" y1="2" x2="12" y2="15" />
-  </MenuIcon>
-);
-
-const LinkIcon = () => (
-  <MenuIcon>
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    {dark ? (
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    ) : (
+      <>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+      </>
+    )}
   </MenuIcon>
 );
 
@@ -345,6 +344,20 @@ const Pixies = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { videoId: sharedVideoId } = useParams<{ videoId?: string }>();
+  const isDarkMode = useIsDarkMode();
+
+  // Flip the site-wide theme from the options menu (mirrors <DarkToggle>).
+  const toggleDarkMode = useCallback(() => {
+    try {
+      const root = document.documentElement;
+      const next = !root.classList.contains("dark");
+      root.classList.toggle("dark", next);
+      window.localStorage.setItem("mirabellier-theme", next ? "dark" : "light");
+      root.style.removeProperty("--page-bg");
+    } catch {
+      // Ignore storage / DOM access failures in restricted environments.
+    }
+  }, []);
 
   const [pixies, setPixies] = useState<Pixie[]>([]);
   const [loading, setLoading] = useState(true);
@@ -819,29 +832,15 @@ const Pixies = () => {
     };
   }, []);
 
-  // The viewer is a full-screen dark surface — force dark mode while it's open
-  // (so `dark:` styles in the onboarding / shared parts resolve dark). On exit,
-  // restore whatever theme the viewer actually prefers rather than assuming it
-  // was dark: a refresh straight onto /pixies loads dark from index.html, so
-  // "was it dark before mount?" is not a reliable signal.
+  // The viewer is a black, full-screen media surface no matter the site theme,
+  // so pin its own color-scheme to dark (native controls / form widgets / the
+  // browser scrollbar) without touching the global `dark` class.
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.add("dark");
+    const previous = root.style.colorScheme;
     root.style.colorScheme = "dark";
     return () => {
-      let stored: string | null = null;
-      try {
-        stored = window.localStorage.getItem("mirabellier-theme");
-      } catch {
-        stored = null;
-      }
-      const prefersDark =
-        stored === "dark" ||
-        (stored !== "light" &&
-          typeof window.matchMedia === "function" &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches);
-      root.classList.toggle("dark", prefersDark);
-      root.style.colorScheme = "";
+      root.style.colorScheme = previous;
     };
   }, []);
 
@@ -1357,12 +1356,27 @@ const Pixies = () => {
     }
   };
 
-  const copyPixieLink = async (pixie: Pixie) => {
+  // Pull the file down and save it directly instead of navigating the browser
+  // to the (cross-origin) media URL, which just opens the clip in a new tab.
+  const downloadPixie = async (pixie: Pixie) => {
+    const url = resolveVideoUrl(pixie.url);
+    const filename = url.split("/").pop() || `pixie-${pixie.id}.mp4`;
     try {
-      await navigator.clipboard.writeText(shareUrlFor(pixie));
-      showToast("Pixie link copied to clipboard!");
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("download failed");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
     } catch {
-      showToast("Failed to copy link");
+      // CORS / network fallback: at least surface the file.
+      window.open(url, "_blank", "noopener");
+      showToast("Couldn't save the file — opened it instead");
     }
   };
 
@@ -1516,29 +1530,29 @@ const Pixies = () => {
           <AvatarImage src={commentAvatar} />
         </Link>
         <div className="min-w-0 flex-1">
-          <p className="text-sm">
+          <p className="text-sm text-neutral-900 dark:text-white">
             <Link
               to={`/profile/${comment.author?.username ?? ""}`}
-              className="font-bold hover:underline"
+              className="font-bold text-neutral-900 hover:underline dark:text-white"
             >
               {username}
             </Link>
             {comment.author?.verified && (
               <VerifiedBadge className="ml-1" size={12} />
             )}
-            <span className="ml-2 text-xs text-white/50">
+            <span className="ml-2 text-xs text-neutral-400 dark:text-white/50">
               {new Date(comment.createdAt).toLocaleDateString()}
             </span>
           </p>
-          <p className="mt-0.5 break-words text-sm text-white/90">
+          <p className="mt-0.5 break-words text-sm text-neutral-700 dark:text-white/90">
             <MentionText text={comment.content} />
           </p>
-          <div className="mt-1 flex items-center gap-4 text-xs font-semibold text-white/50">
+          <div className="mt-1 flex items-center gap-4 text-xs font-semibold text-neutral-500 dark:text-white/50">
             <button
               type="button"
               onClick={() => void handleToggleCommentLike(pixie, comment)}
               aria-label={likeState.liked ? "Unlike comment" : "Like comment"}
-              className={`flex items-center gap-1 transition hover:text-white ${
+              className={`flex items-center gap-1 transition hover:text-neutral-900 dark:hover:text-white ${
                 likeState.liked ? "text-pink-500" : ""
               }`}
             >
@@ -1548,7 +1562,7 @@ const Pixies = () => {
             <button
               type="button"
               onClick={() => startReply(rootId, username)}
-              className="transition hover:text-white"
+              className="transition hover:text-neutral-900 dark:hover:text-white"
             >
               Reply
             </button>
@@ -1558,7 +1572,7 @@ const Pixies = () => {
           <button
             onClick={() => void handleDeleteComment(pixie, comment.id)}
             aria-label="Delete comment"
-            className="flex-shrink-0 self-start rounded-full px-2 py-1 text-xs font-bold text-white/40 transition hover:bg-red-600 hover:text-white"
+            className="flex-shrink-0 self-start rounded-full px-2 py-1 text-xs font-bold text-neutral-400 transition hover:bg-red-600 hover:text-white dark:text-white/40"
             type="button"
           >
             ✕
@@ -1725,13 +1739,17 @@ const Pixies = () => {
   // Shared body for the video options menu — rendered inside the anchored
   // popover (right-click) or the bottom sheet (long-press).
   const menuPixie = pixies[activeIndex] ?? null;
+  const menuRow =
+    "flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-black/5 dark:hover:bg-white/5";
+  const menuLabel =
+    "text-[15px] font-semibold text-neutral-900 dark:text-white";
   const optionsMenuBody = menuPixie ? (
     <div className="py-1.5">
       {/* Speed */}
       <div className="flex items-center gap-3.5 px-4 py-2.5">
         <SpeedIcon />
-        <span className="text-[15px] font-semibold text-white">Speed</span>
-        <div className="ml-auto flex items-center gap-0.5 rounded-full bg-white/10 p-0.5">
+        <span className={menuLabel}>Speed</span>
+        <div className="ml-auto flex items-center gap-0.5 rounded-full bg-black/10 p-0.5 dark:bg-white/10">
           {SPEED_OPTIONS.map((rate) => (
             <button
               key={rate}
@@ -1740,8 +1758,8 @@ const Pixies = () => {
               onClick={() => setSpeedRate(rate)}
               className={`min-w-[2.25rem] rounded-full px-1.5 py-1 text-xs font-bold transition ${
                 speedRate === rate
-                  ? "bg-white text-neutral-900"
-                  : "text-white/70 hover:text-white"
+                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                  : "text-neutral-500 hover:text-neutral-900 dark:text-white/70 dark:hover:text-white"
               }`}
             >
               {Number.isInteger(rate) ? rate.toFixed(1) : String(rate)}
@@ -1754,15 +1772,15 @@ const Pixies = () => {
       <button
         type="button"
         onClick={() => setClearDisplay((value) => !value)}
-        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
+        className={menuRow}
       >
         <EyeSlashIcon off={clearDisplay} />
-        <span className="text-[15px] font-semibold text-white">
-          Clear display
-        </span>
+        <span className={menuLabel}>Clear display</span>
         <span
           className={`ml-auto flex h-6 w-11 flex-shrink-0 items-center rounded-full p-0.5 transition ${
-            clearDisplay ? "bg-pink-500" : "bg-white/20"
+            clearDisplay
+              ? "bg-pink-500"
+              : "bg-neutral-300 dark:bg-white/20"
           }`}
         >
           <span
@@ -1773,47 +1791,36 @@ const Pixies = () => {
         </span>
       </button>
 
-      <div className="my-1.5 h-px bg-white/10" />
-
-      {/* Download */}
-      <a
-        href={resolveVideoUrl(menuPixie.url)}
-        download
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => setOptionsMenu(null)}
-        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
-      >
-        <DownloadIcon />
-        <span className="text-[15px] font-semibold text-white">
-          Download video
+      {/* Dark mode */}
+      <button type="button" onClick={toggleDarkMode} className={menuRow}>
+        <ThemeIcon dark={isDarkMode} />
+        <span className={menuLabel}>Dark mode</span>
+        <span
+          className={`ml-auto flex h-6 w-11 flex-shrink-0 items-center rounded-full p-0.5 transition ${
+            isDarkMode ? "bg-pink-500" : "bg-neutral-300 dark:bg-white/20"
+          }`}
+        >
+          <span
+            className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              isDarkMode ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
         </span>
-      </a>
-
-      {/* Share */}
-      <button
-        type="button"
-        onClick={() => {
-          setOptionsMenu(null);
-          handleShare(menuPixie);
-        }}
-        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
-      >
-        <ShareArrowIcon />
-        <span className="text-[15px] font-semibold text-white">Share</span>
       </button>
 
-      {/* Copy link */}
+      <div className="my-1.5 h-px bg-black/10 dark:bg-white/10" />
+
+      {/* Download */}
       <button
         type="button"
         onClick={() => {
           setOptionsMenu(null);
-          void copyPixieLink(menuPixie);
+          void downloadPixie(menuPixie);
         }}
-        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
+        className={menuRow}
       >
-        <LinkIcon />
-        <span className="text-[15px] font-semibold text-white">Copy link</span>
+        <DownloadIcon />
+        <span className={menuLabel}>Download video</span>
       </button>
     </div>
   ) : null;
@@ -2430,15 +2437,15 @@ const Pixies = () => {
                 onClick={closeComments}
                 aria-hidden="true"
               />
-              <div className="absolute inset-x-0 bottom-0 z-30 flex max-h-[70%] flex-col rounded-t-2xl border-t border-sky-300/20 bg-blue-950/60 backdrop-blur-xl">
-                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <div className="absolute inset-x-0 bottom-0 z-30 flex max-h-[70%] flex-col rounded-t-2xl border-t border-black/10 bg-white/95 text-neutral-900 backdrop-blur-xl dark:border-sky-300/20 dark:bg-blue-950/90 dark:text-white">
+                <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
                   <span className="font-bold">
                     Comments ({commentCountFor(pixies[activeIndex])})
                   </span>
                   <button
                     onClick={closeComments}
                     aria-label="Close comments"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/25"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-black/10 transition hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/25"
                     type="button"
                   >
                     <CloseIcon />
@@ -2448,10 +2455,10 @@ const Pixies = () => {
                 <div className="flex-1 overflow-y-auto px-4 py-3">
                   {commentsLoading ? (
                     <div className="flex justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/15 border-t-neutral-800 dark:border-white/20 dark:border-t-white" />
                     </div>
                   ) : topComments.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-white/60">
+                    <p className="py-8 text-center text-sm text-neutral-500 dark:text-white/60">
                       No comments yet. Be the first to say something!
                     </p>
                   ) : (
@@ -2470,9 +2477,9 @@ const Pixies = () => {
                                 <button
                                   type="button"
                                   onClick={() => toggleThread(comment.id)}
-                                  className="flex items-center gap-2 text-xs font-semibold text-white/50 transition hover:text-white/80"
+                                  className="flex items-center gap-2 text-xs font-semibold text-neutral-500 transition hover:text-neutral-800 dark:text-white/50 dark:hover:text-white/80"
                                 >
-                                  <span className="h-px w-6 bg-white/25" />
+                                  <span className="h-px w-6 bg-black/20 dark:bg-white/25" />
                                   {expanded
                                     ? "Hide replies"
                                     : `View ${replies.length} ${
@@ -2506,13 +2513,13 @@ const Pixies = () => {
                     event.preventDefault();
                     void handleSubmitComment(pixies[activeIndex]);
                   }}
-                  className="border-t border-white/10 p-3"
+                  className="border-t border-black/10 p-3 dark:border-white/10"
                 >
                   {replyingTo && (
-                    <div className="mb-2 flex items-center justify-between rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/60">
+                    <div className="mb-2 flex items-center justify-between rounded-lg bg-black/5 px-3 py-1.5 text-xs text-neutral-500 dark:bg-white/5 dark:text-white/60">
                       <span>
                         Replying to{" "}
-                        <span className="font-semibold text-white/85">
+                        <span className="font-semibold text-neutral-800 dark:text-white/85">
                           @{replyingTo.username}
                         </span>
                       </span>
@@ -2523,7 +2530,7 @@ const Pixies = () => {
                           setCommentText("");
                         }}
                         aria-label="Cancel reply"
-                        className="px-1.5 text-white/50 transition hover:text-white"
+                        className="px-1.5 text-neutral-400 transition hover:text-neutral-900 dark:text-white/50 dark:hover:text-white"
                       >
                         ✕
                       </button>
@@ -2540,12 +2547,12 @@ const Pixies = () => {
                           : "Add a comment..."
                       }
                       maxLength={500}
-                      className="min-w-0 flex-1 rounded-full bg-white/10 px-4 py-2 text-sm text-white placeholder-white/40 outline-none focus:bg-white/15"
+                      className="min-w-0 flex-1 rounded-full bg-black/5 px-4 py-2 text-sm text-neutral-900 placeholder-neutral-400 outline-none focus:bg-black/10 dark:bg-white/10 dark:text-white dark:placeholder-white/40 dark:focus:bg-white/15"
                     />
                     <button
                       type="submit"
                       disabled={!commentText.trim() || commentSubmitting}
-                      className="rounded-full bg-pink-500 px-4 py-2 text-sm font-bold transition hover:bg-pink-600 disabled:opacity-50"
+                      className="rounded-full bg-pink-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-pink-600 disabled:opacity-50"
                     >
                       {commentSubmitting
                         ? "..."
@@ -2639,7 +2646,7 @@ const Pixies = () => {
           <div
             role="menu"
             aria-label="Video options"
-            className="fixed z-[60] w-[300px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-sky-300/20 bg-blue-950/60 text-white shadow-2xl backdrop-blur-xl"
+            className="fixed z-[60] w-[300px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-black/10 bg-white/95 text-neutral-900 shadow-2xl backdrop-blur-xl dark:border-sky-300/20 dark:bg-blue-950/90 dark:text-white"
             style={{ top: optionsMenu.y, left: optionsMenu.x }}
           >
             {optionsMenuBody}
@@ -2658,11 +2665,11 @@ const Pixies = () => {
           <div
             role="menu"
             aria-label="Video options"
-            className="absolute inset-x-0 bottom-0 z-[60] max-h-[75%] overflow-y-auto rounded-t-2xl border-t border-sky-300/20 bg-blue-950/60 pb-[env(safe-area-inset-bottom)] text-white backdrop-blur-xl [animation:slideUp_0.22s_ease-out]"
+            className="absolute inset-x-0 bottom-0 z-[60] max-h-[75%] overflow-y-auto rounded-t-2xl border-t border-black/10 bg-white/95 pb-[env(safe-area-inset-bottom)] text-neutral-900 backdrop-blur-xl [animation:slideUp_0.22s_ease-out] dark:border-sky-300/20 dark:bg-blue-950/90 dark:text-white"
             onTouchStart={(event) => event.stopPropagation()}
             onTouchMove={(event) => event.stopPropagation()}
           >
-            <div className="mx-auto mb-1 mt-2.5 h-1 w-10 rounded-full bg-white/25" />
+            <div className="mx-auto mb-1 mt-2.5 h-1 w-10 rounded-full bg-black/20 dark:bg-white/25" />
             {optionsMenuBody}
           </div>
         </>

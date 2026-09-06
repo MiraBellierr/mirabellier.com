@@ -93,7 +93,7 @@ export const PixiesOnboarding = ({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm dark:bg-black/55"
+        className="absolute inset-0 bg-black/55 backdrop-blur-sm"
         aria-hidden="true"
       />
       <div

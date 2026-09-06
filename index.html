@@ -244,14 +244,6 @@
     <script>
       (function () {
         try {
-          // The Pixies viewer is always dark — force it before first paint so a
-          // refresh on that route never flashes the light theme.
-          if (/^\/pixies(\/|$)/.test(window.location.pathname)) {
-            document.documentElement.classList.add("dark");
-            document.documentElement.style.colorScheme = "dark";
-            return;
-          }
-
           var storedTheme = window.localStorage.getItem("mirabellier-theme");
 
           if (storedTheme === "dark") {

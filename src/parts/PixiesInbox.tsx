@@ -265,19 +265,19 @@ const PixiesInbox = ({ className = "" }: { className?: string }) => {
 
       {open && (
         <div
-          className="absolute right-0 top-full z-50 mt-2 flex max-h-[70vh] w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-sky-300/20 bg-blue-950/60 text-white shadow-2xl backdrop-blur-xl"
+          className="absolute right-0 top-full z-50 mt-2 flex max-h-[70vh] w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/95 text-neutral-900 shadow-2xl backdrop-blur-xl dark:border-sky-300/20 dark:bg-blue-950/90 dark:text-white"
           onWheel={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           onTouchMove={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
             <span className="text-sm font-bold">Notifications</span>
             <div className="flex items-center gap-1">
               {items.some((n) => !n.isRead) && (
                 <button
                   type="button"
                   onClick={() => void handleMarkAll()}
-                  className="rounded-full px-2 py-1 text-xs font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
+                  className="rounded-full px-2 py-1 text-xs font-semibold text-neutral-500 transition hover:bg-black/5 hover:text-neutral-900 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
                 >
                   Mark all read
                 </button>
@@ -286,7 +286,7 @@ const PixiesInbox = ({ className = "" }: { className?: string }) => {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close notifications"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-neutral-500 transition hover:bg-black/5 hover:text-neutral-900 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
               >
                 <CloseIcon />
               </button>
@@ -296,21 +296,21 @@ const PixiesInbox = ({ className = "" }: { className?: string }) => {
           <div className="flex-1 overflow-y-auto overscroll-contain">
             {loading && items.length === 0 ? (
               <div className="flex justify-center py-10">
-                <div className="h-7 w-7 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+                <div className="h-7 w-7 animate-spin rounded-full border-4 border-black/15 border-t-neutral-800 dark:border-white/20 dark:border-t-white" />
               </div>
             ) : error && items.length === 0 ? (
-              <div className="px-4 py-10 text-center text-sm text-white/60">
+              <div className="px-4 py-10 text-center text-sm text-neutral-500 dark:text-white/60">
                 <p>Could not load notifications.</p>
                 <button
                   type="button"
                   onClick={() => void loadPage(1)}
-                  className="mt-2 rounded-full bg-pink-500 px-4 py-1.5 text-xs font-bold transition hover:bg-pink-600"
+                  className="mt-2 rounded-full bg-pink-500 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-pink-600"
                 >
                   Retry
                 </button>
               </div>
             ) : items.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-white/55">
+              <p className="px-4 py-12 text-center text-sm text-neutral-500 dark:text-white/55">
                 You're all caught up. Likes, comments and replies will show up
                 here.
               </p>
@@ -328,11 +328,11 @@ const PixiesInbox = ({ className = "" }: { className?: string }) => {
                       <button
                         type="button"
                         onClick={() => void handleRowClick(n)}
-                        className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-white/5 ${
+                        className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-black/5 dark:hover:bg-white/5 ${
                           clickable ? "cursor-pointer" : "cursor-default"
                         } ${n.isRead ? "" : "bg-pink-500/10"}`}
                       >
-                        <span className="relative mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink-500/80 text-sm">
+                        <span className="relative mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink-500/80 text-sm text-white">
                           {system && !avatar ? (
                             <span aria-hidden="true">!</span>
                           ) : (
@@ -340,15 +340,15 @@ const PixiesInbox = ({ className = "" }: { className?: string }) => {
                           )}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm leading-snug text-white/90">
+                          <span className="block text-sm leading-snug text-neutral-800 dark:text-white/90">
                             {headline}
                           </span>
                           {quote && (
-                            <span className="mt-0.5 block truncate text-xs text-white/55">
+                            <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-white/55">
                               “{quote}”
                             </span>
                           )}
-                          <span className="mt-1 block text-[11px] font-semibold uppercase tracking-wide text-white/35">
+                          <span className="mt-1 block text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-white/35">
                             {formatNotificationTime(n.createdAt)}
                           </span>
                         </span>
@@ -368,7 +368,7 @@ const PixiesInbox = ({ className = "" }: { className?: string }) => {
                   type="button"
                   disabled={loading}
                   onClick={() => void loadPage(page + 1)}
-                  className="w-full rounded-full bg-white/10 py-2 text-xs font-bold text-white/80 transition hover:bg-white/15 disabled:opacity-50"
+                  className="w-full rounded-full bg-black/5 py-2 text-xs font-bold text-neutral-700 transition hover:bg-black/10 disabled:opacity-50 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/15"
                 >
                   {loading ? "Loading…" : "Load older"}
                 </button>
