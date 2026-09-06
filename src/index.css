@@ -392,6 +392,18 @@ body {
   padding: 0;
 }
 
+/* When the custom cursor is enabled, suppress the native cursor everywhere.
+   `!important` is deliberate: it has to beat Tailwind's `cursor-*` utilities
+   and inline `cursor` styles on late-mounted UI (e.g. the Pixies viewer),
+   which a one-shot querySelectorAll pass can't reach. Removing the class on
+   `<html>` restores every element's normal cursor. */
+html.custom-cursor,
+html.custom-cursor *,
+html.custom-cursor *::before,
+html.custom-cursor *::after {
+  cursor: none !important;
+}
+
 #root,
 button,
 input,

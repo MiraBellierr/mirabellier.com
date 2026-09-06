@@ -2172,7 +2172,7 @@ const Pixies = () => {
             return (
               <div
                 key={pixie.id}
-                className="absolute inset-0 will-change-transform"
+                className="absolute inset-0"
                 style={{
                   transform: isDragging
                     ? `translateY(calc(${(index - activeIndex) * 100}% + ${dragOffset}px))`
@@ -2180,6 +2180,13 @@ const Pixies = () => {
                   transition: isDragging
                     ? "none"
                     : "transform 420ms cubic-bezier(0.25, 0.8, 0.25, 1)",
+                  // Promote to a GPU layer only while the slide is actually
+                  // moving. A permanent `will-change: transform` parks every
+                  // slide on its own compositor layer, which on Chrome/Linux
+                  // makes the mouse cursor disappear over the overlay buttons
+                  // and can leave the <video> stuck on a black frame (audio
+                  // only) until something forces a repaint.
+                  willChange: isDragging ? "transform" : undefined,
                 }}
               >
                 <video

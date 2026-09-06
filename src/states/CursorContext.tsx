@@ -63,22 +63,20 @@ export function CursorProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isCustomCursor]);
 
+  // Drive native-cursor suppression from a single class on <html>. The
+  // `html.custom-cursor *` rule in index.css does the hiding and — via
+  // `!important` — beats Tailwind `cursor-*` utilities and inline `cursor`
+  // styles on any element, including UI mounted long after this provider
+  // (the Pixies viewer, modals, late routes). This replaces the old one-shot
+  // querySelectorAll pass, which never reached those elements.
   useEffect(() => {
-    if (!isCustomCursor) {
-      document.body.style.cursor = "default";
-    } else {
-      document.body.style.cursor = "none";
-    }
-  }, [isCustomCursor]);
-
-  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("custom-cursor", isCustomCursor);
     document.body.style.cursor = isCustomCursor ? "none" : "default";
-    const interactiveSelectors = 'a, button, input, [role="button"], [onclick]';
-    const interactiveElements = document.querySelectorAll(interactiveSelectors);
-
-    interactiveElements.forEach((el) => {
-      (el as HTMLElement).style.cursor = isCustomCursor ? "none" : "";
-    });
+    return () => {
+      root.classList.remove("custom-cursor");
+      document.body.style.cursor = "default";
+    };
   }, [isCustomCursor]);
 
   const toggleCursor = () => {
