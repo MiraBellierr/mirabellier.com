@@ -1687,10 +1687,33 @@ const Pixies = () => {
 
   const preloadFor = (index: number) => {
     const distance = index - activeIndex;
-    return distance >= 0 && distance <= PRELOAD_WINDOW_AHEAD
+    // The active clip, the next few, and the one just behind (swipe-back)
+    // fully buffer; anything further only pulls metadata + first frame.
+    return distance >= -1 && distance <= PRELOAD_WINDOW_AHEAD
       ? "auto"
       : "metadata";
   };
+
+  // Pull and paint frame 0 so a not-yet-playing clip shows its opening frame
+  // instead of a black rectangle. Nudging `currentTime` a hair past zero
+  // forces the browser to fetch, decode and present that frame even under
+  // `preload="metadata"`, and also makes Chrome/Linux actually composite it
+  // (the same paint quirk behind the "audio plays, screen is black" report).
+  const firstFrameNudgedRef = useRef<WeakSet<HTMLVideoElement>>(new WeakSet());
+  const paintFirstFrame = useCallback((video: HTMLVideoElement | null) => {
+    if (!video || firstFrameNudgedRef.current.has(video)) return;
+    // A clip that's already running paints its own frames — leave it alone.
+    if (!video.paused || video.currentTime > 0.05) {
+      firstFrameNudgedRef.current.add(video);
+      return;
+    }
+    try {
+      video.currentTime = 0.001;
+      firstFrameNudgedRef.current.add(video);
+    } catch {
+      // Not seekable yet — a later loadeddata/canplay event retries.
+    }
+  }, []);
 
   const isExpanded = (id: string) => expandedIds.has(id);
 
@@ -2200,6 +2223,12 @@ const Pixies = () => {
                   draggable={false}
                   onDragStart={(event) => event.preventDefault()}
                   preload={preloadFor(index)}
+                  onLoadedMetadata={(event) =>
+                    paintFirstFrame(event.currentTarget)
+                  }
+                  onLoadedData={(event) =>
+                    paintFirstFrame(event.currentTarget)
+                  }
                   onPlay={(event) => {
                     // Keep the control visibility in sync with the real
                     // playback state of the active video.
