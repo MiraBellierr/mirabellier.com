@@ -184,7 +184,7 @@ function EquipmentRewardModal({
   price: number;
   shopItem: ArenaShopItem;
   onClose: () => void;
-  onFodder: (pieceId: string, refundAmount: number) => void;
+  onFodder: (pieceId: string, estimatedRefund: number) => void;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -617,18 +617,18 @@ const ArenaShop = () => {
     setObtainedPiece(null);
   }, []);
 
-  const handleFodderReward = useCallback(async (pieceId: string, refundAmount: number) => {
+  const handleFodderReward = useCallback(async (pieceId: string, estimatedRefund: number) => {
     if (!token) return;
     const confirmed = await confirm({
       title: "Scrap equipment?",
-      message: `Scrap this gear for ${refundAmount} coins? This cannot be undone.`,
+      message: `Scrap this gear for ${estimatedRefund} coins? This cannot be undone.`,
       confirmLabel: "Scrap",
       cancelLabel: "Cancel",
     });
     if (!confirmed) return;
     setActioningId(`fodder:${pieceId}`);
     try {
-      await fodderArenaPiece(token, pieceId, refundAmount);
+      await fodderArenaPiece(token, pieceId);
       const refreshed = await fetchArenaShop(token);
       setShop(refreshed);
       setObtainedPiece(null);

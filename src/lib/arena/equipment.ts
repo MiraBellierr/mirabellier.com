@@ -73,13 +73,12 @@ export async function unlockArenaPiece(
 export async function fodderArenaPiece(
   token: string,
   pieceId: string,
-  refundAmount?: number,
 ): Promise<{ fodderPieceId: string; coinsGained: number }> {
   const response = await fetch(joinApi("/arena/shop/fodder"), {
     method: "POST",
     credentials: "include",
     headers: makeAuthHeaders(token),
-    body: JSON.stringify({ pieceId, refundAmount }),
+    body: JSON.stringify({ pieceId }),
   });
 
   if (!response.ok) {
