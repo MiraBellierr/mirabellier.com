@@ -390,14 +390,30 @@ export function newImportKey(): string {
   return `imp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-export interface SocialImportStatus {
-  jobId: string;
-  state: "queued" | "running" | "done" | "error";
+export type PixieImportStatus =
+  | "queued"
+  | "running"
+  | "done"
+  | "error"
+  | "canceled";
+
+/** One row of the durable admin "download & import" queue. */
+export interface PixieImportQueueItem {
+  id: string;
+  url: string;
+  platform: VideoPlatform | null;
+  title: string;
+  username: string;
+  avatarUrl: string;
+  status: PixieImportStatus;
   stage: string;
   message: string;
   progress: number;
-  error?: string | null;
-  pixie?: Pixie | null;
+  error: string | null;
+  /** `user_videos.id` of the imported clip once `status === "done"`. */
+  videoId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface VideoResolveResult {
@@ -467,24 +483,76 @@ export function fetchVideoResolveStatus(
   return fetchVideoJobStatus(jobId, "/pixies/admin/resolve/status");
 }
 
-export function startSocialImport(
-  input: ImportSocialPixieInput,
-): Promise<{ jobId: string }> {
-  return startVideoJob("/pixies/admin/import", {
-    url: input.url,
-    title: input.title,
-    tags: input.tags,
-    username: input.username,
-    avatarUrl: input.avatarUrl,
-    importKey: input.importKey,
-    verified: input.verified ?? false,
+async function importQueueRequest<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
+    ...init,
   });
+  const data = (await res.json().catch(() => null)) as
+    | (T & { error?: string })
+    | null;
+  if (!res.ok || !data) {
+    throw new Error(
+      (data as { error?: string } | null)?.error ||
+        "Import queue request failed",
+    );
+  }
+  return data as T;
 }
 
-export function fetchSocialImportStatus(
-  jobId: string,
-): Promise<VideoJobStatus> {
-  return fetchVideoJobStatus(jobId, "/pixies/admin/import/status");
+/** Add a link to the durable server-side import queue. */
+export async function enqueuePixieImport(
+  input: ImportSocialPixieInput,
+): Promise<PixieImportQueueItem> {
+  const data = await importQueueRequest<{ item: PixieImportQueueItem }>(
+    "/pixies/admin/import/queue",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: input.url,
+        title: input.title,
+        tags: input.tags,
+        username: input.username,
+        avatarUrl: input.avatarUrl,
+        importKey: input.importKey,
+        verified: input.verified ?? false,
+      }),
+    },
+  );
+  return data.item;
+}
+
+/** Current queue: running + waiting first, then recently finished. */
+export async function fetchPixieImportQueue(): Promise<PixieImportQueueItem[]> {
+  const data = await importQueueRequest<{ items: PixieImportQueueItem[] }>(
+    "/pixies/admin/import/queue",
+  );
+  return data.items;
+}
+
+export function cancelPixieImport(id: string): Promise<unknown> {
+  return importQueueRequest(
+    `/pixies/admin/import/queue/${encodeURIComponent(id)}/cancel`,
+    { method: "POST" },
+  );
+}
+
+export function retryPixieImport(id: string): Promise<unknown> {
+  return importQueueRequest(
+    `/pixies/admin/import/queue/${encodeURIComponent(id)}/retry`,
+    { method: "POST" },
+  );
+}
+
+export function clearFinishedPixieImports(): Promise<{ removed: number }> {
+  return importQueueRequest<{ removed: number }>(
+    "/pixies/admin/import/queue/clear",
+    { method: "POST" },
+  );
 }
 
 // Message the backend returns when the job map no longer knows the job id

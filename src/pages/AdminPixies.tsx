@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
@@ -6,7 +6,10 @@ import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { API_BASE } from "@/lib/config";
 import {
-  fetchSocialImportStatus,
+  cancelPixieImport,
+  clearFinishedPixieImports,
+  enqueuePixieImport,
+  fetchPixieImportQueue,
   fetchVideoResolveStatus,
   MAX_AUTHOR_USERNAME_LENGTH,
   MAX_VIDEO_TITLE_LENGTH,
@@ -15,10 +18,11 @@ import {
   pollVideoJob,
   readVideoDuration,
   resolveAvatarUrl,
-  startSocialImport,
+  retryPixieImport,
   startVideoResolve,
   truncateCodePoints,
   uploadAdminPixie,
+  type PixieImportQueueItem,
   type ResolvedVideoInfo,
 } from "@/lib/pixies";
 import AuthGateShell from "../parts/AuthGateShell";
@@ -110,6 +114,215 @@ function ProgressBlock({ job }: { job: JobView | null }) {
   );
 }
 
+const QUEUE_ACTIVE_STATES = new Set(["queued", "running"]);
+
+function ImportQueuePanel({ refreshKey }: { refreshKey: number }) {
+  const { showToast } = useToast();
+  const [items, setItems] = useState<PixieImportQueueItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setItems(await fetchPixieImportQueue());
+    } catch {
+      // Transient — the next poll retries.
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  // Immediate load on mount and whenever the parent enqueues something.
+  useEffect(() => {
+    void load();
+  }, [load, refreshKey]);
+
+  // Poll while the panel is open: briskly when work is in flight, lazily
+  // when the queue is idle. Leaving/refreshing the page just stops the timer;
+  // remounting reloads the true state from the server.
+  const hasActive = items.some((item) => QUEUE_ACTIVE_STATES.has(item.status));
+  useEffect(() => {
+    const interval = window.setInterval(() => void load(), hasActive ? 2000 : 8000);
+    return () => window.clearInterval(interval);
+  }, [load, hasActive]);
+
+  const act = async (
+    id: string,
+    fn: (id: string) => Promise<unknown>,
+    failMessage: string,
+  ) => {
+    setBusyId(id);
+    try {
+      await fn(id);
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : failMessage);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const clearFinished = async () => {
+    try {
+      await clearFinishedPixieImports();
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Could not clear the queue");
+    }
+  };
+
+  if (!loaded && items.length === 0) return null;
+
+  const finishedCount = items.filter(
+    (item) => !QUEUE_ACTIVE_STATES.has(item.status),
+  ).length;
+
+  return (
+    <div className="card-border rounded-2xl p-4 sm:p-6 shadow-lg bg-white/90 dark:bg-purple-900/80">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <h2 className="text-lg sm:text-xl font-bold text-blue-700 dark:text-purple-200 flex items-center gap-2">
+          <span>📥</span>
+          <span>Import queue</span>
+          {hasActive && (
+            <span
+              className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-pink-500"
+              aria-label="processing"
+            />
+          )}
+        </h2>
+        {finishedCount > 0 && (
+          <button
+            type="button"
+            onClick={clearFinished}
+            className="text-xs font-bold text-blue-500 hover:text-pink-500 dark:text-purple-300"
+          >
+            clear finished ({finishedCount})
+          </button>
+        )}
+      </div>
+
+      <p className="mt-1 text-xs text-blue-500 dark:text-purple-300">
+        Imports run one at a time on the server — you can close or refresh this
+        page and they'll keep going.
+      </p>
+
+      {items.length === 0 ? (
+        <p className="mt-4 text-sm text-blue-400 dark:text-purple-400">
+          Nothing queued right now.
+        </p>
+      ) : (
+        <ul className="mt-4 space-y-2">
+          {items.map((item) => (
+            <QueueRow
+              key={item.id}
+              item={item}
+              busy={busyId === item.id}
+              onCancel={() =>
+                act(item.id, cancelPixieImport, "Could not cancel")
+              }
+              onRetry={() => act(item.id, retryPixieImport, "Could not retry")}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function QueueRow({
+  item,
+  busy,
+  onCancel,
+  onRetry,
+}: {
+  item: PixieImportQueueItem;
+  busy: boolean;
+  onCancel: () => void;
+  onRetry: () => void;
+}) {
+  const badge: Record<PixieImportQueueItem["status"], string> = {
+    queued: "text-blue-500 dark:text-purple-300",
+    running: "text-pink-600 dark:text-pink-300",
+    done: "text-green-600 dark:text-green-300",
+    error: "text-red-600 dark:text-pink-300",
+    canceled: "text-blue-400 dark:text-purple-400",
+  };
+  const label = item.username ? `@${item.username}` : "resolving…";
+  const secondary = item.title.trim() || item.url;
+
+  return (
+    <li className="rounded-xl border border-blue-200 dark:border-purple-600 bg-blue-50/60 dark:bg-purple-800/40 p-3">
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-blue-700 dark:text-purple-200">
+            {label}
+            {item.platform ? (
+              <span className="ml-1 font-normal text-blue-400 dark:text-purple-400">
+                · {item.platform}
+              </span>
+            ) : null}
+          </p>
+          <p className="truncate text-xs text-blue-500 dark:text-purple-300">
+            {secondary}
+          </p>
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <span className={`text-xs font-bold capitalize ${badge[item.status]}`}>
+            {item.status}
+          </span>
+          {item.status === "queued" && (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={busy}
+              className="rounded-full px-2 py-0.5 text-xs font-bold text-blue-500 hover:bg-red-500 hover:text-white disabled:opacity-50 dark:text-purple-300"
+            >
+              cancel
+            </button>
+          )}
+          {(item.status === "error" || item.status === "canceled") && (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={busy}
+              className="rounded-full bg-pink-500 px-2 py-0.5 text-xs font-bold text-white hover:bg-pink-600 disabled:opacity-50"
+            >
+              retry
+            </button>
+          )}
+          {item.status === "done" && item.videoId && (
+            <Link
+              to={`/pixies/${item.videoId}`}
+              className="rounded-full px-2 py-0.5 text-xs font-bold text-pink-500 hover:underline"
+            >
+              view
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {item.status === "running" && (
+        <div className="mt-2 space-y-1">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-blue-100 dark:bg-purple-800">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-pink-400 to-pink-600 transition-all duration-500 ease-linear"
+              style={{ width: `${Math.round(item.progress)}%` }}
+            />
+          </div>
+          <p className="text-xs text-blue-400 dark:text-purple-400">
+            {item.message} ({Math.round(item.progress)}%)
+          </p>
+        </div>
+      )}
+      {item.status === "error" && item.error && (
+        <p className="mt-2 text-xs text-red-600 dark:text-pink-300">
+          {item.error}
+        </p>
+      )}
+    </li>
+  );
+}
+
 const AdminPixies = () => {
   const auth = useAuth();
   const { showToast } = useToast();
@@ -120,7 +333,6 @@ const AdminPixies = () => {
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [importJob, setImportJob] = useState<JobView | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [sourceUrl, setSourceUrl] = useState("");
@@ -132,7 +344,8 @@ const AdminPixies = () => {
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [resolveJob, setResolveJob] = useState<JobView | null>(null);
   const [resolveNotice, setResolveNotice] = useState<string | null>(null);
-  const [importNotice, setImportNotice] = useState<string | null>(null);
+  // Bumped after a successful enqueue so the queue panel reloads immediately.
+  const [queueRefreshKey, setQueueRefreshKey] = useState(0);
 
   const tagField = useVideoTagInput({ onMessage: setMessage });
   const { tags, setTags, tagInput, setTagInput } = tagField;
@@ -166,9 +379,7 @@ const AdminPixies = () => {
       return;
     }
     setIsUploading(true);
-    setUploadProgress(0);
-    setImportJob(null);
-    setImportNotice(null);
+    setUploadProgress(videoFile ? 0 : null);
     setMessage(null);
     const authorVerified = resolvedInfo?.verified === true;
     try {
@@ -185,42 +396,23 @@ const AdminPixies = () => {
           onProgress: setUploadProgress,
         });
         setVideoFile(null);
+        showToast(`Uploaded as ${username.trim()}! 🎉`);
       } else {
-        // One key for the whole attempt: pollVideoJob may call this closure
-        // again if the backend restarts mid-import, and reusing the key lets
-        // the server recognise an already-imported video instead of inserting
-        // a duplicate.
-        const importKey = newImportKey();
-        await pollVideoJob(
-          () =>
-            startSocialImport({
-              url: resolvedUrl,
-              title: videoTitle,
-              tags: normalizedTags,
-              username: username.trim(),
-              avatarUrl,
-              importKey,
-              verified: authorVerified,
-            }),
-          fetchSocialImportStatus,
-          (current) =>
-            setImportJob({
-              progress: current.progress,
-              message: current.message,
-              state: current.state,
-              stage: current.stage,
-            }),
-          {
-            onRestart: () => {
-              // The backend restarted mid-import and the job vanished —
-              // restart it transparently (pollVideoJob starts a new job).
-              setImportJob(null);
-              setImportNotice(
-                "The server restarted while importing — retrying automatically…",
-              );
-            },
-          },
-        );
+        // Hand the link to the durable server-side queue and return right
+        // away — the import runs in the background and survives the admin
+        // leaving or refreshing this page. `importKey` keeps a retry from
+        // inserting a second copy.
+        await enqueuePixieImport({
+          url: resolvedUrl,
+          title: videoTitle,
+          tags: normalizedTags,
+          username: username.trim(),
+          avatarUrl,
+          importKey: newImportKey(),
+          verified: authorVerified,
+        });
+        setQueueRefreshKey((n) => n + 1);
+        showToast(`Added @${username.trim()}'s clip to the import queue 📥`);
       }
       setVideoTitle("");
       setTags([]);
@@ -229,7 +421,6 @@ const AdminPixies = () => {
       setResolvedUrl("");
       setResolvedInfo(null);
       setResolveError(null);
-      showToast(`Uploaded as ${username.trim()}! 🎉`);
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Video upload failed",
@@ -237,8 +428,6 @@ const AdminPixies = () => {
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
-      setImportJob(null);
-      setImportNotice(null);
     }
   };
 
@@ -378,7 +567,7 @@ const AdminPixies = () => {
                 </button>
               </form>
 
-              {resolveJob && !importJob && uploadProgress === null && (
+              {resolveJob && uploadProgress === null && (
                 <div className="mt-3">
                   <ProgressBlock job={resolveJob} />
                 </div>
@@ -543,16 +732,6 @@ const AdminPixies = () => {
                   emptyPlaceholder="Add a tag (optional), e.g. gaming, anime..."
                 />
 
-                {importJob && !resolveJob && (
-                  <ProgressBlock job={importJob} />
-                )}
-
-                {importJob && !resolveJob && importNotice && (
-                  <p className="text-xs text-amber-600 dark:text-amber-300">
-                    {importNotice}
-                  </p>
-                )}
-
                 {uploadProgress !== null && (
                   <div className="h-2 w-full overflow-hidden rounded-full bg-blue-100 dark:bg-purple-800">
                     <div
@@ -580,13 +759,15 @@ const AdminPixies = () => {
                   {isUploading
                     ? videoFile
                       ? "Uploading..."
-                      : "Downloading & importing..."
+                      : "Adding to queue..."
                     : videoFile
                       ? "Upload video"
-                      : "Download & import"}
+                      : "Add to import queue"}
                 </button>
               </form>
             </div>
+
+            <ImportQueuePanel refreshKey={queueRefreshKey} />
             </div>
           </main>
 
@@ -598,8 +779,12 @@ const AdminPixies = () => {
                 </h2>
                 <p>
                   • Paste a TikTok / Instagram pixie / YouTube Shorts link and
-                  press "Download & import" to download and upload the video
-                  in one go.
+                  press "Add to import queue" — downloads run one at a time on
+                  the server, so you can queue several and leave the page.
+                </p>
+                <p>
+                  • The queue below survives a refresh or a restart. Failed
+                  imports can be retried from there.
                 </p>
                 <p>
                   • If automatic download is blocked, download the video
