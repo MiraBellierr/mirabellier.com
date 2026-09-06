@@ -463,8 +463,22 @@ const Pixies = () => {
     ? (pixies.find((pixie) => pixie.id === sharedVideoId) ?? null)
     : null;
 
+  const pixiesSeoDescription = "Pixies - Short videos and clips from the community";
+
   usePageSeo({
     canonical: sharePageUrl,
+    socialMeta: {
+      title: sharedPixie
+        ? `@${sharedPixie.author?.username ?? "someone"} · Pixies`
+        : "Pixies · Mirabellier",
+      description:
+        (sharedPixie?.title.trim() || pixiesSeoDescription),
+      url: sharePageUrl,
+      image: sharedPixie?.author?.avatar
+        ? (resolveAvatarUrl(sharedPixie.author.avatar) ?? `${SITE_ORIGIN}/pixies.png`)
+        : `${SITE_ORIGIN}/pixies.png`,
+      type: sharedPixie ? "video.other" : "website",
+    },
     structuredDataId: "pixies-structured-data",
     structuredData: sharedPixie
       ? {
@@ -476,6 +490,9 @@ const Pixies = () => {
           description:
             sharedPixie.title.trim() ||
             "A short video clip on the Mirabellier community.",
+          thumbnailUrl:
+            resolveAvatarUrl(sharedPixie.author?.avatar) ??
+            `${SITE_ORIGIN}/pixies.png`,
           contentUrl: resolveVideoUrl(sharedPixie.url),
           uploadDate: sharedPixie.createdAt,
           url: sharePageUrl,
@@ -484,7 +501,8 @@ const Pixies = () => {
           "@context": "https://schema.org",
           "@type": "WebPage",
           name: "Pixies",
-          description: "Short videos and clips from the Mirabellier community",
+          description: pixiesSeoDescription,
+          image: `${SITE_ORIGIN}/pixies.png`,
           url: sharePageUrl,
         },
   });
