@@ -819,6 +819,20 @@ const Pixies = () => {
     };
   }, []);
 
+  // The viewer is a full-screen dark surface — force dark mode while it's open
+  // (so `dark:` styles in the onboarding / shared parts resolve dark) and
+  // restore the viewer's real theme preference on exit.
+  useEffect(() => {
+    const root = document.documentElement;
+    const addedDark = !root.classList.contains("dark");
+    if (addedDark) root.classList.add("dark");
+    root.style.colorScheme = "dark";
+    return () => {
+      if (addedDark) root.classList.remove("dark");
+      root.style.colorScheme = "";
+    };
+  }, []);
+
   // Keep playback in sync with the active slide
   useEffect(() => {
     const activeChanged = lastActiveIndexRef.current !== activeIndex;
