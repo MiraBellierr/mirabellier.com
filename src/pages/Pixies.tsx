@@ -8,6 +8,7 @@ import { canAccessAdminPanel } from "@/lib/user-permissions";
 import {
   deletePixie,
   deletePixieComment,
+  fetchFollowingPixies,
   fetchPopularPixies,
   fetchPixieComments,
   fetchPixiesFeed,
@@ -26,7 +27,9 @@ import { MentionText } from "@/parts/MentionText";
 import AvatarImage from "@/parts/AvatarImage";
 import VerifiedBadge from "@/parts/VerifiedBadge";
 import { PixiesOnboarding } from "@/parts/PixiesOnboarding";
+import PixiesInbox from "@/parts/PixiesInbox";
 import { hasOnboardedPixies, readStoredInterests } from "@/lib/pixies-prefs";
+import { fetchFollowState, toggleFollow } from "@/lib/user-follows";
 
 const PRELOAD_WINDOW_AHEAD = 2;
 const RENDER_WINDOW_BEFORE = 2;
@@ -37,10 +40,24 @@ const WHEEL_COOLDOWN_MS = 650;
 const FEED_BATCH_SIZE = 10;
 const FEED_FETCH_AHEAD = 2;
 
-type PixieTab = "fyp" | "search" | "popular";
+const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2] as const;
 
-const PIXIE_TABS: ReadonlyArray<{ id: PixieTab; label: string }> = [
+// Blocks the mobile browser's long-press selection / media callout (the blue
+// tint over the clip). Attached natively so it can run non-passive.
+const blockNativeLongPress = (event: Event) => {
+  event.preventDefault();
+};
+
+type PixieTab = "fyp" | "following" | "search" | "popular";
+
+const PIXIE_TABS: ReadonlyArray<{
+  id: PixieTab;
+  label: string;
+  /** Tabs flagged `authOnly` are hidden from signed-out viewers. */
+  authOnly?: boolean;
+}> = [
   { id: "fyp", label: "For You" },
+  { id: "following", label: "Following", authOnly: true },
   { id: "search", label: "Search" },
   { id: "popular", label: "Popular" },
 ];
@@ -220,6 +237,71 @@ const SearchIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
+// ── Options-menu icons (thin line style, 20px) ──
+const MenuIcon = ({ children }: { children: React.ReactNode }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="20"
+    height="20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className="flex-shrink-0 text-white/85"
+  >
+    {children}
+  </svg>
+);
+
+const SpeedIcon = () => (
+  <MenuIcon>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 12l4-3" />
+    <path d="M12 3v2M3 12h2M12 21v-0M19 12h2" />
+  </MenuIcon>
+);
+
+const EyeSlashIcon = ({ off }: { off: boolean }) => (
+  <MenuIcon>
+    {off ? (
+      <>
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ) : (
+      <>
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20C5 20 1 12 1 12a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </>
+    )}
+  </MenuIcon>
+);
+
+const DownloadIcon = () => (
+  <MenuIcon>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </MenuIcon>
+);
+
+const ShareArrowIcon = () => (
+  <MenuIcon>
+    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+    <polyline points="16 6 12 2 8 6" />
+    <line x1="12" y1="2" x2="12" y2="15" />
+  </MenuIcon>
+);
+
+const LinkIcon = () => (
+  <MenuIcon>
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </MenuIcon>
+);
+
 const PixieCaptionText = ({
   id,
   title,
@@ -273,6 +355,9 @@ const Pixies = () => {
   const [likeOverrides, setLikeOverrides] = useState<Record<string, LikeState>>(
     {},
   );
+  // Follow state keyed by author id; `followBusy` guards double-taps mid-request.
+  const [followState, setFollowState] = useState<Record<string, boolean>>({});
+  const [followBusy, setFollowBusy] = useState<Set<string>>(new Set());
   const [commentPanelOpen, setCommentPanelOpen] = useState(false);
   const [comments, setComments] = useState<PixieComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -311,8 +396,26 @@ const Pixies = () => {
     readStoredInterests(),
   );
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // Which edges of the tab strip currently have hidden content to scroll to —
+  // drives the edge fade so it disappears once you reach that end.
+  const [tabEdges, setTabEdges] = useState({ start: false, end: false });
+  // Video options menu: right-click opens it anchored at the cursor, a
+  // mobile long-press opens it as a bottom sheet. Holds speed, a clear-display
+  // toggle, and download / share / copy actions for the active clip.
+  const [optionsMenu, setOptionsMenu] = useState<
+    { mode: "anchored"; x: number; y: number } | { mode: "sheet" } | null
+  >(null);
+  const [speedRate, setSpeedRate] = useState(1);
+  const [clearDisplay, setClearDisplay] = useState(false);
 
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const tabStripRef = useRef<HTMLDivElement | null>(null);
+  const speedRateRef = useRef(1);
+  const contextMenuOpenRef = useRef(false);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressFiredRef = useRef(false);
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPointerTypeRef = useRef<string>("mouse");
   const progressBarRef = useRef<HTMLDivElement | null>(null);
   const progressTrackRef = useRef<HTMLDivElement | null>(null);
   const scrubbingRef = useRef(false);
@@ -406,15 +509,25 @@ const Pixies = () => {
       };
     }
 
+    // Following tab needs a signed-in viewer; otherwise show the empty state.
+    if (tab === "following" && !auth?.user) {
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const request =
       tab === "popular"
         ? fetchPopularPixies({ window: popularWindow, limit: FEED_BATCH_SIZE })
         : tab === "search"
           ? searchPixies(submittedQuery, { limit: FEED_BATCH_SIZE })
-          : fetchPixiesFeed(sharedVideoId, {
-              limit: FEED_BATCH_SIZE,
-              interests,
-            });
+          : tab === "following"
+            ? fetchFollowingPixies({ limit: FEED_BATCH_SIZE })
+            : fetchPixiesFeed(sharedVideoId, {
+                limit: FEED_BATCH_SIZE,
+                interests,
+              });
 
     request
       .then((data) => {
@@ -442,7 +555,7 @@ const Pixies = () => {
     return () => {
       cancelled = true;
     };
-  }, [sharedVideoId, tab, submittedQuery, popularWindow, interests]);
+  }, [sharedVideoId, tab, submittedQuery, popularWindow, interests, auth?.user]);
 
   // Fetch the next batch in real time once we get within 2 videos of the end.
   useEffect(() => {
@@ -451,6 +564,7 @@ const Pixies = () => {
     if (pixies.length - activeIndex > FEED_FETCH_AHEAD) return;
     if (fetchingMoreRef.current) return;
     if (tab === "search" && !submittedQuery) return;
+    if (tab === "following" && !auth?.user) return;
     fetchingMoreRef.current = true;
     // Offset pagination: the server slices the (deterministic within a session)
     // ordering from here instead of us shipping an ever-growing exclude list.
@@ -468,11 +582,13 @@ const Pixies = () => {
               limit: FEED_BATCH_SIZE,
               offset,
             })
-          : fetchPixiesFeed(sharedVideoId, {
-              limit: FEED_BATCH_SIZE,
-              offset,
-              interests,
-            });
+          : tab === "following"
+            ? fetchFollowingPixies({ limit: FEED_BATCH_SIZE, offset })
+            : fetchPixiesFeed(sharedVideoId, {
+                limit: FEED_BATCH_SIZE,
+                offset,
+                interests,
+              });
     request
       .then((data) => {
         setHasMore(data.length >= FEED_BATCH_SIZE);
@@ -498,6 +614,7 @@ const Pixies = () => {
     popularWindow,
     interests,
     sharedVideoId,
+    auth?.user,
   ]);
 
   // Mark the active pixie as watched so unwatched pixies come first in future feeds.
@@ -509,6 +626,55 @@ const Pixies = () => {
     markedViewedRef.current.add(pixie.id);
     void markPixieViewed(pixie.id);
   }, [activeIndex, pixies, auth?.user]);
+
+  // Resolve the "am I following this creator?" flag once per author as it
+  // scrolls into view, so the action-rail avatar can show the follow (+) badge.
+  const fetchedFollowRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const author = pixies[activeIndex]?.author;
+    if (!author?.id || !auth?.user || author.id === auth.user.id) return;
+    if (fetchedFollowRef.current.has(author.id)) return;
+    fetchedFollowRef.current.add(author.id);
+    fetchFollowState(author.id)
+      .then((state) => {
+        setFollowState((current) => ({
+          ...current,
+          [author.id]: state.following,
+        }));
+      })
+      .catch(() => {
+        fetchedFollowRef.current.delete(author.id);
+      });
+  }, [activeIndex, pixies, auth?.user]);
+
+  const handleFollow = async (pixie: Pixie) => {
+    const author = pixie.author;
+    if (!author?.id) return;
+    if (!auth?.user) {
+      navigate("/login");
+      return;
+    }
+    if (author.id === auth.user.id || followBusy.has(author.id)) return;
+    setFollowBusy((current) => new Set(current).add(author.id));
+    const optimistic = !followState[author.id];
+    setFollowState((current) => ({ ...current, [author.id]: optimistic }));
+    try {
+      const result = await toggleFollow(author.id);
+      setFollowState((current) => ({
+        ...current,
+        [author.id]: result.following,
+      }));
+    } catch {
+      setFollowState((current) => ({ ...current, [author.id]: !optimistic }));
+      showToast("Could not update follow");
+    } finally {
+      setFollowBusy((current) => {
+        const next = new Set(current);
+        next.delete(author.id);
+        return next;
+      });
+    }
+  };
 
   const clampIndex = useCallback(
     (index: number) => Math.max(0, Math.min(pixies.length - 1, index)),
@@ -527,6 +693,7 @@ const Pixies = () => {
         tapTimeoutRef.current = null;
       }
       lastTapRef.current = 0;
+      setOptionsMenu(null);
       const next = clampIndex(target);
       activeIndexRef.current = next;
       setActiveIndex(next);
@@ -551,6 +718,7 @@ const Pixies = () => {
     (index: number, onBlocked?: () => void) => {
       const video = videoRefs.current[index];
       if (!video) return;
+      video.playbackRate = speedRateRef.current;
       void video.play().catch((error: unknown) => {
         // The browser aborts a pending play() with AbortError when the video
         // is paused because the slide changed before playback started. That is
@@ -597,6 +765,37 @@ const Pixies = () => {
       if (video) video.muted = muted;
     }
   }, [muted, pixies]);
+
+  // Kill the iOS/Android long-press blue tint on the <video> itself: block the
+  // gestures that start it (touchstart, selectstart, contextmenu) with native
+  // non-passive listeners. CSS `user-select`/`touch-callout` alone doesn't
+  // fully suppress it on media elements. Each <video> is guarded once.
+  const longPressGuardedRef = useRef<WeakSet<HTMLVideoElement>>(new WeakSet());
+  useEffect(() => {
+    for (const video of videoRefs.current) {
+      if (!video || longPressGuardedRef.current.has(video)) continue;
+      longPressGuardedRef.current.add(video);
+      video.addEventListener("touchstart", blockNativeLongPress, {
+        passive: false,
+      });
+      video.addEventListener("selectstart", blockNativeLongPress);
+      video.addEventListener("contextmenu", blockNativeLongPress);
+    }
+  }, [pixies, activeIndex]);
+
+  // Playback speed is applied the same imperative way as mute: keep a ref for
+  // gesture handlers, and (re)sync every mounted <video> when the rate changes
+  // or new slides mount.
+  useEffect(() => {
+    speedRateRef.current = speedRate;
+    for (const video of videoRefs.current) {
+      if (video) video.playbackRate = speedRate;
+    }
+  }, [speedRate, pixies]);
+
+  useEffect(() => {
+    contextMenuOpenRef.current = optionsMenu !== null;
+  }, [optionsMenu]);
 
   // The pixie viewer owns the whole screen and uses vertical drags to navigate.
   // Freeze the document scroll and disable vertical overscroll while it's open
@@ -711,6 +910,10 @@ const Pixies = () => {
       ) {
         return;
       }
+      if (contextMenuOpenRef.current) {
+        if (event.key === "Escape") setOptionsMenu(null);
+        return;
+      }
       if (shareOpenRef.current) {
         if (event.key === "Escape") {
           closeShare();
@@ -741,6 +944,10 @@ const Pixies = () => {
   // Wheel navigation (native listener so we can preventDefault)
   useEffect(() => {
     const handleWheel = (event: WheelEvent) => {
+      if (contextMenuOpenRef.current) {
+        setOptionsMenu(null);
+        return;
+      }
       if (commentPanelOpenRef.current) return;
       if (shareOpenRef.current) return;
       if (pixies.length <= 1) return;
@@ -777,6 +984,7 @@ const Pixies = () => {
   }, [pixies.length, goNext, goPrev, playActiveImmediately]);
 
   const handleTouchStart = (event: React.TouchEvent) => {
+    if (contextMenuOpenRef.current) return;
     if (commentPanelOpenRef.current) return;
     if (shareOpenRef.current) return;
     if (scrubbingRef.current) return;
@@ -793,6 +1001,7 @@ const Pixies = () => {
 
   const handleTouchMove = (event: React.TouchEvent) => {
     if (
+      contextMenuOpenRef.current ||
       commentPanelOpenRef.current ||
       shareOpenRef.current ||
       !touchStartRef.current
@@ -804,7 +1013,13 @@ const Pixies = () => {
   };
 
   const handleTouchEnd = () => {
-    if (commentPanelOpenRef.current || shareOpenRef.current) return;
+    if (
+      contextMenuOpenRef.current ||
+      commentPanelOpenRef.current ||
+      shareOpenRef.current
+    ) {
+      return;
+    }
     const start = touchStartRef.current;
     touchStartRef.current = null;
     if (!start) {
@@ -900,9 +1115,105 @@ const Pixies = () => {
     }
   };
 
+  // ── Right-click / long-press options menu ────────────────────────────────
+  const openAnchoredMenu = (clientX: number, clientY: number) => {
+    const MENU_W = 300;
+    const MENU_H = 320;
+    setOptionsMenu({
+      mode: "anchored",
+      x: Math.max(8, Math.min(clientX, window.innerWidth - MENU_W - 8)),
+      y: Math.max(8, Math.min(clientY, window.innerHeight - MENU_H - 8)),
+    });
+  };
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  };
+
+  const handleVideoContextMenu = (event: React.MouseEvent<HTMLVideoElement>) => {
+    // Always suppress the browser's native long-press / right-click menu,
+    // image-save popup, and text selection on the video.
+    event.preventDefault();
+    // Android fires `contextmenu` on a long press too — keep that as the
+    // bottom sheet, not the desktop-style anchored popover.
+    if (lastPointerTypeRef.current === "touch") {
+      clearLongPress();
+      longPressFiredRef.current = true;
+      setOptionsMenu({ mode: "sheet" });
+      return;
+    }
+    openAnchoredMenu(event.clientX, event.clientY);
+  };
+
+  const handleVideoPointerDown = (
+    event: React.PointerEvent<HTMLVideoElement>,
+  ) => {
+    lastPointerTypeRef.current = event.pointerType;
+    // Mouse right-click is covered by onContextMenu; only arm the timer for
+    // touch / pen so a long press opens the menu on mobile.
+    if (event.pointerType === "mouse") return;
+    longPressFiredRef.current = false;
+    clearLongPress();
+    longPressStartRef.current = { x: event.clientX, y: event.clientY };
+    const pointerType = event.pointerType;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      longPressFiredRef.current = true;
+      // Drop any text selection the long press started before the menu opens.
+      try {
+        window.getSelection()?.removeAllRanges();
+      } catch {
+        // no-op
+      }
+      // Touch → slide-up sheet (like the comments panel); pen → anchored.
+      if (pointerType === "touch") {
+        setOptionsMenu({ mode: "sheet" });
+      } else {
+        openAnchoredMenu(
+          longPressStartRef.current?.x ?? startX,
+          longPressStartRef.current?.y ?? startY,
+        );
+      }
+    }, 480);
+  };
+
+  const handleVideoPointerMove = (
+    event: React.PointerEvent<HTMLVideoElement>,
+  ) => {
+    const start = longPressStartRef.current;
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    // Moved too far — this is a swipe/scrub, not a long press.
+    if (dx * dx + dy * dy > 100) clearLongPress();
+  };
+
   const handleTap = (
     event: React.PointerEvent<HTMLVideoElement>,
   ) => {
+    // Right-click / middle-click: leave playback alone, that's the options menu.
+    if (event.button !== 0) return;
+    clearLongPress();
+    // The long-press menu already opened on this gesture — swallow the tap.
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      return;
+    }
+    if (contextMenuOpenRef.current) {
+      setOptionsMenu(null);
+      return;
+    }
+    // In clear-display mode the first tap just brings the overlays back.
+    if (clearDisplay) {
+      setClearDisplay(false);
+      return;
+    }
     const now = Date.now();
     const delta = now - lastTapRef.current;
 
@@ -1014,6 +1325,15 @@ const Pixies = () => {
     if (!shareTarget) return;
     try {
       await navigator.clipboard.writeText(shareUrlFor(shareTarget));
+      showToast("Pixie link copied to clipboard!");
+    } catch {
+      showToast("Failed to copy link");
+    }
+  };
+
+  const copyPixieLink = async (pixie: Pixie) => {
+    try {
+      await navigator.clipboard.writeText(shareUrlFor(pixie));
       showToast("Pixie link copied to clipboard!");
     } catch {
       showToast("Failed to copy link");
@@ -1343,6 +1663,135 @@ const Pixies = () => {
     setTab((prev) => (prev === next ? prev : next));
   }, []);
 
+  // Signing out while on the "Following" tab drops the viewer back to For You.
+  useEffect(() => {
+    if (tab === "following" && !auth?.user) setTab("fyp");
+  }, [tab, auth?.user]);
+
+  // Recompute which edges of the tab strip still have off-screen content.
+  const recomputeTabEdges = useCallback(() => {
+    const el = tabStripRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const start = el.scrollLeft > 1;
+    const end = el.scrollLeft < maxScroll - 1;
+    setTabEdges((prev) =>
+      prev.start === start && prev.end === end ? prev : { start, end },
+    );
+  }, []);
+
+  useEffect(() => {
+    recomputeTabEdges();
+    const el = tabStripRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(recomputeTabEdges);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [recomputeTabEdges, auth?.user, tab]);
+
+  // Fade only the edge(s) that still have tabs scrolled out of view.
+  const tabStripMask = `linear-gradient(to right, ${
+    tabEdges.start ? "transparent" : "#000"
+  }, #000 1.25rem, #000 calc(100% - 1.25rem), ${
+    tabEdges.end ? "transparent" : "#000"
+  })`;
+
+  // Shared body for the video options menu — rendered inside the anchored
+  // popover (right-click) or the bottom sheet (long-press).
+  const menuPixie = pixies[activeIndex] ?? null;
+  const optionsMenuBody = menuPixie ? (
+    <div className="py-1.5">
+      {/* Speed */}
+      <div className="flex items-center gap-3.5 px-4 py-2.5">
+        <SpeedIcon />
+        <span className="text-[15px] font-semibold text-white">Speed</span>
+        <div className="ml-auto flex items-center gap-0.5 rounded-full bg-white/10 p-0.5">
+          {SPEED_OPTIONS.map((rate) => (
+            <button
+              key={rate}
+              type="button"
+              aria-pressed={speedRate === rate}
+              onClick={() => setSpeedRate(rate)}
+              className={`min-w-[2.25rem] rounded-full px-1.5 py-1 text-xs font-bold transition ${
+                speedRate === rate
+                  ? "bg-white text-neutral-900"
+                  : "text-white/70 hover:text-white"
+              }`}
+            >
+              {Number.isInteger(rate) ? rate.toFixed(1) : String(rate)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Clear display */}
+      <button
+        type="button"
+        onClick={() => setClearDisplay((value) => !value)}
+        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
+      >
+        <EyeSlashIcon off={clearDisplay} />
+        <span className="text-[15px] font-semibold text-white">
+          Clear display
+        </span>
+        <span
+          className={`ml-auto flex h-6 w-11 flex-shrink-0 items-center rounded-full p-0.5 transition ${
+            clearDisplay ? "bg-pink-500" : "bg-white/20"
+          }`}
+        >
+          <span
+            className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              clearDisplay ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </span>
+      </button>
+
+      <div className="my-1.5 h-px bg-white/10" />
+
+      {/* Download */}
+      <a
+        href={resolveVideoUrl(menuPixie.url)}
+        download
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => setOptionsMenu(null)}
+        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
+      >
+        <DownloadIcon />
+        <span className="text-[15px] font-semibold text-white">
+          Download video
+        </span>
+      </a>
+
+      {/* Share */}
+      <button
+        type="button"
+        onClick={() => {
+          setOptionsMenu(null);
+          handleShare(menuPixie);
+        }}
+        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
+      >
+        <ShareArrowIcon />
+        <span className="text-[15px] font-semibold text-white">Share</span>
+      </button>
+
+      {/* Copy link */}
+      <button
+        type="button"
+        onClick={() => {
+          setOptionsMenu(null);
+          void copyPixieLink(menuPixie);
+        }}
+        className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition hover:bg-white/5"
+      >
+        <LinkIcon />
+        <span className="text-[15px] font-semibold text-white">Copy link</span>
+      </button>
+    </div>
+  ) : null;
+
   // Focus the search field when the viewer opens the Search tab.
   useEffect(() => {
     if (tab !== "search") return;
@@ -1391,56 +1840,111 @@ const Pixies = () => {
           50% { transform: scale(1.3); opacity: 0.85; }
           100% { transform: scale(1.8) translateY(-40px); opacity: 0; }
         }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        /* Full-screen media viewer: no tap highlight, no long-press callout,
+           and no selection tint anywhere except the text fields. */
+        .pixies-root,
+        .pixies-root * {
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+        }
+        .pixies-root *:not(input):not(textarea) {
+          -webkit-user-select: none;
+          user-select: none;
+        }
+        .pixies-root ::selection {
+          background-color: transparent;
+        }
+        .pixies-root ::-moz-selection {
+          background-color: transparent;
+        }
+        .pixies-root input,
+        .pixies-root textarea {
+          -webkit-user-select: text;
+          user-select: text;
+        }
+        .pixies-root input::selection,
+        .pixies-root textarea::selection {
+          background-color: rgba(236, 72, 153, 0.45);
+        }
+        .pixies-root input::-moz-selection,
+        .pixies-root textarea::-moz-selection {
+          background-color: rgba(236, 72, 153, 0.45);
+        }
       `}</style>
       <div
-        className="fixed inset-0 z-40 overflow-hidden overscroll-none bg-black text-white"
+        className="pixies-root fixed inset-0 z-40 overflow-hidden overscroll-none select-none bg-black text-white [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [-webkit-user-select:none]"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onContextMenu={(event) => event.preventDefault()}
       >
-      {/* Top bar */}
+      {/* Top bar — hidden while "clear display" is on */}
+      {!clearDisplay && (
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 bg-gradient-to-b from-black/80 via-black/45 to-transparent px-4 pb-12 pt-4">
         {/* Section tabs: close · For You / Search / Popular · Upload */}
         <div
           aria-label="Pixies sections"
-          className="pointer-events-auto relative flex items-center justify-center gap-6"
+          className="pointer-events-auto flex items-center gap-2"
         >
           <Link
             to="/"
             aria-label="Close pixies"
-            className="group absolute left-0 top-1/2 flex h-9 w-9 flex-shrink-0 -translate-y-1/2 items-center justify-center text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] transition duration-200 ease-out hover:text-white active:scale-90"
+            className="group flex h-9 w-9 flex-shrink-0 items-center justify-center text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] transition duration-200 ease-out hover:text-white active:scale-90"
           >
             <span className="transition-transform duration-300 ease-out group-hover:rotate-90">
               <CloseIcon size={18} />
             </span>
           </Link>
-          {PIXIE_TABS.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              aria-pressed={tab === entry.id}
-              onClick={() => selectTab(entry.id)}
-              className={`relative pb-2 text-sm font-bold tracking-wide transition ${
-                tab === entry.id
-                  ? "text-white"
-                  : "text-white/55 hover:text-white/85"
-              }`}
-            >
-              {entry.label}
-              {tab === entry.id && (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-0 bottom-0 mx-auto h-[3px] w-8 rounded-full bg-pink-500 shadow-[0_0_10px_2px_rgba(236,72,153,0.55)]"
-                />
-              )}
-            </button>
-          ))}
-          <Link
-            to={auth?.user ? "/pixies/upload" : "/login"}
-            className="relative pb-2 text-sm font-bold tracking-wide text-white/55 transition hover:text-white/85"
+          {/* Its own flex track between the close and inbox buttons: the tabs
+              scroll horizontally inside it and never overlap either button. */}
+          <div
+            ref={tabStripRef}
+            onScroll={recomputeTabEdges}
+            style={{
+              maskImage: tabStripMask,
+              WebkitMaskImage: tabStripMask,
+            }}
+            className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onTouchStart={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
           >
-            Upload
-          </Link>
+            <div className="mx-auto flex w-max items-center gap-6 px-2">
+              {PIXIE_TABS.filter(
+                (entry) => !entry.authOnly || Boolean(auth?.user),
+              ).map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  aria-pressed={tab === entry.id}
+                  onClick={() => selectTab(entry.id)}
+                  className={`relative flex-shrink-0 whitespace-nowrap pb-2 text-sm font-bold tracking-wide transition ${
+                    tab === entry.id
+                      ? "text-white"
+                      : "text-white/55 hover:text-white/85"
+                  }`}
+                >
+                  {entry.label}
+                  {tab === entry.id && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-x-0 bottom-0 mx-auto h-[3px] w-8 rounded-full bg-pink-500 shadow-[0_0_10px_2px_rgba(236,72,153,0.55)]"
+                    />
+                  )}
+                </button>
+              ))}
+              <Link
+                to={auth?.user ? "/pixies/upload" : "/login"}
+                className="relative flex-shrink-0 whitespace-nowrap pb-2 text-sm font-bold tracking-wide text-white/55 transition hover:text-white/85"
+              >
+                Upload
+              </Link>
+            </div>
+          </div>
+          <PixiesInbox className="flex-shrink-0" />
         </div>
 
         {/* Search field (Search tab only) */}
@@ -1502,6 +2006,7 @@ const Pixies = () => {
           </div>
         )}
       </div>
+      )}
 
       {loading ? (
         <div className="flex h-full items-center justify-center">
@@ -1541,6 +2046,39 @@ const Pixies = () => {
                   </p>
                 </>
               )
+            ) : tab === "following" ? (
+              !auth?.user ? (
+                <>
+                  <div className="mb-3 text-5xl">👤</div>
+                  <h2 className="mb-2 text-xl font-bold">Following</h2>
+                  <p className="mb-5 text-sm text-white/70">
+                    Log in to see clips from the creators you follow.
+                  </p>
+                  <Link
+                    to="/login"
+                    className="inline-block rounded-full bg-pink-500 px-6 py-2 font-bold transition hover:bg-pink-600"
+                  >
+                    Login
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="mb-3 text-5xl">🫂</div>
+                  <h2 className="mb-2 text-xl font-bold">
+                    Nothing from your follows yet
+                  </h2>
+                  <p className="mb-5 text-sm text-white/70">
+                    Follow creators and their newest clips will land here.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => selectTab("fyp")}
+                    className="inline-block rounded-full bg-pink-500 px-6 py-2 font-bold transition hover:bg-pink-600"
+                  >
+                    Browse For You
+                  </button>
+                </>
+              )
             ) : tab === "popular" ? (
               <>
                 <div className="mb-3 text-5xl">📈</div>
@@ -1572,7 +2110,14 @@ const Pixies = () => {
             const pixie = pixies[index];
             const isActive = index === activeIndex;
             const likeState = likeStateFor(pixie);
-            const authorAvatar = resolveAvatarUrl(pixie.author?.avatar);
+            const author = pixie.author;
+            const authorAvatar = resolveAvatarUrl(author?.avatar);
+            const isOwnPixie = Boolean(
+              auth?.user && author?.id && author.id === auth.user.id,
+            );
+            const isFollowingAuthor = author?.id
+              ? Boolean(followState[author.id])
+              : false;
             return (
               <div
                 key={pixie.id}
@@ -1591,26 +2136,35 @@ const Pixies = () => {
                     videoRefs.current[index] = element;
                   }}
                   src={resolveVideoUrl(pixie.url)}
-                  className="h-full w-full cursor-pointer object-contain"
+                  className="h-full w-full cursor-pointer select-none object-contain [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [-webkit-user-select:none]"
                   playsInline
                   loop
+                  draggable={false}
+                  onDragStart={(event) => event.preventDefault()}
                   preload={preloadFor(index)}
-                  onPlay={() => {
+                  onPlay={(event) => {
                     // Keep the control visibility in sync with the real
                     // playback state of the active video.
                     if (index !== activeIndexRef.current) return;
+                    event.currentTarget.playbackRate = speedRateRef.current;
                     setPaused(false);
                   }}
                   onPause={() => {
                     if (index !== activeIndexRef.current) return;
                     setPaused(true);
                   }}
+                  onContextMenu={handleVideoContextMenu}
+                  onPointerDown={handleVideoPointerDown}
+                  onPointerMove={handleVideoPointerMove}
+                  onPointerCancel={clearLongPress}
                   onPointerUp={handleTap}
                   onTimeUpdate={handleTimeUpdate}
                 />
 
                 {/* Bottom gradient for legibility */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/75 to-transparent" />
+                {!clearDisplay && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/75 to-transparent" />
+                )}
 
                 {/* Paused indicator */}
                 {isActive && paused && !isScrubbing && (
@@ -1620,14 +2174,12 @@ const Pixies = () => {
                 )}
 
                 {/* Caption + author */}
+                {!clearDisplay && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-4 pb-6 pr-24 sm:pr-28">
                   <Link
                     to={`/profile/${pixie.author?.username ?? ""}`}
                     className="pointer-events-auto mb-2 flex items-center gap-2 font-bold drop-shadow"
                   >
-                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink-500">
-                      <AvatarImage src={authorAvatar} />
-                    </span>
                     <span className="truncate">
                       @{pixie.author?.username ?? "unknown"}
                     </span>
@@ -1686,9 +2238,47 @@ const Pixies = () => {
                     </button>
                   )}
                 </div>
+                )}
 
                 {/* Action rail */}
-                <div className="absolute top-1/2 right-3 z-10 flex -translate-y-1/2 flex-col items-center gap-5 md:right-5">
+                {!clearDisplay && (
+                <div className="absolute top-[calc(50%+4rem)] right-3 z-10 flex -translate-y-1/2 flex-col items-center gap-5 md:right-5">
+                  {author?.username && (
+                    <div className="mb-1 flex flex-col items-center">
+                      <Link
+                        to={`/profile/${author.username}`}
+                        aria-label={`View @${author.username}'s profile`}
+                        className="block h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-pink-500 transition hover:scale-110"
+                      >
+                        <AvatarImage src={authorAvatar} />
+                      </Link>
+                      {auth?.user && !isOwnPixie && !isFollowingAuthor && (
+                        <button
+                          type="button"
+                          onClick={() => void handleFollow(pixie)}
+                          disabled={
+                            author.id ? followBusy.has(author.id) : false
+                          }
+                          aria-label={`Follow @${author.username}`}
+                          className="relative z-30 -mt-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-pink-500 text-white shadow-md transition hover:bg-pink-600 disabled:opacity-60"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="12"
+                            height="12"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            aria-hidden="true"
+                          >
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <button
                     onClick={() => handleLike(pixie)}
                     aria-label="Like"
@@ -1736,6 +2326,7 @@ const Pixies = () => {
                     </button>
                   )}
                 </div>
+                )}
 
                 {/* Double-tap hearts */}
                 {hearts.map((heart) => (
@@ -1764,6 +2355,7 @@ const Pixies = () => {
           })}
 
           {/* Mute toggle */}
+          {!clearDisplay && (
           <button
             onClick={handleToggleMute}
             aria-label={muted ? "Unmute" : "Mute"}
@@ -1773,8 +2365,10 @@ const Pixies = () => {
           >
             {muted ? <VolumeOffIcon size={18} /> : <VolumeOnIcon size={18} />}
           </button>
+          )}
 
           {/* Playback progress — drag anywhere along it to seek */}
+          {!clearDisplay && (
           <div
             data-progress-bar
             className="absolute inset-x-0 bottom-0 z-30 flex touch-none select-none items-end pt-3 cursor-pointer"
@@ -1800,16 +2394,17 @@ const Pixies = () => {
               </div>
             </div>
           </div>
+          )}
 
           {/* Comments panel */}
           {commentPanelOpen && pixies[activeIndex] && (
             <>
               <div
-                className="absolute inset-0 z-20 bg-black/40"
+                className="absolute inset-0 z-20"
                 onClick={closeComments}
                 aria-hidden="true"
               />
-              <div className="absolute inset-x-0 bottom-0 z-30 flex max-h-[70%] flex-col rounded-t-2xl bg-neutral-900/95 backdrop-blur">
+              <div className="absolute inset-x-0 bottom-0 z-30 flex max-h-[70%] flex-col rounded-t-2xl border-t border-sky-300/20 bg-blue-950/60 backdrop-blur-xl">
                 <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
                   <span className="font-bold">
                     Comments ({commentCountFor(pixies[activeIndex])})
@@ -2000,6 +2595,50 @@ const Pixies = () => {
               </div>
             </>
           )}
+        </>
+      )}
+
+      {/* Video options — anchored popover on right-click */}
+      {optionsMenu?.mode === "anchored" && optionsMenuBody && (
+        <>
+          <div
+            className="fixed inset-0 z-[55]"
+            onClick={() => setOptionsMenu(null)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setOptionsMenu(null);
+            }}
+            aria-hidden="true"
+          />
+          <div
+            role="menu"
+            aria-label="Video options"
+            className="fixed z-[60] w-[300px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-sky-300/20 bg-blue-950/60 text-white shadow-2xl backdrop-blur-xl"
+            style={{ top: optionsMenu.y, left: optionsMenu.x }}
+          >
+            {optionsMenuBody}
+          </div>
+        </>
+      )}
+
+      {/* Video options — bottom sheet on mobile long-press */}
+      {optionsMenu?.mode === "sheet" && optionsMenuBody && (
+        <>
+          <div
+            className="absolute inset-0 z-[55]"
+            onClick={() => setOptionsMenu(null)}
+            aria-hidden="true"
+          />
+          <div
+            role="menu"
+            aria-label="Video options"
+            className="absolute inset-x-0 bottom-0 z-[60] max-h-[75%] overflow-y-auto rounded-t-2xl border-t border-sky-300/20 bg-blue-950/60 pb-[env(safe-area-inset-bottom)] text-white backdrop-blur-xl [animation:slideUp_0.22s_ease-out]"
+            onTouchStart={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto mb-1 mt-2.5 h-1 w-10 rounded-full bg-white/25" />
+            {optionsMenuBody}
+          </div>
         </>
       )}
 

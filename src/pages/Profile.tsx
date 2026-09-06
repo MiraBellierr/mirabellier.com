@@ -10,6 +10,11 @@ import {
   resolveVideoUrl,
   type Pixie,
 } from "@/lib/pixies";
+import {
+  fetchFollowState,
+  toggleFollow,
+  type FollowState,
+} from "@/lib/user-follows";
 import AuthGateShell from "../parts/AuthGateShell";
 import AvatarImage from "../parts/AvatarImage";
 import Header from "../parts/Header";
@@ -48,6 +53,8 @@ const Profile = () => {
   const [videos, setVideos] = useState<Pixie[]>([]);
   const [videosLoading, setVideosLoading] = useState(true);
   const [videosPage, setVideosPage] = useState(1);
+  const [follow, setFollow] = useState<FollowState | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
   const profileUserForSeo = username ? profileUser : auth.user;
   const profileCanonical = username
     ? `https://mirabellier.com/profile/${username}`
@@ -166,6 +173,50 @@ const Profile = () => {
       cancelled = true;
     };
   }, [user?.id]);
+
+  // Follow relationship + follower count for the displayed profile.
+  useEffect(() => {
+    if (!user?.id) {
+      setFollow(null);
+      return;
+    }
+    let cancelled = false;
+    fetchFollowState(user.id)
+      .then((state) => {
+        if (!cancelled) setFollow(state);
+      })
+      .catch(() => {
+        if (!cancelled) setFollow(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, auth.user]);
+
+  const handleToggleFollow = async () => {
+    if (!user?.id || followBusy || !auth.user) return;
+    setFollowBusy(true);
+    const wasFollowing = follow?.following ?? false;
+    const applyDelta = (state: FollowState, dir: 1 | -1): FollowState => ({
+      ...state,
+      following: dir === 1,
+      followersCount: Math.max(0, state.followersCount + dir),
+    });
+    setFollow((current) =>
+      current ? applyDelta(current, wasFollowing ? -1 : 1) : current,
+    );
+    try {
+      const result = await toggleFollow(user.id);
+      setFollow((current) => (current ? { ...current, ...result } : result));
+    } catch {
+      setFollow((current) =>
+        current ? applyDelta(current, wasFollowing ? 1 : -1) : current,
+      );
+      showToast("Could not update follow");
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   const handleDeletePixie = async (id: string) => {
     try {
@@ -302,13 +353,21 @@ const Profile = () => {
                     )}
 
                     {/* Stats */}
-                    <div className="mt-6 flex gap-8 justify-center">
+                    <div className="mt-6 flex flex-wrap gap-6 justify-center">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-pink-500 dark:text-pink-400">
                           {loading ? "..." : stats?.postsCount || 0}
                         </div>
                         <div className="text-xs text-blue-600 dark:text-purple-300">
                           Posts
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-rose-500 dark:text-rose-400">
+                          {follow ? follow.followersCount : "..."}
+                        </div>
+                        <div className="text-xs text-blue-600 dark:text-purple-300">
+                          Followers
                         </div>
                       </div>
                       <div className="text-center">
@@ -365,28 +424,59 @@ const Profile = () => {
                         </>
                       )}
                       {!isOwnProfile && user && (
-                        <button
-                          onClick={() => {
-                            const shareUrl = `${window.location.origin}/profile/${user.username}`;
-                            if (navigator.share) {
-                              navigator
-                                .share({
-                                  title: `${user.username}'s Profile`,
-                                  text:
-                                    user.bio ||
-                                    `Check out ${user.username}'s profile`,
-                                  url: shareUrl,
-                                })
-                                .catch(() => {});
-                            } else {
-                              void copyProfileLink(shareUrl);
-                            }
-                          }}
-                          className="inline-flex items-center gap-2 bg-blue-400 dark:bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 dark:hover:bg-blue-700 transition-colors font-medium"
-                        >
-                          <span>🔗</span>
-                          <span>Share Profile</span>
-                        </button>
+                        <>
+                          {auth.user && (
+                            <button
+                              type="button"
+                              onClick={() => void handleToggleFollow()}
+                              disabled={followBusy || !follow}
+                              aria-pressed={follow?.following ?? false}
+                              className={`group inline-flex min-w-[8rem] items-center justify-center gap-2 rounded-full px-6 py-2 font-medium transition-colors disabled:opacity-60 ${
+                                follow?.following
+                                  ? "border border-pink-400 text-pink-500 hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:border-purple-400 dark:text-purple-200 dark:hover:bg-red-500/10"
+                                  : "bg-pink-400 text-white hover:bg-pink-500 dark:bg-purple-600 dark:hover:bg-purple-700"
+                              }`}
+                            >
+                              {follow?.following ? (
+                                <>
+                                  <span className="group-hover:hidden">
+                                    ✓ Following
+                                  </span>
+                                  <span className="hidden group-hover:inline">
+                                    Unfollow
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>＋</span>
+                                  <span>Follow</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const shareUrl = `${window.location.origin}/profile/${user.username}`;
+                              if (navigator.share) {
+                                navigator
+                                  .share({
+                                    title: `${user.username}'s Profile`,
+                                    text:
+                                      user.bio ||
+                                      `Check out ${user.username}'s profile`,
+                                    url: shareUrl,
+                                  })
+                                  .catch(() => {});
+                              } else {
+                                void copyProfileLink(shareUrl);
+                              }
+                            }}
+                            className="inline-flex items-center gap-2 bg-blue-400 dark:bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 dark:hover:bg-blue-700 transition-colors font-medium"
+                          >
+                            <span>🔗</span>
+                            <span>Share Profile</span>
+                          </button>
+                        </>
                       )}
                     </div>
 

@@ -118,6 +118,22 @@ export async function fetchPopularPixies(
   return res.json() as Promise<Pixie[]>;
 }
 
+/** Newest clips from accounts the signed-in viewer follows. */
+export async function fetchFollowingPixies(
+  options?: { limit?: number; offset?: number },
+): Promise<Pixie[]> {
+  const params = new URLSearchParams();
+  if (options?.limit != null) params.set("limit", String(options.limit));
+  if (options?.offset) params.set("offset", String(options.offset));
+  const query = params.toString();
+  const res = await fetch(
+    `${API_BASE}/pixies/following${query ? `?${query}` : ""}`,
+    { credentials: "include" },
+  );
+  if (!res.ok) throw new Error("Failed to load following feed");
+  return res.json() as Promise<Pixie[]>;
+}
+
 export async function markPixieViewed(id: string): Promise<void> {
   try {
     await fetch(`${API_BASE}/pixies/${id}/view`, {
