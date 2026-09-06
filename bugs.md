@@ -94,7 +94,16 @@ fight handlers.
 
 ---
 
-### 4. Same action, two different payouts — MEDIUM
+### 4. Same action, two different payouts — MEDIUM — ✅ FIXED
+
+**Resolution:** #1 already made the payout server-authoritative (`getFodderRefund(slot)`,
+body field ignored), so both screens now credit the same amount. This change also removes
+the client-side display drift: `getFodderRefund` is exported and surfaced as
+`fodderRefund` on every serialized piece (`toPublicEquipmentPiece`) and on the shop buy
+response's `rolledPiece`. `ArenaInventory.tsx` and `ArenaShop.tsx`'s reward modal now show
+`piece.fodderRefund` verbatim instead of a hardcoded `500` / `Math.floor(price / 2)`.
+Regression test: *"scrap payout is server-derived and identical for every screen"*.
+221 backend tests pass.
 
 Scrapping gear hits one endpoint but pays out differently depending on the originating screen:
 
@@ -109,9 +118,19 @@ Resolving finding #1 (server-side refund) fixes this at the same time.
 
 ---
 
-### 5. No request cancellation anywhere in Arena — MEDIUM
+### 5. No request cancellation anywhere in Arena — MEDIUM — ✅ FIXED (sharpest case)
 
-There is not a single `AbortController` across the 15 Arena pages.
+**Resolution:** `fetchArenaMarketListings` now accepts an `AbortSignal`. `ArenaMarket.tsx`'s
+`loadMarket` is a `useCallback` that, on every call, aborts the previous in-flight request,
+bumps a `marketRequestIdRef`, and only applies `setMarket` / `setErrorMessage` /
+`setMarketLoading(false)` when its request id is still current and the request was not
+aborted — so a slow stale response can no longer overwrite fresh results or flip the
+loading flag mid-flight. The debounced effect now depends on `loadMarket` (no more
+`exhaustive-deps` disable), and an unmount effect aborts any in-flight request. The
+websocket handler and post-mutation refresh go through the same guarded path.
+
+The broader observation stands: the other ~14 Arena pages still lack `AbortController`s.
+No concrete race is documented for them; left as follow-up.
 
 Sharpest case — `src/pages/ArenaMarket.tsx:124-139`: `loadMarket` has no cancellation guard
 and is driven from two places concurrently:

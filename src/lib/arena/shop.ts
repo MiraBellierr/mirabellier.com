@@ -21,7 +21,7 @@ export async function fetchArenaShop(token: string): Promise<ArenaShopResponse> 
 export async function buyArenaItem(
   token: string,
   itemId: string,
-): Promise<{ purchasedItemId: string; appliedInstantly: boolean; rolledPieceId: string | null; rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] } | null; shop: ArenaShopResponse }> {
+): Promise<{ purchasedItemId: string; appliedInstantly: boolean; rolledPieceId: string | null; rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; fodderRefund: number } | null; shop: ArenaShopResponse }> {
   const response = await fetch(joinApi("/arena/shop/buy"), {
     method: "POST",
     credentials: "include",
@@ -37,7 +37,7 @@ export async function buyArenaItem(
     purchasedItemId: string;
     appliedInstantly: boolean;
     rolledPieceId: string | null;
-    rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] } | null;
+    rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; fodderRefund: number } | null;
     shop: ArenaShopResponse;
   };
 }

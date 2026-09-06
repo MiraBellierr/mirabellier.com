@@ -45,6 +45,8 @@ export type ArenaEquipmentPiece = {
   subStats: ArenaSubStat[];
   equipped: boolean;
   locked: boolean;
+  /** Server-authoritative coin payout for scrapping this piece. */
+  fodderRefund: number;
   createdAt: string | null;
 };
 export type ArenaSpriteRef = {

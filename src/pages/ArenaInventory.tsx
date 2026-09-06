@@ -574,7 +574,7 @@ const ArenaInventory = () => {
     }
     const confirmed = await confirm({
       title: "Scrap equipment?",
-      message: `Scrap this ${piece.slot} for 500 coins? This cannot be undone.`,
+      message: `Scrap this ${piece.slot} for ${piece.fodderRefund} coins? This cannot be undone.`,
       confirmLabel: "Scrap",
       cancelLabel: "Cancel",
     });

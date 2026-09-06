@@ -174,17 +174,17 @@ function CardRewardModal({
 function EquipmentRewardModal({
   piece,
   pieceId,
-  price,
+  refund,
   shopItem,
   onClose,
   onFodder,
 }: {
   piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] };
   pieceId: string;
-  price: number;
+  refund: number;
   shopItem: ArenaShopItem;
   onClose: () => void;
-  onFodder: (pieceId: string, estimatedRefund: number) => void;
+  onFodder: (pieceId: string, refund: number) => void;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -265,13 +265,13 @@ function EquipmentRewardModal({
             >
               [ nice! ]
             </button>
-            {pieceId && price > 0 ? (
+            {pieceId && refund > 0 ? (
               <button
                 type="button"
-                onClick={() => onFodder(pieceId, Math.floor(price / 2))}
+                onClick={() => onFodder(pieceId, refund)}
                 className="arena-redraw-button hover:animate-wiggle"
               >
-                [ scrap +{Math.floor(price / 2)} ]
+                [ scrap +{refund} ]
               </button>
             ) : null}
           </div>
@@ -296,7 +296,7 @@ const ArenaShop = () => {
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
   const [obtainedCards, setObtainedCards] = useState<ArenaCard[] | null>(null);
-  const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; pieceId: string; price: number; shopItem: ArenaShopItem } | null>(null);
+  const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; pieceId: string; refund: number; shopItem: ArenaShopItem } | null>(null);
 
 
 
@@ -444,7 +444,7 @@ const ArenaShop = () => {
         setObtainedPiece({
           piece: payload.rolledPiece,
           pieceId: payload.rolledPieceId || "",
-          price: item.price,
+          refund: payload.rolledPiece.fodderRefund,
           shopItem: item,
         });
       }
@@ -617,11 +617,11 @@ const ArenaShop = () => {
     setObtainedPiece(null);
   }, []);
 
-  const handleFodderReward = useCallback(async (pieceId: string, estimatedRefund: number) => {
+  const handleFodderReward = useCallback(async (pieceId: string, refund: number) => {
     if (!token) return;
     const confirmed = await confirm({
       title: "Scrap equipment?",
-      message: `Scrap this gear for ${estimatedRefund} coins? This cannot be undone.`,
+      message: `Scrap this gear for ${refund} coins? This cannot be undone.`,
       confirmLabel: "Scrap",
       cancelLabel: "Cancel",
     });
@@ -1048,7 +1048,7 @@ const ArenaShop = () => {
         <EquipmentRewardModal
           piece={obtainedPiece.piece}
           pieceId={obtainedPiece.pieceId}
-          price={obtainedPiece.price}
+          refund={obtainedPiece.refund}
           shopItem={obtainedPiece.shopItem}
           onClose={closeEquipModal}
           onFodder={handleFodderReward}

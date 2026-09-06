@@ -13,6 +13,7 @@ export async function fetchArenaMarketListings(
     ivBand?: string;
     sort?: ArenaMarketSort;
   } = {},
+  signal?: AbortSignal,
 ): Promise<ArenaMarketListingsResponse> {
   const params = new URLSearchParams();
   if (filters.page) params.set("page", String(filters.page));
@@ -29,6 +30,7 @@ export async function fetchArenaMarketListings(
         ? { Authorization: `Bearer ${token}` }
         : undefined,
       cache: "no-store",
+      signal,
     },
   );
 

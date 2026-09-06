@@ -121,22 +121,50 @@ const ArenaMarket = () => {
     setCollection(collectionPayload);
   };
 
-  const loadMarket = async (currentToken: string) => {
-    setMarketLoading(true);
-    try {
-      const payload = await fetchArenaMarketListings(currentToken, {
-        page,
-        limit: 20,
-        search: query.trim(),
-        rarity,
-        ivBand,
-        sort,
-      });
-      setMarket(payload);
-    } finally {
-      setMarketLoading(false);
-    }
-  };
+  // Market listings are refetched from three places (debounced filters, the
+  // websocket "changed" event, and post-mutation refreshes) that can overlap.
+  // Guard against a slow stale response landing after a fresh one: abort the
+  // in-flight request and ignore any result whose request id is no longer current.
+  const marketAbortRef = useRef<AbortController | null>(null);
+  const marketRequestIdRef = useRef(0);
+
+  const loadMarket = useCallback(
+    async (currentToken: string) => {
+      marketAbortRef.current?.abort();
+      const controller = new AbortController();
+      marketAbortRef.current = controller;
+      const requestId = ++marketRequestIdRef.current;
+
+      setMarketLoading(true);
+      try {
+        const payload = await fetchArenaMarketListings(
+          currentToken,
+          {
+            page,
+            limit: 20,
+            search: query.trim(),
+            rarity,
+            ivBand,
+            sort,
+          },
+          controller.signal,
+        );
+        if (requestId === marketRequestIdRef.current) setMarket(payload);
+      } catch (error) {
+        if (!controller.signal.aborted && requestId === marketRequestIdRef.current) {
+          setErrorMessage(normalizeArenaError(error));
+        }
+      } finally {
+        if (requestId === marketRequestIdRef.current && !controller.signal.aborted) {
+          setMarketLoading(false);
+        }
+      }
+    },
+    [page, query, rarity, ivBand, sort],
+  );
+
+  // Abort any in-flight market request on unmount.
+  useEffect(() => () => marketAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (!token) {
@@ -173,14 +201,10 @@ const ArenaMarket = () => {
   useEffect(() => {
     if (!token || loading) return;
     const timeout = window.setTimeout(() => {
-      void loadMarket(token).catch((error) =>
-        setErrorMessage(normalizeArenaError(error)),
-      );
+      void loadMarket(token);
     }, 250);
     return () => window.clearTimeout(timeout);
-    // loadMarket intentionally follows the current filter state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, query, rarity, ivBand, sort, page]);
+  }, [token, loading, loadMarket]);
 
   useWebSocketEvent("arena:market:changed", () => {
     if (token) {
