@@ -20,6 +20,8 @@ export interface Pixie {
   title: string;
   tags: string[];
   url: string;
+  /** First-frame still shown until the video paints; null if not generated. */
+  poster: string | null;
   mimeType: string;
   sizeBytes: number;
   durationSeconds: number | null;
@@ -50,6 +52,13 @@ export function resolveVideoUrl(url: string): string {
   if (/^https?:\/\//.test(url)) return url;
   const base = API_BASE.replace(/\/$/, "");
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+export function resolvePosterUrl(poster?: string | null): string | undefined {
+  if (!poster) return undefined;
+  if (/^https?:\/\//.test(poster)) return poster;
+  const base = API_BASE.replace(/\/$/, "");
+  return `${base}${poster.startsWith("/") ? "" : "/"}${poster}`;
 }
 
 export function resolveAvatarUrl(avatar?: string | null): string | null {

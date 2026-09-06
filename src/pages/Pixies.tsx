@@ -16,6 +16,7 @@ import {
   markPixieViewed,
   postPixieComment,
   resolveAvatarUrl,
+  resolvePosterUrl,
   resolveVideoUrl,
   searchPixies,
   togglePixieCommentLike,
@@ -2217,6 +2218,7 @@ const Pixies = () => {
                     videoRefs.current[index] = element;
                   }}
                   src={resolveVideoUrl(pixie.url)}
+                  poster={resolvePosterUrl(pixie.poster)}
                   className="h-full w-full cursor-pointer select-none object-contain [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [-webkit-user-select:none]"
                   playsInline
                   loop
