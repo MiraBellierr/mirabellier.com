@@ -8,17 +8,12 @@ import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
 import { usePageSeo } from "@/lib/seo";
 import {
-  ArenaApiError,
+  normalizeArenaError,
   type ArenaHallOfFameEntry,
   type ArenaHallOfFameResponse,
   fetchArenaHallOfFame,
 } from "@/lib/arena";
 
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
-}
 
 function monthLabel(month: string) {
   const [y, m] = month.split("-");

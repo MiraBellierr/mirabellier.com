@@ -1,96 +1,49 @@
-import { joinApi } from "@/lib/config";
-import { shouldSendBearerToken } from "@/lib/auth-session";
 import type { ArenaCard, TcgGameState, TcgQueueStatus } from "./shared";
-import { readApiError, makeAuthHeaders } from "./shared";
+import { arenaRequest } from "./shared";
 
 export async function fetchTcgEligibleCards(token: string): Promise<{ cards: ArenaCard[] }> {
-  const response = await fetch(joinApi("/tcg/eligible-cards"), {
-    credentials: "include",
-    headers: shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : undefined,
-    cache: "no-store",
-  });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as { cards: ArenaCard[] };
+  return arenaRequest("/tcg/eligible-cards", { token });
 }
 export async function startTcgSoloGame(token: string, elementPool?: string[], deckCards?: ArenaCard[], mode?: string): Promise<{ gameId: string }> {
-  const response = await fetch(joinApi("/tcg/solo"), {
-    method: "POST",
-    credentials: "include",
-    headers: { ...makeAuthHeaders(token), "Content-Type": "application/json" },
-    body: JSON.stringify({ elementPool: elementPool ?? null, deckCards: deckCards ?? null, mode: mode ?? "solo" }),
-    cache: "no-store",
+  return arenaRequest("/tcg/solo", {
+    token,
+    body: {
+      elementPool: elementPool ?? null,
+      deckCards: deckCards ?? null,
+      mode: mode ?? "solo",
+    },
   });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as { gameId: string };
 }
 export async function joinTcgQueue(token: string): Promise<TcgQueueStatus> {
-  const response = await fetch(joinApi("/tcg/queue"), {
-    method: "POST",
-    credentials: "include",
-    headers: { ...makeAuthHeaders(token), "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as TcgQueueStatus;
+  return arenaRequest("/tcg/queue", { token, method: "POST", body: {} });
 }
 export async function leaveTcgQueue(token: string): Promise<void> {
-  await fetch(joinApi("/tcg/queue"), {
-    method: "DELETE",
-    credentials: "include",
-    headers: makeAuthHeaders(token),
-    cache: "no-store",
-  });
+  // Best-effort cleanup — never surface an error to the caller.
+  try {
+    await arenaRequest<void>("/tcg/queue", { token, method: "DELETE" });
+  } catch {
+    /* ignore */
+  }
 }
 export async function checkTcgQueue(token: string): Promise<TcgQueueStatus> {
-  const response = await fetch(joinApi("/tcg/queue"), {
-    credentials: "include",
-    headers: shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : undefined,
-    cache: "no-store",
-  });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as TcgQueueStatus;
+  return arenaRequest("/tcg/queue", { token });
 }
 export async function fetchActiveTcgGame(token: string): Promise<{ gameId: string | null }> {
-  const response = await fetch(joinApi("/tcg/active-game"), {
-    credentials: "include",
-    headers: shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : undefined,
-    cache: "no-store",
-  });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as { gameId: string | null };
+  return arenaRequest("/tcg/active-game", { token });
 }
 export async function submitTcgDeck(token: string, gameId: string, cards: ArenaCard[], elementPool?: string[]): Promise<{ ok: boolean; waiting?: boolean }> {
-  const response = await fetch(joinApi(`/tcg/game/${gameId}/deck`), {
-    method: "POST",
-    credentials: "include",
-    headers: { ...makeAuthHeaders(token), "Content-Type": "application/json" },
-    body: JSON.stringify({ cards, elementPool: elementPool ?? null }),
-    cache: "no-store",
+  return arenaRequest(`/tcg/game/${gameId}/deck`, {
+    token,
+    body: { cards, elementPool: elementPool ?? null },
   });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as { ok: boolean; waiting?: boolean };
 }
 export async function fetchTcgGameState(token: string, gameId: string): Promise<TcgGameState> {
-  const response = await fetch(joinApi(`/tcg/game/${gameId}`), {
-    credentials: "include",
-    headers: shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : undefined,
-    cache: "no-store",
-  });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as TcgGameState;
+  return arenaRequest(`/tcg/game/${gameId}`, { token });
 }
 export async function submitTcgAction(
   token: string,
   gameId: string,
   action: { type: string; cardId?: string; slot?: string },
 ): Promise<{ ok: boolean; attackResult?: { damage: number; elementEffective: string | null; elementAttacker: string | null; ko: boolean; defenderHp: number; defenderMaxHp: number; attackerKey: string; defenderKey: string; attackId?: number } | null; aiActions?: string[] | null }> {
-  const response = await fetch(joinApi(`/tcg/game/${gameId}/action`), {
-    method: "POST",
-    credentials: "include",
-    headers: { ...makeAuthHeaders(token), "Content-Type": "application/json" },
-    body: JSON.stringify(action),
-    cache: "no-store",
-  });
-  if (!response.ok) throw await readApiError(response);
-  return (await response.json()) as { ok: boolean; attackResult?: { damage: number; elementEffective: string | null; elementAttacker: string | null; ko: boolean; defenderHp: number; defenderMaxHp: number; attackerKey: string; defenderKey: string; attackId?: number } | null };
+  return arenaRequest(`/tcg/game/${gameId}/action`, { token, body: action });
 }

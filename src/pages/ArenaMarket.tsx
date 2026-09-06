@@ -9,10 +9,13 @@ import Divider from "@/parts/Divider";
 import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
+import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
-  ArenaApiError,
+  ELEMENT_COLORS,
+  RARITIES,
+  normalizeArenaError,
   type ArenaCard,
   type ArenaCollectionResponse,
   type ArenaMarketIvBand,
@@ -33,22 +36,6 @@ import { useConfirm } from "@/states/ConfirmContext";
 
 type MarketTab = "market" | "mine";
 
-const RARITIES = ["C", "R", "SR", "SSR", "UR"] as const;
-
-const ELEMENT_COLORS: Record<string, string> = {
-  Fire: "#e74c3c",
-  Water: "#3498db",
-  Earth: "#27ae60",
-  Wind: "#2ecc71",
-  Light: "#f1c40f",
-  Dark: "#8e44ad",
-};
-
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena market request failed.";
-}
 
 function PriceGuide({ guide }: { guide: ArenaMarketPriceGuideResponse | null }) {
   if (!guide) return null;
@@ -112,59 +99,50 @@ const ArenaMarket = () => {
     },
   });
 
-  const loadOwnedData = async (currentToken: string) => {
-    const [minePayload, collectionPayload] = await Promise.all([
-      fetchMyArenaMarketListings(currentToken),
-      fetchArenaCollection(currentToken, { perPage: 500 }),
-    ]);
-    setMine(minePayload);
-    setCollection(collectionPayload);
-  };
+  // These loaders are refetched from several places that can overlap (debounced
+  // filters, the websocket "changed" event, post-mutation refreshes). Each hook
+  // instance aborts its previous request and drops stale responses so a slow
+  // reply can't overwrite fresher data or clear the loading flag mid-flight.
+  const runMarket = useAbortableRequest();
+  const runOwned = useAbortableRequest();
 
-  // Market listings are refetched from three places (debounced filters, the
-  // websocket "changed" event, and post-mutation refreshes) that can overlap.
-  // Guard against a slow stale response landing after a fresh one: abort the
-  // in-flight request and ignore any result whose request id is no longer current.
-  const marketAbortRef = useRef<AbortController | null>(null);
-  const marketRequestIdRef = useRef(0);
-
-  const loadMarket = useCallback(
-    async (currentToken: string) => {
-      marketAbortRef.current?.abort();
-      const controller = new AbortController();
-      marketAbortRef.current = controller;
-      const requestId = ++marketRequestIdRef.current;
-
-      setMarketLoading(true);
-      try {
-        const payload = await fetchArenaMarketListings(
-          currentToken,
-          {
-            page,
-            limit: 20,
-            search: query.trim(),
-            rarity,
-            ivBand,
-            sort,
+  const loadOwnedData = useCallback(
+    (currentToken: string) =>
+      runOwned(
+        (signal) =>
+          Promise.all([
+            fetchMyArenaMarketListings(currentToken, signal),
+            fetchArenaCollection(currentToken, { perPage: 500 }, signal),
+          ]),
+        {
+          onResult: ([minePayload, collectionPayload]) => {
+            setMine(minePayload);
+            setCollection(collectionPayload);
           },
-          controller.signal,
-        );
-        if (requestId === marketRequestIdRef.current) setMarket(payload);
-      } catch (error) {
-        if (!controller.signal.aborted && requestId === marketRequestIdRef.current) {
-          setErrorMessage(normalizeArenaError(error));
-        }
-      } finally {
-        if (requestId === marketRequestIdRef.current && !controller.signal.aborted) {
-          setMarketLoading(false);
-        }
-      }
-    },
-    [page, query, rarity, ivBand, sort],
+        },
+      ),
+    [runOwned],
   );
 
-  // Abort any in-flight market request on unmount.
-  useEffect(() => () => marketAbortRef.current?.abort(), []);
+  const loadMarket = useCallback(
+    (currentToken: string) => {
+      setMarketLoading(true);
+      return runMarket(
+        (signal) =>
+          fetchArenaMarketListings(
+            currentToken,
+            { page, limit: 20, search: query.trim(), rarity, ivBand, sort },
+            signal,
+          ),
+        {
+          onResult: setMarket,
+          onError: (error) => setErrorMessage(normalizeArenaError(error)),
+          onSettled: () => setMarketLoading(false),
+        },
+      );
+    },
+    [runMarket, page, query, rarity, ivBand, sort],
+  );
 
   useEffect(() => {
     if (!token) {

@@ -1,26 +1,16 @@
-import { joinApi } from "@/lib/config";
-import { shouldSendBearerToken } from "@/lib/auth-session";
 import type { ArenaCardShopResponse, ArenaCardShopPurchaseResponse } from "./shared";
-import { readApiError, makeAuthHeaders } from "./shared";
+import { arenaRequest } from "./shared";
 
 export async function fetchArenaCardShop(
   token: string,
   forceRandomPack = false,
+  signal?: AbortSignal,
 ): Promise<ArenaCardShopResponse> {
-  const url = joinApi(`/arena/shop/cards${forceRandomPack ? "?forceRandomPack=1" : ""}`);
-  const response = await fetch(url, {
-    credentials: "include",
-    headers: shouldSendBearerToken(token)
-      ? { Authorization: `Bearer ${token}` }
-      : undefined,
-    cache: "no-store",
+  return arenaRequest("/arena/shop/cards", {
+    token,
+    query: { forceRandomPack: forceRandomPack ? 1 : undefined },
+    signal,
   });
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaCardShopResponse;
 }
 export async function buyArenaShopCard(
   token: string,
@@ -28,16 +18,5 @@ export async function buyArenaShopCard(
     | { kind: "daily"; offerId: string }
     | { kind: "random"; forceRandomPack?: boolean },
 ): Promise<ArenaCardShopPurchaseResponse> {
-  const response = await fetch(joinApi("/arena/shop/cards/buy"), {
-    method: "POST",
-    credentials: "include",
-    headers: makeAuthHeaders(token),
-    body: JSON.stringify(purchase),
-  });
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaCardShopPurchaseResponse;
+  return arenaRequest("/arena/shop/cards/buy", { token, body: purchase });
 }

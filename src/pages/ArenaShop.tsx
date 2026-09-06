@@ -8,6 +8,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
+import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
@@ -17,6 +18,8 @@ import {
   type ArenaShopResponse,
   type ArenaSubStat,
   ArenaApiError,
+  hasCardItem,
+  isMaxIvCard,
   buyArenaItem,
   buyArenaShopCard,
   craftArenaRecipe,
@@ -57,17 +60,6 @@ function formatOfferCountdown(endsAt: string, nowMs: number) {
   return `${minutes}m ${seconds}s`;
 }
 
-function isMaxIvCard(card: ArenaCard | null | undefined) {
-  return !!card
-    && card.iv.power === 31
-    && card.iv.guard === 31
-    && card.iv.speed === 31
-    && card.iv.effectHit === 31;
-}
-
-function hasCardItem(card: ArenaCard | null | undefined, itemId: string) {
-  return Array.isArray(card?.cardItemIds) && card.cardItemIds.includes(itemId);
-}
 
 function getConsumableActiveInfo(
   item: ArenaShopItem,
@@ -312,23 +304,31 @@ const ArenaShop = () => {
     },
   });
 
-  const loadCardOffers = useCallback(async () => {
+  const runCardOffers = useAbortableRequest();
+
+  const loadCardOffers = useCallback(() => {
     if (!token) {
       setCardShop(null);
       setCardErrorMessage(null);
-      return;
+      return Promise.resolve();
     }
 
     setCardsLoading(true);
     setCardErrorMessage(null);
-    try {
-      setCardShop(await fetchArenaCardShop(token, localStorage.getItem("debugRandomPack") === "1"));
-    } catch (error) {
-      setCardErrorMessage(normalizeArenaError(error));
-    } finally {
-      setCardsLoading(false);
-    }
-  }, [token]);
+    return runCardOffers(
+      (signal) =>
+        fetchArenaCardShop(
+          token,
+          localStorage.getItem("debugRandomPack") === "1",
+          signal,
+        ),
+      {
+        onResult: setCardShop,
+        onError: (error) => setCardErrorMessage(normalizeArenaError(error)),
+        onSettled: () => setCardsLoading(false),
+      },
+    );
+  }, [runCardOffers, token]);
 
   useEffect(() => {
     let cancelled = false;
@@ -981,7 +981,6 @@ const ArenaShop = () => {
                                 {item.acquisition === "craft" && recipe ? (
                                   <p className="text-xs text-slate-700">
                                     Craft: {recipe.coinCost.toLocaleString()} coins
-                                    {recipe.inputs?.length > 0 ? ` · ${recipe.inputs.map((i) => `${i.itemName || i.itemId} x${i.required}`).join(", ")}` : ""}
                                   </p>
                                 ) : null}
                                 {item.stats ? <p className="text-xs text-blue-600">{formatStats(item.stats)}</p> : null}

@@ -8,7 +8,7 @@ import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
 import { usePageSeo } from "@/lib/seo";
 import {
-  ArenaApiError,
+  normalizeArenaError,
   type ArenaLeaderboardResponse,
   type ArenaMetric,
   fetchArenaLeaderboard,
@@ -25,11 +25,6 @@ function formatPercent(value: number, fractionDigits = 1) {
   return `${(value * 100).toFixed(fractionDigits)}%`;
 }
 
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
-}
 
 const PER_PAGE = 10;
 

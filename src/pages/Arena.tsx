@@ -18,9 +18,12 @@ import {
   type ArenaCard,
   type ArenaProfile,
   type ArenaUpdate,
+  MAIN_STAT_LABELS,
   drawArenaPack,
+  equipmentDisplayName,
   fetchArenaProfile,
   fetchArenaUpdates,
+  normalizeArenaError,
 } from "@/lib/arena";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
 
@@ -29,12 +32,6 @@ function formatTime(value: string | null) {
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed)) return "unknown";
   return new Date(parsed).toLocaleString();
-}
-
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
 }
 
 function isMaintenanceMessage(message: string | null) {
@@ -95,53 +92,8 @@ function getCardIvBase(card?: ArenaCard | null) {
   };
 }
 
-const EQUIPMENT_SLOT_NAMES: Record<string, string> = {
-  weapon: "Blade",
-  armor: "Armour",
-  charm: "Charm",
-};
-
-const EQUIPMENT_MAIN_NAMES: Record<string, string> = {
-  power: "Force",
-  guard: "Aegis",
-  critRate: "Keen",
-  critDmg: "Ruin",
-};
-
-const EQUIPMENT_SUB_NAMES: Record<string, string> = {
-  hp: "Vitality",
-  power: "Power",
-  guard: "Guard",
-  speed: "Speed",
-  effectHit: "Focus",
-  hpPct: "Fortitude",
-  dmgPct: "Fury",
-  defendPct: "Bulwark",
-  crit: "Precision",
-  critRate: "Precision",
-  critDmg: "Ruin",
-};
-
-const EQUIPMENT_MAIN_LABELS: Record<string, string> = {
-  power: "Power",
-  guard: "Guard",
-  critRate: "Crit Rate",
-  critDmg: "Crit DMG",
-};
-
-function equipmentDisplayName(piece: NonNullable<ArenaProfile["equipment"]["weapon"]>) {
-  const prefix = EQUIPMENT_MAIN_NAMES[piece.mainStatType] || EQUIPMENT_MAIN_LABELS[piece.mainStatType] || "Balanced";
-  const base = EQUIPMENT_SLOT_NAMES[piece.slot] || "Gear";
-  const bestSub = [...piece.subStats]
-    .sort((a, b) => Math.abs(Number(b.value) || 0) - Math.abs(Number(a.value) || 0))[0];
-  const suffix = bestSub && bestSub.type !== piece.mainStatType
-    ? ` of ${EQUIPMENT_SUB_NAMES[bestSub.type] || bestSub.type}`
-    : "";
-  return `${prefix} ${base}${suffix}`;
-}
-
 function equipmentSummary(piece: NonNullable<ArenaProfile["equipment"]["weapon"]>) {
-  const main = EQUIPMENT_MAIN_LABELS[piece.mainStatType] || piece.mainStatType;
+  const main = MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType;
   const enhancementLevel = piece.enhancementLevel || 0;
   const mainValue = piece.enhancedMainStatValue ?? piece.mainStatValue;
   return `${equipmentDisplayName(piece)} (${main} +${mainValue}${enhancementLevel > 0 ? `, +${enhancementLevel}` : ""})`;

@@ -14,8 +14,12 @@ import {
   type ArenaEquipmentPiece,
   type ArenaShopItem,
   type ArenaShopResponse,
-  type ArenaSubStat,
   ArenaApiError,
+  MAIN_STAT_LABELS,
+  equipmentDisplayName,
+  hasCardItem,
+  isMaxIvCard,
+  statLabel,
   enhanceArenaPiece,
   equipArenaItem,
   fetchArenaShop,
@@ -120,13 +124,6 @@ const TABS: Array<{ id: InventoryTab; label: string }> = [
   { id: "cardItem", label: "Card Items" },
 ];
 
-const MAIN_STAT_LABELS: Record<string, string> = {
-  power: "Power",
-  guard: "Guard",
-  critRate: "Crit Rate",
-  critDmg: "Crit DMG",
-};
-
 const SLOT_TO_ITEM_ID: Record<string, string> = {
   weapon: "weapon_roll",
   armor: "armour_roll",
@@ -137,33 +134,6 @@ const SLOT_LABELS: Record<string, string> = {
   weapon: "Weapon",
   armor: "Armour",
   charm: "Charm",
-};
-
-const EQUIPMENT_SLOT_NAMES: Record<string, string> = {
-  weapon: "Blade",
-  armor: "Armour",
-  charm: "Charm",
-};
-
-const EQUIPMENT_MAIN_NAMES: Record<string, string> = {
-  power: "Force",
-  guard: "Aegis",
-  critRate: "Keen",
-  critDmg: "Ruin",
-};
-
-const EQUIPMENT_SUB_NAMES: Record<string, string> = {
-  hp: "Vitality",
-  power: "Power",
-  guard: "Guard",
-  speed: "Speed",
-  effectHit: "Focus",
-  hpPct: "Fortitude",
-  dmgPct: "Fury",
-  defendPct: "Bulwark",
-  crit: "Precision",
-  critRate: "Precision",
-  critDmg: "Ruin",
 };
 
 const MAX_ENHANCEMENT_LEVEL = 15;
@@ -253,21 +223,6 @@ function slotSpriteItem(slot: string): ArenaShopItem {
   };
 }
 
-function statLabel(type: string) {
-  return SUB_STAT_LABELS[type] || MAIN_STAT_LABELS[type] || type;
-}
-
-function equipmentDisplayName(piece: { slot: string; mainStatType: string; subStats: ArenaSubStat[] }) {
-  const prefix = EQUIPMENT_MAIN_NAMES[piece.mainStatType] || MAIN_STAT_LABELS[piece.mainStatType] || "Balanced";
-  const base = EQUIPMENT_SLOT_NAMES[piece.slot] || SLOT_LABELS[piece.slot] || "Gear";
-  const bestSub = [...piece.subStats]
-    .sort((a, b) => Math.abs(Number(b.value) || 0) - Math.abs(Number(a.value) || 0))[0];
-  const suffix = bestSub && bestSub.type !== piece.mainStatType
-    ? ` of ${EQUIPMENT_SUB_NAMES[bestSub.type] || statLabel(bestSub.type)}`
-    : "";
-  return `${prefix} ${base}${suffix}`;
-}
-
 function mainStatValue(piece: { mainStatValue: number; enhancedMainStatValue?: number }) {
   return piece.enhancedMainStatValue ?? piece.mainStatValue;
 }
@@ -275,18 +230,6 @@ function mainStatValue(piece: { mainStatValue: number; enhancedMainStatValue?: n
 function flattenItems(shop: ArenaShopResponse | null) {
   if (!shop) return [] as ArenaShopItem[];
   return shop.shop.flatMap((tier) => tier.items);
-}
-
-function isMaxIvCard(card: ArenaShopResponse["profile"]["selectedCard"]) {
-  return !!card
-    && card.iv.power === 31
-    && card.iv.guard === 31
-    && card.iv.speed === 31
-    && card.iv.effectHit === 31;
-}
-
-function hasCardItem(card: ArenaShopResponse["profile"]["selectedCard"], itemId: string) {
-  return Array.isArray(card?.cardItemIds) && card.cardItemIds.includes(itemId);
 }
 
 const ArenaInventory = () => {

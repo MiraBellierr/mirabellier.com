@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
 import { joinApi } from "@/lib/config";
 import { readApiError, makeAuthHeaders } from "@/lib/arena/shared";
+import { statLabel } from "@/lib/arena/equipment-display";
 
 type CompensationRewardSummary = {
   coins: number;
@@ -51,20 +52,6 @@ function groupByTitle<T extends { title?: string; name?: string }>(
     counts.set(label, (counts.get(label) || 0) + 1);
   });
   return [...counts.entries()];
-}
-
-function statLabel(value: string) {
-  if (value === "critRate") return "Crit Rate";
-  if (value === "critDmg") return "Crit DMG";
-  if (value === "effectHit") return "Effect Hit";
-  if (value === "hpPct") return "HP%";
-  if (value === "dmgPct") return "DMG%";
-  if (value === "defendPct") return "DEF%";
-  if (value === "power") return "Power";
-  if (value === "guard") return "Guard";
-  if (value === "speed") return "Speed";
-  if (value === "hp") return "HP";
-  return value || "Main Stat";
 }
 
 function formatSubStats(

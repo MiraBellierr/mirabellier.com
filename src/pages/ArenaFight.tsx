@@ -16,7 +16,9 @@ import { createDedicatedSocket } from "@/lib/websocket";
 import { usePageSeo } from "@/lib/seo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  ArenaApiError,
+  ELEMENT_COLORS,
+  WEAKNESS_ROWS,
+  normalizeArenaError,
   type ArenaActiveFight,
   type ArenaBattleConsoleEvent,
   type ArenaProfile,
@@ -32,29 +34,6 @@ import {
 } from "@/lib/arena-fight-resume";
 import { formatActiveEffects } from "@/lib/arena-shop-ui";
 
-const ELEMENT_COLORS: Record<string, string> = {
-  Fire: "#e74c3c",
-  Water: "#3498db",
-  Earth: "#27ae60",
-  Wind: "#2ecc71",
-  Light: "#f1c40f",
-  Dark: "#8e44ad",
-};
-
-const WEAKNESS_ROWS = [
-  { element: "Fire", beats: "Earth", color: ELEMENT_COLORS.Fire, beatsColor: ELEMENT_COLORS.Earth },
-  { element: "Water", beats: "Fire", color: ELEMENT_COLORS.Water, beatsColor: ELEMENT_COLORS.Fire },
-  { element: "Earth", beats: "Water", color: ELEMENT_COLORS.Earth, beatsColor: ELEMENT_COLORS.Water },
-  { element: "Wind", beats: "Light", color: ELEMENT_COLORS.Wind, beatsColor: ELEMENT_COLORS.Light },
-  { element: "Light", beats: "Dark", color: ELEMENT_COLORS.Light, beatsColor: ELEMENT_COLORS.Dark },
-  { element: "Dark", beats: "Wind", color: ELEMENT_COLORS.Dark, beatsColor: ELEMENT_COLORS.Wind },
-];
-
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
-}
 
 type DmgFloater = { key: number; value: number; crit: boolean; x: number; y: number };
 type ElemFloater = { key: number; label: string; color: string; x: number; y: number };

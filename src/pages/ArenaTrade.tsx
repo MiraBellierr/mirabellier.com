@@ -11,10 +11,14 @@ import Divider from "@/parts/Divider";
 import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
+import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
-  ArenaApiError,
+  ELEMENTS,
+  ELEMENT_COLORS,
+  RARITIES,
+  normalizeArenaError,
   type ArenaCard,
   type ArenaTradeListing,
   type ArenaTradeListingsResponse,
@@ -33,30 +37,12 @@ import { useConfirm } from "@/states/ConfirmContext";
 
 type TradeTab = "listings" | "mine" | "trade";
 
-const RARITIES = ["C", "R", "SR", "SSR", "UR"] as const;
-const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
-
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena trade request failed.";
-}
-
 const WANTED_BADGES: Record<string, string> = {
   C: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
   R: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
   SR: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
   SSR: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
   UR: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200",
-};
-
-const ELEMENT_COLORS: Record<string, string> = {
-  Fire: "#e74c3c",
-  Water: "#3498db",
-  Earth: "#27ae60",
-  Wind: "#2ecc71",
-  Light: "#f1c40f",
-  Dark: "#8e44ad",
 };
 
 const ArenaTrade = () => {
@@ -140,23 +126,71 @@ const ArenaTrade = () => {
     },
   });
 
-  const loadData = useCallback(async (currentToken: string) => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      const [listingsPayload, minePayload, collectionPayload] = await Promise.all([
-        fetchArenaTradeListings(currentToken, { page: 1, limit: 20 }),
-        fetchMyArenaTradeListings(currentToken),
-        fetchArenaCollection(currentToken, { perPage: 500 }),
-      ]);
-      setListings(listingsPayload);
-      setMine(minePayload);
-      setCollection(collectionPayload.cards);
-    } catch (error) {
-      setErrorMessage(normalizeArenaError(error));
-    }
-    setLoading(false);
-  }, []);
+  // Listings and the mine/collection bundle each get their own abortable runner
+  // so overlapping triggers (pagination, post-mutation refresh, and the
+  // arena:trade:listing-changed websocket) can't land stale responses.
+  const runListings = useAbortableRequest();
+  const runOwned = useAbortableRequest();
+
+  const loadListings = useCallback(
+    (currentPage: number) => {
+      if (!token) return Promise.resolve();
+      setLoading(true);
+      return runListings(
+        (signal) =>
+          fetchArenaTradeListings(
+            token,
+            {
+              page: currentPage,
+              limit: 20,
+              search,
+              wantedRarity,
+              wantedElement,
+            },
+            signal,
+          ),
+        {
+          onResult: setListings,
+          onError: (error) => setErrorMessage(normalizeArenaError(error)),
+          onSettled: () => setLoading(false),
+        },
+      );
+    },
+    [runListings, token, search, wantedRarity, wantedElement],
+  );
+
+  const loadOwned = useCallback(
+    (currentToken: string) =>
+      runOwned(
+        (signal) =>
+          Promise.all([
+            fetchMyArenaTradeListings(currentToken, signal),
+            fetchArenaCollection(currentToken, { perPage: 500 }, signal),
+          ]),
+        {
+          onResult: ([minePayload, collectionPayload]) => {
+            setMine(minePayload);
+            setCollection(collectionPayload.cards);
+          },
+          onError: (error) => setErrorMessage(normalizeArenaError(error)),
+        },
+      ),
+    [runOwned],
+  );
+
+  const loadData = useCallback(
+    (currentToken: string) => {
+      setErrorMessage(null);
+      void loadListings(1);
+      void loadOwned(currentToken);
+    },
+    [loadListings, loadOwned],
+  );
+
+  const refreshAfterMutation = useCallback(async () => {
+    if (!token) return;
+    await Promise.all([loadListings(1), loadOwned(token)]);
+  }, [token, loadListings, loadOwned]);
 
   useEffect(() => {
     if (!token) {
@@ -165,7 +199,7 @@ const ArenaTrade = () => {
       setCollection([]);
       return;
     }
-    void loadData(token);
+    loadData(token);
   }, [token, loadData]);
 
   useEffect(() => {
@@ -180,43 +214,6 @@ const ArenaTrade = () => {
   useWebSocketEvent("arena:trade:listing-changed", () => {
     if (token) void refreshAfterMutation();
   });
-
-  const loadListings = useCallback(
-    async (currentPage: number) => {
-      if (!token) return;
-      setLoading(true);
-      try {
-        const payload = await fetchArenaTradeListings(token, {
-          page: currentPage,
-          limit: 20,
-          search,
-          wantedRarity,
-          wantedElement,
-        });
-        setListings(payload);
-      } catch (error) {
-        setErrorMessage(normalizeArenaError(error));
-      }
-      setLoading(false);
-    },
-    [token, search, wantedRarity, wantedElement],
-  );
-
-  const refreshAfterMutation = useCallback(async () => {
-    if (!token) return;
-    try {
-      const [listingsPayload, minePayload, collectionPayload] = await Promise.all([
-        fetchArenaTradeListings(token, { page: 1, limit: 20 }),
-        fetchMyArenaTradeListings(token),
-        fetchArenaCollection(token, { perPage: 500 }),
-      ]);
-      setListings(listingsPayload);
-      setMine(minePayload);
-      setCollection(collectionPayload.cards);
-    } catch (error) {
-      setErrorMessage(normalizeArenaError(error));
-    }
-  }, [token]);
 
   // User search
   const filteredUsers = userQuery.trim()

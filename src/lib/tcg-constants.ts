@@ -5,18 +5,10 @@ import windIcon from "@/assets/elements/wind.png";
 import lightIcon from "@/assets/elements/light.png";
 import darkIcon from "@/assets/elements/dark.png";
 
-export const DECK_SIZE = 10;
-export const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
-export const RARITY_ORDER = ["C", "R", "SR", "SSR", "UR"] as const;
+// Elements, rarities and their colours are shared with the Arena pages.
+export { ELEMENTS, RARITY_ORDER, ELEMENT_COLORS } from "@/lib/arena/constants";
 
-export const ELEMENT_COLORS: Record<string, string> = {
-  Fire: "#e74c3c",
-  Water: "#3498db",
-  Earth: "#27ae60",
-  Wind: "#2ecc71",
-  Light: "#f1c40f",
-  Dark: "#8e44ad",
-};
+export const DECK_SIZE = 10;
 
 export const ELEMENT_ICONS: Record<string, string> = {
   Fire: fireIcon,

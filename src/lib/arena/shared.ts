@@ -1,4 +1,5 @@
 import { shouldSendBearerToken } from "@/lib/auth-session";
+import { joinApi } from "@/lib/config";
 
 export type ArenaMetric = "level" | "win_rate" | "rich" | "elo";
 
@@ -566,13 +567,6 @@ export type ArenaShopRecipe = {
     quantity: number;
     itemName?: string;
   };
-  inputs: Array<{
-    itemId: string;
-    itemName?: string;
-    required: number;
-    quantity?: number;
-    owned?: number;
-  }>;
   unlocked?: boolean;
   canCraft?: boolean;
 };
@@ -799,6 +793,80 @@ export function makeAuthHeaders(token: string) {
     ...(shouldSendBearerToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     "Content-Type": "application/json",
   };
+}
+
+/** Turn any thrown value from an Arena call into a user-facing message. */
+export function normalizeArenaError(error: unknown): string {
+  if (error instanceof ArenaApiError) {
+    if (error.cooldownEndsAt) {
+      const parsed = Date.parse(error.cooldownEndsAt);
+      if (Number.isFinite(parsed)) {
+        return `${error.message} (Cooldown ends ${new Date(parsed).toLocaleString()})`;
+      }
+    }
+    return error.message;
+  }
+  if (error instanceof Error) return error.message;
+  return "Arena request failed.";
+}
+
+export type ArenaQueryValue = string | number | boolean | null | undefined;
+
+export type ArenaRequestOptions = {
+  /** HTTP method. Defaults to "POST" when `body` is set, otherwise "GET". */
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** Auth token — adds the bearer header when the session needs it. */
+  token?: string;
+  /** JSON request body. Serialized with a Content-Type header. */
+  body?: unknown;
+  /** Query params — entries that are null / undefined / "" are dropped. */
+  query?: Record<string, ArenaQueryValue>;
+  signal?: AbortSignal;
+};
+
+/**
+ * Single entry point for Arena API calls: builds the URL + query string, sets
+ * `credentials`/`cache`/auth/JSON headers, throws a normalized `ArenaApiError`
+ * on non-2xx, and returns the parsed body (`undefined` for an empty response).
+ */
+export async function arenaRequest<T>(
+  path: string,
+  options: ArenaRequestOptions = {},
+): Promise<T> {
+  const { method, token, body, query, signal } = options;
+
+  let url = joinApi(path);
+  if (query) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== null && value !== undefined && value !== "") {
+        params.set(key, String(value));
+      }
+    }
+    const qs = params.toString();
+    if (qs) url += (url.includes("?") ? "&" : "?") + qs;
+  }
+
+  const hasBody = body !== undefined;
+  const headers: Record<string, string> = {};
+  if (token !== undefined && shouldSendBearerToken(token)) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (hasBody) headers["Content-Type"] = "application/json";
+
+  const response = await fetch(url, {
+    method: method ?? (hasBody ? "POST" : "GET"),
+    credentials: "include",
+    cache: "no-store",
+    ...(Object.keys(headers).length ? { headers } : {}),
+    ...(hasBody ? { body: JSON.stringify(body) } : {}),
+    signal,
+  });
+
+  if (!response.ok) throw await readApiError(response);
+
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 export type ArenaTradeUser = {
   id: string;

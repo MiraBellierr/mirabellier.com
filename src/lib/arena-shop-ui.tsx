@@ -7,7 +7,6 @@ import type {
   ArenaShopItem,
   ArenaShopResponse,
 } from "@/lib/arena";
-import { ArenaApiError } from "@/lib/arena";
 
 const spriteModules = import.meta.glob("/src/assets/sprites/*.png", {
   import: "default",
@@ -176,19 +175,8 @@ export function getActiveConsumableReplacementChoices(details: Record<string, un
   });
 }
 
-export function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) {
-    if (error.cooldownEndsAt) {
-      const parsed = Date.parse(error.cooldownEndsAt);
-      if (Number.isFinite(parsed)) {
-        return `${error.message} (Cooldown ends ${new Date(parsed).toLocaleString()})`;
-      }
-    }
-    return error.message;
-  }
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
-}
+// Re-exported for callers already importing it from this module.
+export { normalizeArenaError } from "@/lib/arena";
 
 export function formatStats(stats: ArenaShopItem["stats"] | undefined) {
   if (!stats || typeof stats !== "object") return "";

@@ -11,7 +11,9 @@ import ConfirmDialog from "@/parts/ConfirmDialog";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
-  ArenaApiError,
+  ELEMENTS,
+  ELEMENT_COLORS,
+  normalizeArenaError,
   type ArenaCard,
   type ArenaCollectionResponse,
   type ArenaSacrificePreview,
@@ -22,22 +24,6 @@ import {
 } from "@/lib/arena";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 
-const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
-
-const ELEMENT_COLORS: Record<string, string> = {
-  Fire: "#e74c3c",
-  Water: "#3498db",
-  Earth: "#27ae60",
-  Wind: "#2ecc71",
-  Light: "#f1c40f",
-  Dark: "#8e44ad",
-};
-
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
-}
 
 const SACRIFICE_BLOCK_LABELS: Record<string, string> = {
   favorite: "favorite",

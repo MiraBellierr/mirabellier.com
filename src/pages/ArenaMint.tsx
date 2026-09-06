@@ -13,18 +13,15 @@ import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
-  ArenaApiError,
+  ELEMENTS,
+  RARITY_ORDER,
+  normalizeArenaError,
   type ArenaCard,
   type ArenaMintDuplicateGroup,
   fetchMintDuplicates,
   mintRainbowCard,
 } from "@/lib/arena";
 
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
-}
 
 type Step = "pick" | "preview";
 type MintSort =
@@ -39,8 +36,8 @@ type MintSort =
   | "effectHit-desc"
   | "name-asc";
 
-const ELEMENTS = ["", "Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
-const RARITY_ORDER = ["C", "R", "SR", "SSR", "UR"] as const;
+// "" is the "All elements" filter option.
+const ELEMENT_FILTER_OPTIONS = ["", ...ELEMENTS] as const;
 const rarityRank = (rarity: string | null | undefined) =>
   Math.max(0, RARITY_ORDER.indexOf((rarity || "C") as (typeof RARITY_ORDER)[number]));
 
@@ -548,7 +545,7 @@ const ArenaMint = () => {
                             onChange={(event) => setElementFilter(event.target.value)}
                             className="h-8 rounded-lg border border-blue-200 bg-white px-2 text-xs text-slate-700"
                           >
-                            {ELEMENTS.map((element) => (
+                            {ELEMENT_FILTER_OPTIONS.map((element) => (
                               <option key={element || "all"} value={element}>
                                 {element || "All elements"}
                               </option>

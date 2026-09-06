@@ -14,7 +14,7 @@ import Navigation from "@/parts/Navigation";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useConfirm } from "@/states/ConfirmContext";
 import {
-  ArenaApiError,
+  normalizeArenaError,
   type ArenaSkillNode,
   type ArenaSkillTreeResponse,
   activateArenaSkill,
@@ -23,11 +23,6 @@ import {
 } from "@/lib/arena";
 import { usePageSeo } from "@/lib/seo";
 
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena request failed.";
-}
 
 function hasStats(node: ArenaSkillNode) {
   return Object.values(node.statBonus).some((value) => value !== 0);

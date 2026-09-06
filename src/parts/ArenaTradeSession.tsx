@@ -5,6 +5,9 @@ import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
+  ELEMENTS,
+  ELEMENT_COLORS,
+  RARITIES,
   offerCardInArenaTrade,
   removeCardFromArenaTrade,
   offerCoinsInArenaTrade,
@@ -31,8 +34,6 @@ type CardPickerProps = {
 };
 
 const CARD_PICKER_PAGE_SIZE = 30;
-const RARITIES = ["C", "R", "SR", "SSR", "UR"] as const;
-const ELEMENTS = ["Fire", "Water", "Earth", "Wind", "Light", "Dark"] as const;
 const SORT_OPTIONS = [
   { value: "recent", label: "Collection order" },
   { value: "rarity-desc", label: "Rarity: highest first" },
@@ -40,15 +41,6 @@ const SORT_OPTIONS = [
   { value: "iv-desc", label: "IV: highest first" },
   { value: "iv-asc", label: "IV: lowest first" },
 ] as const;
-
-const ELEMENT_COLORS: Record<string, string> = {
-  Fire: "#e74c3c",
-  Water: "#3498db",
-  Earth: "#27ae60",
-  Wind: "#2ecc71",
-  Light: "#f1c40f",
-  Dark: "#8e44ad",
-};
 
 function CardPicker({ onSelect, onClose, excludedCardIds = [] }: CardPickerProps) {
   const auth = useOptionalAuth();

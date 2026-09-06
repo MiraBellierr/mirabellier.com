@@ -1,7 +1,5 @@
-import { joinApi } from "@/lib/config";
-import { shouldSendBearerToken } from "@/lib/auth-session";
 import type { ArenaCard, ArenaMarketListingsResponse, ArenaMarketMutationResponse, ArenaMarketPriceGuideResponse, ArenaMarketSort } from "./shared";
-import { readApiError, makeAuthHeaders } from "./shared";
+import { arenaRequest } from "./shared";
 
 export async function fetchArenaMarketListings(
   token: string,
@@ -15,129 +13,63 @@ export async function fetchArenaMarketListings(
   } = {},
   signal?: AbortSignal,
 ): Promise<ArenaMarketListingsResponse> {
-  const params = new URLSearchParams();
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-  if (filters.search) params.set("search", filters.search);
-  if (filters.rarity) params.set("rarity", filters.rarity);
-  if (filters.ivBand) params.set("ivBand", filters.ivBand);
-  if (filters.sort) params.set("sort", filters.sort);
-  const response = await fetch(
-    joinApi(`/arena/market/listings?${params.toString()}`),
-    {
-      credentials: "include",
-      headers: shouldSendBearerToken(token)
-        ? { Authorization: `Bearer ${token}` }
-        : undefined,
-      cache: "no-store",
-      signal,
+  return arenaRequest("/arena/market/listings", {
+    token,
+    signal,
+    query: {
+      page: filters.page,
+      limit: filters.limit,
+      search: filters.search,
+      rarity: filters.rarity,
+      ivBand: filters.ivBand,
+      sort: filters.sort,
     },
-  );
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaMarketListingsResponse;
+  });
 }
 export async function fetchMyArenaMarketListings(
   token: string,
+  signal?: AbortSignal,
 ): Promise<ArenaMarketListingsResponse> {
-  const response = await fetch(joinApi("/arena/market/listings/mine"), {
-    credentials: "include",
-    headers: shouldSendBearerToken(token)
-      ? { Authorization: `Bearer ${token}` }
-      : undefined,
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaMarketListingsResponse;
+  return arenaRequest("/arena/market/listings/mine", { token, signal });
 }
 export async function fetchArenaMarketPriceGuide(
   token: string,
   card: Pick<ArenaCard, "malId" | "rarity" | "iv">,
 ): Promise<ArenaMarketPriceGuideResponse> {
-  const params = new URLSearchParams({
-    malId: String(card.malId),
-    ivTotal: String(card.iv.total),
-    rarity: card.rarity,
-  });
-  const response = await fetch(
-    joinApi(`/arena/market/price?${params.toString()}`),
-    {
-      credentials: "include",
-      headers: shouldSendBearerToken(token)
-        ? { Authorization: `Bearer ${token}` }
-        : undefined,
-      cache: "no-store",
+  return arenaRequest("/arena/market/price", {
+    token,
+    query: {
+      malId: card.malId,
+      ivTotal: card.iv.total,
+      rarity: card.rarity,
     },
-  );
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaMarketPriceGuideResponse;
+  });
 }
 export async function createArenaMarketListing(
   token: string,
   cardInstanceId: string,
   price: number,
 ): Promise<ArenaMarketMutationResponse> {
-  const response = await fetch(joinApi("/arena/market/listings"), {
-    method: "POST",
-    credentials: "include",
-    headers: makeAuthHeaders(token),
-    body: JSON.stringify({ cardInstanceId, price }),
+  return arenaRequest("/arena/market/listings", {
+    token,
+    body: { cardInstanceId, price },
   });
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaMarketMutationResponse;
 }
 export async function buyArenaMarketListing(
   token: string,
   listingId: string,
 ): Promise<ArenaMarketMutationResponse> {
-  const response = await fetch(
-    joinApi(`/arena/market/listings/${encodeURIComponent(listingId)}/buy`),
-    {
-      method: "POST",
-      credentials: "include",
-      headers: makeAuthHeaders(token),
-      body: JSON.stringify({}),
-    },
+  return arenaRequest(
+    `/arena/market/listings/${encodeURIComponent(listingId)}/buy`,
+    { token, body: {} },
   );
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaMarketMutationResponse;
 }
 export async function cancelArenaMarketListing(
   token: string,
   listingId: string,
 ): Promise<ArenaMarketMutationResponse> {
-  const response = await fetch(
-    joinApi(`/arena/market/listings/${encodeURIComponent(listingId)}/cancel`),
-    {
-      method: "POST",
-      credentials: "include",
-      headers: makeAuthHeaders(token),
-      body: JSON.stringify({}),
-    },
+  return arenaRequest(
+    `/arena/market/listings/${encodeURIComponent(listingId)}/cancel`,
+    { token, body: {} },
   );
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaMarketMutationResponse;
 }

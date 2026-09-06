@@ -1,7 +1,5 @@
-import { joinApi } from "@/lib/config";
-import { shouldSendBearerToken } from "@/lib/auth-session";
 import type { ArenaArchiveResponse } from "./shared";
-import { readApiError } from "./shared";
+import { arenaRequest } from "./shared";
 
 export async function fetchArenaArchive(
   token: string,
@@ -12,24 +10,16 @@ export async function fetchArenaArchive(
     ownership?: "all" | "owned" | "not-owned";
   } = {},
 ): Promise<ArenaArchiveResponse> {
-  const params = new URLSearchParams();
-  if (options.page) params.set("page", String(options.page));
-  if (options.perPage) params.set("perPage", String(options.perPage));
-  if (options.search) params.set("search", options.search);
-  if (options.ownership && options.ownership !== "all") {
-    params.set("ownership", options.ownership);
-  }
-  const response = await fetch(joinApi(`/arena/archive?${params.toString()}`), {
-    credentials: "include",
-    headers: shouldSendBearerToken(token)
-      ? { Authorization: `Bearer ${token}` }
-      : undefined,
-    cache: "no-store",
+  return arenaRequest("/arena/archive", {
+    token,
+    query: {
+      page: options.page,
+      perPage: options.perPage,
+      search: options.search,
+      ownership:
+        options.ownership && options.ownership !== "all"
+          ? options.ownership
+          : undefined,
+    },
   });
-
-  if (!response.ok) {
-    throw await readApiError(response);
-  }
-
-  return (await response.json()) as ArenaArchiveResponse;
 }

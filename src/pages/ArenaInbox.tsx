@@ -9,6 +9,7 @@ import Divider from "@/parts/Divider";
 import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
+import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
@@ -20,14 +21,9 @@ import {
   fetchArenaNotifications,
   markArenaNotificationRead,
   markAllArenaNotificationsRead,
+  normalizeArenaError,
 } from "@/lib/arena";
 import { usePageSeo } from "@/lib/seo";
-
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena inbox request failed.";
-}
 
 const NOTIFICATION_ICONS: Record<string, string> = {
   market_sold: "^",
@@ -80,22 +76,26 @@ const ArenaInbox = () => {
     },
   });
 
+  // Refetched from the mount/pagination effect and from two websocket events
+  // that can fire close together; drop stale responses so an older page can't
+  // clobber a newer one.
+  const runNotifications = useAbortableRequest();
+
   const loadData = useCallback(
-    async (currentToken: string, currentPage: number) => {
+    (currentToken: string, currentPage: number) => {
       setLoading(true);
       setErrorMessage(null);
-      try {
-        const payload = await fetchArenaNotifications(currentToken, {
-          page: currentPage,
-          limit: 30,
-        });
-        setData(payload);
-      } catch (error) {
-        setErrorMessage(normalizeArenaError(error));
-      }
-      setLoading(false);
+      return runNotifications(
+        (signal) =>
+          fetchArenaNotifications(currentToken, { page: currentPage, limit: 30 }, signal),
+        {
+          onResult: setData,
+          onError: (error) => setErrorMessage(normalizeArenaError(error)),
+          onSettled: () => setLoading(false),
+        },
+      );
     },
-    [],
+    [runNotifications],
   );
 
   const prevCountRef = useRef(0);

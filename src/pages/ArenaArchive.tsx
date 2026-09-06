@@ -11,18 +11,12 @@ import ArenaSubNav from "@/parts/ArenaSubNav";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
 import {
-  ArenaApiError,
   fetchArenaArchive,
+  normalizeArenaError,
   type ArenaArchiveResponse,
 } from "@/lib/arena";
 
 type ArchiveOwnershipFilter = "all" | "owned" | "not-owned";
-
-function normalizeArenaError(error: unknown) {
-  if (error instanceof ArenaApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Arena archive request failed.";
-}
 
 const ArenaArchive = () => {
   const auth = useOptionalAuth();
