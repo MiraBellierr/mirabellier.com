@@ -2439,7 +2439,7 @@ const Pixies = () => {
               />
               <div className="absolute inset-x-0 bottom-0 z-30 flex max-h-[70%] flex-col rounded-t-2xl border-t border-black/10 bg-white/95 text-neutral-900 backdrop-blur-xl dark:border-sky-300/20 dark:bg-blue-950/90 dark:text-white">
                 <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
-                  <span className="font-bold">
+                  <span className="font-bold text-neutral-900 dark:text-white">
                     Comments ({commentCountFor(pixies[activeIndex])})
                   </span>
                   <button

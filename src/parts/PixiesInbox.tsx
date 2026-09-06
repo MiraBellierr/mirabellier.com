@@ -271,7 +271,9 @@ const PixiesInbox = ({ className = "" }: { className?: string }) => {
           onTouchMove={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
-            <span className="text-sm font-bold">Notifications</span>
+            <span className="text-sm font-bold text-neutral-900 dark:text-white">
+              Notifications
+            </span>
             <div className="flex items-center gap-1">
               {items.some((n) => !n.isRead) && (
                 <button
