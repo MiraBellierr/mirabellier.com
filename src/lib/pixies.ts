@@ -66,7 +66,13 @@ export function resolvePosterUrl(poster?: string | null): string | undefined {
 
 export function resolveAvatarUrl(avatar?: string | null): string | null {
   if (!avatar) return null;
-  if (avatar.startsWith("blob:") || /^https?:\/\//.test(avatar)) return avatar;
+  // A just-picked local file (upload preview) is fine to render straight away.
+  if (avatar.startsWith("blob:")) return avatar;
+  // Anything else remote is a social-CDN link the backend failed to mirror.
+  // Those carry IP-bound expiring signatures and 403/404 in the visitor's
+  // browser, so treat them as "no avatar" — the caller falls back to the
+  // placeholder glyph instead of firing a console error on every render.
+  if (/^https?:\/\//.test(avatar)) return null;
   const base = API_BASE.replace(/\/$/, "");
   return `${base}${avatar.startsWith("/") ? "" : "/"}${avatar}`;
 }
