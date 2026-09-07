@@ -1,0 +1,5 @@
+# https://securitytxt.org/  (RFC 9116)
+Contact: mailto:security@mirabellier.com
+Expires: 2027-09-08T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://mirabellier.com/.well-known/security.txt

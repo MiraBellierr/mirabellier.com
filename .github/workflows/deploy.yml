@@ -53,7 +53,8 @@ jobs:
           path: dist
 
       - name: Prepare frontend directory on VPS
-        uses: appleboy/ssh-action@master
+        # Pinned to a commit SHA (v1.2.5) — this step receives VPS_SSH_KEY.
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -66,13 +67,15 @@ jobs:
             find "${{ env.FRONTEND_DEPLOY_PATH }}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
       - name: Copy frontend dist to VPS
-        uses: appleboy/scp-action@master
+        # Pinned to a commit SHA (v1.0.0) — this step receives VPS_SSH_KEY.
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           timeout: 60s
           command_timeout: 30m
-          source: "dist/*"
+          # dist/* misses dotfiles; list .well-known explicitly so security.txt ships.
+          source: "dist/*,dist/.well-known/**"
           target: "${{ env.FRONTEND_DEPLOY_PATH }}"
           strip_components: 1

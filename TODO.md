@@ -131,28 +131,32 @@ rather than `dangerouslySetInnerHTML`, session tokens live in an HttpOnly
 
 ## 🟢 Low / hardening
 
-- [ ] **`classifyPlatform` checks hostname but not protocol** (`lib/social.js:143-171`)
-      — `new URL("file://youtube.com/…")` passes the allowlist before reaching
-      `yt-dlp`. Owner-gated today, so impact is low, but add
-      `parsed.protocol === "https:"` while it is cheap.
-- [ ] **No username validation.** `updateUserById` (`lib/users.js:88-93`) accepts any
-      string: no length cap, no charset restriction, no case-insensitive uniqueness —
-      so `Mira` / `mira` / `mіra` (Cyrillic і) can coexist and impersonate. Add a
-      pattern + length limit and a `COLLATE NOCASE` uniqueness check. Same for `bio`
-      and `location`, which have no length cap.
-- [ ] **CI actions are pinned to a moving ref.** `.github/workflows/deploy.yml` uses
-      `appleboy/ssh-action@master` and `appleboy/scp-action@master`, both of which
-      receive `secrets.VPS_SSH_KEY`. Pin to a commit SHA.
-- [ ] **Sensitive data sits unencrypted on disk.** `mirabellier-backend/` holds six
-      `database-backup-*.sqlite3` files (which include the plaintext `sessions` table)
-      plus `data/{tiktok,instagram,youtube}-cookies.txt`. Gitignored, but move them
-      off the app directory, restrict file modes, and add a retention policy.
-- [ ] **Sessions are not invalidated on identity change** — no revoke-all on
-      username change, and no "sign out other devices". Add once `sessions` grows an
-      `expiresAt`/`createdAt`.
-- [ ] **No `.well-known/security.txt` and no dependency scanning in CI.** Add
-      Dependabot or a scheduled `npm audit` job so the dependency findings above do
-      not silently re-accumulate.
+- [x] **`classifyPlatform` checks hostname but not protocol.** `lib/social.js`
+      now returns `null` for any scheme other than `http:` / `https:` before the
+      hostname allowlist runs, so `file://youtube.com/…` never reaches `yt-dlp`.
+      Test added.
+- [x] **No username validation.** `updateUserById` (`lib/users.js`) now enforces
+      `^[A-Za-z0-9._-]{3,30}$` (ASCII only — Cyrillic homoglyphs rejected) and a
+      `COLLATE NOCASE` uniqueness check against other users (re-casing your own
+      handle still allowed); `bio` capped at 500 chars, `location` at 100. The
+      `/me` route returns 400 `invalid username` for a pattern failure. Tests
+      added.
+- [x] **CI actions are pinned to a moving ref.** `.github/workflows/deploy.yml`
+      pins `appleboy/ssh-action` → `0ff4204…` (v1.2.5) and `appleboy/scp-action`
+      → `ff85246…` (v1.0.0), both commit SHAs.
+- [~] **Sensitive data sits unencrypted on disk.** Added
+      `scripts/prune-db-backups.js` (`npm run prune:db-backups[:apply]`) — keeps
+      the newest N `database-backup-*.sqlite3` snapshots, dry-run by default.
+      `.gitignore` already covers the backups + cookie files. **Still an ops task:
+      move these off the app directory and `chmod 600` them on the VPS** — not
+      done from here (would delete live backups).
+- [x] **Sessions are not invalidated on identity change.** `revokeUserSessions`
+      added; the `/me` route calls it on a username change (all devices signed
+      out) and re-issues a session cookie for the current device. Test added.
+- [x] **No `.well-known/security.txt` and no dependency scanning in CI.** Added
+      `public/.well-known/security.txt` (RFC 9116, `security@mirabellier.com`,
+      ships in the build + the scp deploy source list) and `.github/dependabot.yml`
+      (weekly npm updates for `/` and `/mirabellier-backend`, plus github-actions).
 
 ## Suggested order
 
