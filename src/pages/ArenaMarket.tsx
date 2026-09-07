@@ -40,12 +40,20 @@ type MarketTab = "market" | "mine";
 function PriceGuide({ guide }: { guide: ArenaMarketPriceGuideResponse | null }) {
   if (!guide) return null;
   return (
-    <p className="text-xs font-semibold text-blue-600 dark:text-purple-300">
-      {guide.marketPrice.source === "sales_average"
-        ? `Market average: ${guide.marketPrice.value.toLocaleString()} coins from ${guide.marketPrice.sampleSize} sales`
-        : `No completed sales yet — shop baseline: ${guide.marketPrice.value.toLocaleString()} coins`}
-      {" · "}IV band {guide.ivBand.id}
-    </p>
+    <div className="space-y-0.5 text-xs font-semibold text-blue-600 dark:text-purple-300">
+      <p>
+        {guide.marketPrice.source === "sales_average"
+          ? `Market average: ${guide.marketPrice.value.toLocaleString()} coins from ${guide.marketPrice.sampleSize} sales`
+          : `No completed sales yet — shop baseline: ${guide.marketPrice.value.toLocaleString()} coins`}
+        {" · "}IV band {guide.ivBand.id}
+      </p>
+      <p className="text-slate-500 dark:text-slate-400">
+        Max asking price: {guide.maxListingPrice.toLocaleString()} coins ·{" "}
+        listing fee {Math.round(guide.listingFeeRate * 100)}% (min{" "}
+        {guide.listingFeeMin.toLocaleString()}, non-refundable) ·{" "}
+        {Math.round(guide.commissionRate * 100)}% burned on sale
+      </p>
+    </div>
   );
 }
 
@@ -286,12 +294,19 @@ const ArenaMarket = () => {
   const handleList = async () => {
     if (!token || !selectedCard) return;
     const parsedPrice = Number(price);
+    const ceiling = priceGuide?.maxListingPrice ?? 1_000_000;
     if (
       !Number.isSafeInteger(parsedPrice) ||
       parsedPrice < 1 ||
       parsedPrice > 1_000_000
     ) {
       setListError("Price must be a whole number from 1 to 1,000,000.");
+      return;
+    }
+    if (parsedPrice > ceiling) {
+      setListError(
+        `Asking price is capped at ${ceiling.toLocaleString()} coins for this card right now.`,
+      );
       return;
     }
     setActioningId(`list:${selectedCard.cardInstanceId}`);
@@ -1058,7 +1073,7 @@ const ArenaMarket = () => {
                       id="list-card-price"
                       type="number"
                       min={1}
-                      max={1_000_000}
+                      max={priceGuide?.maxListingPrice ?? 1_000_000}
                       step={1}
                       required
                       value={price}
@@ -1066,7 +1081,7 @@ const ArenaMarket = () => {
                         setPrice(event.target.value);
                         setListError(null);
                       }}
-                      placeholder="1–1,000,000 coins"
+                      placeholder={`1–${(priceGuide?.maxListingPrice ?? 1_000_000).toLocaleString()} coins`}
                       className="mt-1 block w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
                     />
                     {listError ? (

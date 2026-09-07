@@ -335,7 +335,7 @@ const ArenaCollection = () => {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-xs font-semibold text-slate-500 mr-1">element:</span>
+                    <span className="text-xs font-semibold text-slate-500 mr-1">style:</span>
                     {ELEMENTS.map((el) => {
                       const active = elementFilter === el;
                       return (

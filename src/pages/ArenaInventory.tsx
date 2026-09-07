@@ -17,6 +17,7 @@ import {
   ArenaApiError,
   MAIN_STAT_LABELS,
   equipmentDisplayName,
+  formatSubStat,
   hasCardItem,
   isMaxIvCard,
   statLabel,
@@ -559,9 +560,13 @@ const ArenaInventory = () => {
     if (!token) return;
     const cost = enhancementCost(piece.enhancementLevel || 0);
     if (!fodderPieceId || cost === null) return;
+    const nextLevel = (piece.enhancementLevel || 0) + 1;
+    const boostsSub = nextLevel % 3 === 0;
     const confirmed = await confirm({
-      title: `Enhance ${SLOT_LABELS[piece.slot] || piece.slot}?`,
-      message: `Spend ${cost.toLocaleString()} coins and scrap the selected gear for +1 ${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType}?`,
+      title: `Enhance ${SLOT_LABELS[piece.slot] || piece.slot} to +${nextLevel}?`,
+      message: `Spend ${cost.toLocaleString()} coins and scrap the selected gear. `
+        + `${MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} scales up ~10% of its rolled value`
+        + `${boostsSub ? ", and one random sub-stat gets a permanent boost." : "."}`,
       confirmLabel: "Enhance",
       cancelLabel: "Cancel",
     });
@@ -583,9 +588,10 @@ const ArenaInventory = () => {
     if (!token) return;
     const subStat = piece.subStats[subStatIndex];
     if (!subStat || !fodderPieceId) return;
+    const rerollCost = shop?.profile?.rerollSubStatCost ?? 0;
     const confirmed = await confirm({
       title: `Reroll ${statLabel(subStat.type)}?`,
-      message: `Spend 500 coins and scrap the selected gear to reroll ${statLabel(subStat.type)} +${subStat.value}?`,
+      message: `Spend ${rerollCost.toLocaleString()} coins and scrap the selected gear to reroll ${statLabel(subStat.type)} +${subStat.value}?`,
       confirmLabel: "Reroll",
       cancelLabel: "Cancel",
     });
@@ -727,79 +733,97 @@ const ArenaInventory = () => {
               ) : loading && !shop ? (
                 <p className="text-blue-500">Loading inventory...</p>
               ) : shop ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 sm:p-4">
-                    <p className="mb-3 text-lg font-bold text-sky-700">✦ Equipped Gear</p>
+                <div className="space-y-5">
+                  <div className="space-y-3 rounded-xl border border-blue-100 bg-white/40 p-3 sm:p-4 dark:border-purple-400/20 dark:bg-slate-900/30">
+                    <h3 className="text-lg font-bold text-blue-700 dark:text-purple-100">Equipped Gear</h3>
                     <div>
                       {(["weapon", "armor", "charm"] as const).map((slot) => {
                         const piece = shop.equipped[slot];
                         return (
-                          <div key={slot} className="py-2.5 first:pt-0 last:pb-0">
-                            <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap sm:items-center sm:gap-3">
-                              <span className="w-14 shrink-0 pt-1 text-xs font-bold uppercase tracking-wide text-sky-400 sm:pt-0">
-                                {SLOT_LABELS[slot]}
-                              </span>
-                              {piece ? (
-                                <>
-                                  <ArenaItemSprite item={slotSpriteItem(piece.slot)} className="h-7 w-7 shrink-0" />
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                      <span className="text-sm font-bold text-blue-700">
-                                        {equipmentDisplayName(piece)}
-                                      </span>
-                                      <span className="text-xs text-slate-500">
-                                        {MAIN_STAT_LABELS[piece.mainStatType]} +{mainStatValue(piece)}
-                                        {(piece.enhancementLevel || 0) > 0 ? ` · +${piece.enhancementLevel}` : ""}
-                                      </span>
-                                    </div>
-                                    <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
-                                      {piece.subStats.map((s, i) => (
-                                        <span
-                                          key={`${slot}:${i}:${s.type}`}
-                                          className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700"
-                                        >
-                                          {statLabel(s.type)} +{s.value}
-                                        </span>
-                                      ))}
-                                    </div>
+                          <div
+                            key={slot}
+                            className="flex flex-wrap items-start gap-2 border-b border-sky-100 py-2.5 first:pt-0 last:border-0 last:pb-0 dark:border-purple-400/20 sm:flex-nowrap sm:items-center sm:gap-3"
+                          >
+                            <span className="w-14 shrink-0 pt-1 text-xs font-bold uppercase text-slate-400 dark:text-slate-500 sm:pt-0">
+                              {SLOT_LABELS[slot]}
+                            </span>
+                            {piece ? (
+                              <>
+                                <ArenaItemSprite item={slotSpriteItem(piece.slot)} className="h-7 w-7 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                    <span className="text-sm font-bold text-blue-700 dark:text-purple-100">
+                                      {equipmentDisplayName(piece)}
+                                    </span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                                      {MAIN_STAT_LABELS[piece.mainStatType]} +{mainStatValue(piece)}
+                                      {(piece.enhancementLevel || 0) > 0 ? ` · +${piece.enhancementLevel}` : ""}
+                                      {piece.setName ? ` · ${piece.setName} set` : ""}
+                                    </span>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleUnequip(slot)}
-                                    disabled={actioningId !== null}
-                                    className="arena-redraw-button hover:animate-wiggle basis-full text-left text-xs sm:basis-auto sm:text-right"
-                                  >
-                                    {actioningId === `unequip:${slot}` ? "[ unequipping... ]" : "[ unequip ]"}
-                                  </button>
-                                </>
-                              ) : (
-                                <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm italic text-sky-300">
-                                  <span>empty</span>
-                                  <Link to="/arena/shop" className="text-xs text-sky-500 underline not-italic">
-                                    visit shop →
-                                  </Link>
+                                  <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                                    {piece.subStats.map((s, i) => (
+                                      <span
+                                        key={`${slot}:${i}:${s.type}`}
+                                        className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 dark:border-purple-400/20 dark:bg-slate-800/60 dark:text-purple-200"
+                                      >
+                                        {formatSubStat(s)}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
-                              )}
-                            </div>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleUnequip(slot)}
+                                  disabled={actioningId !== null}
+                                  className="arena-redraw-button hover:animate-wiggle basis-full text-left text-xs sm:basis-auto sm:text-right"
+                                >
+                                  {actioningId === `unequip:${slot}` ? "[ unequipping... ]" : "[ unequip ]"}
+                                </button>
+                              </>
+                            ) : (
+                              <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm italic text-slate-400 dark:text-slate-500">
+                                <span>empty</span>
+                                <Link to="/arena/shop" className="text-xs text-blue-500 underline not-italic dark:text-purple-300">
+                                  visit shop
+                                </Link>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-sky-200 pt-3 text-xs text-sky-600 sm:flex sm:flex-wrap sm:gap-x-5">
-                      <span><span className="font-semibold">Pieces:</span> {pieces.length}</span>
-                      <span><span className="font-semibold">Card items:</span> {cardItems.reduce((sum, item) => sum + item.ownedQuantity, 0)}</span>
-                      <span className="col-span-2 sm:col-span-1"><span className="font-semibold">Coins:</span> {shop.profile.coins.toLocaleString()} 🪙</span>
+                    {(shop.profile.equipmentSets?.length ?? 0) > 0 ? (
+                      <div className="border-t border-sky-100 pt-3 dark:border-purple-400/20">
+                        <p className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">Set bonus</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(shop.profile.equipmentSets ?? []).map((set) => (
+                            <span
+                              key={set.id}
+                              className="rounded-full border border-amber-300 bg-white/80 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-300"
+                            >
+                              {set.name} ({set.count}/3 · {set.tier}-piece)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-sky-100 pt-3 text-xs text-slate-600 dark:border-purple-400/20 dark:text-slate-300 sm:flex sm:flex-wrap sm:gap-x-5">
+                      <span><span className="font-semibold text-slate-500 dark:text-slate-400">Pieces:</span> {pieces.length}</span>
+                      <span><span className="font-semibold text-slate-500 dark:text-slate-400">Card items:</span> {cardItems.reduce((sum, item) => sum + item.ownedQuantity, 0)}</span>
+                      <span className="col-span-2 sm:col-span-1"><span className="font-semibold text-slate-500 dark:text-slate-400">Coins:</span> {shop.profile.coins.toLocaleString()} 🪙</span>
                     </div>
 
                     {activeEffects.length > 0 ? (
-                      <div className="mt-3 border-t border-sky-200 pt-3">
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sky-500">Active Effects</p>
+                      <div className="border-t border-sky-100 pt-3 dark:border-purple-400/20">
+                        <p className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">Active effects</p>
                         <div className="flex flex-wrap gap-2">
                           {activeEffects.map((effect) => (
                             <span
                               key={effect}
-                              className="rounded-full border border-sky-300 bg-white/80 px-2.5 py-1 text-xs font-semibold text-sky-700"
+                              className="rounded-full border border-blue-200 bg-white/80 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-purple-400/30 dark:bg-slate-800/60 dark:text-purple-200"
                             >
                               {effect}
                             </span>
@@ -809,9 +833,9 @@ const ArenaInventory = () => {
                     ) : null}
                   </div>
 
-                  <div className="rounded-xl border border-blue-100 bg-white/40 p-3 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-3">
+                  <div className="space-y-3 rounded-xl border border-blue-100 bg-white/40 p-3 sm:p-4 dark:border-purple-400/20 dark:bg-slate-900/30">
                     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                      <p className="text-sm font-semibold text-blue-900">Loadouts:</p>
+                      <h3 className="text-lg font-bold text-blue-700 dark:text-purple-100">Loadouts</h3>
                       <input
                         type="text"
                         value={loadoutName}
@@ -820,7 +844,7 @@ const ArenaInventory = () => {
                           if (e.key === "Enter") void handleSaveLoadout();
                         }}
                         placeholder="loadout name..."
-                        className="w-full rounded border border-blue-200 bg-white/80 px-2 py-2 text-sm text-blue-800 placeholder-blue-300 outline-none focus:border-blue-400 sm:w-auto sm:py-1 sm:text-xs"
+                        className="w-full rounded border border-blue-200 bg-white/80 px-2 py-2 text-sm text-blue-800 placeholder-blue-300 outline-none focus:border-blue-400 dark:border-purple-700/40 dark:bg-slate-800 dark:text-purple-100 dark:placeholder-slate-500 sm:w-auto sm:py-1 sm:text-xs"
                         disabled={loadoutActionId !== null}
                       />
                       <button
@@ -833,7 +857,7 @@ const ArenaInventory = () => {
                       </button>
                     </div>
                     {loadouts.length > 0 ? (
-                      <div className="mt-2 space-y-2">
+                      <div className="space-y-2">
                         {loadouts.map((loadout) => {
                           const weapon = loadout.weaponPieceId ? pieceMap.get(loadout.weaponPieceId) : null;
                           const armor = loadout.armorPieceId ? pieceMap.get(loadout.armorPieceId) : null;
@@ -844,7 +868,7 @@ const ArenaInventory = () => {
                           const hasAnyPiece = weapon || armor || charm;
 
                           return (
-                            <div key={loadout.id} className="rounded border border-blue-100 bg-blue-50/60 p-2 text-xs text-blue-900">
+                            <div key={loadout.id} className="rounded-lg border border-blue-100 bg-blue-50/60 p-2 text-xs text-blue-900 dark:border-purple-400/20 dark:bg-slate-800/50 dark:text-purple-100">
                               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                                 <span className="font-bold">{loadout.name}</span>
                                 <span className="flex flex-wrap gap-1">
@@ -858,7 +882,7 @@ const ArenaInventory = () => {
                                       {isRestoring ? "[ restoring... ]" : "[ restore ]"}
                                     </button>
                                   ) : (
-                                    <span className="text-amber-600 italic">[ empty ]</span>
+                                    <span className="italic text-amber-600 dark:text-amber-400">[ empty ]</span>
                                   )}
                                   <button
                                     type="button"
@@ -870,23 +894,23 @@ const ArenaInventory = () => {
                                   </button>
                                 </span>
                               </div>
-                              <div className="mt-2 grid gap-1 text-blue-600 sm:block">
+                              <div className="mt-2 grid gap-1 text-slate-600 dark:text-slate-300 sm:block">
                                 {weapon ? (
                                   <span className="block sm:inline">✦ Weapon: {equipmentDisplayName(weapon)}</span>
                                 ) : (
-                                  <span className="block text-blue-300 sm:inline">✦ Weapon: —</span>
+                                  <span className="block text-slate-400 dark:text-slate-500 sm:inline">✦ Weapon: —</span>
                                 )}
                                 <span className="hidden sm:inline"> · </span>
                                 {armor ? (
                                   <span className="block sm:inline">✦ Armour: {equipmentDisplayName(armor)}</span>
                                 ) : (
-                                  <span className="block text-blue-300 sm:inline">✦ Armour: —</span>
+                                  <span className="block text-slate-400 dark:text-slate-500 sm:inline">✦ Armour: —</span>
                                 )}
                                 <span className="hidden sm:inline"> · </span>
                                 {charm ? (
                                   <span className="block sm:inline">✦ Charm: {equipmentDisplayName(charm)}</span>
                                 ) : (
-                                  <span className="block text-blue-300 sm:inline">✦ Charm: —</span>
+                                  <span className="block text-slate-400 dark:text-slate-500 sm:inline">✦ Charm: —</span>
                                 )}
                               </div>
                             </div>
@@ -894,21 +918,24 @@ const ArenaInventory = () => {
                         })}
                       </div>
                     ) : (
-                      <p className="mt-1 text-xs text-blue-400">No loadouts saved yet. Equip gear and save it here for quick swapping.</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">No loadouts saved yet. Equip gear and save it here for quick swapping.</p>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                  <section className="space-y-3">
+                  <h3 className="text-lg font-bold text-blue-700 dark:text-purple-100">Items</h3>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-sky-100 pb-3 dark:border-purple-400/20">
                     {TABS.map((entry) => (
                       <button
                         key={entry.id}
                         type="button"
                         onClick={() => handleTabChange(entry.id)}
-                        className="arena-redraw-button hover:animate-wiggle rounded-lg border border-blue-100 bg-white/50 px-2 text-center text-sm sm:border-0 sm:bg-transparent sm:px-0"
+                        aria-current={tab === entry.id ? "page" : undefined}
+                        className={`arena-redraw-button hover:animate-wiggle${
+                          tab === entry.id ? " !text-pink-600 dark:!text-pink-300" : ""
+                        }`}
                       >
-                        {tab === entry.id
-                          ? `[ » ${entry.label} « ]`
-                          : `[ ${entry.label} ]`}
+                        [ {entry.label} ]
                       </button>
                     ))}
                   </div>
@@ -970,12 +997,12 @@ const ArenaInventory = () => {
                         {consumables.map((item) => {
                           const isUsing = actioningId === `use:${item.id}`;
                           return (
-                            <li key={item.id} className="rounded-xl border border-blue-100 bg-white/50 p-3 sm:border-0 sm:bg-transparent sm:py-2">
+                            <li key={item.id}>
                               <article className="flex items-start gap-3">
                                 <ArenaItemSprite item={item} className="h-12 w-12 shrink-0 sm:h-16 sm:w-16" />
                                 <div className="min-w-0 flex-1 space-y-1">
                                   <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-                                    <p className="font-bold text-blue-700">{item.name}</p>
+                                    <p className="font-bold text-blue-700 dark:text-purple-100">{item.name}</p>
                                     <button
                                       type="button"
                                       onClick={() => void handleUse(item)}
@@ -985,11 +1012,11 @@ const ArenaInventory = () => {
                                       {isUsing ? "[ using... ]" : "[ use ]"}
                                     </button>
                                   </div>
-                                  <p className="text-xs text-slate-600">
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
                                     Owned: {item.ownedQuantity}
                                   </p>
                                   {item.consumableEffect ? (
-                                    <p className="text-xs text-blue-600">
+                                    <p className="text-xs text-blue-600 dark:text-purple-200">
                                       {describeConsumableEffect(item.consumableEffect)}
                                     </p>
                                   ) : null}
@@ -1000,7 +1027,7 @@ const ArenaInventory = () => {
                         })}
                       </ol>
                     ) : (
-                      <p className="text-sm text-slate-500">No consumables.</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">No consumables.</p>
                     )
                   ) : tab === "cardItem" ? (
                     cardItems.length > 0 ? (
@@ -1010,12 +1037,12 @@ const ArenaInventory = () => {
                           const selectedCardIsMaxIv = isMaxIvCard(shop.profile.selectedCard);
                           const selectedCardHasItem = hasCardItem(shop.profile.selectedCard, item.id);
                           return (
-                            <li key={item.id} className="rounded-xl border border-blue-100 bg-white/50 p-3 sm:border-0 sm:bg-transparent sm:py-2">
+                            <li key={item.id}>
                               <article className="flex items-start gap-3">
                                 <ArenaItemSprite item={item} className="h-12 w-12 shrink-0 sm:h-16 sm:w-16" />
                                 <div className="min-w-0 flex-1 space-y-1">
                                   <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-                                    <p className="font-bold text-blue-700">{item.name}</p>
+                                    <p className="font-bold text-blue-700 dark:text-purple-100">{item.name}</p>
                                     <button
                                       type="button"
                                       onClick={() => void handleUse(item)}
@@ -1025,15 +1052,15 @@ const ArenaInventory = () => {
                                       {isUsing ? "[ using... ]" : "[ use ]"}
                                     </button>
                                   </div>
-                                  <p className="text-xs text-slate-600">
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
                                     Owned: {item.ownedQuantity}
                                   </p>
                                   {item.consumableEffect ? (
-                                    <p className="text-xs text-blue-600">
+                                    <p className="text-xs text-blue-600 dark:text-purple-200">
                                       {describeConsumableEffect(item.consumableEffect)}
                                     </p>
                                   ) : null}
-                                  <p className="text-xs text-slate-600">
+                                  <p className="text-xs text-slate-600 dark:text-slate-300">
                                     Requires selected card with P/G/S/EH IV all at 31. One use per card.
                                     {selectedCardHasItem ? " Already used on selected card." : ""}
                                   </p>
@@ -1044,7 +1071,7 @@ const ArenaInventory = () => {
                         })}
                       </ol>
                     ) : (
-                      <p className="text-sm text-slate-500">No card items.</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">No card items.</p>
                     )
                   ) : (
                     visiblePieces.items.length > 0 ? (
@@ -1058,12 +1085,12 @@ const ArenaInventory = () => {
                           const isInLoadout = loadoutNamesByPieceId.has(piece.id);
                           const nextEnhanceCost = enhancementCost(piece.enhancementLevel || 0);
                           return (
-                            <li key={piece.id} className="rounded-xl border border-blue-100 bg-white/50 p-3 sm:border-0 sm:bg-transparent sm:py-2">
+                            <li key={piece.id}>
                               <article className="flex items-start gap-3">
                                 <ArenaItemSprite item={slotSpriteItem(piece.slot)} className="h-10 w-10 shrink-0" />
                                 <div className="min-w-0 flex-1 space-y-1">
                                   <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-                                    <p className="break-words font-bold leading-tight text-blue-700">
+                                    <p className="break-words font-bold leading-tight text-blue-700 dark:text-purple-100">
                                       {equipmentDisplayName(piece)}
                                     </p>
                                     {piece.equipped ? (
@@ -1102,11 +1129,11 @@ const ArenaInventory = () => {
                                       ))}
                                     </div>
                                   )}
-                                  <p className="text-xs text-slate-600">
+                                  <p className="text-xs text-slate-600 dark:text-slate-300">
                                     {SLOT_LABELS[piece.slot] || piece.slot} · {MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType} +{mainStatValue(piece)}
                                     {(piece.enhancementLevel || 0) > 0 ? ` · +${piece.enhancementLevel}` : ""}
                                   </p>
-                                  <div className="flex flex-wrap gap-1 text-xs text-blue-600">
+                                  <div className="flex flex-wrap gap-1 text-xs text-blue-600 dark:text-purple-200">
                                     {piece.subStats.map((s, index) => (
                                       <button
                                         key={`${piece.id}:${index}:${s.type}`}
@@ -1117,12 +1144,12 @@ const ArenaInventory = () => {
                                           setRerollModal({ piece, subStatIndex: index, fodderId: options[0].id });
                                         }}
                                         disabled={actioningId !== null}
-                                        className="min-h-7 rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="min-h-7 rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-400/20 dark:bg-slate-800/60 dark:text-purple-200"
                                         title="Reroll this substat"
                                       >
                                         {actioningId === `reroll:${piece.id}:${index}`
                                           ? "rerolling..."
-                                          : `${statLabel(s.type)} +${s.value}`}
+                                          : formatSubStat(s)}
                                       </button>
                                     ))}
                                   </div>
@@ -1135,7 +1162,7 @@ const ArenaInventory = () => {
                                         className="arena-redraw-button hover:animate-wiggle text-left sm:text-center"
                                         title={isInLoadout ? "Remove this piece from saved loadouts before scrapping it" : "Scrap this piece for coins"}
                                       >
-                                        {isFoddering ? "[ scrapping... ]" : isInLoadout ? "[ in loadout ]" : "[ scrap +500 ]"}
+                                        {isFoddering ? "[ scrapping... ]" : isInLoadout ? "[ in loadout ]" : `[ scrap +${(piece.fodderRefund ?? 0).toLocaleString()} ]`}
                                       </button>
                                     )}
                                     <button
@@ -1171,7 +1198,7 @@ const ArenaInventory = () => {
                           >
                             [ « prev ]
                           </button>
-                          <span className="text-xs text-slate-600">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
                             Page {page} of {totalPages} · {visiblePieces.total} total
                           </span>
                           <button
@@ -1186,7 +1213,7 @@ const ArenaInventory = () => {
                       ) : null}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-700">
+                    <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-700 dark:border-purple-400/20 dark:bg-slate-900/40 dark:text-purple-200">
                       <p>No {TABS.find((t) => t.id === tab)?.label.toLowerCase()} yet.</p>
                       <Link to="/arena/shop" className="mt-2 inline-block font-bold underline">
                         Visit the shop
@@ -1194,6 +1221,7 @@ const ArenaInventory = () => {
                     </div>
                     )
                   )}
+                  </section>
                 </div>
               ) : null}
 
@@ -1297,7 +1325,7 @@ const ArenaInventory = () => {
                                     key={`${fodder.id}:${index}:${s.type}`}
                                     className="rounded border border-blue-100 bg-white/60 px-1.5 py-0.5 text-blue-700 dark:border-purple-700/40 dark:bg-slate-800/80 dark:text-purple-300"
                                   >
-                                    {statLabel(s.type)} +{s.value}
+                                    {formatSubStat(s)}
                                   </span>
                                 ))}
                               </div>

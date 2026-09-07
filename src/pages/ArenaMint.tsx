@@ -36,7 +36,7 @@ type MintSort =
   | "effectHit-desc"
   | "name-asc";
 
-// "" is the "All elements" filter option.
+// "" is the "All styles" filter option.
 const ELEMENT_FILTER_OPTIONS = ["", ...ELEMENTS] as const;
 const rarityRank = (rarity: string | null | undefined) =>
   Math.max(0, RARITY_ORDER.indexOf((rarity || "C") as (typeof RARITY_ORDER)[number]));
@@ -537,7 +537,7 @@ const ArenaMint = () => {
                             ))}
                           </select>
                           <label htmlFor="mint-element" className="text-xs font-semibold text-slate-500">
-                            element:
+                            style:
                           </label>
                           <select
                             id="mint-element"
@@ -547,7 +547,7 @@ const ArenaMint = () => {
                           >
                             {ELEMENT_FILTER_OPTIONS.map((element) => (
                               <option key={element || "all"} value={element}>
-                                {element || "All elements"}
+                                {element || "All styles"}
                               </option>
                             ))}
                           </select>

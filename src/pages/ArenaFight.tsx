@@ -869,6 +869,9 @@ const ArenaFight = () => {
                             {activeFight?.opponent ? (
                               <p className="text-xs text-slate-500 mt-1 text-center">
                                 {activeFight.opponent.displayName}
+                                {activeFight.opponent.title
+                                  ? ` “${activeFight.opponent.title.name}”`
+                                  : ""}
                                 {activeFight.opponent.isNpc
                                   ? " · NPC · unrated"
                                   : ` · ELO ${activeFight.opponent.eloRating}${
@@ -1174,8 +1177,8 @@ const ArenaFight = () => {
               </CollapsiblePanel>
             ) : null}
 
-            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md">
-              <h2 className="text-center text-lg font-bold text-blue-700 mb-2">weakness chart</h2>
+            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 shadow-md">
+              <h2 className="text-center text-lg font-bold text-blue-700 mb-2">style matchups</h2>
               <div className="space-y-1 text-xs">
                 {WEAKNESS_ROWS.map((row) => (
                   <div key={row.element} className="flex items-center gap-1.5">
@@ -1186,12 +1189,15 @@ const ArenaFight = () => {
                       {row.element}
                     </span>
                     <span className="text-slate-500">beats</span>
-                    <span
-                      className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]"
-                      style={{ backgroundColor: row.beatsColor }}
-                    >
-                      {row.beats}
-                    </span>
+                    {row.beats.map((target) => (
+                      <span
+                        key={target.element}
+                        className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]"
+                        style={{ backgroundColor: target.color }}
+                      >
+                        {target.element}
+                      </span>
+                    ))}
                   </div>
                 ))}
               </div>

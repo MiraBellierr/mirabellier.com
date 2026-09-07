@@ -7,6 +7,8 @@ export type ArenaUpdate = {
   id: string;
   title: string;
   body: string;
+  /** Version tag, e.g. "1.0.3" — rendered as "v1.0.3" on the Arena home page. */
+  version?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,6 +37,16 @@ export type ArenaPctStats = {
 export type ArenaSubStat = {
   type: string;
   value: number;
+  /** Permanent boost from enhancement (+3/+6/+9/+12/+15), 0 if none. */
+  bonus?: number;
+  /** value + bonus. */
+  effectiveValue?: number;
+};
+export type ArenaEquipmentSet = {
+  id: string;
+  name: string;
+  count: number;
+  tier: 2 | 3;
 };
 export type ArenaEquipmentPiece = {
   id: string;
@@ -44,6 +56,8 @@ export type ArenaEquipmentPiece = {
   enhancementLevel: number;
   enhancedMainStatValue: number;
   subStats: ArenaSubStat[];
+  setId?: string | null;
+  setName?: string | null;
   equipped: boolean;
   locked: boolean;
   /** Server-authoritative coin payout for scrapping this piece. */
@@ -126,6 +140,8 @@ export type ArenaProfile = {
   coins: number;
   wins: number;
   losses: number;
+  defensiveWins: number;
+  defensiveLosses: number;
   totalFights: number;
   winRate: number;
   winStreak: number;
@@ -133,6 +149,9 @@ export type ArenaProfile = {
   eloMatches: number;
   peakElo: number;
   eloProvisional: boolean;
+  gearRollPrice: number;
+  rerollSubStatCost: number;
+  title: ArenaTitle | null;
   stats: {
     base: ArenaStatsBlock;
     equipment: ArenaStatsBlock;
@@ -203,6 +222,7 @@ export type ArenaProfile = {
   };
   equipmentPct?: ArenaPctStats;
   equipmentPieces?: ArenaEquipmentPiece[];
+  equipmentSets?: ArenaEquipmentSet[];
   equipmentLoadouts?: ArenaEquipmentLoadout[];
   activePassives?: ArenaPassiveRule[];
   skillTree?: {
@@ -235,6 +255,8 @@ export type ArenaEquippedItem = {
   enhancementLevel: number;
   enhancedMainStatValue: number;
   subStats: ArenaSubStat[];
+  setId?: string | null;
+  setName?: string | null;
   createdAt: string | null;
 };
 export type ArenaBattleTurn = {
@@ -290,9 +312,23 @@ export type ArenaRecentFight = {
   coinDelta: number;
   createdAt: string;
 };
+export type ArenaTitle = { id: string; name: string };
+export type ArenaTitlesResponse = {
+  coins: number;
+  activeTitleId: string | null;
+  titles: Array<{
+    id: string;
+    name: string;
+    price: number;
+    owned: boolean;
+    active: boolean;
+    canBuy: boolean;
+  }>;
+};
 export type ArenaFightOpponent = {
   userId: string;
   displayName: string;
+  title?: ArenaTitle | null;
   isNpc: boolean;
   level: number;
   eloRating: number | null;
@@ -324,6 +360,8 @@ export type ArenaFightResponse = {
     coins: number;
     rarityCoinReward: number;
     levelsGained: number;
+    /** Rounds-won credit the XP formula used (1–3; fast fights score higher). */
+    xpRoundsWon?: number;
     elo: ArenaEloResult;
   };
   effectUsage: {
@@ -429,12 +467,17 @@ export type ArenaMarketListingsResponse = {
 };
 export type ArenaMarketMutationResponse = {
   listing: ArenaMarketListing;
+  listingFee?: number;
   profile: ArenaProfile;
 };
 export type ArenaMarketPriceGuideResponse = {
   malId: number;
   ivBand: ArenaMarketIvBand;
   marketPrice: ArenaMarketPrice;
+  maxListingPrice: number;
+  commissionRate: number;
+  listingFeeRate: number;
+  listingFeeMin: number;
 };
 export type ArenaMarketSort =
   | "newest"
@@ -480,6 +523,8 @@ export type ArenaSkillTreeResponse = {
   level: number;
   coins: number;
   resetCost: number;
+  resetCooldownEndsAt: string | null;
+  resetOnCooldown: boolean;
   stats: ArenaStatsBlock;
 };
 export type ArenaShopItem = {
@@ -489,13 +534,12 @@ export type ArenaShopItem = {
   unlockLevel: number;
   price: number;
   type: "gear" | "consumable" | "instant" | "card";
-  acquisition?: "buy" | "craft";
+  acquisition?: "buy";
   slot?: "weapon" | "armor" | "charm";
   stats?: Partial<ArenaStatsBlock>;
   passive?: ArenaPassiveRule | null;
   consumableEffect?: ArenaConsumableRule | null;
   sprite?: ArenaSpriteRef;
-  recipeId?: string | null;
   mainStat?: {
     type: string;
     min?: number;
@@ -507,7 +551,6 @@ export type ArenaShopItem = {
   isEquipped: boolean;
   unlocked: boolean;
   canBuy: boolean;
-  canCraft?: boolean;
   cooldownEndsAt?: string | null;
 };
 export type ArenaShopTier = {
@@ -520,7 +563,6 @@ export type ArenaShopResponse = {
   equipment: ArenaShopItem[];
   cardItems?: ArenaShopItem[];
   shop: ArenaShopTier[];
-  recipes: ArenaShopRecipe[];
   equipped: {
     weapon: ArenaEquippedItem | null;
     armor: ArenaEquippedItem | null;
@@ -557,19 +599,6 @@ export type ArenaCardShopPurchaseResponse = {
   profile: ArenaProfile;
   cardShop: ArenaCardShopResponse;
 };
-export type ArenaShopRecipe = {
-  id: string;
-  tier: string;
-  unlockLevel: number;
-  coinCost: number;
-  output: {
-    itemId: string;
-    quantity: number;
-    itemName?: string;
-  };
-  unlocked?: boolean;
-  canCraft?: boolean;
-};
 export type ArenaLeaderboardResponse = {
   metric: ArenaMetric;
   page: number;
@@ -583,12 +612,15 @@ export type ArenaLeaderboardResponse = {
       username: string;
       avatar: string | null;
     };
+    title?: ArenaTitle | null;
     level: number;
     xp: number;
     xpToNext: number;
     xpProgress: number;
     wins: number;
     losses: number;
+    defensiveWins: number;
+    defensiveLosses: number;
     totalFights: number;
     winRate: number;
     coins: number;

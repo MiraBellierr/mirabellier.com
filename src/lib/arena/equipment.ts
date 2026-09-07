@@ -45,6 +45,12 @@ export async function enhanceArenaPiece(
   previousLevel: number;
   enhancementLevel: number;
   coinCost: number;
+  subStatBoost: {
+    subStatIndex: number;
+    type: string;
+    amount: number;
+    totalBonus: number;
+  } | null;
   shop: ArenaShopResponse;
 }> {
   return arenaRequest("/arena/shop/enhance", {
@@ -63,6 +69,9 @@ export async function rerollArenaSubStat(
   subStatIndex: number;
   oldSubStat: { type: string; value: number };
   newSubStat: { type: string; value: number };
+  rolledValue: number;
+  keptHigher: boolean;
+  keepHigherChargesRemaining: number;
   coinCost: number;
   shop: ArenaShopResponse;
 }> {

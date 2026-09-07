@@ -31,6 +31,7 @@ const NOTIFICATION_ICONS: Record<string, string> = {
   trade_accepted: "+",
   trade_denied: "-",
   trade_completed: "=",
+  defense_reward: "%",
 };
 
 const NOTIFICATION_LABELS: Record<string, string> = {
@@ -39,12 +40,14 @@ const NOTIFICATION_LABELS: Record<string, string> = {
   trade_accepted: "Accepted",
   trade_denied: "Denied",
   trade_completed: "Trade Done",
+  defense_reward: "Defense",
 };
 
 const NOTIFICATION_LABEL_CLASSES: Record<string, string> = {
   trade_accepted: "text-green-500 dark:text-green-400",
   trade_denied: "text-red-500 dark:text-red-400",
   trade_completed: "text-green-600 dark:text-green-300",
+  defense_reward: "text-amber-500 dark:text-amber-400",
 };
 
 // Persist resolved trade request IDs across page navigations within the SPA session

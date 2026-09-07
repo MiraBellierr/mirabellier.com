@@ -992,28 +992,6 @@ h6 {
   box-shadow: 0 0 6px color-mix(in srgb, var(--element-color) 50%, transparent);
 }
 
-.arena-portrait-card__element--icon {
-  min-width: auto;
-  width: auto;
-  height: auto;
-  padding: 0;
-  background: none;
-  backdrop-filter: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.arena-portrait-card__element-img {
-  width: 2.2rem;
-  height: 2.2rem;
-  object-fit: contain;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.4));
-  pointer-events: none;
-  user-select: none;
-}
-
 .arena-portrait-card__bottom {
   position: absolute;
   left: 0;

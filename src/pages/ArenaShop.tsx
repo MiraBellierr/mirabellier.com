@@ -17,15 +17,18 @@ import {
   type ArenaShopItem,
   type ArenaShopResponse,
   type ArenaSubStat,
+  type ArenaTitlesResponse,
   ArenaApiError,
   hasCardItem,
   isMaxIvCard,
   buyArenaItem,
   buyArenaShopCard,
-  craftArenaRecipe,
+  buyArenaTitle,
   fetchArenaCardShop,
   fetchArenaShop,
+  fetchArenaTitles,
   fodderArenaPiece,
+  setActiveArenaTitle,
   useArenaConsumable as activateArenaConsumable,
 } from "@/lib/arena";
 import {
@@ -201,7 +204,7 @@ function EquipmentRewardModal({
 
   if (typeof document === "undefined") return null;
 
-  const MAIN_LABELS: Record<string, string> = { power: "Power", guard: "Guard", critRate: "Crit Rate", critDmg: "Crit DMG" };
+  const MAIN_LABELS: Record<string, string> = { dmgPct: "DMG%", defendPct: "DEF%", critRate: "Crit Rate", critDmg: "Crit DMG", power: "Power", guard: "Guard" };
   const SUB_LABELS: Record<string, string> = {
     hp: "HP", power: "P", guard: "G", speed: "S", effectHit: "EH",
     hpPct: "HP%", dmgPct: "DMG%", defendPct: "DEF%",
@@ -280,6 +283,7 @@ const ArenaShop = () => {
   const { confirm } = useConfirm();
   const [shop, setShop] = useState<ArenaShopResponse | null>(null);
   const [cardShop, setCardShop] = useState<ArenaCardShopResponse | null>(null);
+  const [titles, setTitles] = useState<ArenaTitlesResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [cardsLoading, setCardsLoading] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -359,6 +363,52 @@ const ArenaShop = () => {
       cancelled = true;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setTitles(null);
+      return;
+    }
+    let cancelled = false;
+    fetchArenaTitles(token)
+      .then((payload) => {
+        if (!cancelled) setTitles(payload);
+      })
+      .catch(() => {
+        /* titles are optional flavour; ignore load errors */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const handleBuyTitle = async (titleId: string) => {
+    if (!token) return;
+    setActioningId(`title:${titleId}`);
+    setErrorMessage(null);
+    try {
+      setTitles(await buyArenaTitle(token, titleId));
+      if (token) fetchArenaShop(token).then(setShop).catch(() => {});
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleSetActiveTitle = async (titleId: string | null) => {
+    if (!token) return;
+    setActioningId(`title-active:${titleId ?? "none"}`);
+    setErrorMessage(null);
+    try {
+      setTitles(await setActiveArenaTitle(token, titleId));
+      if (token) fetchArenaShop(token).then(setShop).catch(() => {});
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setActioningId(null);
+    }
+  };
 
   useEffect(() => {
     void loadCardOffers();
@@ -547,20 +597,6 @@ const ArenaShop = () => {
     }
   };
 
-  const handleCraft = async (recipeId: string) => {
-    if (!token || !shop) return;
-    setActioningId(`craft:${recipeId}`);
-    setErrorMessage(null);
-    try {
-      const payload = await craftArenaRecipe(token, recipeId, 1);
-      setShop(payload.shop);
-    } catch (error) {
-      setErrorMessage(normalizeArenaError(error));
-    } finally {
-      setActioningId(null);
-    }
-  };
-
   const handleCardBuy = async (
     purchase:
       | { kind: "daily"; offerId: string }
@@ -586,12 +622,6 @@ const ArenaShop = () => {
                     item.canBuy &&
                     payload.profile.coins >= item.price,
                 })),
-              })),
-              recipes: previous.recipes.map((recipe) => ({
-                ...recipe,
-                canCraft:
-                  recipe.canCraft &&
-                  payload.profile.coins >= recipe.coinCost,
               })),
             }
           : previous,
@@ -673,19 +703,19 @@ const ArenaShop = () => {
                 <p className="text-blue-500">Loading shop...</p>
               ) : shop ? (
                 <div className="space-y-4">
-                  <div className="arena-draw-count-rowpt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
-                    <span className="mr-1 items-center justify-center text-md">Coins:</span>{" "}
+                  <div className="arena-draw-count-row pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
+                    <span className="mr-1">Coins:</span>{" "}
                     <span className="font-black text-blue-600 dark:text-purple-300">{shop.profile.coins} 🪙</span>
                   </div>
                   <section
                     aria-labelledby="arena-card-shop-title"
-                    className="space-y-3 py-3"
+                    className="space-y-3"
                   >
                     <div className="flex flex-wrap items-end justify-between gap-2">
                       <div>
                         <h3
                           id="arena-card-shop-title"
-                          className="text-xl font-bold text-blue-700 dark:text-purple-100"
+                          className="text-lg font-bold text-blue-700 dark:text-purple-100"
                         >
                           Cards
                         </h3>
@@ -726,7 +756,7 @@ const ArenaShop = () => {
                           return (
                             <article
                               key={offer.offerId}
-                              className="flex gap-3 rounded-xl p-3"
+                              className="flex items-start gap-3"
                             >
                               <div className="shrink-0">
                                 <ArenaPortraitCard
@@ -775,7 +805,7 @@ const ArenaShop = () => {
                         })}
 
                         {cardShop.randomOffer ? (
-                        <article className="flex min-h-36 gap-3 rounded-xl p-3">
+                        <article className="flex min-h-36 items-start gap-3">
                           <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-white/60 text-4xl font-black text-pink-500 shadow-sm dark:border-purple-400/60 dark:bg-slate-950/40">
                             ?
                           </div>
@@ -832,16 +862,13 @@ const ArenaShop = () => {
                   </section>
 
                   {shop.equipment && shop.equipment.length > 0 ? (
-                    <section className="space-y-2">
-                      <h3 className="font-bold text-blue-700 dark:text-white">Equipment</h3>
+                    <section className="space-y-3">
+                      <h3 className="text-lg font-bold text-blue-700 dark:text-purple-100">Equipment</h3>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {shop.equipment.map((item) => {
                           const isBuying = actioningId === `buy:${item.id}`;
                           return (
-                            <article
-                              key={item.id}
-                              className="flex gap-3 rounded-xl p-3"
-                            >
+                            <article key={item.id} className="flex items-start gap-3">
                               <ArenaItemSprite item={item} />
                               <div className="min-w-0 flex-1 space-y-1">
                                 <div className="flex items-center gap-2">
@@ -855,7 +882,7 @@ const ArenaShop = () => {
                                     {isBuying ? "[ buying... ]" : "[ buy ]"}
                                   </button>
                                 </div>
-                                <p className="text-xs text-slate-700 dark:text-slate-200">
+                                <p className="text-xs text-slate-600 dark:text-slate-300">
                                   {item.mainStat?.type === "random"
                                     ? "Crit Rate or Crit DMG"
                                     : `${item.mainStat?.type} ${item.mainStat?.min}–${item.mainStat?.max}`}
@@ -873,8 +900,8 @@ const ArenaShop = () => {
                   ) : null}
 
                   {shop.cardItems && shop.cardItems.length > 0 ? (
-                    <section className="space-y-2">
-                      <h3 className="font-bold text-blue-700 dark:text-white">Card Items</h3>
+                    <section className="space-y-3">
+                      <h3 className="text-lg font-bold text-blue-700 dark:text-purple-100">Card Items</h3>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {shop.cardItems.map((item) => {
                           const isBuying = actioningId === `buy:${item.id}`;
@@ -882,10 +909,7 @@ const ArenaShop = () => {
                           const selectedCardIsMaxIv = isMaxIvCard(shop.profile.selectedCard);
                           const selectedCardHasItem = hasCardItem(shop.profile.selectedCard, item.id);
                           return (
-                            <article
-                              key={item.id}
-                              className="flex gap-3 rounded-xl p-3"
-                            >
+                            <article key={item.id} className="flex items-start gap-3">
                               <ArenaItemSprite item={item} />
                               <div className="min-w-0 flex-1 space-y-1">
                                 <div className="flex items-center gap-2">
@@ -910,14 +934,17 @@ const ArenaShop = () => {
                                   </div>
                                 </div>
                                 {item.consumableEffect ? (
-                                  <p className="text-xs text-blue-600">{describeConsumableEffect(item.consumableEffect)}</p>
+                                  <p className="text-xs text-blue-600 dark:text-purple-200">{describeConsumableEffect(item.consumableEffect)}</p>
                                 ) : null}
-                                <p className="text-xs text-slate-700 dark:text-slate-200">
+                                <p className="text-xs text-slate-600 dark:text-slate-300">
                                   Requires selected card with P/G/S/EH IV all at 31. One use per card.
                                   {selectedCardHasItem ? " Already used on selected card." : ""}
                                 </p>
                                 <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
-                                  {item.price.toLocaleString()} coins · Owned: {item.ownedQuantity}
+                                  {item.price.toLocaleString()} coins
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Owned: {item.ownedQuantity}
                                 </p>
                               </div>
                             </article>
@@ -927,93 +954,158 @@ const ArenaShop = () => {
                     </section>
                   ) : null}
 
-                  <section className="space-y-2">
-                    <h3 className="font-bold text-blue-700 dark:text-white">Consumables</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {shop.shop.flatMap((tierBlock) => tierBlock.items).map((item) => {
-                        const isBuying = actioningId === `buy:${item.id}`;
-                        const isUsing = actioningId === `use:${item.id}`;
-                        const isCrafting = item.recipeId ? actioningId === `craft:${item.recipeId}` : false;
-                        const recipe = item.recipeId ? shop.recipes.find((r) => r.id === item.recipeId) : null;
-                        return (
-                          <div key={item.id} className="pb-3 last:border-b-0 last:pb-0">
-                            <article className="flex items-start gap-3">
-                              <ArenaItemSprite item={item} />
+                  {titles ? (
+                    <section className="space-y-3">
+                      <h3 className="text-lg font-bold text-blue-700 dark:text-purple-100">Titles</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        Purely cosmetic. Shown on your profile, the leaderboard, and to opponents you fight.
+                      </p>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {titles.titles.map((title) => {
+                          const isBuying = actioningId === `title:${title.id}`;
+                          const isActivating =
+                            actioningId === `title-active:${title.id}` ||
+                            actioningId === "title-active:none";
+                          return (
+                            <article key={title.id} className="flex items-start gap-3">
                               <div className="min-w-0 flex-1 space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <p className="font-semibold text-blue-700">{item.name}</p>
+                                  <p className="font-bold text-blue-700 dark:text-purple-100">
+                                    “{title.name}”
+                                    {title.active ? (
+                                      <span className="ml-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                        active
+                                      </span>
+                                    ) : null}
+                                  </p>
                                   <div className="flex flex-wrap gap-1 shrink-0">
-                                    {item.acquisition === "buy" ? (
+                                    {!title.owned ? (
                                       <button
                                         type="button"
-                                        onClick={() => void handleBuy(item.id)}
-                                        disabled={!item.canBuy || isBuying}
+                                        onClick={() => void handleBuyTitle(title.id)}
+                                        disabled={!title.canBuy || actioningId !== null}
                                         className="arena-redraw-button hover:animate-wiggle"
                                       >
                                         {isBuying ? "[ buying... ]" : "[ buy ]"}
                                       </button>
-                                    ) : null}
-                                    {item.acquisition === "craft" ? (
+                                    ) : title.active ? (
                                       <button
                                         type="button"
-                                        onClick={() => item.recipeId ? void handleCraft(item.recipeId) : null}
-                                        disabled={!recipe?.canCraft || isCrafting}
+                                        onClick={() => void handleSetActiveTitle(null)}
+                                        disabled={actioningId !== null}
                                         className="arena-redraw-button hover:animate-wiggle"
                                       >
-                                        {isCrafting ? "[ crafting... ]" : "[ craft ]"}
+                                        {isActivating ? "[ ... ]" : "[ unset ]"}
                                       </button>
-                                    ) : null}
-                                    {item.type === "consumable" ? (
+                                    ) : (
                                       <button
                                         type="button"
-                                         onClick={() => void handleUse(item)}
-                                        disabled={item.ownedQuantity <= 0 || isUsing}
+                                        onClick={() => void handleSetActiveTitle(title.id)}
+                                        disabled={actioningId !== null}
                                         className="arena-redraw-button hover:animate-wiggle"
                                       >
-                                        {isUsing ? "[ using... ]" : "[ use ]"}
+                                        {isActivating ? "[ ... ]" : "[ set active ]"}
                                       </button>
-                                    ) : null}
+                                    )}
                                   </div>
                                 </div>
-                                {item.acquisition === "buy" ? (
-                                  <p className="text-xs text-slate-700">Price: {item.price} coins</p>
-                                ) : null}
-                                {item.acquisition === "craft" && recipe ? (
-                                  <p className="text-xs text-slate-700">
-                                    Craft: {recipe.coinCost.toLocaleString()} coins
+                                {title.owned ? (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">Owned</p>
+                                ) : (
+                                  <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
+                                    {title.price.toLocaleString()} coins
                                   </p>
-                                ) : null}
-                                {item.stats ? <p className="text-xs text-blue-600">{formatStats(item.stats)}</p> : null}
-                                {item.passive ? (
-                                  <p className="text-xs text-blue-600">{describePassive(item.passive)}</p>
-                                ) : null}
-                                {item.consumableEffect ? (
-                                  <p className="text-xs text-blue-600">{describeConsumableEffect(item.consumableEffect)}</p>
-                                ) : null}
-                                <p className="text-xs text-slate-600">
-                                  Owned: {item.ownedQuantity}
-                                  {item.isEquipped ? " | equipped" : ""}
-                                </p>
-                                {item.consumableEffect ? (() => {
-                                  const activeInfo = getConsumableActiveInfo(item, shop.profile.effects as Record<string, unknown>);
-                                  return activeInfo?.active ? (
-                                    <p className="text-xs font-semibold text-green-600 dark:text-green-400">
-                                      Active · {activeInfo.remaining} charge{activeInfo.remaining !== 1 ? "s" : ""} left
-                                    </p>
-                                  ) : null;
-                                })() : null}
-                                {item.cooldownEndsAt ? (
-                                  <p className="text-xs text-amber-700">
-                                    Cooldown until {new Date(item.cooldownEndsAt).toLocaleString()}
-                                  </p>
-                                ) : null}
+                                )}
                               </div>
                             </article>
-                          </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  <section className="space-y-3">
+                    <h3 className="text-lg font-bold text-blue-700 dark:text-purple-100">Consumables</h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {shop.shop.flatMap((tierBlock) => tierBlock.items).map((item) => {
+                        const isBuying = actioningId === `buy:${item.id}`;
+                        const isUsing = actioningId === `use:${item.id}`;
+                        return (
+                          <article key={item.id} className="flex items-start gap-3">
+                            <ArenaItemSprite item={item} />
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-blue-700 dark:text-purple-100">{item.name}</p>
+                                <div className="flex flex-wrap gap-1 shrink-0">
+                                  {item.acquisition === "buy" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleBuy(item.id)}
+                                      disabled={!item.canBuy || isBuying}
+                                      className="arena-redraw-button hover:animate-wiggle"
+                                    >
+                                      {isBuying ? "[ buying... ]" : "[ buy ]"}
+                                    </button>
+                                  ) : null}
+                                  {item.type === "consumable" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUse(item)}
+                                      disabled={item.ownedQuantity <= 0 || isUsing}
+                                      className="arena-redraw-button hover:animate-wiggle"
+                                    >
+                                      {isUsing ? "[ using... ]" : "[ use ]"}
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                              {item.stats ? (
+                                <p className="text-xs text-blue-600 dark:text-purple-200">{formatStats(item.stats)}</p>
+                              ) : null}
+                              {item.passive ? (
+                                <p className="text-xs text-blue-600 dark:text-purple-200">{describePassive(item.passive)}</p>
+                              ) : null}
+                              {item.consumableEffect ? (
+                                <p className="text-xs text-blue-600 dark:text-purple-200">{describeConsumableEffect(item.consumableEffect)}</p>
+                              ) : null}
+                              {!item.unlocked && item.unlockLevel > 1 ? (
+                                <p className="text-xs text-amber-700 dark:text-amber-400">
+                                  Unlocks at level {item.unlockLevel}
+                                </p>
+                              ) : null}
+                              {item.cooldownEndsAt ? (
+                                <p className="text-xs text-amber-700 dark:text-amber-400">
+                                  Cooldown until {new Date(item.cooldownEndsAt).toLocaleString()}
+                                </p>
+                              ) : null}
+                              {(() => {
+                                if (!item.consumableEffect) return null;
+                                const activeInfo = getConsumableActiveInfo(
+                                  item,
+                                  shop.profile.effects as Record<string, unknown>,
+                                );
+                                return activeInfo?.active ? (
+                                  <p className="text-xs font-semibold text-green-600 dark:text-green-400">
+                                    Active · {activeInfo.remaining} charge{activeInfo.remaining !== 1 ? "s" : ""} left
+                                  </p>
+                                ) : null;
+                              })()}
+                              {item.acquisition === "buy" ? (
+                                <p className="text-xs font-semibold text-blue-600 dark:text-purple-200">
+                                  {item.price.toLocaleString()} coins
+                                </p>
+                              ) : null}
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Owned: {item.ownedQuantity}
+                                {item.isEquipped ? " · equipped" : ""}
+                              </p>
+                            </div>
+                          </article>
                         );
                       })}
                     </div>
                   </section>
+
                 </div>
               ) : null}
 

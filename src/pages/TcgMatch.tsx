@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
-import { DECK_SIZE, ELEMENT_COLORS, ELEMENT_ICONS } from "@/lib/tcg-constants";
+import { DECK_SIZE, ELEMENT_COLORS } from "@/lib/tcg-constants";
 import { readMobileTcgDrag, clearActiveTcgGame } from "@/lib/tcg-utils";
 import { useTcg } from "@/hooks/use-tcg";
 
 import CardDetailTooltip from "@/components/tcg/CardDetailTooltip";
+import StylePill from "@/components/tcg/StylePill";
 import PlayerBoard from "@/components/tcg/PlayerBoard";
 import BoardHand from "@/components/tcg/BoardHand";
 import BoardPiles from "@/components/tcg/BoardPiles";
@@ -134,12 +135,12 @@ export default function TcgMatch() {
                           {tcg.gameState.elementPools?.[tcg.oppKey] && tcg.gameState.elementPools[tcg.oppKey].length > 0 ? (
                             <div className="flex items-center justify-center gap-1 mb-1">
                               <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">pool:</span>
-                              {tcg.gameState.elementPools[tcg.oppKey].map((el: string) => <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />)}
+                              {tcg.gameState.elementPools[tcg.oppKey].map((el: string) => <StylePill key={el} style={el} size="xs" />)}
                             </div>
                           ) : null}
                           <div className="flex items-center justify-center gap-1 mb-2">
                             <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">active energy:</span>
-                            {tcg.oppBoard && tcg.oppBoard.elementPool.length > 0 ? tcg.oppBoard.elementPool.map((el: string, i: number) => <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />) : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
+                            {tcg.oppBoard && tcg.oppBoard.elementPool.length > 0 ? tcg.oppBoard.elementPool.map((el: string, i: number) => <StylePill key={i} style={el} size="xs" />) : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
                           </div>
                           <div className="relative mx-auto w-fit max-w-full">
                             <div className="static mb-2 flex justify-center sm:absolute sm:top-0 sm:left-full sm:mb-0 sm:ml-2">
@@ -149,13 +150,13 @@ export default function TcgMatch() {
                                   const hasTarget = !!tcg.oppBoard.board.attacker || tcg.oppBoard.board.support.some((s: unknown) => !!s);
                                   return (
                                     <div className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasTarget ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`} style={{ backgroundColor: ELEMENT_COLORS[el] || "#888", borderColor: ELEMENT_COLORS[el] || "#888" }} title={`Drag ${el} energy to a card`} draggable data-tcg-draggable="true" data-tcg-drag-kind="element" data-tcg-element={el} onDragStart={(e) => { e.dataTransfer.setData("element", el); e.dataTransfer.effectAllowed = "move"; }}>
-                                      <img src={ELEMENT_ICONS[el] || ""} alt={el} className="w-6 h-6 object-contain pointer-events-none" draggable={false} />
+                                      <span className="pointer-events-none px-0.5 text-[0.5rem] font-black uppercase leading-none">{el}</span>
                                     </div>
                                   );
                                 })()
                               ) : tcg.oppBoard && tcg.oppBoard.elementPool.length > 0 ? (
                                 <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg opacity-50" style={{ backgroundColor: ELEMENT_COLORS[tcg.oppBoard.elementPool[0]] || "#888", borderColor: ELEMENT_COLORS[tcg.oppBoard.elementPool[0]] || "#888" }} title={tcg.oppBoard.elementPool[0]}>
-                                  <img src={ELEMENT_ICONS[tcg.oppBoard.elementPool[0]] || ""} alt={tcg.oppBoard.elementPool[0]} className="w-6 h-6 object-contain pointer-events-none" draggable={false} />
+                                  <span className="pointer-events-none px-0.5 text-[0.5rem] font-black uppercase leading-none">{tcg.oppBoard.elementPool[0]}</span>
                                 </div>
                               ) : (
                                 <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center text-xs text-slate-400">-</div>
@@ -180,12 +181,12 @@ export default function TcgMatch() {
                           {tcg.gameState.elementPools?.[tcg.oppKey] && tcg.gameState.elementPools[tcg.oppKey].length > 0 ? (
                             <div className="flex items-center justify-center gap-1 mb-1">
                               <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">pool:</span>
-                              {tcg.gameState.elementPools[tcg.oppKey].map((el: string) => <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />)}
+                              {tcg.gameState.elementPools[tcg.oppKey].map((el: string) => <StylePill key={el} style={el} size="xs" />)}
                             </div>
                           ) : null}
                           <div className="flex items-center justify-center gap-1 mb-2">
                             <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">active energy:</span>
-                            {tcg.oppBoard && tcg.oppBoard.elementPool.length > 0 ? tcg.oppBoard.elementPool.map((el: string, i: number) => <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />) : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
+                            {tcg.oppBoard && tcg.oppBoard.elementPool.length > 0 ? tcg.oppBoard.elementPool.map((el: string, i: number) => <StylePill key={i} style={el} size="xs" />) : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
                           </div>
                           <div className="relative mx-auto w-fit max-w-full">
                             <div>
@@ -210,12 +211,12 @@ export default function TcgMatch() {
                         {tcg.gameState.elementPools?.[tcg.myKey] && tcg.gameState.elementPools[tcg.myKey].length > 0 ? (
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">pool:</span>
-                            {tcg.gameState.elementPools[tcg.myKey].map((el: string) => <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />)}
+                            {tcg.gameState.elementPools[tcg.myKey].map((el: string) => <StylePill key={el} style={el} size="xs" />)}
                           </div>
                         ) : null}
                         <div className="flex items-center justify-center gap-1 mb-2">
                           <span className="text-[0.5rem] text-slate-400 dark:text-slate-500">active energy:</span>
-                          {tcg.myBoard && tcg.myBoard.elementPool.length > 0 ? tcg.myBoard.elementPool.map((el: string, i: number) => <img key={i} alt={el} src={ELEMENT_ICONS[el] || ""} className="w-4 h-4 drop-shadow-sm" title={el} />) : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
+                          {tcg.myBoard && tcg.myBoard.elementPool.length > 0 ? tcg.myBoard.elementPool.map((el: string, i: number) => <StylePill key={i} style={el} size="xs" />) : <span className="text-slate-400 text-[0.65rem] dark:text-slate-500">none</span>}
                         </div>
                         <div className="relative mx-auto w-fit max-w-full">
                           <div className="static mb-2 flex justify-center sm:absolute sm:top-0 sm:right-full sm:mb-0 sm:mr-2">
@@ -225,13 +226,13 @@ export default function TcgMatch() {
                                 const hasTarget = !!tcg.myBoard.board.attacker || tcg.myBoard.board.support.some((s: unknown) => !!s);
                                 return (
                                   <div className={`w-10 h-10 touch-none select-none rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-grab active:cursor-grabbing ${hasTarget ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`} style={{ backgroundColor: ELEMENT_COLORS[el] || "#888", borderColor: ELEMENT_COLORS[el] || "#888" }} title={`Drag ${el} energy to a card`} draggable data-tcg-draggable="true" data-tcg-drag-kind="element" data-tcg-element={el} onDragStart={(e) => { e.dataTransfer.setData("element", el); e.dataTransfer.effectAllowed = "move"; }}>
-                                    <img src={ELEMENT_ICONS[el] || ""} alt={el} className="w-6 h-6 object-contain pointer-events-none" draggable={false} />
+                                    <span className="pointer-events-none px-0.5 text-[0.5rem] font-black uppercase leading-none">{el}</span>
                                   </div>
                                 );
                               })()
                             ) : tcg.myBoard && tcg.myBoard.elementPool.length > 0 ? (
                               <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-bold text-white shadow-lg opacity-50" style={{ backgroundColor: ELEMENT_COLORS[tcg.myBoard.elementPool[0]] || "#888", borderColor: ELEMENT_COLORS[tcg.myBoard.elementPool[0]] || "#888" }} title={tcg.myBoard.elementPool[0]}>
-                                <img src={ELEMENT_ICONS[tcg.myBoard.elementPool[0]] || ""} alt={tcg.myBoard.elementPool[0]} className="w-6 h-6 object-contain pointer-events-none" draggable={false} />
+                                <span className="pointer-events-none px-0.5 text-[0.5rem] font-black uppercase leading-none">{tcg.myBoard.elementPool[0]}</span>
                               </div>
                             ) : (
                               <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center text-xs text-slate-400">-</div>
@@ -297,13 +298,15 @@ export default function TcgMatch() {
               ) : (
                 <>
                   <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-purple-950/40 dark:text-purple-100">
-                    <h2 className="text-center text-lg font-bold text-blue-700 mb-2 dark:text-purple-100">weakness chart</h2>
+                    <h2 className="text-center text-lg font-bold text-blue-700 mb-2 dark:text-purple-100">style matchups</h2>
                     <div className="space-y-1 text-xs">
-                      {[{ el: "Fire", beats: "Earth" }, { el: "Water", beats: "Fire" }, { el: "Earth", beats: "Water" }, { el: "Wind", beats: "Light" }, { el: "Light", beats: "Dark" }, { el: "Dark", beats: "Wind" }].map((row) => (
+                      {[{ el: "Might", beats: ["Skill", "Surge"] }, { el: "Swift", beats: ["Might", "Ruse"] }, { el: "Skill", beats: ["Swift", "Ward"] }, { el: "Ruse", beats: ["Might", "Surge"] }, { el: "Surge", beats: ["Skill", "Ward"] }, { el: "Ward", beats: ["Swift", "Ruse"] }].map((row) => (
                         <div key={row.el} className="flex items-center gap-1.5">
                           <span className="inline-block w-14 px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.el] }}>{row.el}</span>
                           <span className="text-slate-500">beats</span>
-                          <span className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.beats] }}>{row.beats}</span>
+                          {row.beats.map((b) => (
+                            <span key={b} className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[b] }}>{b}</span>
+                          ))}
                         </div>
                       ))}
                     </div>

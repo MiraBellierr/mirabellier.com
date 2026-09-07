@@ -43,11 +43,11 @@ function isMaintenanceMessage(message: string | null) {
 function formatAffinityBonus(statBonus?: ArenaProfile["stats"]["affinity"]) {
   if (!statBonus) return "no bonus yet";
   const parts = [
-    statBonus.power ? `Power IV +${statBonus.power}` : "",
-    statBonus.guard ? `Guard IV +${statBonus.guard}` : "",
-    statBonus.speed ? `Speed IV +${statBonus.speed}` : "",
-    statBonus.effectHit ? `Effect Hit IV +${statBonus.effectHit}` : "",
-    statBonus.hp ? `Health IV +${statBonus.hp}` : "",
+    statBonus.power ? `Power +${statBonus.power}` : "",
+    statBonus.guard ? `Guard +${statBonus.guard}` : "",
+    statBonus.speed ? `Speed +${statBonus.speed}` : "",
+    statBonus.effectHit ? `Effect Hit +${statBonus.effectHit}` : "",
+    statBonus.hp ? `Health +${statBonus.hp}` : "",
   ].filter(Boolean);
   return parts.length ? parts.join(", ") : "no bonus yet";
 }
@@ -72,7 +72,7 @@ function formatStatSources({
     `card +${card}`,
     `from ${ivLabel} ${ivBase}`,
     sigilIv > 0 ? `sigil IV +${sigilIv}` : "",
-    affinityIv > 0 ? `affinity IV +${affinityIv}` : "",
+    affinityIv > 0 ? `affinity +${affinityIv}` : "",
   ].filter(Boolean);
 
   return `(${parts.join(", ")})`;
@@ -96,7 +96,8 @@ function equipmentSummary(piece: NonNullable<ArenaProfile["equipment"]["weapon"]
   const main = MAIN_STAT_LABELS[piece.mainStatType] || piece.mainStatType;
   const enhancementLevel = piece.enhancementLevel || 0;
   const mainValue = piece.enhancedMainStatValue ?? piece.mainStatValue;
-  return `${equipmentDisplayName(piece)} (${main} +${mainValue}${enhancementLevel > 0 ? `, +${enhancementLevel}` : ""})`;
+  const set = piece.setName ? `, ${piece.setName}` : "";
+  return `${equipmentDisplayName(piece)} (${main} +${mainValue}${enhancementLevel > 0 ? `, +${enhancementLevel}` : ""}${set})`;
 }
 
 const Arena = () => {
@@ -236,31 +237,28 @@ const Arena = () => {
           </div>
 
           <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <section className="arena-draw-duel">
+            <section className="card-border space-y-4 bg-white/60 p-4 dark:bg-slate-900/70">
+              <div>
+                <h2 className="text-4xl font-bold text-blue-900 dark:text-purple-100">Champione Information {`>^. .^<`}</h2>
+                <p className="mt-2 text-sm font-black text-blue-800 sm:text-base dark:text-purple-200">
+                  <span className="text-pink-300">✿</span> Draw cards, pick your fighter, and duel!{" "}
+                  <span className="text-pink-300">✿</span>
+                </p>
+              </div>
+
+              <ArenaSubNav />
+
               {!token ? (
-                <div className="rounded-[28px] border-2 border-amber-200 bg-white/90 p-6 text-center text-amber-800 shadow-xl dark:border-amber-700 dark:bg-slate-900/90 dark:text-amber-200">
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-200">
                   <p className="font-semibold">Login is required to play Arena.</p>
                   <Link to="/login" className="mt-2 inline-block font-bold underline">
                     go to login
                   </Link>
                 </div>
               ) : loading && !profile ? (
-                <div className="rounded-[28px] border-2 border-blue-200 bg-white/90 p-6 text-center font-bold text-blue-500 shadow-xl dark:border-purple-400/30 dark:bg-slate-900/90 dark:text-purple-300">
-                  Loading arena profile...
-                </div>
+                <p className="text-blue-500 dark:text-purple-300">Loading arena profile...</p>
               ) : profile ? (
-                <div className={`arena-duel-panel relative mx-auto max-w-2xl${popped ? "" : " overflow-hidden"} p-3 shadow-[0_18px_45px_rgba(67,151,211,0.24)] sm:p-4 dark:bg-slate-900/80`}>
-                  <div className="relative space-y-4">
-                    <div className="">
-                        <h2 className="text-4xl font-bold text-blue-900 dark:text-purple-100">Champione Information {`>^. .^<`}</h2>
-                      <p className="mt-2 text-sm font-black text-blue-800 sm:text-base dark:text-purple-200">
-                        <span className="text-pink-300">✿</span> Draw cards, pick your fighter, and duel!{" "}
-                        <span className="text-pink-300">✿</span>
-                      </p>
-                    </div>
-
-                      <ArenaSubNav />
-
+                <div className={`relative space-y-4${popped ? "" : " overflow-hidden"}`}>
                     {profile.activeFight && !profile.activeFight.isFinished ? (
                       <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-center dark:border-amber-600 dark:bg-amber-950">
                         <Link
@@ -287,7 +285,15 @@ const Arena = () => {
                             onCardClick={open}
                           />
                         ) : (
-                          <div className="arena-empty-card">CARD</div>
+                          <>
+                            <div className="arena-empty-card">CARD</div>
+                            <Link
+                              to="/arena/collection"
+                              className="arena-redraw-button hover:animate-wiggle mt-2 block text-center"
+                            >
+                              [ Select Card ]
+                            </Link>
+                          </>
                         )}
                       </div>
 
@@ -300,6 +306,11 @@ const Arena = () => {
                                 · Level {profile.level}
                               </span>
                             </p>
+                            {profile.title ? (
+                              <p className="-mt-1 pb-2 text-center text-sm font-bold uppercase tracking-wide text-amber-600 sm:text-left dark:text-amber-400">
+                                “{profile.title.name}”
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                         <div className="border-t-2 border-dotted border-sky-200 dark:border-purple-400/30" />
@@ -350,7 +361,6 @@ const Arena = () => {
                                 ivLabel: "Guard IV",
                                 ivBase: cardIvBase.guard,
                                 sigilIv: cardItemStats?.guard || 0,
-                                affinityIv: affinityStats?.guard || 0,
                               })}
                           </span>
                         </div>
@@ -473,6 +483,13 @@ const Arena = () => {
                           </span>
                         </div>
 
+                        <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
+                          <span className="mr-1">Defense record:</span>
+                          <span className="font-black text-blue-600 dark:text-purple-300">
+                            {profile.defensiveWins ?? 0}W / {profile.defensiveLosses ?? 0}L
+                          </span>
+                        </div>
+
                         <div className="py-2 text-xs font-semibold text-blue-950 dark:text-purple-200">
                           XP: {profile.xp}/{profile.xpToNext}{" "}
                           <span
@@ -535,13 +552,12 @@ const Arena = () => {
                     {errorMessage && !showingDrawMaintenance ? (
                       <ArenaErrorNotice message={errorMessage} />
                     ) : null}
-                  </div>
                 </div>
               ) : (
                 errorMessage ? (
                   <ArenaErrorNotice message={errorMessage} />
                 ) : (
-                  <p className="rounded-[24px] border-2 border-red-200 bg-white/90 p-4 text-red-600">
+                  <p className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-600 dark:border-red-400/30 dark:bg-slate-900/60 dark:text-red-300">
                     Failed to load arena profile.
                   </p>
                 )
@@ -577,7 +593,13 @@ const Arena = () => {
                             }
                             className="w-full text-left font-bold text-blue-700 dark:text-purple-100"
                           >
-                            {isExpanded ? "▾" : "▸"} {update.title}
+                            {isExpanded ? "▾" : "▸"}{" "}
+                            {update.version ? (
+                              <span className="mr-1 rounded bg-blue-100 px-1.5 py-0.5 text-[0.65rem] font-black text-blue-600 dark:bg-purple-400/20 dark:text-purple-200">
+                                v{update.version}
+                              </span>
+                            ) : null}
+                            {update.title}
                           </button>
                           {isExpanded ? (
                             <>

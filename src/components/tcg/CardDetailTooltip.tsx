@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import type { ArenaCard, TcgCard } from "@/lib/arena";
-import { ELEMENT_COLORS, ELEMENT_ICONS } from "@/lib/tcg-constants";
+import { ELEMENT_COLORS } from "@/lib/tcg-constants";
 
 export default function CardDetailTooltip({ detail }: {
   detail: { card: ArenaCard; top: number; left: number } | null;
@@ -31,8 +31,7 @@ export default function CardDetailTooltip({ detail }: {
         <p className="font-bold text-sm truncate">{card.title}</p>
         <div className="flex items-center gap-2 flex-wrap">
           {el ? (
-            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white flex items-center gap-1" style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }}>
-              <img src={ELEMENT_ICONS[el] || ""} alt={el} className="w-3 h-3 object-contain" />
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: ELEMENT_COLORS[el] || "#888" }}>
               {el}
             </span>
           ) : null}
@@ -53,10 +52,17 @@ export default function CardDetailTooltip({ detail }: {
           </div>
         ) : null}
         {assigned.length > 0 ? (
-          <div className="flex items-center gap-1">
-            <span className="text-amber-300 font-bold">Elements:</span>
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-amber-300 font-bold">Styles:</span>
             {assigned.map((ael, i) => (
-              <img key={i} src={ELEMENT_ICONS[ael] || ""} alt={ael} className="w-3.5 h-3.5" title={ael} />
+              <span
+                key={i}
+                title={ael}
+                className="rounded-full px-1 py-px text-[0.5rem] font-black uppercase leading-none text-white"
+                style={{ backgroundColor: ELEMENT_COLORS[ael] || "#888" }}
+              >
+                {ael}
+              </span>
             ))}
             <span className="text-amber-300 text-[0.55rem]">(×{assigned.length})</span>
           </div>

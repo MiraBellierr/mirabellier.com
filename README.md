@@ -25,7 +25,7 @@ If you are peeking around this repo, welcome welcome. This part is the one peopl
 - Guestbook board and guestbook signing page
 - Question of the Day page plus archive pages
 - Quotes page and anime page
-- Arena pages (fight, shop, crafting, leaderboard, collection)
+- Arena pages (fight, shop, leaderboard, collection)
 - Admin pages for question-of-the-day and shrine management
 - Shared layout pieces, context providers, hooks, and reusable components
 
@@ -111,7 +111,6 @@ This frontend expects a working API at `VITE_API_BASE`. Backend setup lives in [
 - `/arena` - arena home
 - `/arena/fight` - arena fight page
 - `/arena/shop` - arena shop page
-- `/arena/crafting` - arena crafting page
 - `/arena/leaderboard` - arena leaderboard page
 - `/arena/collection` - arena collection page
 - `/arena/market` - player card marketplace

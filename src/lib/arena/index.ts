@@ -16,6 +16,7 @@ export * from "./trade";
 export * from "./leaderboard";
 export * from "./hall-of-fame";
 export * from "./skill-tree";
+export * from "./titles";
 export * from "./notifications";
 export * from "./updates";
 export * from "./tcg";

@@ -7,8 +7,9 @@ export async function fetchArenaShop(token: string): Promise<ArenaShopResponse> 
 export async function buyArenaItem(
   token: string,
   itemId: string,
-): Promise<{ purchasedItemId: string; appliedInstantly: boolean; rolledPieceId: string | null; rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; fodderRefund: number } | null; shop: ArenaShopResponse }> {
-  return arenaRequest("/arena/shop/buy", { token, body: { itemId } });
+  quantity = 1,
+): Promise<{ purchasedItemId: string; purchasedQuantity: number; appliedInstantly: boolean; rolledPieceId: string | null; rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; fodderRefund: number } | null; shop: ArenaShopResponse }> {
+  return arenaRequest("/arena/shop/buy", { token, body: { itemId, quantity } });
 }
 export async function useArenaConsumable(
   token: string,
@@ -23,11 +24,4 @@ export async function useArenaConsumable(
         replaceItemId: options.replaceItemId ?? null,
       };
   return arenaRequest("/arena/shop/use-consumable", { token, body });
-}
-export async function craftArenaRecipe(
-  token: string,
-  recipeId: string,
-  quantity = 1,
-): Promise<{ craftedRecipeId: string; outputItemId: string; craftedQuantity: number; shop: ArenaShopResponse }> {
-  return arenaRequest("/arena/shop/craft", { token, body: { recipeId, quantity } });
 }

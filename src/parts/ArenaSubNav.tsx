@@ -14,16 +14,6 @@ const GROUPS: NavGroup[] = [
     links: [
       { slug: "/fight", label: "Fight" },
       { slug: "/skill-tree", label: "Skill Tree" },
-      { slug: "/tcg/decks", label: "TCG Decks" },
-      { slug: "/tcg/match", label: "TCG Match" },
-    ],
-  },
-  {
-    name: "Cards",
-    links: [
-      { slug: "/inventory", label: "Inventory" },
-      { slug: "/collection", label: "Collection" },
-      { slug: "/archive", label: "Archive" },
     ],
   },
   {
@@ -36,10 +26,18 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
+    name: "Inventory",
+    links: [
+      { slug: "/inventory", label: "Inventory" },
+      { slug: "/collection", label: "Collection" },
+    ],
+  },
+  {
     name: "Community",
     links: [
       { slug: "/hall-of-fame", label: "Hall of Fame" },
       { slug: "/leaderboard", label: "Leaderboard" },
+      { slug: "/archive", label: "Archive" },
       { slug: "/inbox", label: "Inbox" },
     ],
   },

@@ -1,6 +1,6 @@
 import cardBack from "@/assets/back-card-design.jpg";
 import type { ArenaCard, TcgCard } from "@/lib/arena";
-import { ELEMENT_COLORS, ELEMENT_ICONS, type MobileTcgDrag } from "@/lib/tcg-constants";
+import { ELEMENT_COLORS, type MobileTcgDrag } from "@/lib/tcg-constants";
 
 export default function CardThumbnail({ card, size = "sm", onClick, highlighted, draggable, touchDrag, onDragStart, onMouseEnter, onMouseLeave }: {
   card: TcgCard | ArenaCard | null;
@@ -70,13 +70,13 @@ export default function CardThumbnail({ card, size = "sm", onClick, highlighted,
       {assigned.length > 0 ? (
         <div className="absolute top-0.5 left-0.5 flex items-center gap-0.5">
           {assigned.slice(0, 2).map((assignedEl, index) => (
-            <span key={`${assignedEl}-${index}`} className="w-3 h-3 flex items-center justify-center rounded-full bg-white/90 shadow-sm">
-              <img
-                src={ELEMENT_ICONS[assignedEl] || ""}
-                alt=""
-                className="w-2.5 h-2.5 object-contain pointer-events-none"
-                draggable={false}
-              />
+            <span
+              key={`${assignedEl}-${index}`}
+              title={assignedEl}
+              className="flex h-3 min-w-3 items-center justify-center rounded-full px-0.5 text-[0.4rem] font-black uppercase leading-none text-white shadow-sm"
+              style={{ backgroundColor: ELEMENT_COLORS[assignedEl] || "#888" }}
+            >
+              {assignedEl.charAt(0)}
             </span>
           ))}
           {assigned.length > 2 ? (

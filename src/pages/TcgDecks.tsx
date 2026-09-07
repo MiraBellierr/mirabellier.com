@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { DECK_SIZE, ELEMENTS, ELEMENT_COLORS, ELEMENT_ICONS, type CollectionSort } from "@/lib/tcg-constants";
+import { DECK_SIZE, ELEMENTS, ELEMENT_COLORS, type CollectionSort } from "@/lib/tcg-constants";
+import StylePill from "@/components/tcg/StylePill";
 import { toCardId, saveDeck, saveElementPool } from "@/lib/tcg-utils";
 import { useTcg } from "@/hooks/use-tcg";
 
@@ -80,9 +81,9 @@ export default function TcgDecks() {
                           Your Deck ({tcg.selectedDeck.size}/{DECK_SIZE})
                         </p>
                         <div className="flex items-center gap-1">
-                          <span className="text-[0.55rem] font-semibold text-slate-500 dark:text-slate-400">elements:</span>
+                          <span className="text-[0.55rem] font-semibold text-slate-500 dark:text-slate-400">styles:</span>
                           {tcg.elementPool.map((el) => (
-                            <img key={el} alt={el} src={ELEMENT_ICONS[el]} className="w-4 h-4 drop-shadow-sm" title={el} />
+                            <StylePill key={el} style={el} size="xs" />
                           ))}
                         </div>
                       </div>
@@ -217,13 +218,15 @@ export default function TcgDecks() {
           <aside className="w-full space-y-4 sm:block lg:w-1/5">
             <div className="sticky top-4 space-y-4">
               <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-purple-950/40 dark:text-purple-100">
-                <h2 className="text-center text-lg font-bold text-blue-700 mb-2 dark:text-purple-100">weakness chart</h2>
+                <h2 className="text-center text-lg font-bold text-blue-700 mb-2 dark:text-purple-100">style matchups</h2>
                 <div className="space-y-1 text-xs">
-                  {[{ el: "Fire", beats: "Earth" }, { el: "Water", beats: "Fire" }, { el: "Earth", beats: "Water" }, { el: "Wind", beats: "Light" }, { el: "Light", beats: "Dark" }, { el: "Dark", beats: "Wind" }].map((row) => (
+                  {[{ el: "Might", beats: ["Skill", "Surge"] }, { el: "Swift", beats: ["Might", "Ruse"] }, { el: "Skill", beats: ["Swift", "Ward"] }, { el: "Ruse", beats: ["Might", "Surge"] }, { el: "Surge", beats: ["Skill", "Ward"] }, { el: "Ward", beats: ["Swift", "Ruse"] }].map((row) => (
                     <div key={row.el} className="flex items-center gap-1.5">
                       <span className="inline-block w-14 px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.el] }}>{row.el}</span>
                       <span className="text-slate-500">beats</span>
-                      <span className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[row.beats] }}>{row.beats}</span>
+                      {row.beats.map((b) => (
+                        <span key={b} className="inline-block px-1.5 py-0.5 rounded-full text-center font-bold text-white text-[0.6rem]" style={{ backgroundColor: ELEMENT_COLORS[b] }}>{b}</span>
+                      ))}
                     </div>
                   ))}
                 </div>

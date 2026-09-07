@@ -1,5 +1,5 @@
 import { ArenaApiError, type ArenaCard, type TcgCard, type TcgGameState, type TcgPlayerState } from "@/lib/arena";
-import { RARITY_ORDER, type CollectionSort, type MobileTcgDrag } from "@/lib/tcg-constants";
+import { ELEMENTS, RARITY_ORDER, type CollectionSort, type MobileTcgDrag } from "@/lib/tcg-constants";
 
 // ── Card helpers ──
 
@@ -91,8 +91,8 @@ export function loadElementPool(): string[] {
   try {
     const raw = localStorage.getItem("tcg_element_pool");
     const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) && arr.length > 0 ? arr : ["Fire", "Water", "Earth", "Wind", "Light", "Dark"];
-  } catch { return ["Fire", "Water", "Earth", "Wind", "Light", "Dark"]; }
+    return Array.isArray(arr) && arr.length > 0 ? arr : [...ELEMENTS];
+  } catch { return [...ELEMENTS]; }
 }
 
 export function saveElementPool(elements: string[]) {

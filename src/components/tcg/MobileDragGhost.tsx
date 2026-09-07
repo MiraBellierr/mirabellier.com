@@ -1,7 +1,8 @@
 import { createPortal } from "react-dom";
 import cardBack from "@/assets/back-card-design.jpg";
 import type { ArenaCard, TcgCard } from "@/lib/arena";
-import { ELEMENT_COLORS, ELEMENT_ICONS, type MobileTcgGhost } from "@/lib/tcg-constants";
+import { type MobileTcgGhost } from "@/lib/tcg-constants";
+import StylePill from "@/components/tcg/StylePill";
 
 export default function MobileDragGhost({ ghost, card }: { ghost: MobileTcgGhost | null; card?: TcgCard | ArenaCard | null }) {
   if (!ghost) return null;
@@ -17,12 +18,11 @@ export default function MobileDragGhost({ ghost, card }: { ghost: MobileTcgGhost
   if (ghost.drag.kind === "element") {
     const element = ghost.drag.element;
     content = (
-      <div
-        className="w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-2xl ring-4 ring-white/60"
-        style={{ backgroundColor: ELEMENT_COLORS[element] || "#888", borderColor: ELEMENT_COLORS[element] || "#888" }}
-      >
-        <img src={ELEMENT_ICONS[element] || ""} alt={element} className="w-7 h-7 object-contain" draggable={false} />
-      </div>
+      <StylePill
+        style={element}
+        size="md"
+        className="border-2 border-white/70 px-3 py-1.5 text-sm shadow-2xl ring-4 ring-white/60"
+      />
     );
   } else if (ghost.drag.kind === "attack") {
     content = (

@@ -142,10 +142,10 @@ const ArenaSkillTree = () => {
   };
 
   const handleReset = async () => {
-    if (!token || !tree || tree.spentPoints === 0) return;
+    if (!token || !tree || tree.spentPoints === 0 || tree.resetOnCooldown) return;
     if (
       !window.confirm(
-        `Reset all ${tree.spentPoints} activated skills for ${tree.resetCost.toLocaleString()} coins?`,
+        `Reset all ${tree.spentPoints} activated skills for ${tree.resetCost.toLocaleString()} coins?\n\nYou can only reset once every 3 days.`,
       )
     ) {
       return;
@@ -220,12 +220,21 @@ const ArenaSkillTree = () => {
                     <button
                       type="button"
                       className="arena-redraw-button disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={tree.spentPoints === 0 || actioning !== null}
+                      disabled={
+                        tree.spentPoints === 0 || tree.resetOnCooldown || actioning !== null
+                      }
                       onClick={() => void handleReset()}
+                      title={
+                        tree.resetOnCooldown && tree.resetCooldownEndsAt
+                          ? `Reset available ${new Date(tree.resetCooldownEndsAt).toLocaleString()}`
+                          : undefined
+                      }
                     >
                       {actioning === "reset"
                         ? "[ Resetting... ]"
-                        : `[ Reset ${tree.resetCost.toLocaleString()} ]`}
+                        : tree.resetOnCooldown && tree.resetCooldownEndsAt
+                          ? `[ Reset locked until ${new Date(tree.resetCooldownEndsAt).toLocaleDateString()} ]`
+                          : `[ Reset ${tree.resetCost.toLocaleString()} ]`}
                     </button>
                   </div>
                 </div>

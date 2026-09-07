@@ -9,10 +9,13 @@ export const EQUIPMENT_SLOT_NAMES: Record<string, string> = {
 };
 
 export const EQUIPMENT_MAIN_NAMES: Record<string, string> = {
-  power: "Force",
-  guard: "Aegis",
+  dmgPct: "Force",
+  defendPct: "Aegis",
   critRate: "Keen",
   critDmg: "Ruin",
+  // legacy pieces
+  power: "Force",
+  guard: "Aegis",
 };
 
 export const EQUIPMENT_SUB_NAMES: Record<string, string> = {
@@ -29,12 +32,15 @@ export const EQUIPMENT_SUB_NAMES: Record<string, string> = {
   critDmg: "Ruin",
 };
 
-// Plain-language stat labels.
+// Plain-language main-stat labels.
 export const MAIN_STAT_LABELS: Record<string, string> = {
-  power: "Power",
-  guard: "Guard",
+  dmgPct: "DMG%",
+  defendPct: "DEF%",
   critRate: "Crit Rate",
   critDmg: "Crit DMG",
+  // legacy pieces
+  power: "Power",
+  guard: "Guard",
 };
 
 const STAT_LABELS: Record<string, string> = {
@@ -54,6 +60,16 @@ const STAT_LABELS: Record<string, string> = {
 /** Humanize a stat key (e.g. "effectHit" -> "Effect Hit"). */
 export function statLabel(type: string): string {
   return STAT_LABELS[type] || type || "Main Stat";
+}
+
+/** "HP +42 (+12)" — the trailing "(+n)" is the enhancement boost, shown only when > 0. */
+export function formatSubStat(s: {
+  type: string;
+  value: number;
+  bonus?: number;
+}): string {
+  const bonus = s.bonus || 0;
+  return `${statLabel(s.type)} +${s.value + bonus}${bonus > 0 ? ` (+${bonus})` : ""}`;
 }
 
 type DisplayPiece = {

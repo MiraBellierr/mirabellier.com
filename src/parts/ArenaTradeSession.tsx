@@ -543,9 +543,13 @@ const ArenaTradeSession = ({ sessionId, onClose }: ArenaTradeSessionProps) => {
                 placeholder="0"
                 className="w-24 rounded-lg border border-blue-200 bg-white px-2 py-1 text-center text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200 disabled:opacity-50"
               />
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                7% is burned on completion — the other player receives 93%.
+              </span>
               {myCoins > 0 && (
                 <span className="text-xs text-amber-500 dark:text-amber-400/70">
-                  offering {myCoins.toLocaleString()} coins
+                  offering {myCoins.toLocaleString()} coins · they get{" "}
+                  {(myCoins - Math.round(myCoins * 0.07)).toLocaleString()}
                 </span>
               )}
               {coinError && (

@@ -11,7 +11,15 @@ Ordered by impact on how the game actually plays.
 
 ---
 
-## 1. Consumables are permanent, not consumable
+## 1. Consumables are permanent, not consumable — ✅ DONE (2026-09-07)
+
+> Implemented: durations cut to the `*_BOOST_FIGHT_DURATION` / `ONE_SHOT_SAVE_CHARGES`
+> constants (now the source of truth, wired into `TIER_CONFIG`), tier prices
+> repriced down with a per-item override (ascension kept at 120k), and
+> `EFFECT_DURATION_LIMITS` given entries for every combat effect field so legacy
+> stockpiles clamp down on load. Docs + tests updated. Needs an admin compensation
+> pass on deploy. (The price table, then `CRAFT_COIN_COSTS`, is now
+> `CONSUMABLE_TIER_PRICES` after the §11 recipe removal.)
 
 **Where:** `mirabellier-backend/lib/arena-constants.js:110-317` (`TIER_CONFIG`), `:342` (`CRAFT_COIN_COSTS`)
 
@@ -51,7 +59,13 @@ codebase.** They look like the intended balance that got replaced by the 250–1
 
 ---
 
-## 2. Tier unlock levels are dead code — every consumable is craftable at level 1
+## 2. Tier unlock levels are dead code — every consumable is craftable at level 1 — ✅ DONE (2026-09-07)
+
+> Implemented: added `TIER_UNLOCK_LEVELS` (Rookie 1 / Bronze 8 / Silver 16 / Gold 28
+> / Mythic 42 / Cosmic 58), wired into the consumable item's `unlockLevel`.
+> `buyShopItem` enforces the level (throws `ARENA_ITEM_LOCKED`). Shop UI shows
+> "Unlocks at level N". Tests updated. (The recipe layer was later removed
+> entirely — see §11 — so consumables are now level-gated coin purchases.)
 
 **Where:** `arena-constants.js:320` (`TIER_UNLOCK_LEVELS`), `:329` and `:351` (`unlockLevel: 1`)
 
@@ -69,7 +83,14 @@ One-line fix, restores the whole intended progression ladder.
 
 ---
 
-## 3. Defenders fight for free — their consumable charges are never spent
+## 3. Defenders fight for free — their consumable charges are never spent — ✅ DONE (2026-09-07)
+
+> Implemented direction A: `simulateFight` now returns `oppEffectUsage`, and a shared
+> `spendDefenderEffectUsage(db, defenderUserId, oppEffectUsage, now)` helper applies it to
+> the PvP defender's stored effects (via `applyFightEffectUsage`) in both `runFight` and
+> `finalizePlaybackFightRewards`. NPC opponents have no row and are skipped; a defender with
+> nothing active takes no write. Tests: the old "not consumed" test is flipped, plus new
+> direct-fight and no-op coverage.
 
 **Where:** `combat.js:1302` (`oppEffectUsage` built), `:2094-2121` (return omits it), `runFight` `:2124-2340`
 
@@ -92,7 +113,19 @@ worst of both: full power, zero cost.
 
 ---
 
-## 4. Being attacked has no upside, and attacking has no downside
+## 4. Being attacked has no upside, and attacking has no downside — ✅ DONE (2026-09-07)
+
+> All three sub-parts landed:
+> - **Defender pay:** `settleDefenderFight` credits a flat stipend
+>   `floor((10 + defenderLevel*2) * (defenderWon ? 1.5 : 1))` in the fight tx and drops a
+>   display-only `defense_reward` inbox notification (`DEFENDER_*` constants in `combat.js`).
+> - **Defensive W/L:** new `arena_profiles.defensiveWins` / `defensiveLosses` columns
+>   (`ensureColumn`), incremented per PvP defence, surfaced on the profile payload, the
+>   `Arena` profile card, and the win-rate leaderboard row.
+> - **NPC nerf:** NPC XP + coin deltas are scaled by `NPC_REWARD_SCALE` (0.75) in both
+>   `runFight` and `finalizePlaybackFightRewards`.
+>
+> Needs an admin compensation pass on deploy (this shifts live coin income).
 
 **Where:** `combat.js:2124-2340` (`runFight`)
 
@@ -117,7 +150,16 @@ player in a dense pool eats ELO variance for identical rewards.
 
 ---
 
-## 5. The skill tree has no build diversity, and 24 points go nowhere
+## 5. The skill tree has no build diversity, and 24 points go nowhere — ✅ DONE (2026-09-07)
+
+> Went with **budget it, hard**: `earnedPoints = floor(level * SKILL_POINTS_PER_LEVEL)`
+> (`0.5`) → 35 points for 45 nodes at cap, so ~10 nodes are a genuine cross-chain choice.
+> Respec raised to `level * 300` (21k at cap) and gated behind a 3-day cooldown
+> (`SKILL_RESET_COOLDOWN_MS`, new `arena_profiles.lastSkillResetAt` column,
+> `ARENA_SKILL_RESET_COOLDOWN` error with `cooldownEndsAt`/`retryAfterMs`). Payload +
+> `ArenaSkillTree` UI carry `resetOnCooldown` / `resetCooldownEndsAt`. Tree extension
+> (tier-4 capstones, keystones, paragon) is left for a future pass. Needs a compensation
+> pass on deploy — every current tree over 35 nodes is clipped on next load.
 
 **Where:** `mirabellier-backend/lib/arena-skill-tree.js` (3 branches × 3 chains × 5 nodes = 45 nodes),
 `lib/arena/skill-tree.js:28` (`earnedPoints = level - 1`)
@@ -138,7 +180,23 @@ The tree is currently a level-gated stat drip, not a choice.
 
 ---
 
-## 6. The coin curve is inverted: brutal early, meaningless late
+## 6. The coin curve is inverted: brutal early, meaningless late — ✅ DONE (2026-09-07)
+
+> All four levers landed:
+> - **Level-scaled sinks:** `getGearRollPrice(level) = 250 + level*22` and
+>   `getRerollSubStatCost(level) = floor(gearRollPrice * 0.5)` replace the flat 1000 / 500.
+>   `buildShopCatalog`, `buyShopItem` and `rerollEquipmentSubStat` charge the live value;
+>   the profile payload carries `gearRollPrice` / `rerollSubStatCost` and the shop/inventory
+>   UI reads them.
+> - **Investment-scaled fodder refund:** `getFodderRefund(slot, enhLevel, playerLevel)` =
+>   `40%` of the roll price + `40%` of `getEnhancementCoinsSunk(enhLevel)`, floored at 150.
+> - **Income tweak:** `calculateWinCoins` → `18 + floor(oppLevel*3.5) + floor(oppLevel^1.15) + rarityCoinReward`.
+> - **Endgame coin sink:** a cosmetic **title shop** (`lib/arena/titles.js`, `TITLE_CATALOG`
+>   25k–15M coins, `arena_titles` table + `arena_profiles.activeTitleId`). Titles are
+>   stat-free; the active one shows on the profile, leaderboard, and fight-opponent snapshot.
+>   `GET/POST /arena/shop/titles[/buy|/activate]`.
+>
+> Needs a compensation pass on deploy (gear now costs more at high level).
 
 **Where:** `combat.js:228` (`calculateWinCoins`), `equipment.js:87` (`getEnhancementCoinCost`), `:97` (`getFodderRefund`)
 
@@ -169,7 +227,21 @@ unable to afford a second gear roll. The 2,000-coin tutorial milestones at level
 
 ---
 
-## 7. Coins and cards move between accounts with zero friction
+## 7. Coins and cards move between accounts with zero friction — ✅ DONE (2026-09-07)
+
+> All four levers landed (`lib/arena/market.js` + `lib/arena/trade.js`, constants in
+> `lib/arena/_constants.js`):
+> - **Sale/trade commission** — `MARKET_SALE_COMMISSION_RATE` 7%, **burned** (leaves the coin
+>   supply). Applies to completed market sales and to coins moved in a direct trade: payer pays
+>   full, receiver nets `amount - round(amount * rate)`.
+> - **Non-refundable listing fee** — `max(round(price * MARKET_LISTING_FEE_RATE), MARKET_LISTING_FEE_MIN)`
+>   (2%, min 100), charged at listing creation, never returned. On the response as `listingFee`.
+> - **Comparable-sales price ceiling** — `min(round(getMarketPrice.value * MARKET_PRICE_CEILING_MULTIPLIER), MARKET_MAX_PRICE)`
+>   (4×), `ARENA_MARKET_PRICE_TOO_HIGH`; the price guide exposes `maxListingPrice`.
+> - **Level gate** — `ARENA_TRADE_MIN_LEVEL` 10 on create/buy listing + create/send/accept trade
+>   (`ARENA_TRADE_LEVEL_LOCKED`).
+>
+> Needs a compensation pass on deploy (the level gate locks out sub-10 accounts mid-trade).
 
 **Where:** `lib/arena/market.js` (no fee/tax anywhere — `grep -i "fee\|tax\|commission"` is empty),
 `_constants.js:33` (`MARKET_MAX_PRICE = 1_000_000`), `lib/arena/trade.js`
@@ -189,7 +261,22 @@ prices). Gate market/trade access behind a level threshold.
 
 ---
 
-## 8. Equipment: the main stat is a fifth substat, and rolls are one-and-done luck
+## 8. Equipment: the main stat is a fifth substat, and rolls are one-and-done luck — ✅ DONE (2026-09-07)
+
+> Full rework — all four suggestions plus set bonuses:
+> - **Slot main-stat identity:** weapon `dmgPct` 6–14, armor `defendPct` 8–18, charm
+>   `critRate`|`critDmg` (unchanged). A slot's main stat is excluded from its own sub-stat pool.
+> - **Enhancement main scaling:** `round(rolled * (1 + level * 0.10))` (2.5× at +15), not flat +1.
+> - **Enhancement sub-stat ticks:** +3/+6/+9/+12/+15 permanently boost one random sub-stat line
+>   by `round(midpoint * 0.30)` (stored in a new `subStatBonuses` column, apart from the roll).
+> - **`rerollKeepHigherCharges`** is now read by `rerollEquipmentSubStat` — with a charge it keeps
+>   `max(old, rolled)` and decrements.
+> - **Set bonuses:** `EQUIPMENT_SETS` (Berserker/Sentinel/Trickster), random `setId` per roll, 2/3-piece
+>   pct bonuses in `computeEquipmentStats` + `equipmentSets` on the payload + inventory UI.
+> - New `arena_equipment_pieces.setId` / `subStatBonuses` columns; a one-time migration remaps
+>   legacy flat `power`/`guard` mains to `dmgPct`/`defendPct`. NPC pct stats bumped for parity.
+> - Needs a compensation pass on deploy (existing pieces are remapped and lose the old flat-main
+>   contribution).
 
 **Where:** `arena-constants.js:75-113` (`ROLLABLE_EQUIPMENT`, `SUB_STAT_POOL`), `equipment.js:459` (`rollEquipmentPiece`), `:529` (main stat +1 per enhancement level)
 
@@ -218,7 +305,32 @@ prices). Gate market/trade access behind a level threshold.
 
 ---
 
-## 9. Stat design: speed does everything, effectHit does almost nothing
+## 9. Stat design: speed does everything, effectHit does almost nothing — ✅ DONE (2026-09-07)
+
+> All five parts:
+> - **effectHit always-on:** attacker `effectHit` shaves the defender's evade chance
+>   (`EFFECT_HIT_ACCURACY_PER_POINT` 0.0006/pt) and adds a flat true-damage trickle
+>   (`EFFECT_HIT_TRUE_DAMAGE_PER_POINT` 0.15/pt) to every hit — pays in neutral fights now.
+> - **Turn order:** speed jitter band 4 → `TURN_ORDER_SPEED_JITTER` 18 (near-equal speed = coin
+>   flip); the fighter acting **second** in an exchange gets `+SECOND_ACTOR_DAMAGE_PCT` (10) to
+>   its `attackerDamagePct` that hit.
+> - **Element chart:** `ELEMENT_EFFECTIVENESS` widened to 2 strengths / 2 weaknesses / 1 neutral
+>   per element (super-effective ~33% vs ~17%), symmetric. Frontend `ELEMENT_STRONG_AGAINST` /
+>   weakness chart updated.
+>   - **Follow-up (2026-09-07): renamed elements → "Combat Styles".** Fire→Might, Water→Swift,
+>     Earth→Ward, Wind→Ruse, Light→Surge, Dark→Skill. Matchups rebuilt on fighting-game logic
+>     (Swift outspeeds Might; Skill reads Swift; Might breaks Skill; etc.) — see the table in
+>     `docs/arena-combat.md` § "Style Multiplier". `ELEMENTS` / `ELEMENT_EFFECTIVENESS` keep their
+>     code identifiers; only the string values changed. Data migrated by
+>     `mirabellier-backend/scripts/migrate-elements-to-styles.cjs` (big catalog JSON) +
+>     `migrateElementsToStyles(db)` in `lib/db.js` (stored card JSON). TCG shares these constants
+>     and was updated in lockstep.
+> - **Super-effective crit penalty dropped** (`calculateAttackOutcome` no longer halves crit on
+>   element advantage).
+> - **`computeElementMultiplier` fixed** to scale from its `baseElementMult` argument instead of
+>   a hardcoded `1.3`.
+>
+> `computeMaxHp` (speed's HP contribution) left as-is — out of the chosen scope.
 
 **Where:** `combat.js:598` (`computeMaxHp`), `:662` (`computeEvasionChance`), `:698` (`calculateAttackOutcome`), `:1993` (turn order)
 
@@ -259,7 +371,32 @@ Two smaller oddities in the same code:
 
 ---
 
-## 10. XP to 70 is ~14,000 fights, and levels 46–70 give nothing but stats
+## 10. XP to 70 is ~14,000 fights, and levels 46–70 give nothing but stats — ✅ DONE (2026-09-07)
+
+> Progression-curve pass (the systemic bullets — extra equipment slot at 50, second consumable
+> slot at 60, keystone choice at 70, paragon overflow track — need new subsystems + schema + UI
+> and are left for a future pass, same as §5 deferred keystones/paragon):
+> - **XP curve flattened:** `xpToNext = 80 + round(18 · level^1.85)` (was `80 + 25·level²`).
+>   Total 1→70 drops **2,802,895 → 1,127,707 XP**.
+> - **Per-fight win XP raised:** `calculateWinXp` opponent term `floor(level·2.5)` → `floor(level·4)`,
+>   so a top-end win pays ~296 base XP. Combined with the curve, 1→70 is **~3,800 best-case fights**
+>   (down from ~14,150) — in the suggested 3,000–4,000 band.
+> - **Streak XP bonus is now multiplicative:** `calculateStreakXpBonus` (flat `+7` cap, additive)
+>   replaced by `calculateStreakXpMultiplier` = `1 + min(streak·0.02, 0.25)` — mirrors
+>   `calculateStreakCoinMultiplier` so the two streak systems read the same way.
+> - **Levels 46–70 give something beyond stats:** `earnedSkillPoints` grants a **+1 milestone
+>   skill point at level 50 / 60 / 70** (`SKILL_POINT_MILESTONE_LEVELS`). Cap total 35 → 38 of 45
+>   nodes — deliberately nudges §5's 35/45 budget but stays short of lighting the whole tree.
+> - **Leaderboard:** the inline `80 + 25·p.level·p.level` SQL in 4 queries is gone; `xpProgress`
+>   is derived in JS from the shared `xpToNext` (SQLite can't do fractional powers), and the
+>   `level` board's tiebreak sorts by `p.xp DESC` instead.
+> - **`runFight` response** now carries `rewards.xpRoundsWon` (1–3) so clients can show the
+>   fast-finish bonus and reward tests don't depend on turn-count RNG. Frontend `shared.ts` typed.
+>
+> `xpRoundsWon` (fast-fight XP credit) and the max-level 1 XP = 1 coin overflow floor were left
+> as-is — the paragon track is the real answer to overflow and it's deferred. Needs an admin
+> compensation pass on deploy via `lib/arena/compensation.js` (every existing sub-70 profile's XP
+> total now maps to a higher effective level; level-50+ players are owed milestone skill points).
 
 **Where:** `lib/arena/utils.js:161` (`xpToNext = 80 + 25·level²`), `combat.js:186` (`calculateWinXp`)
 
@@ -288,61 +425,102 @@ Two smaller oddities in the same code:
 
 ## 11. Smaller items
 
+> **Partial pass — ✅ DONE (2026-09-07):** the stat-asymmetry bug, `first_attack_double`,
+> affinity scaling, the `crit`/`critRate` alias, and the doc drift are fixed (details on each
+> bullet). Left open: the round-system decision (a real either/or redesign, not a small item)
+> and `resetDailyOpponentCount` (deliberate — see the bullet).
+>
+> Deploy notes: `migrateCritSubStatAlias` runs once on boot (idempotent). The affinity rework
+> is a small live power buff for anyone with built-up affinity — no compensation pass needed,
+> but worth a changelog line; `first_attack_double` becoming reliable is likewise a buff.
+
 - **`calculateRoundPower` is effectively dead** (`combat.js:60`). It's exported and tested but
   never called by the fight path — combat is pure HP attrition now. `resolveRoundWinner` survives
   only as a tiebreaker. The `playerRoundsWon`/`opponentRoundsWon` values in the response are
   always 1/0 (`:2109-2110`), and `score` in the API payload is vestigial. Either delete the round
   system or restore best-of-N rounds as a real mechanic.
-- **`rollFightMaterialRewards()` returns `[]`** (`combat.js:587`) and every recipe emits
-  `inputs: []` (`arena-constants.js:354`). Crafting is a pure coin transaction with a "recipe"
-  wrapper around it. Either bring materials back as a fight-drop loop, or drop the recipe
-  abstraction entirely.
+  - **Deferred:** deleting `score` is a breaking API/frontend change and best-of-N is a mechanic
+    redesign — neither is a "smaller item". `resolveRoundWinner` is a live tiebreaker (double-KO,
+    60-turn timeout) and stays. `rewards.xpRoundsWon` (added in §10) is the one round-ish value
+    that now does something.
+- ✅ **DONE (2026-09-07)** — the recipe abstraction was dropped entirely. Consumables are now
+  a plain coin purchase via `buyShopItem` / `POST /arena/shop/buy` (`item.price` from
+  `CONSUMABLE_TIER_PRICES`); `SHOP_RECIPES`/`buildRecipes`/`craftShopRecipe`/`/shop/craft` and
+  the `recipes[]` payload array are gone, along with `craftArenaRecipe` and `ArenaShopRecipe`
+  on the frontend. `rollFightMaterialRewards()` (still `[]`) and the round system below remain.
 - **Player/opponent stat application is asymmetric.** Consumable boosts adjust both
   `playerTotalStats` **and** `playerBaseStats` for the player (`:1329-1379`) but only
   `opponent.totalStats` for the opponent (`:1408-1450`). Since `baseStats` feeds `computeMaxHp`,
   a buffed player gets extra max HP from `stat_steroid`/`guard_boost` that a buffed opponent does
   not. Attacker-favouring bug in the mirror logic.
+  - **✅ DONE (2026-09-07):** the HP path was already symmetric (`computeMaxHp` reads
+    `*.totalStats` for both sides, changed in §9), so the described bug was gone — but
+    `playerBaseStats` was still cloned and mutated by every player buff block and then **never
+    read**. Removed the dead clone + 11 mutation lines; the player buff blocks are now
+    byte-for-byte mirrors of the opponent ones (only `*.totalStats`).
 - **`first_attack_double` is a coin flip.** It only fires on `turnCounter === 1` (`:1745`), so it
   does nothing whenever the opponent wins the speed roll — but the charge isn't consumed either,
   which at least makes it non-punishing. Consider "your first attack of the fight" instead of
   "turn 1 of the fight".
+  - **✅ DONE (2026-09-07):** now gated on `playerHasLandedAttack` / `opponentHasLandedAttack` —
+    each side's **first landed hit** is doubled regardless of turn order; the charge is spent
+    only when it actually applies. New test `first_attack_double fires on the player's first hit
+    even when they act second`.
 - **Affinity is too small to notice.** 250 fights on one card yields +2 power / +1 guard / +1
   speed / +1 effectHit (`cards.js:16-17,161`) against level-70 stats of ~150. It costs a huge
   commitment and returns ~1%. Either scale it meaningfully (percentage-based, or unlock a card
   passive at max affinity) or drop the thresholds so it's a pleasant early-game nudge instead.
+  - **✅ DONE (2026-09-07):** thresholds pulled in `[10,25,60,120,250] → [6,18,45,100,190]`;
+    each level now grants `AFFINITY_STAT_STEP = 3` (was 1) on the cycling stat, so a maxed card
+    is +6 power / +3 / +3 / +3. Crucially it is now applied as a **direct** stat bonus on the
+    snapshot (its own `affinity` line in `baseStats`/`totalStats`/`stats.total`) instead of
+    being folded into the card-IV bonus and divided by 3 — that ÷3 is what made the old bonus
+    invisible. Frontend stat-source labels dropped the now-wrong "IV" wording.
 - **`resetDailyOpponentCount(db, current.userId)` on every fight** (`combat.js:2316`) is
   deliberate per the 2026-06-28 notes, but the practical effect is that an actively-fighting
   player can be selected as a defender an unbounded number of times per day. Combined with §4
   (defenders earn nothing) the most active players carry the most ELO risk for no reward.
+  - **Deferred:** §4 (defender rewards) is done, which removes the "no reward" half. Capping
+    defender selection is a matchmaking change with its own trade-offs — out of scope for a
+    smaller-items pass.
 - **Sub-stat naming is still split** — `SUB_STAT_POOL` emits `critRate`, `computeEquipmentStats`
   handles both `crit` and `critRate` (`equipment.js:550-551`), and `normalizeSubStatType` maps
   `crit → critRate` (`:53`). Legacy rows only; worth a migration to retire the alias.
+  - **✅ DONE (2026-09-07):** `migrateCritSubStatAlias(db)` rewrites `mainStatType = 'crit'` and
+    `"type":"crit"` inside `arena_equipment_pieces.subStats` once (idempotent). `normalizeSubStatType`
+    and the `case "crit":` fall-through are gone — call sites use the type verbatim.
 - **`docs/arena-combat.md` drift.** Two claims no longer match the code: the element formula
   (§9) and "Boost durations decrement per fight, not only on wins" — `consumeFightBoostDurations`
   (`combat.js:463`) does run on both branches now, but it only covers exp/coin/draw boosts;
   combat-effect durations decrement through `applyFightEffectUsage` and only when the effect
   actually fired. Worth restating precisely.
+  - **✅ DONE (2026-09-07):** the element table was restated in §9/§10; the Consumable Stacking
+    Rules section now spells out the two decrement paths, plus a new **Card Affinity** section
+    and a first-landed-hit note on first-attack doubling.
 
 ---
 
 ## Suggested order of work
 
 **First — correctness and fairness (small diffs, large effect):**
-1. Return and apply `oppEffectUsage` (§3).
-2. Wire `TIER_UNLOCK_LEVELS` into shop items and recipes (§2).
-3. Fix the `baseStats` asymmetry for opponent buffs (§11).
-4. Fix `computeElementMultiplier` to use its `baseElementMult` argument (§9).
+1. ✅ Return and apply `oppEffectUsage` (§3).
+2. ✅ Wire `TIER_UNLOCK_LEVELS` into shop items and recipes (§2).
+3. ✅ Fix the `baseStats` asymmetry for opponent buffs (§11) — HP path was already symmetric;
+   removed the dead `playerBaseStats` mutations that made it look asymmetric.
+4. ✅ Fix `computeElementMultiplier` to use its `baseElementMult` argument (§9).
 
 **Second — the balance pass that changes the game most:**
-5. Consumable durations and pricing, using the three dead duration constants (§1).
-6. Market commission + listing fee + comparable-sales price bound (§7).
-7. Defender rewards (§4).
+5. ✅ Consumable durations and pricing, using the three dead duration constants (§1).
+6. ✅ Market commission + listing fee + comparable-sales price bound (§7).
+7. ✅ Defender rewards (§4).
+
+**Also done:** §5 (skill point budget + respec cooldown), §6 (coin curve — level-scaled sinks + fodder refund + income tweak + cosmetic title shop).
 
 **Third — depth:**
-8. Skill point budget or tree extension (§5).
-9. Equipment main-stat identity, enhancement payoff, `rerollKeepHigher` (§8).
+8. ✅ Skill point budget or tree extension (§5).
+9. ✅ Equipment main-stat identity, enhancement payoff, `rerollKeepHigher`, set bonuses (§8).
 10. XP curve and level 46–70 content (§10).
-11. `effectHit` rework and element table widening (§9).
+11. ✅ `effectHit` rework and element table widening (§9).
 
 Steps 1–4 are contained enough to ship with tests against the existing
 `mirabellier-backend/test/arena-service.test.js` suite. Steps 5–7 change live player balances and

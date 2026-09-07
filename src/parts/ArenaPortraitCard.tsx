@@ -3,12 +3,6 @@ import { forwardRef, type CSSProperties } from "react";
 import type { ArenaCard } from "@/lib/arena";
 import { useHoloTilt } from "@/hooks/use-holo-tilt";
 import cardBack from "@/assets/back-card-design.jpg";
-import fireIcon from "@/assets/elements/fire.png";
-import waterIcon from "@/assets/elements/water.png";
-import earthIcon from "@/assets/elements/earth.png";
-import windIcon from "@/assets/elements/wind.png";
-import lightIcon from "@/assets/elements/light.png";
-import darkIcon from "@/assets/elements/dark.png";
 
 type ArenaPortraitCardSize = "compact" | "full";
 
@@ -39,16 +33,17 @@ type RarityVisual = {
 type ElementVisual = {
   label: string;
   color: string;
-  icon: string;
 };
 
+// Card affinity is six combat styles (see `lib/arena/constants.ts`), shown as a
+// coloured text pill on the card — no icon art.
 const ELEMENT_VISUALS: Record<string, ElementVisual> = {
-  Fire:   { label: "Fire",   color: "#e74c3c", icon: fireIcon },
-  Water:  { label: "Water",  color: "#3498db", icon: waterIcon },
-  Earth:  { label: "Earth",  color: "#27ae60", icon: earthIcon },
-  Wind:   { label: "Wind",   color: "#2ecc71", icon: windIcon },
-  Light:  { label: "Light",  color: "#f1c40f", icon: lightIcon },
-  Dark:   { label: "Dark",   color: "#8e44ad", icon: darkIcon },
+  Might: { label: "Might", color: "#e74c3c" },
+  Swift: { label: "Swift", color: "#1abc9c" },
+  Skill: { label: "Skill", color: "#3498db" },
+  Ruse:  { label: "Ruse",  color: "#8e44ad" },
+  Surge: { label: "Surge", color: "#f1c40f" },
+  Ward:  { label: "Ward",  color: "#27ae60" },
 };
 
 function normalizeElement(element: string | null | undefined): ElementVisual | null {
@@ -193,15 +188,11 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
         <span className="arena-portrait-card__badge">{visual.key}</span>
         {element ? (
           <span
-            className="arena-portrait-card__element arena-portrait-card__element--icon"
+            className="arena-portrait-card__element"
+            style={{ "--element-color": element.color } as CSSProperties}
             title={element.label}
           >
-            <img
-              className="arena-portrait-card__element-img"
-              src={element.icon}
-              alt=""
-              draggable={false}
-            />
+            {element.label}
           </span>
         ) : null}
       </div>

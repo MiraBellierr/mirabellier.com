@@ -151,6 +151,11 @@ const ArenaLeaderboard = () => {
                           <div className="min-w-0 flex-1">
                             <p className="font-bold text-blue-700">
                               #{entry.rank} {entry.user.username}
+                              {entry.title ? (
+                                <span className="ml-1 text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                                  “{entry.title.name}”
+                                </span>
+                              ) : null}
                             </p>
                             {activeMetric === "elo" ? (
                               <p className="text-xs text-slate-600">
@@ -164,7 +169,7 @@ const ArenaLeaderboard = () => {
                               </p>
                             ) : activeMetric === "win_rate" ? (
                               <p className="text-xs text-slate-600">
-                                Win Rate {formatPercent(entry.winRate)} · {entry.wins}W {entry.losses}L ({entry.totalFights} fights)
+                                Win Rate {formatPercent(entry.winRate)} · {entry.wins}W {entry.losses}L ({entry.totalFights} fights) · Def {entry.defensiveWins ?? 0}W {entry.defensiveLosses ?? 0}L
                               </p>
                             ) : (
                               <p className="text-xs text-slate-600">

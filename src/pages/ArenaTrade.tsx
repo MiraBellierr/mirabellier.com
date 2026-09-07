@@ -432,7 +432,7 @@ const ArenaTrade = () => {
               }}
               className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
             >
-              <option value="">Any wanted element</option>
+              <option value="">Any wanted style</option>
               {ELEMENTS.map((el) => (
                 <option key={el} value={el}>
                   Wanted: {el}
@@ -762,7 +762,7 @@ const ArenaTrade = () => {
                           onChange={(e) => setCreateWantedElement(e.target.value)}
                           className="rounded-lg border border-blue-200 bg-white px-3 py-1 text-sm text-slate-700 dark:border-purple-400/40 dark:bg-slate-800 dark:text-slate-200"
                         >
-                          <option value="">Any element</option>
+                          <option value="">Any style</option>
                           {ELEMENTS.map((el) => (
                             <option key={el} value={el}>
                               Wanted: {el}
@@ -1270,7 +1270,7 @@ const ArenaTrade = () => {
                   </div>
                 </div>
                 <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">element:</span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">style:</span>
                   {ELEMENTS.map((el) => {
                     const active = requestCardElement === el;
                     return (
