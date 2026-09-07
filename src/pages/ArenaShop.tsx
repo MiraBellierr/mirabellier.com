@@ -8,6 +8,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
+import ArenaTitleBadge from "@/parts/ArenaTitleBadge";
 import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
@@ -960,7 +961,9 @@ const ArenaShop = () => {
                       <p className="text-xs text-slate-600 dark:text-slate-300">
                         Purely cosmetic. Shown on your profile, the leaderboard, and to opponents you fight.
                       </p>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {/* gap-y is wider than the other shop grids on purpose: the
+                          top-tier badges overhang their box and need the room. */}
+                      <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2">
                         {titles.titles.map((title) => {
                           const isBuying = actioningId === `title:${title.id}`;
                           const isActivating =
@@ -971,7 +974,7 @@ const ArenaShop = () => {
                               <div className="min-w-0 flex-1 space-y-1">
                                 <div className="flex items-center gap-2">
                                   <p className="font-bold text-blue-700 dark:text-purple-100">
-                                    “{title.name}”
+                                    <ArenaTitleBadge title={title} />
                                     {title.active ? (
                                       <span className="ml-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                                         active

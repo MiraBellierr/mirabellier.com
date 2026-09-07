@@ -9,6 +9,7 @@ import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
+import ArenaTitleBadge from "@/parts/ArenaTitleBadge";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import type { Socket } from "socket.io-client";
@@ -869,9 +870,12 @@ const ArenaFight = () => {
                             {activeFight?.opponent ? (
                               <p className="text-xs text-slate-500 mt-1 text-center">
                                 {activeFight.opponent.displayName}
-                                {activeFight.opponent.title
-                                  ? ` “${activeFight.opponent.title.name}”`
-                                  : ""}
+                                {activeFight.opponent.title ? (
+                                  <ArenaTitleBadge
+                                    title={activeFight.opponent.title}
+                                    className="mx-1"
+                                  />
+                                ) : null}
                                 {activeFight.opponent.isNpc
                                   ? " · NPC · unrated"
                                   : ` · ELO ${activeFight.opponent.eloRating}${

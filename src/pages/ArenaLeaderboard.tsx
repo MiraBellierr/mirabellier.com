@@ -6,6 +6,7 @@ import Footer from "@/parts/Footer";
 import Divider from "@/parts/Divider";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
+import ArenaTitleBadge from "@/parts/ArenaTitleBadge";
 import { usePageSeo } from "@/lib/seo";
 import {
   normalizeArenaError,
@@ -152,9 +153,11 @@ const ArenaLeaderboard = () => {
                             <p className="font-bold text-blue-700">
                               #{entry.rank} {entry.user.username}
                               {entry.title ? (
-                                <span className="ml-1 text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                                  “{entry.title.name}”
-                                </span>
+                                <ArenaTitleBadge
+                                  title={entry.title}
+                                  variant="inline"
+                                  className="ml-1.5"
+                                />
                               ) : null}
                             </p>
                             {activeMetric === "elo" ? (

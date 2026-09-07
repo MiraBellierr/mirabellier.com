@@ -9,6 +9,7 @@ import Divider from "@/parts/Divider";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
+import ArenaTitleBadge from "@/parts/ArenaTitleBadge";
 import PackOpeningModal from "@/parts/PackOpeningModal";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useCardPopover } from "@/hooks/use-card-popover";
@@ -307,8 +308,11 @@ const Arena = () => {
                               </span>
                             </p>
                             {profile.title ? (
-                              <p className="-mt-1 pb-2 text-center text-sm font-bold uppercase tracking-wide text-amber-600 sm:text-left dark:text-amber-400">
-                                “{profile.title.name}”
+                              <p className="mt-1.5 pb-2 text-center sm:text-left">
+                                {/* Clearance, not taste: the Immortal tier's flame
+                                    layer overhangs the badge by ~0.95em and would
+                                    otherwise wash over the card name above. */}
+                                <ArenaTitleBadge title={profile.title} />
                               </p>
                             ) : null}
                           </div>
