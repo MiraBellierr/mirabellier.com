@@ -2,6 +2,44 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import type { OutputBundle } from "rollup";
+import { routeSeoPlugin } from "./vite-plugin-route-seo";
+
+const SITE_URL = "https://mirabellier.com";
+const DEFAULT_OG_IMAGE = `${SITE_URL}/background.jpg`;
+
+const ARENA_DESCRIPTION =
+  "Draw up to ten character cards a day, grow their IV stats and affinities, then battle through fights, the shop, the market, trading, and the leaderboard.";
+
+const ARENA_STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: "Character Card Arena Hub",
+  description: ARENA_DESCRIPTION,
+  url: `${SITE_URL}/arena`,
+  isPartOf: {
+    "@type": "WebSite",
+    name: "Mirabellier",
+    url: SITE_URL,
+  },
+};
+
+// Client-only SPA routes that get a static, crawler-visible head so links
+// unfurl with a route-specific card in Discord/Slack/iMessage/Twitter.
+const SEO_ROUTES = [
+  {
+    path: "/arena",
+    title: "Character Card Arena ⚔️ — Mirabellier",
+    description: ARENA_DESCRIPTION,
+    structuredData: ARENA_STRUCTURED_DATA,
+  },
+  {
+    path: "/ar",
+    title: "Character Card Arena ⚔️ — Mirabellier",
+    description: ARENA_DESCRIPTION,
+    url: `${SITE_URL}/arena`,
+    structuredData: ARENA_STRUCTURED_DATA,
+  },
+];
 
 const JS_CHUNK_BUDGET_KB = 450;
 const CSS_ASSET_BUDGET_KB = 100;
@@ -44,7 +82,15 @@ function bundleBudgetPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), bundleBudgetPlugin()],
+  plugins: [
+    react(),
+    bundleBudgetPlugin(),
+    routeSeoPlugin({
+      siteUrl: SITE_URL,
+      defaultImage: DEFAULT_OG_IMAGE,
+      routes: SEO_ROUTES,
+    }),
+  ],
   base: "/",
   server: {
     proxy: {

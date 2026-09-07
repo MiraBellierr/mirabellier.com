@@ -181,6 +181,7 @@ export const handleImageUpload = async (
 
   const response = await fetch(`${API_BASE}/posts-img`, {
     method: "POST",
+    credentials: "include",
     body: formData,
     signal: abortSignal,
   });

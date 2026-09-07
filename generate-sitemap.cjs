@@ -41,6 +41,7 @@ const STATIC_ROUTES = [
   { path: "/blog", priority: "0.9", changefreq: "daily" },
   { path: "/privacy", priority: "0.4", changefreq: "yearly" },
   { path: "/terms", priority: "0.4", changefreq: "yearly" },
+  { path: "/arena", priority: "0.6", changefreq: "weekly" },
   { path: "/arena/inventory", priority: "0.5", changefreq: "monthly" },
   { path: "/arena/market", priority: "0.5", changefreq: "daily" },
   { path: "/arena/skill-tree", priority: "0.5", changefreq: "monthly" },

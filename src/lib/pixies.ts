@@ -25,6 +25,9 @@ export interface Pixie {
   mimeType: string;
   sizeBytes: number;
   durationSeconds: number | null;
+  /** Frame size of the stored rendition; null until the encode pass records it. */
+  width: number | null;
+  height: number | null;
   likesCount: number;
   likedByMe: boolean;
   commentsCount: number;
