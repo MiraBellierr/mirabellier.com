@@ -42,7 +42,7 @@ export function rememberPostLoginRedirect(path: string): void {
  * usable stored, so callers can default to the home page.
  */
 export function consumePostLoginRedirect(): string | null {
-  let stored: string | null = null;
+  let stored: string | null;
   try {
     stored = sessionStorage.getItem(STORAGE_KEY);
     sessionStorage.removeItem(STORAGE_KEY);

@@ -9,13 +9,20 @@ export default tseslint.config([
   globalIgnores(["dist"]),
   {
     files: ["**/*.{ts,tsx}"],
+    plugins: {
+      "react-hooks": reactHooks,
+    },
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
-      reactHooks.configs["recommended-latest"],
       reactRefresh.configs.vite,
     ],
     rules: {
+      // eslint-plugin-react-hooks v7's recommended preset now bundles the whole
+      // React Compiler rule suite. Stick to the two classic rules we've always
+      // enforced (this matches v5's "recommended-latest").
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "react-refresh/only-export-components": [
         "warn",
