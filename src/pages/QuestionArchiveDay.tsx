@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import Footer from "../parts/Footer";
 import Header from "../parts/Header";
@@ -7,20 +7,20 @@ import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
-import { resolveAsset } from "@/lib/blog-utils";
+import QuestionAnswerCard from "@/components/QuestionAnswerCard";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import {
+  useHighlightedQuestionAnswer,
+  useShareQuestionAnswer,
+} from "@/hooks/use-question-answer-share";
 import {
   deleteQuestionOfTheDayAnswer,
   fetchQuestionOfTheDayArchiveDay,
   type QuestionOfTheDayArchiveDayPayload,
 } from "@/lib/question-of-the-day-api";
 import { usePageSeo } from "@/lib/seo";
-import {
-  formatQuestionAnswerTime,
-  formatQuestionRecordedDate,
-  getQuestionAnswerDisplayName,
-} from "@/lib/question-of-the-day-ui";
+import { formatQuestionRecordedDate } from "@/lib/question-of-the-day-ui";
 import { canModerateQuestionOfTheDay } from "@/lib/user-permissions";
 import { useConfirm } from "@/states/ConfirmContext";
 
@@ -28,6 +28,9 @@ const QuestionArchiveDay = () => {
   const auth = useOptionalAuth();
   const { confirm } = useConfirm();
   const { recordedDate = "" } = useParams<{ recordedDate: string }>();
+  const [searchParams] = useSearchParams();
+  const sharedAnswerId = searchParams.get("answer");
+  const shareAnswer = useShareQuestionAnswer();
   const [data, setData] = useState<QuestionOfTheDayArchiveDayPayload | null>(
     null,
   );
@@ -36,6 +39,10 @@ const QuestionArchiveDay = () => {
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const isOwner = canModerateQuestionOfTheDay(auth?.user);
+  const highlightedAnswerId = useHighlightedQuestionAnswer(
+    sharedAnswerId,
+    Boolean(data?.answers?.some((entry) => entry.id === sharedAnswerId)),
+  );
   const archiveDayLoadErrorMessage = useMemo(
     () => getFriendlyFetchMessage("Archived question day", error),
     [error],
@@ -219,70 +226,20 @@ const QuestionArchiveDay = () => {
 
                   {data.answers.length ? (
                     <div className="space-y-4">
-                      {data.answers.map((entry, index) => {
-                        const avatar = resolveAsset(entry.user?.avatar);
-                        const displayName = getQuestionAnswerDisplayName(entry);
-
-                        return (
-                          <article
-                            key={entry.id}
-                            className={`${index > 0 ? "border-t border-blue-100 pt-4" : ""}`}
-                          >
-                            <div className="flex items-start gap-3">
-                              {avatar ? (
-                                <img
-                                  src={avatar}
-                                  alt={displayName}
-                                  className="h-11 w-11 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-xs font-bold uppercase text-blue-600">
-                                  {displayName.slice(0, 2)}
-                                </div>
-                              )}
-
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {entry.user?.username ? (
-                                    <Link
-                                      to={`/profile/${entry.user.username}`}
-                                      className="font-semibold text-blue-700 hover:underline"
-                                    >
-                                      {displayName}
-                                    </Link>
-                                  ) : (
-                                    <span className="font-semibold text-blue-700">
-                                      {displayName}
-                                    </span>
-                                  )}
-                                </div>
-
-                                <p className="mt-1 text-xs text-blue-400">
-                                  {formatQuestionAnswerTime(entry.createdAt)}
-                                </p>
-                                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                                  {entry.answer}
-                                </p>
-                              </div>
-
-                              {isOwner ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void handleDeleteAnswer(entry.id)
-                                  }
-                                  disabled={deletingAnswerId === entry.id}
-                                  className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  {deletingAnswerId === entry.id
-                                    ? "Deleting..."
-                                    : "Delete"}
-                                </button>
-                              ) : null}
-                            </div>
-                          </article>
-                        );
-                      })}
+                      {data.answers.map((entry, index) => (
+                        <QuestionAnswerCard
+                          key={entry.id}
+                          answer={entry}
+                          showTopBorder={index > 0}
+                          highlighted={highlightedAnswerId === entry.id}
+                          onShare={(answer) => void shareAnswer(answer)}
+                          canModerate={isOwner}
+                          onDelete={(answerId) =>
+                            void handleDeleteAnswer(answerId)
+                          }
+                          deleting={deletingAnswerId === entry.id}
+                        />
+                      ))}
                     </div>
                   ) : (
                     <AsyncStateCard

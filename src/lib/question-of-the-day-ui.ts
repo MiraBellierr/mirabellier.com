@@ -40,3 +40,12 @@ export function formatQuestionAnswerTime(createdAt: string) {
 export function getQuestionAnswerDisplayName(answer: QuestionOfTheDayAnswer) {
   return answer.user?.username || answer.guestName || "Anonymous";
 }
+
+export function buildQuestionAnswerShareUrl(answerId: string) {
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "https://mirabellier.com";
+
+  return `${origin}/question-of-the-day/answers/${encodeURIComponent(answerId)}`;
+}

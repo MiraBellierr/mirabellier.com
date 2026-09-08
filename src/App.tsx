@@ -161,6 +161,10 @@ function App() {
       <Route path="/quotes" element={<Quotes />} />
       <Route path="/question-of-the-day" element={<QuestionOfTheDay />} />
       <Route
+        path="/question-of-the-day/answers/:id"
+        element={<QuestionOfTheDay />}
+      />
+      <Route
         path="/question-of-the-day/archive"
         element={<QuestionArchive />}
       />
