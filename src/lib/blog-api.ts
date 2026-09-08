@@ -22,10 +22,11 @@ async function readErrorText(response: Response) {
   }
 }
 
-export const fetchPosts = async (): Promise<Post[]> => {
+export const fetchPosts = async (signal?: AbortSignal): Promise<Post[]> => {
   const response = await fetch(`${API_BASE}/posts`, {
     cache: "no-store",
     credentials: "include",
+    signal,
   });
   if (!response.ok) {
     throw new Error("Failed to fetch posts");
@@ -34,10 +35,14 @@ export const fetchPosts = async (): Promise<Post[]> => {
   return Array.isArray(data) ? data.map(normalizePost) : [];
 };
 
-export const fetchPost = async (id: string | number): Promise<Post> => {
+export const fetchPost = async (
+  id: string | number,
+  signal?: AbortSignal,
+): Promise<Post> => {
   const response = await fetch(`${API_BASE}/posts/${id}`, {
     cache: "no-store",
     credentials: "include",
+    signal,
   });
   if (!response.ok) {
     throw new Error("Failed to fetch post");

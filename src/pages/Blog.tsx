@@ -157,27 +157,33 @@ const Blog = () => {
     navigate({ search: params.toString() }, { replace: true });
   }, [searchTerm, navigate]);
 
-  const loadPosts = useCallback(async () => {
+  const loadPosts = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
 
     try {
-      const data = await fetchPosts();
+      const data = await fetchPosts(signal);
       setPosts(data);
       setFilteredPosts(data);
       setError(null);
     } catch (err) {
+      // A load aborted because the view unmounted must not touch state.
+      if (signal?.aborted || (err instanceof Error && err.name === "AbortError")) {
+        return;
+      }
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("An unknown error occurred while loading posts");
       }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadPosts();
+    const controller = new AbortController();
+    void loadPosts(controller.signal);
+    return () => controller.abort();
   }, [loadPosts]);
 
   const handleDelete = async (id: string | number) => {

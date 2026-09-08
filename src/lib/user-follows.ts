@@ -7,10 +7,13 @@ export interface FollowState {
   followingCount?: number;
 }
 
-export async function fetchFollowState(userId: string): Promise<FollowState> {
+export async function fetchFollowState(
+  userId: string,
+  signal?: AbortSignal,
+): Promise<FollowState> {
   const res = await fetch(
     `${API_BASE}/user/${encodeURIComponent(userId)}/follow`,
-    { credentials: "include", cache: "no-store" },
+    { credentials: "include", cache: "no-store", signal },
   );
   if (!res.ok) throw new Error("Failed to load follow state");
   return res.json() as Promise<FollowState>;

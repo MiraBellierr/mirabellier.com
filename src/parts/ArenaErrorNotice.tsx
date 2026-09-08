@@ -1,4 +1,7 @@
 import maintenanceImage from "@/assets/maintenance.jpg";
+// Rendered on Arena pages and AdminArenaUpdates (which has no ArenaSubNav);
+// pulls the shared Arena stylesheet so `.arena-duel-maintenance` resolves there.
+import "@/styles/arena.css";
 
 type ArenaErrorNoticeProps = {
   message: string;

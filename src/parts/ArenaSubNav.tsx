@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useWebSocketEvent } from "@/hooks/use-websocket";
+// Arena/TCG stylesheet, split out of the global entry CSS. ArenaSubNav renders
+// on every Arena and TCG route, so importing it here scopes the ~53kB of
+// card / pack / title CSS to those routes' chunks.
+import "@/styles/arena.css";
 
 type NavLink = { slug: string; label: string };
 type NavGroup = { name: string; links: NavLink[] };

@@ -105,24 +105,30 @@ const Guestbook = () => {
     },
   });
 
-  const loadEntries = useCallback(async () => {
+  const loadEntries = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
 
     try {
-      const data = await fetchGuestbookEntries();
+      const data = await fetchGuestbookEntries(signal);
       setEntries(data);
       setLoadError(null);
     } catch (err) {
+      // A load aborted because the view unmounted must not touch state.
+      if (signal?.aborted || (err instanceof Error && err.name === "AbortError")) {
+        return;
+      }
       setLoadError(
         err instanceof Error ? err.message : "Failed to load guestbook entries",
       );
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadEntries();
+    const controller = new AbortController();
+    void loadEntries(controller.signal);
+    return () => controller.abort();
   }, [loadEntries]);
 
   useEffect(() => {

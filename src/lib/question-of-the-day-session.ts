@@ -1,3 +1,12 @@
+// The guest token is minted and stored *by the client*, so it is not a
+// trustworthy "one answer per person" guard — clearing localStorage or sending a
+// fresh `qotd:guest:<random>` value lets the same visitor answer again. The
+// per-IP write cap in app.js is the only real limit.
+//
+// This is accepted: the "already answered" check and answer count are a
+// courtesy, not an integrity boundary. Making them meaningful would mean keying
+// guest answers on a server-issued signed cookie (see `signSessionId` in
+// mirabellier-backend/lib/users.js) rather than a client-supplied token.
 const QUESTION_GUEST_STORAGE_KEY = "mirabellier.qotd_guest_token";
 const QUESTION_GUEST_TOKEN_PATTERN = /^qotd:guest:[a-z0-9-]{12,}$/i;
 

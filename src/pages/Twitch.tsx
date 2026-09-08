@@ -13,6 +13,7 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import { usePageSeo } from "@/lib/seo";
+import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import "@/styles/shrine.css";
 import {
   TwitchApiError,
@@ -826,22 +827,24 @@ function NotifyButton({
   useEffect(() => {
     if (permission === "unsupported" || permission !== "granted") return;
 
-    let cancelled = false;
+    const controller = new AbortController();
     const restore = async () => {
       try {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
         if (!subscription) return;
-        const status = await fetchPushStatus(channelLogin, subscription.endpoint);
-        if (!cancelled) setSubscribed(status.subscribed);
+        const status = await fetchPushStatus(
+          channelLogin,
+          subscription.endpoint,
+          controller.signal,
+        );
+        if (!controller.signal.aborted) setSubscribed(status.subscribed);
       } catch {
         // Ignore restore failures; the button still works.
       }
     };
     void restore();
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [channelLogin, permission]);
 
   if (!supportsPushNotifications()) return null;
@@ -1187,6 +1190,9 @@ const Twitch = () => {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [profilePayload, setProfilePayload] = useState<TwitchProfilePayload | null>(null);
   const selectedLoginRef = useRef<string | null>(null);
+  const channelsRequest = useAbortableRequest();
+  const profileRequest = useAbortableRequest();
+  const predictionRequest = useAbortableRequest();
 
   usePageSeo({
     canonical: "https://mirabellier.com/twitch",
@@ -1200,27 +1206,33 @@ const Twitch = () => {
     },
   });
 
+  // All three loaders run through `useAbortableRequest`: a newer load for the
+  // same resource aborts the previous one (so a slow response can't overwrite a
+  // fresher one), and the outstanding request is aborted on unmount.
+  const refreshChannels = useCallback(
+    (withStatus: boolean) =>
+      channelsRequest(fetchTwitchChannels, {
+        onResult: (list) => {
+          setChannels(list);
+          setSelectedLogin((current) => current ?? (list[0]?.login ?? null));
+          if (withStatus) setError(null);
+        },
+        onError: (err) => {
+          if (!withStatus) return;
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load Twitch channels",
+          );
+        },
+        onSettled: () => setLoading(false),
+      }),
+    [channelsRequest],
+  );
+
   useEffect(() => {
-    let cancelled = false;
-
-    fetchTwitchChannels()
-      .then((list) => {
-        if (cancelled) return;
-        setChannels(list);
-        setSelectedLogin((current) => current ?? (list[0]?.login ?? null));
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load Twitch channels");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void refreshChannels(true);
+  }, [refreshChannels]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 30 * 1000);
@@ -1231,34 +1243,13 @@ const Twitch = () => {
     selectedLoginRef.current = selectedLogin;
   }, [selectedLogin]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      fetchTwitchChannels()
-        .then((list) => {
-          setChannels(list);
-          setSelectedLogin((current) => current ?? (list[0]?.login ?? null));
-        })
-        .catch(() => undefined);
-
-      const selected = selectedLoginRef.current;
-      if (selected) {
-        fetchTwitchPrediction(selected)
-          .then((result) => {
-            setPayload(result);
-            setError(null);
-          })
-          .catch(() => undefined);
-      }
-    }, 15 * 1000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const loadProfile = useCallback((login: string) => {
-    fetchTwitchProfile(login)
-      .then((result) => setProfilePayload(result))
-      .catch(() => undefined);
-  }, []);
+  const loadProfile = useCallback(
+    (login: string) =>
+      profileRequest((signal) => fetchTwitchProfile(login, signal), {
+        onResult: (result) => setProfilePayload(result),
+      }),
+    [profileRequest],
+  );
 
   useEffect(() => {
     if (selectedLogin) {
@@ -1277,30 +1268,58 @@ const Twitch = () => {
     return () => window.clearInterval(timer);
   }, [loadProfile]);
 
-  const loadPrediction = useCallback((login: string) => {
-    setPayload(null);
-    setError(null);
-    setLoading(true);
+  const loadPrediction = useCallback(
+    (login: string, options?: { quiet?: boolean }) => {
+      if (!options?.quiet) {
+        setPayload(null);
+        setError(null);
+        setLoading(true);
+      }
 
-    fetchTwitchPrediction(login)
-      .then((result) => setPayload(result))
-      .catch((err) => {
-        setError(
-          err instanceof TwitchApiError && err.code === "TWITCH_CONFIG_MISSING"
-            ? "Twitch predictions are not set up on the server yet. Check back soon!"
-            : err instanceof Error
-              ? err.message
-              : "Failed to load the prediction",
-        );
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      return predictionRequest(
+        (signal) => fetchTwitchPrediction(login, signal),
+        {
+          onResult: (result) => {
+            setPayload(result);
+            if (options?.quiet) setError(null);
+          },
+          onError: (err) => {
+            if (options?.quiet) return;
+            setError(
+              err instanceof TwitchApiError &&
+                err.code === "TWITCH_CONFIG_MISSING"
+                ? "Twitch predictions are not set up on the server yet. Check back soon!"
+                : err instanceof Error
+                  ? err.message
+                  : "Failed to load the prediction",
+            );
+          },
+          onSettled: () => setLoading(false),
+        },
+      );
+    },
+    [predictionRequest],
+  );
 
   useEffect(() => {
     if (selectedLogin) {
       loadPrediction(selectedLogin);
     }
   }, [selectedLogin, loadPrediction]);
+
+  // Background refresh: channel list + the selected channel's prediction every
+  // 15s, quietly (no spinner, errors ignored — the visible data just stays).
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshChannels(false);
+      const selected = selectedLoginRef.current;
+      if (selected) {
+        void loadPrediction(selected, { quiet: true });
+      }
+    }, 15 * 1000);
+
+    return () => window.clearInterval(timer);
+  }, [refreshChannels, loadPrediction]);
 
   const selectedChannel = channels.find(
     (channel) => channel.login === selectedLogin,

@@ -111,10 +111,13 @@ async function readErrorText(response: Response) {
   }
 }
 
-export async function fetchGuestbookEntries(): Promise<GuestbookEntry[]> {
+export async function fetchGuestbookEntries(
+  signal?: AbortSignal,
+): Promise<GuestbookEntry[]> {
   const response = await fetch(`${API_BASE}/guestbook`, {
     cache: "no-store",
     credentials: "include",
+    signal,
   });
 
   if (!response.ok) {

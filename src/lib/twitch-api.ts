@@ -158,8 +158,11 @@ async function readApiError(response: Response, fallback: string) {
   }
 }
 
-export async function fetchTwitchChannels() {
-  const response = await fetch(joinApi("/twitch/channels"), { cache: "no-store" });
+export async function fetchTwitchChannels(signal?: AbortSignal) {
+  const response = await fetch(joinApi("/twitch/channels"), {
+    cache: "no-store",
+    signal,
+  });
 
   if (!response.ok) {
     const error = await readApiError(response, "Failed to load Twitch channels");
@@ -173,9 +176,10 @@ export async function fetchTwitchChannels() {
   return (Array.isArray(data.channels) ? data.channels : []) as TwitchChannelSummary[];
 }
 
-export async function fetchTwitchPrediction(login: string) {
+export async function fetchTwitchPrediction(login: string, signal?: AbortSignal) {
   const response = await fetch(joinApi(`/twitch/channels/${encodeURIComponent(login)}/prediction`), {
     cache: "no-store",
+    signal,
   });
 
   if (!response.ok) {
@@ -243,9 +247,10 @@ export async function backfillTwitchChannel(login: string) {
   return (await response.json()) as { ok: boolean; inserted?: number };
 }
 
-export async function fetchTwitchAccuracy(login: string) {
+export async function fetchTwitchAccuracy(login: string, signal?: AbortSignal) {
   const response = await fetch(joinApi(`/twitch/channels/${encodeURIComponent(login)}/accuracy`), {
     cache: "no-store",
+    signal,
   });
 
   if (!response.ok) {
@@ -259,9 +264,10 @@ export async function fetchTwitchAccuracy(login: string) {
   return (await response.json()) as TwitchAccuracy;
 }
 
-export async function fetchTwitchProfile(login: string) {
+export async function fetchTwitchProfile(login: string, signal?: AbortSignal) {
   const response = await fetch(joinApi(`/twitch/channels/${encodeURIComponent(login)}/profile`), {
     cache: "no-store",
+    signal,
   });
 
   if (!response.ok) {
@@ -331,10 +337,15 @@ export async function unsubscribeFromLiveNotification(
   return (await response.json()) as { ok: boolean };
 }
 
-export async function fetchPushStatus(channelLogin: string, endpoint: string) {
+export async function fetchPushStatus(
+  channelLogin: string,
+  endpoint: string,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams({ channelLogin, endpoint });
   const response = await fetch(joinApi(`/twitch/push/status?${params.toString()}`), {
     cache: "no-store",
+    signal,
   });
 
   if (!response.ok) {

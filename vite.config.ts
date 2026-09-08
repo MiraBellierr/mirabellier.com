@@ -116,6 +116,15 @@ export default defineConfig({
           const chunkId = normalizedChunkPath(id);
 
           if (chunkId.includes("/node_modules/")) {
+            // React + router: large, changes rarely. Splitting it out of the
+            // entry chunk keeps `index-*.js` under budget and lets the runtime
+            // cache it across app deploys.
+            if (
+              /\/node_modules\/(react|react-dom|scheduler)\//.test(chunkId)
+            ) {
+              return "react-vendor";
+            }
+
             if (chunkId.includes("/@tiptap/")) {
               return "tiptap-vendor";
             }
@@ -137,6 +146,11 @@ export default defineConfig({
             ) {
               return "ui-vendor";
             }
+
+            // Everything else from node_modules that isn't categorised above
+            // goes to one shared vendor chunk instead of inflating the entry
+            // chunk (or being duplicated across route chunks).
+            return "vendor";
           }
 
           if (

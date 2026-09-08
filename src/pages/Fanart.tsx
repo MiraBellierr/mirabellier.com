@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { useAbortableRequest } from "@/hooks/use-abortable-request";
 
 import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import { usePageSeo } from "@/lib/seo";
+import "@/styles/fanart.css";
 import {
   FanArtApiError,
   searchFanArt,
@@ -279,6 +282,7 @@ const Fanart = () => {
   const [selectedItem, setSelectedItem] = useState<FanArtItem | null>(null);
   const [showNsfwWarning, setShowNsfwWarning] = useState(true);
   const navigate = useNavigate();
+  const runSearchRequest = useAbortableRequest();
 
   usePageSeo({
     canonical: "https://mirabellier.com/fanart",
@@ -338,52 +342,67 @@ const Fanart = () => {
     );
   };
 
-  const activeSites = (() => {
-    if (sites.length > 0) {
-      return sites;
-    }
+  const activeSites = useMemo(
+    () =>
+      sites.length > 0
+        ? sites
+        : (["safebooru", "pixiv"] as FanArtSite[]),
+    [sites],
+  );
 
-    return ["safebooru", "pixiv"] as FanArtSite[];
-  })();
+  // Routed through `useAbortableRequest`: each new search aborts the previous
+  // in-flight one (so a slow page-1 can't land on top of page-2), and the
+  // outstanding request is aborted when the page unmounts.
+  const runSearch = useCallback(
+    (input: { query: string; page?: number }) => {
+      const trimmedQuery = input.query.trim();
+      if (!trimmedQuery) {
+        return Promise.resolve();
+      }
 
-  const runSearch = async (input: { query: string; page?: number }) => {
-    const trimmedQuery = input.query.trim();
-    if (!trimmedQuery) {
-      return;
-    }
+      setLoading(true);
+      setError(null);
+      setSelectedItem(null);
 
-    setLoading(true);
-    setError(null);
-    setSelectedItem(null);
-
-    try {
-      const payload = await searchFanArt({
-        query: trimmedQuery,
-        page: input.page ?? 1,
-        limit: PAGE_LIMIT,
-        sites: activeSites,
-        rating,
-      });
-
-      setPayloads((current) => {
-        if (input.page && input.page > 1) {
-          return [...current, payload];
-        }
-        return [payload];
-      });
-    } catch (err) {
-      setPayloads([]);
-      setError(
-        err instanceof FanArtApiError
-          ? err
-          : new FanArtApiError(
-              err instanceof Error ? err.message : "Failed to search fan art",
-            ),
+      return runSearchRequest(
+        (signal) =>
+          searchFanArt(
+            {
+              query: trimmedQuery,
+              page: input.page ?? 1,
+              limit: PAGE_LIMIT,
+              sites: activeSites,
+              rating,
+            },
+            signal,
+          ),
+        {
+          onResult: (payload) => {
+            setPayloads((current) => {
+              if (input.page && input.page > 1) {
+                return [...current, payload];
+              }
+              return [payload];
+            });
+          },
+          onError: (err) => {
+            setPayloads([]);
+            setError(
+              err instanceof FanArtApiError
+                ? err
+                : new FanArtApiError(
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to search fan art",
+                  ),
+            );
+          },
+          onSettled: () => setLoading(false),
+        },
       );
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [runSearchRequest, activeSites, rating],
+  );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

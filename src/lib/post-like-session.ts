@@ -1,3 +1,14 @@
+// Anonymous like identity is minted and stored *by the client* — it is not a
+// trustworthy per-person signal. Clearing localStorage (or just sending a fresh
+// random `x-like-anonymous-id` header) yields another like on the same post. The
+// only real limit is the 60-writes-per-minute per-IP cap in app.js.
+//
+// This is deliberate: blog like counts here are a decorative engagement hint,
+// not a metric anything depends on. If they ever need to *mean* something,
+// anonymous actions must be keyed on a server-issued signed cookie (see the
+// `signSessionId` HMAC helper in mirabellier-backend/lib/users.js) or an IP+UA
+// hash, and the backend must return a per-viewer `liked` flag instead of
+// shipping the raw actor-id array for the client to match against.
 const ANONYMOUS_LIKE_STORAGE_KEY = "mirabellier.anonymous_like_id";
 
 function canUseStorage() {

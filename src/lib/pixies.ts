@@ -79,7 +79,12 @@ export function resolveAvatarUrl(avatar?: string | null): string | null {
 
 export async function fetchPixiesFeed(
   includeId?: string,
-  options?: { limit?: number; offset?: number; interests?: string[] },
+  options?: {
+    limit?: number;
+    offset?: number;
+    interests?: string[];
+    signal?: AbortSignal;
+  },
 ): Promise<Pixie[]> {
   const params = new URLSearchParams();
   if (includeId) params.set("include", includeId);
@@ -93,6 +98,7 @@ export async function fetchPixiesFeed(
     `${API_BASE}/pixies/feed${query ? `?${query}` : ""}`,
     {
       credentials: "include",
+      signal: options?.signal,
     },
   );
   if (!res.ok) throw new Error("Failed to load pixies");
@@ -101,7 +107,7 @@ export async function fetchPixiesFeed(
 
 export async function searchPixies(
   query: string,
-  options?: { limit?: number; offset?: number },
+  options?: { limit?: number; offset?: number; signal?: AbortSignal },
 ): Promise<Pixie[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
@@ -111,6 +117,7 @@ export async function searchPixies(
   if (options?.offset) params.set("offset", String(options.offset));
   const res = await fetch(`${API_BASE}/pixies/search?${params.toString()}`, {
     credentials: "include",
+    signal: options?.signal,
   });
   if (!res.ok) throw new Error("Failed to search pixies");
   return res.json() as Promise<Pixie[]>;
@@ -119,7 +126,12 @@ export async function searchPixies(
 export type PopularWindow = "24h" | "7d" | "30d" | "all";
 
 export async function fetchPopularPixies(
-  options?: { window?: PopularWindow; limit?: number; offset?: number },
+  options?: {
+    window?: PopularWindow;
+    limit?: number;
+    offset?: number;
+    signal?: AbortSignal;
+  },
 ): Promise<Pixie[]> {
   const params = new URLSearchParams();
   if (options?.window) params.set("window", options.window);
@@ -130,6 +142,7 @@ export async function fetchPopularPixies(
     `${API_BASE}/pixies/popular${query ? `?${query}` : ""}`,
     {
       credentials: "include",
+      signal: options?.signal,
     },
   );
   if (!res.ok) throw new Error("Failed to load popular pixies");
@@ -138,7 +151,7 @@ export async function fetchPopularPixies(
 
 /** Newest clips from accounts the signed-in viewer follows. */
 export async function fetchFollowingPixies(
-  options?: { limit?: number; offset?: number },
+  options?: { limit?: number; offset?: number; signal?: AbortSignal },
 ): Promise<Pixie[]> {
   const params = new URLSearchParams();
   if (options?.limit != null) params.set("limit", String(options.limit));
@@ -146,7 +159,7 @@ export async function fetchFollowingPixies(
   const query = params.toString();
   const res = await fetch(
     `${API_BASE}/pixies/following${query ? `?${query}` : ""}`,
-    { credentials: "include" },
+    { credentials: "include", signal: options?.signal },
   );
   if (!res.ok) throw new Error("Failed to load following feed");
   return res.json() as Promise<Pixie[]>;
@@ -163,9 +176,13 @@ export async function markPixieViewed(id: string): Promise<void> {
   }
 }
 
-export async function fetchUserPixies(userId: string): Promise<Pixie[]> {
+export async function fetchUserPixies(
+  userId: string,
+  signal?: AbortSignal,
+): Promise<Pixie[]> {
   const res = await fetch(`${API_BASE}/pixies/user/${userId}`, {
     credentials: "include",
+    signal,
   });
   if (!res.ok) throw new Error("Failed to load pixies");
   return res.json() as Promise<Pixie[]>;
@@ -227,9 +244,11 @@ export function readVideoDuration(file: File): Promise<number | null> {
   });
 }
 
-export async function fetchVideoTagSuggestions(): Promise<string[]> {
+export async function fetchVideoTagSuggestions(
+  signal?: AbortSignal,
+): Promise<string[]> {
   try {
-    const res = await fetch(`${API_BASE}/pixies/tags`);
+    const res = await fetch(`${API_BASE}/pixies/tags`, { signal });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;
     return Array.isArray(data)
@@ -536,9 +555,12 @@ export async function enqueuePixieImport(
 }
 
 /** Current queue: running + waiting first, then recently finished. */
-export async function fetchPixieImportQueue(): Promise<PixieImportQueueItem[]> {
+export async function fetchPixieImportQueue(
+  signal?: AbortSignal,
+): Promise<PixieImportQueueItem[]> {
   const data = await importQueueRequest<{ items: PixieImportQueueItem[] }>(
     "/pixies/admin/import/queue",
+    { signal },
   );
   return data.items;
 }
@@ -607,8 +629,11 @@ export async function pollVideoJob(
   }
 }
 
-export async function fetchPixieComments(id: string): Promise<PixieComment[]> {
-  const res = await fetch(`${API_BASE}/pixies/${id}/comments`);
+export async function fetchPixieComments(
+  id: string,
+  signal?: AbortSignal,
+): Promise<PixieComment[]> {
+  const res = await fetch(`${API_BASE}/pixies/${id}/comments`, { signal });
   if (!res.ok) throw new Error("Failed to load comments");
   return res.json() as Promise<PixieComment[]>;
 }

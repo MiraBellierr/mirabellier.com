@@ -88,9 +88,14 @@ const Profile = () => {
     setLoading(true);
     setError(null);
 
+    const controller = new AbortController();
+    const { signal } = controller;
+    const ignore = (err: unknown) =>
+      signal.aborted || (err instanceof Error && err.name === "AbortError");
+
     if (username) {
       // Fetch user by username
-      fetch(`${API_BASE}/user/by-username/${username}`)
+      fetch(`${API_BASE}/user/by-username/${username}`, { signal })
         .then((res) => {
           if (!res.ok) throw new Error("User not found");
           return res.json();
@@ -98,7 +103,7 @@ const Profile = () => {
         .then((userData) => {
           setProfileUser(userData);
           // Fetch stats for this user
-          return fetch(`${API_BASE}/user/${userData.id}/stats`);
+          return fetch(`${API_BASE}/user/${userData.id}/stats`, { signal });
         })
         .then((res) => res.json())
         .then((data) => {
@@ -106,6 +111,7 @@ const Profile = () => {
           setLoading(false);
         })
         .catch((err) => {
+          if (ignore(err)) return;
           // eslint-disable-next-line no-console
           console.error("Failed to fetch user:", err);
           setError(err.message || "User not found");
@@ -113,13 +119,14 @@ const Profile = () => {
         });
     } else if (auth.user) {
       // Fetch stats for logged-in user
-      fetch(`${API_BASE}/user/${auth.user.id}/stats`)
+      fetch(`${API_BASE}/user/${auth.user.id}/stats`, { signal })
         .then((res) => res.json())
         .then((data) => {
           setStats(data);
           setLoading(false);
         })
         .catch((err) => {
+          if (ignore(err)) return;
           // eslint-disable-next-line no-console
           console.error("Failed to fetch stats:", err);
           setLoading(false);
@@ -127,6 +134,8 @@ const Profile = () => {
     } else {
       setLoading(false);
     }
+
+    return () => controller.abort();
   }, [username, auth.user]);
 
   const resolveAsset = (val?: string | null) => {
@@ -154,24 +163,22 @@ const Profile = () => {
       setVideosLoading(false);
       return;
     }
-    let cancelled = false;
+    const controller = new AbortController();
     setVideosLoading(true);
-    fetchUserPixies(user.id)
+    fetchUserPixies(user.id, controller.signal)
       .then((pixies) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setVideos(pixies);
         setVideosPage(1);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setVideos([]);
       })
       .finally(() => {
-        if (!cancelled) setVideosLoading(false);
+        if (!controller.signal.aborted) setVideosLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [user?.id]);
 
   // Follow relationship + follower count for the displayed profile.
@@ -180,17 +187,15 @@ const Profile = () => {
       setFollow(null);
       return;
     }
-    let cancelled = false;
-    fetchFollowState(user.id)
+    const controller = new AbortController();
+    fetchFollowState(user.id, controller.signal)
       .then((state) => {
-        if (!cancelled) setFollow(state);
+        if (!controller.signal.aborted) setFollow(state);
       })
       .catch(() => {
-        if (!cancelled) setFollow(null);
+        if (!controller.signal.aborted) setFollow(null);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [user?.id, auth.user]);
 
   const handleToggleFollow = async () => {

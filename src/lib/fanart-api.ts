@@ -137,13 +137,16 @@ async function readApiError(response: Response) {
   }
 }
 
-export async function searchFanArt(input: {
-  query: string;
-  page?: number;
-  limit?: number;
-  sites?: FanArtSite[];
-  rating?: "safe" | "all";
-}) {
+export async function searchFanArt(
+  input: {
+    query: string;
+    page?: number;
+    limit?: number;
+    sites?: FanArtSite[];
+    rating?: "safe" | "all";
+  },
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams({
     query: input.query,
     page: String(input.page ?? 1),
@@ -157,6 +160,7 @@ export async function searchFanArt(input: {
 
   const response = await fetch(joinApi(`/fanart/search?${params.toString()}`), {
     cache: "no-store",
+    signal,
   });
 
   if (!response.ok) {

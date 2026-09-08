@@ -437,6 +437,7 @@ const Pixies = () => {
   const activeIndexRef = useRef(0);
   const lastActiveIndexRef = useRef(-1);
   const commentPanelOpenRef = useRef(false);
+  const commentsAbortRef = useRef<AbortController | null>(null);
   const shareOpenRef = useRef(false);
   const touchStartRef = useRef<{ y: number } | null>(null);
   const wheelAccumRef = useRef(0);
@@ -509,7 +510,8 @@ const Pixies = () => {
   });
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    const { signal } = controller;
     fetchingMoreRef.current = false;
     lastActiveIndexRef.current = -1;
     activeIndexRef.current = 0;
@@ -536,34 +538,35 @@ const Pixies = () => {
     // Search tab with no submitted query yet: show the prompt, fetch nothing.
     if (tab === "search" && !submittedQuery) {
       setLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return () => controller.abort();
     }
 
     // Following tab needs a signed-in viewer; otherwise show the empty state.
     if (tab === "following" && !auth?.user) {
       setLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return () => controller.abort();
     }
 
     const request =
       tab === "popular"
-        ? fetchPopularPixies({ window: popularWindow, limit: FEED_BATCH_SIZE })
+        ? fetchPopularPixies({
+            window: popularWindow,
+            limit: FEED_BATCH_SIZE,
+            signal,
+          })
         : tab === "search"
-          ? searchPixies(submittedQuery, { limit: FEED_BATCH_SIZE })
+          ? searchPixies(submittedQuery, { limit: FEED_BATCH_SIZE, signal })
           : tab === "following"
-            ? fetchFollowingPixies({ limit: FEED_BATCH_SIZE })
+            ? fetchFollowingPixies({ limit: FEED_BATCH_SIZE, signal })
             : fetchPixiesFeed(sharedVideoId, {
                 limit: FEED_BATCH_SIZE,
                 interests,
+                signal,
               });
 
     request
       .then((data) => {
-        if (cancelled) return;
+        if (signal.aborted) return;
         setPixies(data);
         setHasMore(data.length >= FEED_BATCH_SIZE);
         if (tab === "fyp" && sharedVideoId) {
@@ -576,7 +579,7 @@ const Pixies = () => {
         setLoading(false);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (signal.aborted) return;
         setError(
           tab === "search"
             ? "Could not run that search"
@@ -584,9 +587,7 @@ const Pixies = () => {
         );
         setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [sharedVideoId, tab, submittedQuery, popularWindow, interests, auth?.user]);
 
   // Fetch the next batch in real time once we get within 2 videos of the end.
@@ -598,6 +599,8 @@ const Pixies = () => {
     if (tab === "search" && !submittedQuery) return;
     if (tab === "following" && !auth?.user) return;
     fetchingMoreRef.current = true;
+    const controller = new AbortController();
+    const { signal } = controller;
     // Offset pagination: the server slices the (deterministic within a session)
     // ordering from here instead of us shipping an ever-growing exclude list.
     // The client-side `fresh` filter below still dedupes any drift.
@@ -608,21 +611,25 @@ const Pixies = () => {
             window: popularWindow,
             limit: FEED_BATCH_SIZE,
             offset,
+            signal,
           })
         : tab === "search"
           ? searchPixies(submittedQuery, {
               limit: FEED_BATCH_SIZE,
               offset,
+              signal,
             })
           : tab === "following"
-            ? fetchFollowingPixies({ limit: FEED_BATCH_SIZE, offset })
+            ? fetchFollowingPixies({ limit: FEED_BATCH_SIZE, offset, signal })
             : fetchPixiesFeed(sharedVideoId, {
                 limit: FEED_BATCH_SIZE,
                 offset,
                 interests,
+                signal,
               });
     request
       .then((data) => {
+        if (signal.aborted) return;
         setHasMore(data.length >= FEED_BATCH_SIZE);
         setPixies((current) => {
           const known = new Set(current.map((pixie) => pixie.id));
@@ -634,8 +641,15 @@ const Pixies = () => {
         // Keep hasMore so the next scroll retries the fetch.
       })
       .finally(() => {
-        fetchingMoreRef.current = false;
+        if (!signal.aborted) fetchingMoreRef.current = false;
       });
+    return () => {
+      // Reset the in-flight guard here (not from the aborted promise's
+      // `finally`, which could clobber a newer fetch) so the next run is free
+      // to paginate again.
+      controller.abort();
+      fetchingMoreRef.current = false;
+    };
   }, [
     activeIndex,
     pixies,
@@ -667,16 +681,20 @@ const Pixies = () => {
     if (!author?.id || !auth?.user || author.id === auth.user.id) return;
     if (fetchedFollowRef.current.has(author.id)) return;
     fetchedFollowRef.current.add(author.id);
-    fetchFollowState(author.id)
+    const controller = new AbortController();
+    fetchFollowState(author.id, controller.signal)
       .then((state) => {
+        if (controller.signal.aborted) return;
         setFollowState((current) => ({
           ...current,
           [author.id]: state.following,
         }));
       })
       .catch(() => {
+        // Allow a later retry (whether this failed or was aborted on unmount).
         fetchedFollowRef.current.delete(author.id);
       });
+    return () => controller.abort();
   }, [activeIndex, pixies, auth?.user]);
 
   const handleFollow = async (pixie: Pixie) => {
@@ -1411,19 +1429,25 @@ const Pixies = () => {
     setCommentLikeOverrides({});
     setReplyingTo(null);
     setExpandedThreads(new Set());
+    commentsAbortRef.current?.abort();
+    const controller = new AbortController();
+    commentsAbortRef.current = controller;
     try {
-      const loaded = await fetchPixieComments(pixie.id);
-      if (commentPanelOpenRef.current) setComments(loaded);
+      const loaded = await fetchPixieComments(pixie.id, controller.signal);
+      if (commentPanelOpenRef.current && !controller.signal.aborted) {
+        setComments(loaded);
+      }
     } catch {
-      showToast("Could not load comments");
+      if (!controller.signal.aborted) showToast("Could not load comments");
     } finally {
-      setCommentsLoading(false);
+      if (!controller.signal.aborted) setCommentsLoading(false);
     }
   };
 
   const closeComments = useCallback(() => {
     setCommentPanelOpen(false);
     commentPanelOpenRef.current = false;
+    commentsAbortRef.current?.abort();
     setComments([]);
     setCommentText("");
     setCommentLikeOverrides({});
