@@ -228,9 +228,9 @@ const AdminTwitch = () => {
           <main className="w-full lg:w-3/5 p-4">
             <section className="card-border p-6 bg-white/55">
               <div className="text-center">
-                <h1 className="text-2xl font-bold text-blue-700">
+                <h2 className="text-2xl font-bold text-blue-700">
                   twitch channel admin
-                </h1>
+                </h2>
                 <p className="mt-2 text-sm text-blue-500">
                   Add channels to track on the{" "}
                   <Link to="/twitch" className="font-bold underline">

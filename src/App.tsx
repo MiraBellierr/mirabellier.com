@@ -55,6 +55,7 @@ const PixieUpload = lazy(() => import("./pages/PixieUpload"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 const CursorManager = lazy(() => import("./parts/CursorManager"));
 const InteractiveUiChrome = lazy(() => import("./parts/InteractiveUiChrome"));
 const ArenaCompensationPopup = lazy(
@@ -226,6 +227,7 @@ function App() {
       />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 

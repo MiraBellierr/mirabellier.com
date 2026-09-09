@@ -239,6 +239,8 @@ const Navigation = () => {
                           src={item.icon}
                           alt=""
                           aria-hidden="true"
+                          width="16"
+                          height="16"
                         />
                         <Link
                           aria-current={active ? "page" : undefined}
@@ -256,6 +258,8 @@ const Navigation = () => {
                           src={item.icon}
                           alt=""
                           aria-hidden="true"
+                          width="16"
+                          height="16"
                         />
                       </div>
 
@@ -322,6 +326,8 @@ const Navigation = () => {
                       src={avatarSrc}
                       alt={`${auth.user.username} avatar`}
                       className="h-8 w-8 rounded-full"
+                      width="32"
+                      height="32"
                     />
                   ) : (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-200 text-xs uppercase text-blue-700 dark:bg-purple-800 dark:text-purple-100">

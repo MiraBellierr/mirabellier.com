@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import CharacterShrinePage, {
   type CharacterShrineData,
 } from "@/components/CharacterShrinePage";
+import { enrichShrineImages } from "@/lib/shrine-images";
 
 function readPreviewPayload() {
   try {
@@ -29,7 +30,7 @@ const AdminShrinePreview = () => {
     );
   }
 
-  return <CharacterShrinePage shrine={payload} />;
+  return <CharacterShrinePage shrine={enrichShrineImages(payload)} />;
 };
 
 export default AdminShrinePreview;

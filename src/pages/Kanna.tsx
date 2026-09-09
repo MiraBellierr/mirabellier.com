@@ -1,6 +1,7 @@
 import CharacterShrinePage, {
   type CharacterShrineData,
 } from "@/components/CharacterShrinePage";
+import { shrineImg, SHRINE_SIZES } from "@/lib/shrine-images";
 
 const shrine: CharacterShrineData = {
   canonical: "https://mirabellier.com/shrine/kanna",
@@ -25,12 +26,12 @@ const shrine: CharacterShrineData = {
       "Small, sleepy, electric, and impossible not to adore, Kanna brings the exact kind of quiet warmth that can make even the softest scene feel unforgettable.",
     supportingImages: [
       {
-        src: "/kanna1.jpg",
+        ...shrineImg("kanna1", SHRINE_SIZES.gallery),
         alt: "Kanna Kamui smiling in a soft shrine image",
         caption: "",
       },
       {
-        src: "/kanna2.jpg",
+        ...shrineImg("kanna2", SHRINE_SIZES.gallery),
         alt: "Kanna Kamui portrait with cool tones",
         caption: "The tiny-dragon stare that can win any room instantly.",
       },
@@ -219,12 +220,12 @@ const shrine: CharacterShrineData = {
       note: "Key visuals and polished promo-style pieces that let the costume and palette breathe.",
       items: [
         {
-          src: "/kanna-oa1.jpg",
+          ...shrineImg("kanna-oa1", SHRINE_SIZES.gallery),
           alt: "Kanna Kamui poster art",
           caption: "Poster-style art with the full soft-thunder vibe intact.",
         },
         {
-          src: "/kanna-oa2.jpg",
+          ...shrineImg("kanna-oa2", SHRINE_SIZES.gallery),
           alt: "Kanna Kamui key art style image",
           caption: "A bright character image that feels instantly shrine-worthy.",
         },
@@ -235,12 +236,12 @@ const shrine: CharacterShrineData = {
       note: "The sleepy eyes, tiny smiles, and little changes in posture are where so much of her charm actually lives.",
       items: [
         {
-          src: "/kanna-cu1.jpg",
+          ...shrineImg("kanna-cu1", SHRINE_SIZES.gallery),
           alt: "Kanna Kamui close-up still",
           caption: "Reserved, observant, and cute enough to stop time.",
         },
         {
-          src: "/kanna-cu2.jpg",
+          ...shrineImg("kanna-cu2", SHRINE_SIZES.gallery),
           alt: "Kanna Kamui still image with softer blue lighting",
           caption: "The quiet, clouded mood that fits her perfectly.",
         },
@@ -251,12 +252,12 @@ const shrine: CharacterShrineData = {
       note: "A growing collection of fanart that captures the spirit of Kanna's design and personality.",
       items: [
         {
-          src: "/kanna-fa1.jpg",
+          ...shrineImg("kanna-fa1", SHRINE_SIZES.gallery),
           alt: "Kanna Kamui close-up still",
           caption: "Reserved, observant, and cute enough to stop time.",
         },
         {
-          src: "/kanna-fa2.jpg",
+          ...shrineImg("kanna-fa2", SHRINE_SIZES.gallery),
           alt: "Kanna Kamui still image with softer blue lighting",
           caption: "The quiet, clouded mood that fits her perfectly.",
         },
@@ -294,7 +295,7 @@ const shrine: CharacterShrineData = {
     },
   ],
   railImage: {
-    src: "/kanna3.jpg",
+    ...shrineImg("kanna3", SHRINE_SIZES.rail),
     alt: "Kanna Kamui side rail art",
     caption: "quiet guardian of the left rail",
   },

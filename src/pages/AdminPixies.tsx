@@ -591,6 +591,8 @@ const AdminPixies = () => {
                     <img
                       src={resolvedInfo.coverUrl}
                       alt="video cover"
+                      width="96"
+                      height="56"
                       className="h-14 w-24 rounded-lg border border-blue-200 dark:border-purple-600 object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";

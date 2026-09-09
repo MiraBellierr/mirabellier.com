@@ -89,13 +89,13 @@ This frontend expects a working API at `VITE_API_BASE`. Backend setup lives in [
 - `npm run lint` - run ESLint
 - `npm run backend:dev` - run the backend app entry from the repo root
 - `npm run generate:sitemap` - regenerate sitemap data
-- `npm run predeploy` - generate sitemap and build
-- `npm run deploy` - legacy `gh-pages` publish of `dist/` (kept for manual use; see Deployment)
 - `npm run indexnow:submit-all` - submit all sitemap URLs to IndexNow
 
 ## Deployment
 
-`.github/workflows/deploy.yml` is the real path: on every push to `main`, CI installs deps, runs lint, builds the frontend, then SSH/SCPs `dist/` onto the VPS at `/var/www/mirabellier.com/current` (replacing the previous contents, `.well-known` included). The `VITE_TURNSTILE_SITE_KEY` used for the production build is set in the workflow env.
+`.github/workflows/deploy.yml` is the real path: on every push to `main` (and on pull requests) CI runs two jobs in parallel — lint + build the frontend, and the frontend `node --test` suite. On a push to `main`, once both are green, it deploys to the VPS as an atomic release. (`mirabellier-backend/` is a separate repo with its own CI/CD workflow.) The build is SCPed into `/var/www/mirabellier.com/releases/<commit-sha>/` (`.well-known` included), and only once the upload is verified is `/var/www/mirabellier.com/current` — the symlink nginx serves — flipped to the new release with a single `rename(2)`. A failed upload leaves `current` on the previous good release; the five most recent releases are kept for rollback. The `VITE_TURNSTILE_SITE_KEY` used for the production build is set in the workflow env.
+
+> First deploy after adopting this: the workflow removes the old real `current/` directory once and replaces it with the symlink. nginx must be able to follow it (`disable_symlinks` off, which is the default).
 
 ## Main route map
 

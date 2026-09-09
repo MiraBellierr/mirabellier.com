@@ -335,7 +335,7 @@
   top: 0;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(73, 43, 18, 0.18)),
-    url("/board.jpg") left top / 1199px 678px repeat;
+    url("/board.webp") left top / 1199px 678px repeat;
 }
 
 .guestbook-board-empty {
@@ -626,7 +626,7 @@
 .dark .guestbook-board-canvas {
   background:
     linear-gradient(180deg, rgba(27, 17, 9, 0.42), rgba(18, 10, 5, 0.52)),
-    url("/board.jpg") left top / 1199px 678px repeat;
+    url("/board.webp") left top / 1199px 678px repeat;
 }
 
 .dark .guestbook-board-toolbar {

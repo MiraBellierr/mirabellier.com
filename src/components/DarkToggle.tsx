@@ -60,7 +60,7 @@ const DarkToggle: React.FC = () => {
     >
       <img
         className="h-4 w-4"
-        src={isDark ? "/moon.png" : "/sun.png"}
+        src={isDark ? "/moon.webp" : "/sun.webp"}
         width="16"
         height="16"
         alt={isDark ? "moon icon" : "sun icon"}

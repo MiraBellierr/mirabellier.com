@@ -11,6 +11,7 @@ import { guestbookMoodMeta } from "@/lib/guestbook-ui";
 import { usePageSeo } from "@/lib/seo";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import "@/styles/guestbook.css";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 const moodValues = Object.keys(guestbookMoodMeta) as GuestbookMood[];
 
@@ -176,8 +177,17 @@ const GuestbookSign = () => {
                       {auth.user.avatar ? (
                         <img
                           src={resolveAsset(auth.user.avatar) || undefined}
+                          srcSet={
+                            imageWidthSrcSet(
+                              resolveAsset(auth.user.avatar),
+                              [48, 96, 192],
+                            ) || undefined
+                          }
+                          sizes="40px"
                           alt={auth.user.username}
                           className="h-10 w-10 rounded-full object-cover"
+                          width="40"
+                          height="40"
                         />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-600">

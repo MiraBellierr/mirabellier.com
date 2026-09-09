@@ -7,7 +7,7 @@ on:
     branches: [main, master]
 
 env:
-  FRONTEND_DEPLOY_PATH: /var/www/mirabellier.com/current
+  FRONTEND_BASE_PATH: /var/www/mirabellier.com
   VITE_TURNSTILE_SITE_KEY: 0x4AAAAAADnfSZ1AsWqZYErS
 
 jobs:
@@ -40,10 +40,37 @@ jobs:
           path: dist
           if-no-files-found: error
 
+  test-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          # `npm test` runs the .ts test files directly through Node's built-in
+          # type stripping, which is only on by default from Node 23.6.
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm test
+
   deploy-frontend:
-    needs: build-frontend
+    needs: [build-frontend, test-frontend]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
+
+    # Atomic release: upload into releases/<sha>/, then flip the `current`
+    # symlink in a single rename(2). The live site is never mid-copy, and a
+    # failed upload leaves `current` pointing at the previous good release.
+    env:
+      RELEASE_PATH: /var/www/mirabellier.com/releases/${{ github.sha }}
 
     steps:
       - name: Download frontend artifact
@@ -52,7 +79,7 @@ jobs:
           name: frontend-dist
           path: dist
 
-      - name: Prepare frontend directory on VPS
+      - name: Create release directory on VPS
         # Pinned to a commit SHA (v1.2.5) — this step receives VPS_SSH_KEY.
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
         with:
@@ -63,10 +90,12 @@ jobs:
           command_timeout: 30m
           script: |
             set -eu
-            mkdir -p "${{ env.FRONTEND_DEPLOY_PATH }}"
-            find "${{ env.FRONTEND_DEPLOY_PATH }}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            mkdir -p "${{ env.RELEASE_PATH }}"
+            # Re-runs of the same SHA start from empty so a file dropped in
+            # this build cannot linger from an earlier upload.
+            find "${{ env.RELEASE_PATH }}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
-      - name: Copy frontend dist to VPS
+      - name: Upload build into the release directory
         # Pinned to a commit SHA (v1.0.0) — this step receives VPS_SSH_KEY.
         uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345
         with:
@@ -77,5 +106,38 @@ jobs:
           command_timeout: 30m
           # dist/* misses dotfiles; list .well-known explicitly so security.txt ships.
           source: "dist/*,dist/.well-known/**"
-          target: "${{ env.FRONTEND_DEPLOY_PATH }}"
+          target: "${{ env.RELEASE_PATH }}"
           strip_components: 1
+
+      - name: Activate release and prune old ones
+        # Pinned to a commit SHA (v1.2.5) — this step receives VPS_SSH_KEY.
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 30m
+          script: |
+            set -eu
+            base="${{ env.FRONTEND_BASE_PATH }}"
+            release="${{ env.RELEASE_PATH }}"
+
+            # Refuse to publish an incomplete upload. `current` is untouched
+            # on failure, so the deploy is a no-op rather than an outage.
+            test -f "$release/index.html"
+
+            # One-time migration: the previous deploy made `current` a real
+            # directory; rename(2) onto a non-empty dir would fail.
+            if [ -e "$base/current" ] && [ ! -L "$base/current" ]; then
+              rm -rf "$base/current"
+            fi
+
+            # Point a temp symlink at the new release, then atomically move it
+            # over `current`. Readers see either the old or the new tree.
+            rm -f "$base/current.tmp"
+            ln -s "$release" "$base/current.tmp"
+            mv -T "$base/current.tmp" "$base/current"
+
+            # Keep the 5 most recent releases; delete the rest.
+            ls -1dt "$base"/releases/*/ 2>/dev/null | tail -n +6 | xargs -r rm -rf

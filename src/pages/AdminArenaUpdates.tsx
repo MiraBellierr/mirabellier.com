@@ -109,9 +109,9 @@ const AdminArenaUpdates = () => {
         <Header />
         <main className="mx-auto w-full max-w-3xl flex-1 p-6">
           <section className="card-border bg-white/70 p-6 text-center">
-            <h1 className="text-2xl font-bold text-blue-700">
+            <h2 className="text-2xl font-bold text-blue-700">
               {!auth.user ? "Please log in" : "Not authorized"}
-            </h1>
+            </h2>
             <Link
               to={!auth.user ? "/login" : "/"}
               className="mt-4 inline-block font-bold text-pink-500 underline"
@@ -142,9 +142,9 @@ const AdminArenaUpdates = () => {
                 <Link to="/admin" className="text-sm font-bold text-pink-500 underline">
                   ← admin home
                 </Link>
-                <h1 className="mt-2 text-3xl font-bold text-blue-700">
+                <h2 className="mt-2 text-3xl font-bold text-blue-700">
                   Arena Updates
-                </h1>
+                </h2>
                 <p className="text-sm text-blue-500">
                   Publish notices shown in the Arena home right-side panel.
                 </p>

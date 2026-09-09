@@ -12,6 +12,12 @@ export type ShrineImage = {
   src: string;
   alt: string;
   caption?: string;
+  /** Width-variant candidates for the main (non-preview) render. */
+  srcSet?: string;
+  sizes?: string;
+  /** Intrinsic size of `src`, for CLS. */
+  width?: number;
+  height?: number;
 };
 
 export type ShrineDetail = {
@@ -127,6 +133,10 @@ function PhotoCard({
       <img
         className={`${imageClassName} ${hoverPreview ? "cursor-zoom-in" : ""}`}
         src={image.src}
+        srcSet={image.srcSet}
+        sizes={image.srcSet ? image.sizes : undefined}
+        width={image.width}
+        height={image.height}
         alt={image.alt}
         loading={loading}
         fetchPriority={loading === "eager" ? "high" : undefined}
@@ -225,7 +235,7 @@ const CharacterShrinePage = ({ shrine }: CharacterShrinePageProps) => {
 
   return (
     <div className="shrine-page min-h-screen flex flex-col font-[sans-serif] text-blue-900">
-      <Header />
+      <Header title={shrine.hero.name} />
 
       <div
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
@@ -251,9 +261,9 @@ const CharacterShrinePage = ({ shrine }: CharacterShrinePageProps) => {
               <div className="grid gap-5 text-center lg:items-center">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <h1 className="site-display text-3xl font-bold text-blue-700 sm:text-4xl lg:text-5xl">
+                    <h2 className="site-display text-3xl font-bold text-blue-700 sm:text-4xl lg:text-5xl">
                       {shrine.hero.name}
-                    </h1>
+                    </h2>
                     <p className="text-base font-semibold leading-7 text-blue-500 lg:text-lg">
                       {shrine.hero.subtitle}
                     </p>

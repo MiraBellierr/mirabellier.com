@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { API_BASE } from "@/lib/config";
 import { COOKIE_SESSION_TOKEN_MARKER } from "@/lib/auth-session";
+import { clearApiCache } from "@/lib/api-cache";
 import type { AuthUserPermissions, AuthUserRole } from "@/lib/user-permissions";
 
 type User = {
@@ -76,6 +77,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }).catch(() => {});
     setUser(null);
     setToken(null);
+    // Drop the SWR cache so a shared browser starts clean on the next session.
+    clearApiCache();
   };
 
   const updateProfile = async (formData: FormData) => {

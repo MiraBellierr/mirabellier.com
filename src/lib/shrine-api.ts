@@ -1,5 +1,6 @@
 import { API_BASE } from "@/lib/config";
 import { shouldSendBearerToken } from "@/lib/auth-session";
+import { swrJson } from "@/lib/api-cache";
 import type { CharacterShrineData } from "@/components/CharacterShrinePage";
 
 export type ShrinePageRecord = {
@@ -45,18 +46,27 @@ async function parseJsonOrThrow(response: Response) {
   return response.json();
 }
 
-export async function fetchShrinePages() {
-  const response = await fetch(`${API_BASE}/shrines/pages`, {
-    credentials: "include",
-  });
-  return (await parseJsonOrThrow(response)) as ShrinePageRecord[];
+async function shrineError(response: Response) {
+  const data = await response.json().catch(() => ({}));
+  return new Error(
+    (data as { error?: string })?.error || "Request failed",
+  );
 }
 
-export async function fetchShrinePage(slug: string) {
-  const response = await fetch(`${API_BASE}/shrines/pages/${slug}`, {
-    credentials: "include",
-  });
-  return (await parseJsonOrThrow(response)) as ShrinePageRecord;
+export function fetchShrinePages() {
+  return swrJson(
+    `${API_BASE}/shrines/pages`,
+    (json) => json as ShrinePageRecord[],
+    { init: { credentials: "include" }, errorFrom: shrineError },
+  );
+}
+
+export function fetchShrinePage(slug: string) {
+  return swrJson(
+    `${API_BASE}/shrines/pages/${slug}`,
+    (json) => json as ShrinePageRecord,
+    { init: { credentials: "include" }, errorFrom: shrineError },
+  );
 }
 
 export async function createShrinePage(input: ShrineMutationInput, token: string) {

@@ -441,6 +441,8 @@ export function ArenaItemSprite({
     <img
       src={spriteUrl}
       alt={item.name}
+      width="32"
+      height="32"
       className={`h-8 w-8 rounded-md border border-blue-200 object-contain ${className}`}
       loading="lazy"
       decoding="async"

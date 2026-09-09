@@ -2,41 +2,134 @@ const sharp = require("sharp");
 const fs = require("fs");
 const path = require("path");
 
+// Prebuild: emit optimized WebP (plus per-width `srcset` variants) from source
+// rasters kept in src/assets/. Sources are never imported, so Vite never
+// bundles them; the generated .webp files are what components import. Run
+// manually after changing a source image:
+//
+//   node convert-images.cjs
+//
+// Width variants are written as `<name>-<w>w.webp` next to `<name>.webp`.
 const assetsDir = path.join(__dirname, "src", "assets");
+const shrineDir = path.join(assetsDir, "shrine");
 
-const images = [
-  { input: "light.jpg", output: "light.webp" },
-  { input: "dark.jpg", output: "dark.webp" },
+// One-off conversions, each fully specified.
+const singles = [
+  { input: "light.jpg", output: "light.webp", quality: 75 },
+  { input: "dark.jpg", output: "dark.webp", quality: 75 },
+  // Card back — only ever a small thumbnail / pack-open card.
+  {
+    input: "back-card-design.jpg",
+    output: "back-card-design.webp",
+    resize: 512,
+    quality: 80,
+  },
 ];
 
-async function convertImages() {
-  for (const img of images) {
-    const inputPath = path.join(assetsDir, img.input);
-    const outputPath = path.join(assetsDir, img.output);
+// Every source raster in src/assets/shrine/ gets a WebP primary (<=800px) plus
+// 320/480/640 variants, and one row in shrine/manifest.json with the primary's
+// intrinsic size + the widths actually emitted. Wired up via
+// src/lib/shrine-images.ts.
+const SHRINE_PRIMARY_MAX = 800;
+const SHRINE_VARIANT_WIDTHS = [320, 480, 640];
+const SHRINE_QUALITY = 78;
 
-    try {
-      // Get original file size
-      const originalStats = fs.statSync(inputPath);
-      console.log(
-        `Converting ${img.input} (${(originalStats.size / 1024).toFixed(2)} KB)...`,
-      );
+async function convertSingle(img) {
+  const inputPath = path.join(assetsDir, img.input);
+  const originalKb = fs.statSync(inputPath).size / 1024;
+  const base = sharp(inputPath).rotate();
+  const primary = img.resize
+    ? base.clone().resize({ width: img.resize, withoutEnlargement: true })
+    : base.clone();
+  const outPath = path.join(assetsDir, img.output);
+  await primary.webp({ quality: img.quality ?? 75, effort: 6 }).toFile(outPath);
+  const kb = fs.statSync(outPath).size / 1024;
+  console.log(
+    `  ✓ ${img.output} (${kb.toFixed(1)} KB, ${(100 - (kb / originalKb) * 100).toFixed(0)}% smaller)`,
+  );
+}
 
-      // Convert to WebP with aggressive compression for LCP optimization
-      await sharp(inputPath)
-        .webp({ quality: 75, effort: 6 }) // quality 75 for good balance, effort 6 for better compression
-        .toFile(outputPath);
+async function convertShrine() {
+  if (!fs.existsSync(shrineDir)) return;
+  const sources = fs
+    .readdirSync(shrineDir)
+    .filter((f) => /\.(jpe?g|png)$/i.test(f))
+    .sort();
 
-      const webpStats = fs.statSync(outputPath);
-      const savings = ((1 - webpStats.size / originalStats.size) * 100).toFixed(
-        1,
-      );
-      console.log(
-        `✓ Created ${img.output} (${(webpStats.size / 1024).toFixed(2)} KB, ${savings}% smaller)`,
-      );
-    } catch (err) {
-      console.error(`✗ Error converting ${img.input}:`, err.message);
+  const manifest = {};
+  for (const file of sources) {
+    const name = file.replace(/\.(jpe?g|png)$/i, "");
+    const inputPath = path.join(shrineDir, file);
+    const originalKb = fs.statSync(inputPath).size / 1024;
+    const base = sharp(inputPath).rotate();
+    const meta = await base.metadata();
+
+    const primaryWidth = Math.min(meta.width, SHRINE_PRIMARY_MAX);
+    const scale = primaryWidth / meta.width;
+    const primaryHeight = Math.round(meta.height * scale);
+
+    await base
+      .clone()
+      .resize({ width: primaryWidth, withoutEnlargement: true })
+      .webp({ quality: SHRINE_QUALITY, effort: 6 })
+      .toFile(path.join(shrineDir, `${name}.webp`));
+
+    const emittedWidths = [];
+    for (const w of SHRINE_VARIANT_WIDTHS) {
+      if (w >= primaryWidth) continue; // don't duplicate / upscale the primary
+      await base
+        .clone()
+        .resize({ width: w, withoutEnlargement: true })
+        .webp({ quality: SHRINE_QUALITY, effort: 6 })
+        .toFile(path.join(shrineDir, `${name}-${w}w.webp`));
+      emittedWidths.push(w);
     }
+
+    manifest[name] = {
+      w: primaryWidth,
+      h: primaryHeight,
+      variants: emittedWidths,
+    };
+
+    const totalKb =
+      (fs.statSync(path.join(shrineDir, `${name}.webp`)).size +
+        emittedWidths.reduce(
+          (sum, w) =>
+            sum + fs.statSync(path.join(shrineDir, `${name}-${w}w.webp`)).size,
+          0,
+        )) /
+      1024;
+    console.log(
+      `  ✓ shrine/${name}.webp +${emittedWidths.length} variant(s) ` +
+        `(${totalKb.toFixed(1)} KB total, source ${originalKb.toFixed(0)} KB)`,
+    );
+  }
+
+  const body = JSON.stringify(manifest, null, 2);
+  fs.writeFileSync(
+    path.join(shrineDir, "manifest.ts"),
+    "// Generated by convert-images.cjs — do not edit by hand.\n" +
+      "export type ShrineImageMeta = { w: number; h: number; variants: number[] };\n" +
+      `export const shrineManifest: Record<string, ShrineImageMeta> = ${body};\n`,
+  );
+  console.log(`  ✓ shrine/manifest.ts (${Object.keys(manifest).length} images)`);
+}
+
+async function main() {
+  console.log("Single conversions:");
+  for (const img of singles) {
+    try {
+      await convertSingle(img);
+    } catch (err) {
+      console.error(`  ✗ ${img.input}:`, err.message);
+    }
+  }
+  console.log("Shrine gallery:");
+  try {
+    await convertShrine();
+  } catch (err) {
+    console.error("  ✗ shrine:", err.message);
   }
 }
 
-convertImages().catch(console.error);
+main().catch(console.error);

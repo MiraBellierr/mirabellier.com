@@ -14,6 +14,7 @@ import {
   type ArenaMetric,
   fetchArenaLeaderboard,
 } from "@/lib/arena";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 const METRICS: Array<{ id: ArenaMetric; label: string }> = [
   { id: "elo", label: "ELO" },
@@ -140,8 +141,15 @@ const ArenaLeaderboard = () => {
                           {entry.user.avatar ? (
                             <img
                               src={entry.user.avatar}
+                              srcSet={
+                                imageWidthSrcSet(entry.user.avatar, [48, 96, 192]) ||
+                                undefined
+                              }
+                              sizes="48px"
                               alt={entry.user.username}
                               className="h-12 w-12 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                              width="48"
+                              height="48"
                               loading="lazy"
                             />
                           ) : (

@@ -24,6 +24,7 @@ import {
   type Post as PostType,
 } from "@/lib/blog-utils";
 import { fetchPosts, deletePost } from "@/lib/blog-api";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 import "@/styles/blog.css";
 
 const POST_MENU_WIDTH = 144;
@@ -349,6 +350,13 @@ const Blog = () => {
                                 {post.thumbnail ? (
                                   <img
                                     src={resolveAsset(post.thumbnail) ?? undefined}
+                                    srcSet={
+                                      imageWidthSrcSet(
+                                        resolveAsset(post.thumbnail),
+                                        [160, 320, 480],
+                                      ) || undefined
+                                    }
+                                    sizes="(min-width: 1024px) 144px, 40vw"
                                     alt={post.title || "thumbnail"}
                                     className="h-full w-full object-cover"
                                     loading={index < 2 ? "eager" : "lazy"}

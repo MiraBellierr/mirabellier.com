@@ -34,7 +34,27 @@ type UsePageSeoOptions = {
   socialMeta?: SocialMetaInput;
   resetCanonicalTo?: string;
   resetSocialMetaTo?: SocialMetaInput;
+  /**
+   * Overrides the document `robots` meta for the lifetime of the page (e.g.
+   * `"noindex,follow"` on the 404 route). The prior value is captured on
+   * mount and restored on unmount so it never leaks onto the next route.
+   */
+  robots?: string;
 };
+
+const DEFAULT_ROBOTS =
+  "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+
+function setRobotsMeta(content: string) {
+  upsertMeta("name", "robots", content);
+}
+
+function readRobotsMeta(): string {
+  const meta = document.querySelector(
+    'meta[name="robots"]',
+  ) as HTMLMetaElement | null;
+  return meta?.content || DEFAULT_ROBOTS;
+}
 
 function setCanonicalUrl(url: string) {
   const canonicalLink = document.querySelector(
@@ -111,6 +131,7 @@ export function usePageSeo({
   socialMeta,
   resetCanonicalTo = "https://mirabellier.com/",
   resetSocialMetaTo,
+  robots,
 }: UsePageSeoOptions) {
   const structuredDataJson = structuredData
     ? JSON.stringify(structuredData)
@@ -133,6 +154,11 @@ export function usePageSeo({
       appendStructuredDataScript(structuredDataId, structuredDataJson);
     }
 
+    const previousRobots = robots ? readRobotsMeta() : null;
+    if (robots) {
+      setRobotsMeta(robots);
+    }
+
     return () => {
       setCanonicalUrl(resetCanonicalTo);
 
@@ -141,11 +167,16 @@ export function usePageSeo({
       }
 
       removeStructuredDataScript(structuredDataId);
+
+      if (previousRobots !== null) {
+        setRobotsMeta(previousRobots);
+      }
     };
   }, [
     canonical,
     resetCanonicalTo,
     resetSocialMetaJson,
+    robots,
     socialMetaJson,
     structuredDataId,
     structuredDataJson,

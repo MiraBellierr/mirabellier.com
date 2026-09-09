@@ -1,4 +1,4 @@
-import cardBack from "@/assets/back-card-design.jpg";
+import cardBack from "@/assets/back-card-design.webp";
 import type { ArenaCard, TcgCard } from "@/lib/arena";
 import { ELEMENT_COLORS, type MobileTcgDrag } from "@/lib/tcg-constants";
 

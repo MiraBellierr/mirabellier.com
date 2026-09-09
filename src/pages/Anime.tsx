@@ -263,6 +263,8 @@ const Anime = () => {
                                 src={item.coverImage}
                                 alt={item.title}
                                 className="h-20 w-14 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                                width="56"
+                                height="80"
                                 loading="lazy"
                               />
                             ) : (

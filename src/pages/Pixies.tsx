@@ -477,8 +477,8 @@ const Pixies = () => {
         (sharedPixie?.title.trim() || pixiesSeoDescription),
       url: sharePageUrl,
       image: sharedPixie?.author?.avatar
-        ? (resolveAvatarUrl(sharedPixie.author.avatar) ?? `${SITE_ORIGIN}/pixies.png`)
-        : `${SITE_ORIGIN}/pixies.png`,
+        ? (resolveAvatarUrl(sharedPixie.author.avatar) ?? `${SITE_ORIGIN}/pixies.webp`)
+        : `${SITE_ORIGIN}/pixies.webp`,
       type: sharedPixie ? "video.other" : "website",
     },
     structuredDataId: "pixies-structured-data",
@@ -494,7 +494,7 @@ const Pixies = () => {
             "A short video clip on the Mirabellier community.",
           thumbnailUrl:
             resolveAvatarUrl(sharedPixie.author?.avatar) ??
-            `${SITE_ORIGIN}/pixies.png`,
+            `${SITE_ORIGIN}/pixies.webp`,
           contentUrl: resolveVideoUrl(sharedPixie.url),
           uploadDate: sharedPixie.createdAt,
           url: sharePageUrl,
@@ -504,7 +504,7 @@ const Pixies = () => {
           "@type": "WebPage",
           name: "Pixies",
           description: pixiesSeoDescription,
-          image: `${SITE_ORIGIN}/pixies.png`,
+          image: `${SITE_ORIGIN}/pixies.webp`,
           url: sharePageUrl,
         },
   });
@@ -1981,6 +1981,7 @@ const Pixies = () => {
         onTouchEnd={handleTouchEnd}
         onContextMenu={(event) => event.preventDefault()}
       >
+        <h1 className="sr-only">Pixies</h1>
       {/* Top bar — hidden while "clear display" is on */}
       {!clearDisplay && (
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 bg-gradient-to-b from-black/80 via-black/45 to-transparent px-4 pb-12 pt-4">

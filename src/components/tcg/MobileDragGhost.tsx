@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import cardBack from "@/assets/back-card-design.jpg";
+import cardBack from "@/assets/back-card-design.webp";
 import type { ArenaCard, TcgCard } from "@/lib/arena";
 import { type MobileTcgGhost } from "@/lib/tcg-constants";
 import StylePill from "@/components/tcg/StylePill";

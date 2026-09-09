@@ -350,6 +350,8 @@ const AdminShrines = () => {
                       src={form.image}
                       alt={form.imageAlt || "Shrine preview image"}
                       className="h-20 w-14 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                      width="56"
+                      height="80"
                       loading="lazy"
                     />
                   ) : (

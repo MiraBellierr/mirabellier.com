@@ -1,4 +1,5 @@
 import { joinApi } from "@/lib/config";
+import { swrJson } from "@/lib/api-cache";
 
 export type FanArtSite = "safebooru" | "pixiv";
 
@@ -158,30 +159,31 @@ export async function searchFanArt(
     params.set("sites", input.sites.join(","));
   }
 
-  const response = await fetch(joinApi(`/fanart/search?${params.toString()}`), {
-    cache: "no-store",
-    signal,
-  });
-
-  if (!response.ok) {
-    const error = await readApiError(response);
-    throw new FanArtApiError(error.message, {
-      code: error.code,
-      status: response.status,
-    });
-  }
-
-  const data = (await response.json()) as Record<string, unknown>;
-
-  return {
-    query: readString(data.query),
-    rating: readString(data.rating, "safe") === "all" ? "all" : "safe",
-    page: Math.max(Math.trunc(readNullableNumber(data.page) ?? 1), 1),
-    limit: Math.max(Math.trunc(readNullableNumber(data.limit) ?? 24), 1),
-    fetchedAt: readString(data.fetchedAt, new Date().toISOString()),
-    sites: Array.isArray(data.sites)
-      ? data.sites.map(normalizeSiteResult)
-      : [],
-    allFailed: Boolean(data.allFailed),
-  } as FanArtSearchPayload;
+  return swrJson<FanArtSearchPayload>(
+    joinApi(`/fanart/search?${params.toString()}`),
+    (json) => {
+      const data = json as Record<string, unknown>;
+      return {
+        query: readString(data.query),
+        rating: readString(data.rating, "safe") === "all" ? "all" : "safe",
+        page: Math.max(Math.trunc(readNullableNumber(data.page) ?? 1), 1),
+        limit: Math.max(Math.trunc(readNullableNumber(data.limit) ?? 24), 1),
+        fetchedAt: readString(data.fetchedAt, new Date().toISOString()),
+        sites: Array.isArray(data.sites)
+          ? data.sites.map(normalizeSiteResult)
+          : [],
+        allFailed: Boolean(data.allFailed),
+      };
+    },
+    {
+      signal,
+      errorFrom: async (response) => {
+        const error = await readApiError(response);
+        return new FanArtApiError(error.message, {
+          code: error.code,
+          status: response.status,
+        });
+      },
+    },
+  );
 }

@@ -13,6 +13,7 @@ import {
   type ArenaHallOfFameResponse,
   fetchArenaHallOfFame,
 } from "@/lib/arena";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 
 function monthLabel(month: string) {
@@ -46,7 +47,11 @@ function ChampionCard({
       {entry.avatar ? (
         <img
           src={entry.avatar}
+          srcSet={imageWidthSrcSet(entry.avatar, [48, 96, 192]) || undefined}
+          sizes="56px"
           alt={entry.username}
+          width="56"
+          height="56"
           className={`h-14 w-14 shrink-0 rounded-full border-2 object-cover ${
             idx === 0
               ? "border-amber-400"

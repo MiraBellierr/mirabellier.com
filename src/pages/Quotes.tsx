@@ -146,7 +146,7 @@ const Quotes = () => {
                 <div className="relative space-y-2">
                   <img
                     className="pointer-events-none absolute h-14 w-14 object-contain"
-                    src="/flower.png"
+                    src="/flower.webp"
                     width="56"
                     height="56"
                     alt=""
@@ -200,7 +200,7 @@ const Quotes = () => {
                 <div className="relative space-y-2">
                     <img
                       className="pointer-events-none absolute h-14 w-14 object-contain"
-                      src="/flower.png"
+                      src="/flower.webp"
                       width="56"
                       height="56"
                       alt=""

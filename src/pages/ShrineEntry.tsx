@@ -5,6 +5,7 @@ import CharacterShrinePage, {
   type CharacterShrineData,
 } from "@/components/CharacterShrinePage";
 import { fetchShrinePage } from "@/lib/shrine-api";
+import { enrichShrineImages } from "@/lib/shrine-images";
 
 const ShrineEntry = () => {
   const { slug = "" } = useParams();
@@ -26,7 +27,7 @@ const ShrineEntry = () => {
           setError("This shrine has no content payload yet.");
           return;
         }
-        setShrine(entry.payload);
+        setShrine(enrichShrineImages(entry.payload));
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Shrine not found");

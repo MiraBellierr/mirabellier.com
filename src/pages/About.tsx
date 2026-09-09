@@ -452,6 +452,8 @@ const About = () => {
                   <img
                     src={github}
                     alt="GitHub"
+                    width="16"
+                    height="16"
                     className="h-4 w-4 rounded-full"
                   />
                   <p className="text-blue-500">Github</p>
@@ -465,6 +467,8 @@ const About = () => {
                   <img
                     src={patreon}
                     alt="Patreon"
+                    width="16"
+                    height="16"
                     className="h-4 w-4 rounded-full"
                   />
                   <p className="text-blue-500">Patreon</p>
@@ -478,6 +482,8 @@ const About = () => {
                   <img
                     src={kofi}
                     alt="Ko-fi"
+                    width="16"
+                    height="16"
                     className="h-4 w-4 rounded-full"
                   />
                   <p className="text-blue-500">Ko-fi</p>

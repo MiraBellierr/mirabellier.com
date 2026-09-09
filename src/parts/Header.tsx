@@ -72,9 +72,20 @@ function resolveHeaderTitle(pathname: string): string {
   return "Mirabellier";
 }
 
-const Header = () => {
+type HeaderProps = {
+  /**
+   * The page's real subject (post title, character name, username, …). When
+   * given it becomes the page `<h1>`; otherwise the route label is used.
+   * Every page renders exactly one `<h1>` — this one — so in-page content
+   * headings must start at `<h2>`.
+   */
+  title?: string | null;
+};
+
+const Header = ({ title }: HeaderProps = {}) => {
   const location = useLocation();
-  const pageTitle = resolveHeaderTitle(location.pathname);
+  const routeTitle = resolveHeaderTitle(location.pathname);
+  const pageTitle = title?.trim() ? title.trim() : routeTitle;
 
   useEffect(() => {
     const mainElement = document.querySelector("main");

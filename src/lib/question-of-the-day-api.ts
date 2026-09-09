@@ -1,5 +1,6 @@
 import { joinApi } from "@/lib/config";
 import { shouldSendBearerToken } from "@/lib/auth-session";
+import { swrJson } from "@/lib/api-cache";
 
 export type QuestionOfTheDayUser = {
   id?: string;
@@ -244,46 +245,41 @@ export async function submitQuestionOfTheDayAnswer(input: {
   return normalizeAnswer(await response.json());
 }
 
-export async function fetchQuestionOfTheDayArchive() {
-  const response = await fetch(joinApi("/question-of-the-day/archive"), {
-    cache: "no-store",
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to load question archive");
-  }
-
-  const data = (await response.json()) as unknown[];
-  return Array.isArray(data) ? data.map(normalizeArchiveEntry) : [];
-}
-
-export async function fetchQuestionOfTheDayArchiveDay(recordedDate: string) {
-  const response = await fetch(
-    joinApi(`/question-of-the-day/archive/${encodeURIComponent(recordedDate)}`),
+export function fetchQuestionOfTheDayArchive() {
+  return swrJson(
+    joinApi("/question-of-the-day/archive"),
+    (json) => (Array.isArray(json) ? json.map(normalizeArchiveEntry) : []),
     {
-      cache: "no-store",
-      credentials: "include",
+      init: { credentials: "include" },
+      errorFrom: () => new Error("Failed to load question archive"),
     },
   );
+}
 
-  if (!response.ok) {
-    const message = await readErrorText(response);
-    throw new Error(message || "Failed to load archived question");
-  }
-
-  const data = (await response.json()) as Record<string, unknown>;
-
-  return {
-    recordedDate: readString(data.recordedDate),
-    question: normalizeQuestion(data.question),
-    answers: Array.isArray(data.answers)
-      ? data.answers.map(normalizeAnswer)
-      : [],
-    answerCount: Number.isFinite(Number(data.answerCount))
-      ? Number(data.answerCount)
-      : 0,
-  } as QuestionOfTheDayArchiveDayPayload;
+export function fetchQuestionOfTheDayArchiveDay(recordedDate: string) {
+  return swrJson<QuestionOfTheDayArchiveDayPayload>(
+    joinApi(`/question-of-the-day/archive/${encodeURIComponent(recordedDate)}`),
+    (json) => {
+      const data = json as Record<string, unknown>;
+      return {
+        recordedDate: readString(data.recordedDate),
+        question: normalizeQuestion(data.question),
+        answers: Array.isArray(data.answers)
+          ? data.answers.map(normalizeAnswer)
+          : [],
+        answerCount: Number.isFinite(Number(data.answerCount))
+          ? Number(data.answerCount)
+          : 0,
+      };
+    },
+    {
+      init: { credentials: "include" },
+      errorFrom: async (response) =>
+        new Error(
+          (await readErrorText(response)) || "Failed to load archived question",
+        ),
+    },
+  );
 }
 
 export async function fetchQuestionOfTheDayAdminQueue(

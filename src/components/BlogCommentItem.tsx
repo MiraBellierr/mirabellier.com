@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { resolveAsset, type BlogComment } from "@/lib/blog-utils";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 const MAX_COMMENT_DEPTH = 3;
 
@@ -23,6 +24,13 @@ export function BlogCommentItem({
           <div className="flex items-start gap-3">
             <img
               src={resolveAsset(author?.avatar || "/images/default-avatar.png") || undefined}
+              srcSet={
+                imageWidthSrcSet(
+                  resolveAsset(author?.avatar || "/images/default-avatar.png"),
+                  [48, 96, 192],
+                ) || undefined
+              }
+              sizes="40px"
               alt={`${author?.username || "user"} avatar`}
               className="h-10 w-10 rounded-full border border-blue-200 object-cover"
               width="40"

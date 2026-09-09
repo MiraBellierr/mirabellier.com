@@ -34,6 +34,7 @@ import {
 } from "@/lib/arena";
 import { usePageSeo } from "@/lib/seo";
 import { useConfirm } from "@/states/ConfirmContext";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 type TradeTab = "listings" | "mine" | "trade";
 
@@ -461,6 +462,8 @@ const ArenaTrade = () => {
                   <img
                     src={listing.card.imageUrl}
                     alt={listing.card.title}
+                    width="36"
+                    height="48"
                     className="h-12 w-9 shrink-0 rounded object-cover"
                   />
                   <div className="min-w-0 flex-1">
@@ -555,6 +558,8 @@ const ArenaTrade = () => {
                           <img
                             src={listing.card.imageUrl}
                             alt={listing.card.title}
+                            width="28"
+                            height="40"
                             className="h-10 w-7 shrink-0 rounded object-cover"
                           />
                           <span className="font-bold text-blue-700 truncate max-w-[120px] dark:text-purple-100">
@@ -727,6 +732,8 @@ const ArenaTrade = () => {
                           <img
                             src={card.imageUrl}
                             alt={card.title}
+                            width="28"
+                            height="40"
                             className="h-10 w-7 shrink-0 rounded object-cover"
                           />
                           <span className="truncate">
@@ -833,6 +840,8 @@ const ArenaTrade = () => {
                                   <img
                                     src={card.imageUrl}
                                     alt={card.title}
+                                    width="28"
+                                    height="40"
                                     className="h-10 w-7 shrink-0 rounded object-cover"
                                   />
                                   <span className="truncate">
@@ -1050,7 +1059,13 @@ const ArenaTrade = () => {
                     {user.avatar && (
                       <img
                         src={user.avatar}
+                        srcSet={
+                          imageWidthSrcSet(user.avatar, [48, 96, 192]) || undefined
+                        }
+                        sizes="32px"
                         alt={user.username}
+                        width="32"
+                        height="32"
                         className="h-8 w-8 rounded-full"
                       />
                     )}
@@ -1084,9 +1099,9 @@ const ArenaTrade = () => {
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4 dark:bg-slate-900/60">
               <div>
-                <h1 className="text-4xl font-bold text-blue-900 dark:text-purple-100">
+                <h2 className="text-4xl font-bold text-blue-900 dark:text-purple-100">
                   Card Trade
-                </h1>
+                </h2>
                 <p className="mt-2 text-sm font-black text-blue-800 dark:text-purple-200 sm:text-base">
                   <span className="text-pink-300">*</span> Trade cards directly
                   with other players!{" "}

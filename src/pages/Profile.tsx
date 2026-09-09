@@ -4,6 +4,7 @@ import { useToast } from "@/states/ToastContext";
 import { API_BASE } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 import {
   deletePixie,
   fetchUserPixies,
@@ -287,7 +288,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
-      <Header />
+      <Header title={user?.username} />
 
       <div
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
@@ -317,7 +318,15 @@ const Profile = () => {
                   {user.banner ? (
                     <img
                       src={resolveAsset(user.banner) || undefined}
+                      srcSet={
+                        imageWidthSrcSet(resolveAsset(user.banner), [
+                          480, 800, 1200,
+                        ]) || undefined
+                      }
+                      sizes="(min-width: 768px) 640px, 100vw"
                       alt="banner"
+                      width={640}
+                      height={192}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -340,15 +349,16 @@ const Profile = () => {
                         <AvatarImage
                           src={resolveAsset(user.avatar) || undefined}
                           alt={user.username}
+                          sizes="128px"
                           iconClassName="text-pink-400 dark:text-purple-200"
                         />
                       </div>
                     </div>
 
                     {/* Username */}
-                    <h1 className="mt-4 text-3xl font-bold text-blue-700 dark:text-purple-200 text-center">
+                    <h2 className="mt-4 text-3xl font-bold text-blue-700 dark:text-purple-200 text-center">
                       {user.username}
-                    </h1>
+                    </h2>
 
                     {/* Bio/Status */}
                     {user.bio && (

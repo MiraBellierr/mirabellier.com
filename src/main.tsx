@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { API_BASE } from "./lib/config";
+import { initTelemetry } from "./lib/telemetry";
 import "./index.css";
 
 function isIOS(): boolean {
@@ -256,6 +257,7 @@ if (!SKIP_CHUNK_RELOAD) {
 
 const initializeNonCriticalBoot = () => {
   preconnectOrigin(API_BASE);
+  initTelemetry();
 
   if (import.meta.env.PROD && "serviceWorker" in navigator && !isIOS()) {
     void navigator.serviceWorker.register("/sw.js").catch(() => {

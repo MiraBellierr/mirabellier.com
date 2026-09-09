@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 
 import type { ArenaCard } from "@/lib/arena";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
-import cardBack from "@/assets/back-card-design.jpg";
+import cardBack from "@/assets/back-card-design.webp";
 
 type CardRevealState = "stacked" | "flying" | "flipping" | "revealed";
 

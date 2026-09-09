@@ -386,6 +386,8 @@ function LiveSection({
           <img
             src={boxArtUrl}
             alt={profile.game?.name || ""}
+            width="72"
+            height="96"
             className="h-24 w-[72px] flex-shrink-0 rounded-lg shadow-sm"
             loading="lazy"
             referrerPolicy="no-referrer"
@@ -434,6 +436,8 @@ function ProfileSection({
         <img
           src={user?.profileImageUrl || channel.profileImageUrl || ""}
           alt=""
+          width="56"
+          height="56"
           className="h-14 w-14 flex-shrink-0 rounded-full shadow-sm"
         />
         <div className="min-w-0 flex-1">
@@ -756,6 +760,8 @@ function ChannelTab({
         <img
           src={channel.profileImageUrl}
           alt=""
+          width="36"
+          height="36"
           className="h-9 w-9 flex-shrink-0 rounded-full"
         />
       ) : (
@@ -1327,7 +1333,7 @@ const Twitch = () => {
 
   return (
     <div className="shrine-page min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
-      <Header />
+      <Header title={selectedChannel?.displayName} />
 
       <div
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
@@ -1347,9 +1353,9 @@ const Twitch = () => {
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">
                   twitch stream predictions
                 </p>
-                <h1 className="site-display text-3xl font-bold text-blue-700 sm:text-4xl lg:text-5xl">
+                <h2 className="site-display text-3xl font-bold text-blue-700 sm:text-4xl lg:text-5xl">
                   {selectedChannel?.displayName ?? "twitch predictions"}
-                </h1>
+                </h2>
                 <p className="text-sm font-semibold leading-7 text-blue-500">
                   {selectedChannel ? (
                     <>

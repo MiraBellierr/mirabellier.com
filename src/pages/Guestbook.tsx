@@ -32,6 +32,7 @@ import {
 } from "@/lib/guestbook-ui";
 import { canModerateGuestbook } from "@/lib/user-permissions";
 import "@/styles/guestbook.css";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 const BOARD_INITIAL_SCROLL = { left: 0, top: 0 };
 const BOARD_ZOOM_MIN = 0.7;
@@ -654,7 +655,15 @@ const Guestbook = () => {
                                     {avatar ? (
                                       <img
                                         src={avatar || undefined}
+                                        srcSet={
+                                          imageWidthSrcSet(avatar, [
+                                            48, 96, 192,
+                                          ]) || undefined
+                                        }
+                                        sizes="34px"
                                         alt={entry.author}
+                                        width="34"
+                                        height="34"
                                         className="board-note-avatar"
                                       />
                                     ) : (

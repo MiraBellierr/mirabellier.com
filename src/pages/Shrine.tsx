@@ -10,6 +10,8 @@ import Navigation from "../parts/Navigation";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 import kannaRight from "@/assets/anime/kanna-right.webp";
+import kannaShrinePreview from "@/assets/shrine/kanna1-320w.webp";
+import rossiShrinePreview from "@/assets/shrine/rossi1-320w.webp";
 import { fetchShrinePages, type ShrinePageRecord } from "@/lib/shrine-api";
 import { usePageSeo } from "@/lib/seo";
 import "@/styles/shrine.css";
@@ -18,7 +20,7 @@ const shrineEntries = [
   {
     title: "Kamui Kanna",
     path: "/shrine/kanna",
-    imageSrc: "/kanna1.jpg",
+    imageSrc: kannaShrinePreview,
     imageAlt: "Kanna shrine hallway preview",
     summary:
       "Kanna Kamui is a tiny dragon with sleepy eyes, soft cloud energy, and the kind of quiet presence that makes every scene feel warmer.",
@@ -28,7 +30,7 @@ const shrineEntries = [
   {
     title: "Rossina Wulfperl Luppino",
     path: "/shrine/rossina",
-    imageSrc: "/rossi1.jpg",
+    imageSrc: rossiShrinePreview,
     imageAlt: "Rossina shrine hallway preview",
     summary:
       "Rossina carries a sharper kind of charm: pack loyalty, red-hood gravity, and the cool control of someone already walking toward command.",
@@ -131,6 +133,8 @@ const Shrine = () => {
                         src={entry.imageSrc}
                         alt={entry.imageAlt}
                         className="h-20 w-14 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                        width="56"
+                        height="80"
                         loading={index === 0 ? "eager" : "lazy"}
                       />
 

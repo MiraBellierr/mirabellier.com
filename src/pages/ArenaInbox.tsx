@@ -324,9 +324,9 @@ const ArenaInbox = () => {
           <main className="w-full space-y-2 p-4 lg:w-3/5">
             <section className="card-border space-y-4 bg-white/60 p-4 dark:bg-slate-900/60">
               <div>
-                <h1 className="text-4xl font-bold text-blue-900 dark:text-purple-100">
+                <h2 className="text-4xl font-bold text-blue-900 dark:text-purple-100">
                   Inbox
-                </h1>
+                </h2>
                 <p className="mt-2 text-sm font-black text-blue-800 dark:text-purple-200 sm:text-base">
                   <span className="text-pink-300">*</span> Arena notifications{" "}
                   <span className="text-pink-300">*</span>

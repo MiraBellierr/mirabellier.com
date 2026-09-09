@@ -23,6 +23,7 @@ import {
 import { usePageSeo } from "@/lib/seo";
 import { useAuth } from "@/states/AuthContext";
 import "@/styles/blog.css";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 const BLOG_POST_FALLBACK_TITLE = "Mirabellier ⭐ — Cute thoughts & cozy corners";
 const BLOG_POST_FALLBACK_DESCRIPTION =
@@ -270,7 +271,7 @@ const BlogPost = () => {
 
   return (
     <div className="blog-post-page min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
-      <Header />
+      <Header title={post?.title} />
       <div
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
         style={{ backgroundImage: "var(--page-bg)" }}
@@ -304,9 +305,6 @@ const BlogPost = () => {
               ) : post ? (
                 <>
                   <div className="card-border p-4 sm:p-6 lg:p-8">
-                    <h2 className="mb-2 text-xl font-bold text-blue-700 sm:text-2xl">
-                      {post.title}
-                    </h2>
                     <p className="mb-4 flex flex-wrap items-center gap-2 text-sm text-blue-500">
                       {post.userId ? (
                         <Link
@@ -316,8 +314,17 @@ const BlogPost = () => {
                           {post.authorAvatar ? (
                             <img
                               src={resolveAsset(post.authorAvatar) || undefined}
+                              srcSet={
+                                imageWidthSrcSet(
+                                  resolveAsset(post.authorAvatar),
+                                  [48, 96, 192],
+                                ) || undefined
+                              }
+                              sizes="24px"
                               className="h-6 w-6 rounded-full"
                               alt="author avatar"
+                              width="24"
+                              height="24"
                             />
                           ) : null}
                           <span>By {post.author}</span>
@@ -327,8 +334,17 @@ const BlogPost = () => {
                           {post.authorAvatar ? (
                             <img
                               src={resolveAsset(post.authorAvatar) || undefined}
+                              srcSet={
+                                imageWidthSrcSet(
+                                  resolveAsset(post.authorAvatar),
+                                  [48, 96, 192],
+                                ) || undefined
+                              }
+                              sizes="24px"
                               className="h-6 w-6 rounded-full"
                               alt="author avatar"
+                              width="24"
+                              height="24"
                             />
                           ) : null}
                           <span>By {post.author}</span>

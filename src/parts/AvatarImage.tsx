@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
+
+// Avatars render between ~24px and ~56px; 96/192 cover 1× and 2× DPR.
+const AVATAR_SRCSET_WIDTHS = [48, 96, 192];
 
 /**
  * The `<img>` half of an avatar circle. Shows a generic "person" glyph both
@@ -19,11 +23,14 @@ export default function AvatarImage({
   alt = "",
   className = "h-full w-full object-cover",
   iconClassName = "text-white/85",
+  sizes = "48px",
 }: {
   src: string | null | undefined;
   alt?: string;
   className?: string;
   iconClassName?: string;
+  /** CSS box width for `srcSet` selection; default suits list-row avatars. */
+  sizes?: string;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -54,10 +61,18 @@ export default function AvatarImage({
     );
   }
 
+  const srcSet = imageWidthSrcSet(src, AVATAR_SRCSET_WIDTHS);
+
   return (
     <img
       src={src}
+      srcSet={srcSet}
+      sizes={srcSet ? sizes : undefined}
       alt={alt}
+      // Square hint so the circle wrapper keeps its 1:1 box before load; the
+      // wrapper's `h-* w-*` still sets the real display size.
+      width={64}
+      height={64}
       className={className}
       onError={() => setFailed(true)}
     />

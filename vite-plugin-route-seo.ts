@@ -26,6 +26,8 @@ export type RouteSeo = {
   url?: string;
   /** Absolute og:image URL. Defaults to the plugin's `defaultImage`. */
   image?: string;
+  /** `og:type` — "website" (default) for listing pages, "article" for posts. */
+  ogType?: string;
   /** JSON-LD structured data object injected as `application/ld+json`. */
   structuredData?: Record<string, unknown>;
 };
@@ -34,6 +36,13 @@ type RouteSeoPluginOptions = {
   siteUrl: string;
   defaultImage: string;
   routes: RouteSeo[];
+  /**
+   * Extra routes resolved at build time — e.g. one per published blog post,
+   * fetched from the API. A rejection (or a slow/offline API) is logged and
+   * ignored so it can never break the build; those paths simply fall back to
+   * the generic `index.html` head as before.
+   */
+  dynamicRoutes?: () => Promise<RouteSeo[]>;
 };
 
 function escapeHtml(value: string): string {
@@ -86,7 +95,7 @@ function applyRouteSeo(
 
   next = upsertMetaTag(next, "name", "description", route.description);
 
-  next = upsertMetaTag(next, "property", "og:type", "website");
+  next = upsertMetaTag(next, "property", "og:type", route.ogType ?? "website");
   next = upsertMetaTag(next, "property", "og:title", route.title);
   next = upsertMetaTag(next, "property", "og:description", route.description);
   next = upsertMetaTag(next, "property", "og:url", url);
@@ -126,7 +135,7 @@ export function routeSeoPlugin(options: RouteSeoPluginOptions): Plugin {
       root = config.root;
       log = (msg) => config.logger.info(msg);
     },
-    closeBundle() {
+    async closeBundle() {
       const resolvedOutDir = path.resolve(root, outDir);
       const indexPath = path.join(resolvedOutDir, "index.html");
 
@@ -139,16 +148,35 @@ export function routeSeoPlugin(options: RouteSeoPluginOptions): Plugin {
 
       const baseHtml = fs.readFileSync(indexPath, "utf8");
 
-      for (const route of options.routes) {
+      let dynamicRoutes: RouteSeo[] = [];
+      if (options.dynamicRoutes) {
+        try {
+          dynamicRoutes = await options.dynamicRoutes();
+          log(
+            `[route-seo] resolved ${dynamicRoutes.length} dynamic route(s) at build time`,
+          );
+        } catch (error) {
+          this.warn(
+            `[route-seo] dynamicRoutes() failed, skipping them: ${
+              (error as Error).message
+            }`,
+          );
+        }
+      }
+
+      const seen = new Set<string>();
+      for (const route of [...options.routes, ...dynamicRoutes]) {
+        const relPath = route.path.replace(/^\/+/, "");
+        if (!relPath || seen.has(relPath)) continue;
+        seen.add(relPath);
         const html = applyRouteSeo(baseHtml, route, options);
-        const routeDir = path.join(
-          resolvedOutDir,
-          ...route.path.replace(/^\/+/, "").split("/"),
-        );
+        const routeDir = path.join(resolvedOutDir, ...relPath.split("/"));
         fs.mkdirSync(routeDir, { recursive: true });
         fs.writeFileSync(path.join(routeDir, "index.html"), html, "utf8");
-        log(`[route-seo] wrote ${route.path.replace(/^\/+/, "")}/index.html`);
       }
+      log(
+        `[route-seo] wrote ${seen.size} prerendered head(s) to ${outDir}/`,
+      );
     },
   };
 }

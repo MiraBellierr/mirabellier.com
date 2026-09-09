@@ -149,9 +149,9 @@ const AdminArenaMetrics = () => {
         <Header />
         <main className="mx-auto w-full max-w-3xl flex-1 p-6">
           <section className="card-border bg-white/70 p-6 text-center dark:bg-purple-950/50">
-            <h1 className="text-2xl font-bold text-blue-700 dark:!text-purple-100">
+            <h2 className="text-2xl font-bold text-blue-700 dark:!text-purple-100">
               {!auth.user ? "Please log in" : "Not authorized"}
-            </h1>
+            </h2>
             <Link
               to={!auth.user ? "/login" : "/"}
               className="mt-4 inline-block font-bold text-pink-500 underline dark:!text-pink-200"
@@ -186,9 +186,9 @@ const AdminArenaMetrics = () => {
                 >
                   ← admin home
                 </Link>
-                <h1 className="mt-2 text-3xl font-bold text-blue-700 dark:!text-purple-100">
+                <h2 className="mt-2 text-3xl font-bold text-blue-700 dark:!text-purple-100">
                   Arena Metrics
-                </h1>
+                </h2>
                 <p className="text-sm text-blue-500 dark:!text-purple-200">
                   Last {metrics?.window.days ?? 7} days of fight, economy, and balance signals.
                 </p>

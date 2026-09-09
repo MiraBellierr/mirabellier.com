@@ -6,6 +6,7 @@ import {
   formatQuestionAnswerTime,
   getQuestionAnswerDisplayName,
 } from "@/lib/question-of-the-day-ui";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 type QuestionAnswerCardProps = {
   answer: QuestionOfTheDayAnswer;
@@ -44,8 +45,12 @@ const QuestionAnswerCard = ({
         {avatar ? (
           <img
             src={avatar}
+            srcSet={imageWidthSrcSet(avatar, [48, 96, 192]) || undefined}
+            sizes="44px"
             alt={displayName}
             className="h-11 w-11 rounded-full object-cover"
+            width="44"
+            height="44"
           />
         ) : (
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-xs font-bold uppercase text-blue-600">

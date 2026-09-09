@@ -19,6 +19,8 @@ export default function ArenaErrorNotice({ message, variant = "default" }: Arena
           <img
             src={maintenanceImage}
             alt=""
+            width="690"
+            height="690"
             loading="lazy"
             decoding="async"
             draggable={false}

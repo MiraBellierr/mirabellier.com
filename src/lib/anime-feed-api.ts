@@ -1,4 +1,5 @@
 import { joinApi } from "@/lib/config";
+import { swrJson } from "@/lib/api-cache";
 
 export type MyAnimeListSeason = {
   season: string;
@@ -115,26 +116,27 @@ async function readApiError(response: Response) {
   }
 }
 
-export async function fetchCurrentlyWatchingAnime() {
-  const response = await fetch(joinApi("/anime/currently-watching"), {
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const error = await readApiError(response);
-    throw new AnimeFeedApiError(error.message, {
-      code: error.code,
-      status: response.status,
-    });
-  }
-
-  const data = (await response.json()) as Record<string, unknown>;
-
-  return {
-    source: "myanimelist" as const,
-    username: readString(data.username),
-    fetchedAt: readString(data.fetchedAt, new Date().toISOString()),
-    stale: Boolean(data.stale),
-    items: Array.isArray(data.items) ? data.items.map(normalizeItem) : [],
-  } as CurrentlyWatchingAnimePayload;
+export function fetchCurrentlyWatchingAnime() {
+  return swrJson<CurrentlyWatchingAnimePayload>(
+    joinApi("/anime/currently-watching"),
+    (json) => {
+      const data = json as Record<string, unknown>;
+      return {
+        source: "myanimelist" as const,
+        username: readString(data.username),
+        fetchedAt: readString(data.fetchedAt, new Date().toISOString()),
+        stale: Boolean(data.stale),
+        items: Array.isArray(data.items) ? data.items.map(normalizeItem) : [],
+      };
+    },
+    {
+      errorFrom: async (response) => {
+        const error = await readApiError(response);
+        return new AnimeFeedApiError(error.message, {
+          code: error.code,
+          status: response.status,
+        });
+      },
+    },
+  );
 }

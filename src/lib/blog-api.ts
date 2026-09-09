@@ -1,5 +1,6 @@
 import { API_BASE } from "@/lib/config";
 import { shouldSendBearerToken } from "@/lib/auth-session";
+import { swrJson } from "@/lib/api-cache";
 import {
   normalizeComments,
   normalizePost,
@@ -22,18 +23,16 @@ async function readErrorText(response: Response) {
   }
 }
 
-export const fetchPosts = async (signal?: AbortSignal): Promise<Post[]> => {
-  const response = await fetch(`${API_BASE}/posts`, {
-    cache: "no-store",
-    credentials: "include",
-    signal,
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch posts");
-  }
-  const data = (await response.json()) as unknown[];
-  return Array.isArray(data) ? data.map(normalizePost) : [];
-};
+export const fetchPosts = (signal?: AbortSignal): Promise<Post[]> =>
+  swrJson(
+    `${API_BASE}/posts`,
+    (json) => (Array.isArray(json) ? json.map(normalizePost) : []),
+    {
+      init: { credentials: "include" },
+      signal,
+      errorFrom: () => new Error("Failed to fetch posts"),
+    },
+  );
 
 export const fetchPost = async (
   id: string | number,

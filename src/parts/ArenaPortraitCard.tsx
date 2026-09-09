@@ -2,7 +2,7 @@ import { forwardRef, type CSSProperties } from "react";
 
 import type { ArenaCard } from "@/lib/arena";
 import { useHoloTilt } from "@/hooks/use-holo-tilt";
-import cardBack from "@/assets/back-card-design.jpg";
+import cardBack from "@/assets/back-card-design.webp";
 
 type ArenaPortraitCardSize = "compact" | "full";
 

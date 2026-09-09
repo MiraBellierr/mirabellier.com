@@ -1,6 +1,7 @@
 import CharacterShrinePage, {
   type CharacterShrineData,
 } from "@/components/CharacterShrinePage";
+import { shrineImg, SHRINE_SIZES } from "@/lib/shrine-images";
 
 const shrine: CharacterShrineData = {
   canonical: "https://mirabellier.com/shrine/rossina",
@@ -25,12 +26,12 @@ const shrine: CharacterShrineData = {
       "Rossi brings exactly the kind of character energy I never get tired of: crimson hood, wolfish poise, family duty, theatrical pride, and a blade-first confidence that can turn a full-name introduction into a battle cry.",
     supportingImages: [
       {
-        src: "/rossi1.jpg",
+        ...shrineImg("rossi1", SHRINE_SIZES.gallery),
         alt: "Rossi portrait art with strong red accents",
         caption: "Sharp posture, sharper presence.",
       },
       {
-        src: "/rossi2.jpg",
+        ...shrineImg("rossi2", SHRINE_SIZES.gallery),
         alt: "Rossi close-up portrait",
         caption: "Every angle reinforces the pack-heir aura.",
       },
@@ -235,12 +236,12 @@ const shrine: CharacterShrineData = {
       note: "These are the images that make the Red Knight, Pack duty, and softer emotional beats feel connected instead of separate moods.",
       items: [
         {
-          src: "/rossi2.jpg",
+          ...shrineImg("rossi2", SHRINE_SIZES.gallery),
           alt: "Rossi story still image",
           caption: "A cleaner look at the balance between elegance and threat.",
         },
         {
-          src: "/rossi4.jpg",
+          ...shrineImg("rossi4", SHRINE_SIZES.gallery),
           alt: "Rossi side still with hood and stance details",
           caption: "The kind of pose that makes future-Capo talk sound believable.",
         },
@@ -251,12 +252,12 @@ const shrine: CharacterShrineData = {
       note: "Cloth shapes, cape movement, pale accents, and wolfish framing all deserve their own appreciation lane.",
       items: [
         {
-          src: "/rossi-d1.jpg",
+          ...shrineImg("rossi-d1", SHRINE_SIZES.gallery),
           alt: "Rossi close-up detail art",
           caption: "Expression work, clean lines, and hood framing all doing excellent work.",
         },
                 {
-          src: "/rossi-d2.jpg",
+          ...shrineImg("rossi-d2", SHRINE_SIZES.gallery),
           alt: "Rossi close-up detail art",
           caption: "Expression work, clean lines, and hood framing all doing excellent work.",
         },
@@ -267,12 +268,12 @@ const shrine: CharacterShrineData = {
       note: "Here is where I will feature the fan artists.",
       items: [
         {
-          src: "/rossi-fa1.jpg",
+          ...shrineImg("rossi-fa1", SHRINE_SIZES.gallery),
           alt: "Rossi fanart image",
           caption: "A placeholder for now, but I can't wait to fill this with properly credited fanart.",
         },
         {
-          src: "/rossi-fa2.jpg",
+          ...shrineImg("rossi-fa2", SHRINE_SIZES.gallery),
           alt: "Rossi fanart image",
           caption: "A placeholder for now, but I can't wait to fill this with properly credited fanart.",
         },
@@ -310,12 +311,12 @@ const shrine: CharacterShrineData = {
     },
   ],
   railImage: {
-    src: "/rossi4.jpg",
+    ...shrineImg("rossi4", SHRINE_SIZES.rail),
     alt: "Rossi side rail image",
     caption: "wolfpack blessing on the left rail",
   },
   sideImage: {
-    src: "/rossi3.jpg",
+    ...shrineImg("rossi3", SHRINE_SIZES.gallery),
     alt: "Rossi sidebar image",
     caption: "the ceremonial red-hood finish on the right side",
   },

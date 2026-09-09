@@ -9,6 +9,7 @@ import {
   fetchArenaTradeRequestStatus,
   type ArenaTradeUser,
 } from "@/lib/arena";
+import { imageWidthSrcSet } from "@/lib/image-srcset";
 
 type ArenaTradeRequestProps = {
   user: ArenaTradeUser;
@@ -158,7 +159,11 @@ const ArenaTradeRequest = ({
               {user.avatar && (
                 <img
                   src={user.avatar}
+                  srcSet={imageWidthSrcSet(user.avatar, [48, 96, 192]) || undefined}
+                  sizes="40px"
                   alt={user.username}
+                  width="40"
+                  height="40"
                   className="h-10 w-10 rounded-full border-2 border-pink-200 dark:border-pink-500/40"
                 />
               )}
