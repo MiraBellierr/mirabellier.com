@@ -15,7 +15,7 @@ backlog. This file is the *fun* backlog.
 
 1. ~~**RSS / Atom / JSON feed**~~ ✅ done (2026-09-10). Blog + QOTD feeds.
 2. **`⌘K` sitewide command palette** — the site has 50+ routes and no way to jump.
-3. **Per-post generated OG images** — every link currently unfurls with the same picture.
+3. ~~**Per-post generated OG images**~~ ✅ done (2026-09-10) for blog posts. Shrines/QOTD already have their own preview images.
 4. ~~**A `/now` page**~~ ✅ done (2026-09-10). Public page + owner editor.
 5. ~~**Public changelog page**~~ ✅ done (2026-09-10). `/changelog` + owner editor.
 
@@ -145,7 +145,27 @@ of archived.
 
 ## ✍️ Blog quality-of-life
 
-### 7. Per-post generated OG images  ⭐
+### 7. Per-post generated OG images  ⭐  ✅ DONE (2026-09-10) — blog posts
+
+**Shipped:** `mirabellier-backend/lib/post-og-image.js` (modelled on
+`quote-embed.js`) renders a 1200x630 SVG title card — `mirabellier.com` / `blog`
+wordmark, the post title auto-sized down through four steps to fit four lines,
+a `Month D, YYYY · #tag #tag` meta row, the site sky background + flower — and
+rasterises it with `sharp`. Served from **`GET /og/post/:slug.png`** in
+`routes/posts.js` (the `:slug` carries the full `<slug>-<id>` from the blog URL;
+only the trailing id is looked up). Cache is `immutable` when the URL carries
+`?v=<updatedAt digest>` and `max-age=300` otherwise. The crawler HTML in
+`buildBlogRedirectPage` now falls back to this card (with `og:image:width/height`)
+whenever a post has **no hand-picked `thumbnail`**; a real thumbnail still wins.
+`src/pages/BlogPost.tsx` mirrors the same URL for the SPA `og:image` (shared
+`getPostOgVersion` digest so both request the identical asset). Tests:
+`mirabellier-backend/test/post-og-image.test.js` (helpers + a real `sharp`
+render) and `test/post-og-route.test.js` (Express 5 routing, cache headers,
+crawler HTML, 404).
+
+**Still static:** shrines and QOTD — their embed builders already emit dedicated
+preview images, so they were out of scope here. Extend `post-og-image.js` to
+them later if the plain cards ever feel worth it.
 
 `vite-plugin-route-seo.ts:102` and `src/lib/seo.ts:103` both set `og:image`, but
 always to a **static** URL. So every blog post, every shrine, every QOTD unfurls
@@ -157,20 +177,59 @@ render title + date + tag onto a card, cache by post slug + `updatedAt`, serve
 from `/og/post/:slug.png`. This is the highest-impact social/SEO item left now
 that `improvements.md` is mostly worked through.
 
-### 8. Reading time + table of contents
+### 8. Reading time + table of contents  ✅ DONE (2026-09-11)
+
+**Shipped:** `src/lib/blog-reading.ts` — a config-free module (so it's unit
+testable under `node --test`) holding the moved-out `extractTextFromContent` +
+`slugify`, plus `countWords` (per-text-node, so paragraph joins don't merge
+words), `readingTimeMinutes` (200 wpm, min 1, 0 when empty), `formatReadingTime`
+("N min read"), and `extractHeadings` (walks the doc for `<h2>`–`<h4>` — this
+blog jumps h2→h4 — returning `{ id, text, level }` with slug ids deduped
+`slug-2`, `slug-3`). `blog-utils.ts` re-exports all of it so existing importers
+are untouched. `BlogPost.tsx`: reading time in the byline; a right-hand sticky
+`<aside>` TOC on desktop (`hidden lg:block`, scroll-spy highlights the section
+scrolled past) and a `<details>` version on mobile, both hidden below 2
+headings; a `useEffect` assigns `extractHeadings`' ids to the rendered
+`<h2>`–`<h4>` by document order (skipping empties) and re-syncs via
+`MutationObserver` since the Tiptap editor mounts async. `Blog.tsx`: reading
+time in each card's meta line. `blog.css` adds `scroll-margin-top` on post
+headings. Tests: `src/lib/blog-reading.test.ts` (8).
 
 Neither exists (grepped `readingTime`/`toc` — nothing). You're on Tiptap, so the
 document is structured JSON, not a blob of HTML: walking it for headings is
 genuinely easy, unlike on most blogs. Sticky TOC on desktop, reading time in the
 post header and in the `/blog` list.
 
-### 9. Post series / prev & next
+### 9. Post series / prev & next  ✅ DONE (2026-09-11)
+
+**Shipped:** `src/lib/blog-navigation.ts` (config-free, +6 tests) — `getPostNeighbors`
+(chronological older/newer, null at the ends) and `getSeriesContext` (posts sharing
+a `series`, matched case-insensitively on the trimmed value, sorted oldest→newest,
+with the current post's index + prev/next part; null below 2 members).
+`BlogPost.tsx` renders a "Keep reading" card between the article and the
+interaction box: when the post is in a series, a "Part N of M · {name}" panel with
+the numbered part list (current marked `aria-current`) plus part-to-part prev/next;
+otherwise date-based "← Older post / Newer post →". Backend: a nullable `series`
+column (`ensureColumn`), `lib/post-series.js` `sanitizeSeries` (trim, collapse
+whitespace, strip control chars, cap 80; +5 tests), threaded through `mapPostRow`
++ POST + PUT (PUT clears it when sent `null`). `BlogEdit.tsx` gets a "Series"
+input; `normalizePost` + the `Post` type carry `series`. Verified end-to-end in
+the browser (series panel, date prev/next, editor round-trip with whitespace
+normalisation).
 
 `BlogPost.tsx` is a dead end — you read a post and the journey stops. Add
 prev/next by date, plus optional `series` grouping. Cheapest possible increase in
 pages-per-session.
 
-### 10. Live word count in the editor
+### 10. Live word count in the editor  ✅ DONE (2026-09-11)
+
+**Shipped:** `BlogEdit.tsx` shows a live "N words · M min read" line on the
+Content label row, recomputed with `useMemo` on every editor change (the
+existing `onContentChange` → `content` state) and reusing `countWords` +
+`readingTimeMinutes` from `blog-reading.ts` — no new helpers. The "last saved"
+indicator was **skipped**: the form is a manual publish with no autosave, so
+there is nothing to time; the Publish button already shows its own
+"Publishing..." state. Add it if autosave ever lands.
 
 `BlogEdit.tsx` uses Tiptap; a status bar with word count, read time, and a
 "last saved" indicator is a small addition that you personally would use every
@@ -277,9 +336,9 @@ Right now it sits in between.
 
 1. ~~**RSS/JSON feed**~~ ✅ done 2026-09-10.
 2. **Command palette** — makes the other 50 routes reachable.
-3. **Per-post OG images** — every link you've ever shared gets better retroactively.
+3. ~~**Per-post OG images**~~ ✅ done 2026-09-10 (blog posts).
 4. ~~**`/now` + `/changelog` + `/uses`**~~ ✅ done 2026-09-10 (all three).
-5. **Reading time + TOC + prev/next** — one focused pass on `BlogPost.tsx`.
+5. ~~Reading time + TOC + prev/next~~ ✅ done 2026-09-11 (#8 + #9).
 6. **Push beyond Twitch**, then the profile activity feed.
 7. Arena extras and the cursor decision, whenever they sound fun rather than owed.
 
@@ -297,3 +356,23 @@ Right now it sits in between.
   `GET /guestbook/on-this-day` + `GuestbookOnThisDay.tsx` side panel on
   `/guestbook`, hidden until there is history to show. Command palette and OG
   images still next.
+- **2026-09-10**: Shipped #7 (per-post OG images) for blog posts:
+  `lib/post-og-image.js` renders a 1200x630 title card, served from
+  `GET /og/post/:slug.png`; crawler HTML + the SPA fall back to it for any post
+  with no hand-picked thumbnail. Shrines/QOTD left alone (they already emit their
+  own preview images). Command palette is the last of the top-5 still open.
+- **2026-09-11**: Moved the blog post `<h1>` out of the site header band into the
+  article, above the byline (`Header` gained `ownsPageHeading`). Then shipped #8
+  (reading time + TOC): `src/lib/blog-reading.ts` (+8 tests), sticky desktop TOC
+  with scroll-spy / mobile `<details>` on `BlogPost.tsx`, "N min read" in the
+  byline and the `/blog` list.
+- **2026-09-11**: Shipped #9 (series + prev/next): `src/lib/blog-navigation.ts`
+  (+6 tests) + a "Keep reading" card on `BlogPost.tsx` — a numbered series panel
+  when the post names one, date-based older/newer otherwise. New nullable `series`
+  column + `lib/post-series.js` `sanitizeSeries` (+5 tests) on the backend, plus a
+  "Series" field in `BlogEdit.tsx`. Command palette is now the last of the top-5.
+- **2026-09-11**: Shipped #10 (live word count): "N words · M min read" on the
+  `BlogEdit.tsx` Content label, `useMemo` over the `content` state reusing
+  `countWords` / `readingTimeMinutes`. "Last saved" skipped — no autosave to
+  time. Also on `/blog`: tags in cards are now clickable (set the search) and
+  the search filter matches tags; the search box moved to the right column.

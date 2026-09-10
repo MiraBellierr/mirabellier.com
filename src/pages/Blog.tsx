@@ -17,6 +17,8 @@ import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
 import {
   extractTextFromContent,
+  formatReadingTime,
+  readingTimeMinutes,
   slugify,
   resolveAsset,
   countNestedComments,
@@ -217,6 +219,9 @@ const Blog = () => {
           (post) =>
             post.title.toLowerCase().includes(term) ||
             post.author.toLowerCase().includes(term) ||
+            (post.tags || []).some((tag) =>
+              tag.toLowerCase().includes(term),
+            ) ||
             extractTextFromContent(post.content).toLowerCase().includes(term),
         );
         setFilteredPosts(filtered);
@@ -253,40 +258,6 @@ const Blog = () => {
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
           <div className="left-side-rail flex-grow flex-col space-y-4">
             <Navigation />
-            <div className="h-101 border rounded-lg p-4 bg-blue-100 border-blue-300 shadow-md opacity-90">
-              <h3 className="font-bold text-blue-600 mb-2">
-                search posts here
-              </h3>
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full p-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <p className="mt-2 text-sm text-blue-600">
-                  {filteredPosts.length} post
-                  {filteredPosts.length !== 1 ? "s" : ""} found
-                </p>
-              )}
-              <p className="mt-3 text-xs font-medium text-blue-500">
-                Subscribe:{" "}
-                <a
-                  className="underline underline-offset-2 hover:text-pink-600"
-                  href="/feed.xml"
-                >
-                  RSS
-                </a>{" "}
-                ·{" "}
-                <a
-                  className="underline underline-offset-2 hover:text-pink-600"
-                  href="/feed.json"
-                >
-                  JSON
-                </a>
-              </p>
-            </div>
           </div>
 
           <main className="w-full lg:w-3/5 space-y-4 p-4">
@@ -334,6 +305,7 @@ const Blog = () => {
                   const previewText = (
                     post.shortDescription || extractTextFromContent(post.content)
                   ).trim();
+                  const readMinutes = readingTimeMinutes(post.content);
 
                   return (
                     <div
@@ -393,6 +365,9 @@ const Blog = () => {
                                     )}{" "}
                                     •{" "}
                                     {new Date(post.createdAt).toLocaleDateString()}
+                                    {readMinutes
+                                      ? ` • ${formatReadingTime(readMinutes)}`
+                                      : ""}
                                   </p>
                                   {previewText ? (
                                     <p className="blog-card-summary text-sm text-blue-600">
@@ -426,6 +401,7 @@ const Blog = () => {
                                       isDark={isDark}
                                       limit={8}
                                       className="blog-card-tags"
+                                      onTagClick={(tag) => setSearchTerm(tag)}
                                     />
                                   ) : null}
                                 </div>
@@ -527,6 +503,48 @@ const Blog = () => {
                   Write kindly and credit sources 💖
                 </div>
               </aside>
+              <div className="border rounded-lg p-4 bg-blue-100 border-blue-300 shadow-md opacity-90">
+                <h3 className="font-bold text-blue-600 mb-2">
+                  search posts here
+                </h3>
+                <input
+                  type="text"
+                  placeholder="Search title, tag, author..."
+                  className="w-full p-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <p className="mt-2 text-sm text-blue-600">
+                    {filteredPosts.length} post
+                    {filteredPosts.length !== 1 ? "s" : ""} found
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm("")}
+                      className="ml-2 underline underline-offset-2 hover:text-pink-600"
+                    >
+                      clear
+                    </button>
+                  </p>
+                )}
+                <p className="mt-3 text-xs font-medium text-blue-500">
+                  Subscribe:{" "}
+                  <a
+                    className="underline underline-offset-2 hover:text-pink-600"
+                    href="/feed.xml"
+                  >
+                    RSS
+                  </a>{" "}
+                  ·{" "}
+                  <a
+                    className="underline underline-offset-2 hover:text-pink-600"
+                    href="/feed.json"
+                  >
+                    JSON
+                  </a>
+                </p>
+              </div>
+
               <div className="flex justify-center">
                 <img
                   className="w-full border border-blue-400 rounded-lg"

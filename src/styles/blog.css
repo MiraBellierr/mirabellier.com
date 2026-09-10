@@ -460,3 +460,8 @@
 .dark .prose h6 {
   color: #bfdbfe;
 }
+
+/* Table-of-contents anchor jumps shouldn't land flush against the viewport top. */
+.blog-post-page .prose :is(h1, h2, h3, h4) {
+  scroll-margin-top: 6rem;
+}

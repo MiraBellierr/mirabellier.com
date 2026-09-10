@@ -3,7 +3,7 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Toast from "../parts/Toast";
 
-import React, { Suspense, lazy, useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
@@ -17,6 +17,7 @@ import {
   normalizeTags,
 } from "@/lib/blog-edit-api";
 import { usePageSeo } from "@/lib/seo";
+import { countWords, readingTimeMinutes } from "@/lib/blog-utils";
 import "@/styles/blog.css";
 
 const SimpleEditor = lazy(() =>
@@ -35,6 +36,7 @@ const BlogEdit = () => {
   const [content, setContent] = useState<object | null>(null);
   const [shortDescription, setShortDescription] = useState("");
   const [thumbnail, setThumbnail] = useState("");
+  const [series, setSeries] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -102,6 +104,7 @@ const BlogEdit = () => {
         setContent(data.content || {});
         setShortDescription(data.shortDescription || "");
         setThumbnail(data.thumbnail || "");
+        setSeries(data.series || "");
         const normalized = normalizeTags(data).slice(0, MAX_TAGS);
         setTags(normalized);
       } catch (err) {
@@ -194,6 +197,11 @@ const BlogEdit = () => {
     }
   };
 
+  const editorStats = useMemo(() => {
+    const words = countWords(content);
+    return { words, minutes: readingTimeMinutes(content) };
+  }, [content]);
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
   };
@@ -209,6 +217,8 @@ const BlogEdit = () => {
         content: content,
         shortDescription: shortDescription || undefined,
         thumbnail: thumbnail || undefined,
+        // Always sent (null clears it) so editing a post can remove its series.
+        series: series.trim() || null,
       };
       if (tags && tags.length)
         blogData.tags = validateTags(tags).slice(0, MAX_TAGS);
@@ -223,6 +233,7 @@ const BlogEdit = () => {
       setContent(null);
       setShortDescription("");
       setThumbnail("");
+      setSeries("");
       setTags([]);
       showGlobalToast("🎉 Post published successfully!", { durationMs: 3000 });
       navigate("/blog");
@@ -339,6 +350,26 @@ const BlogEdit = () => {
                 <div className="flex flex-col p-2 space-y-2">
                   <label
                     className="font-bold text-blue-600 dark:text-purple-200"
+                    htmlFor="series"
+                  >
+                    Series
+                  </label>
+                  <input
+                    type="text"
+                    id="series"
+                    name="series"
+                    value={series}
+                    disabled={isLoadingPost}
+                    onChange={(e) => setSeries(e.target.value)}
+                    placeholder="Optional — posts sharing this name are linked as a series"
+                    maxLength={80}
+                    className="form-input border rounded-lg border-blue-300 p-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:placeholder-gray-400"
+                  />
+                </div>
+
+                <div className="flex flex-col p-2 space-y-2">
+                  <label
+                    className="font-bold text-blue-600 dark:text-purple-200"
                     htmlFor="tags"
                   >
                     Tags
@@ -411,12 +442,21 @@ const BlogEdit = () => {
 
                 <div className="flex flex-col p-2 space-y-2">
                   <div className="block 2xl:block">
-                    <label
-                      className="font-bold text-blue-600 dark:text-purple-200"
-                      htmlFor="content"
-                    >
-                      Content
-                    </label>
+                    <div className="flex items-baseline justify-between">
+                      <label
+                        className="font-bold text-blue-600 dark:text-purple-200"
+                        htmlFor="content"
+                      >
+                        Content
+                      </label>
+                      <span className="text-xs font-medium text-blue-500 dark:text-purple-300">
+                        {editorStats.words} word
+                        {editorStats.words === 1 ? "" : "s"}
+                        {editorStats.minutes
+                          ? ` · ${editorStats.minutes} min read`
+                          : ""}
+                      </span>
+                    </div>
                     {isLoadingPost ? (
                       <div className="border rounded-lg border-blue-300 p-4 text-center text-blue-600">
                         Loading post content...

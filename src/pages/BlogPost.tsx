@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { useParams, Link } from "react-router-dom";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
@@ -8,14 +14,29 @@ import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import { BlogTagList } from "@/components/BlogTagList";
 import { BlogCommentItem } from "@/components/BlogCommentItem";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
-import { addPostComment, fetchPost, togglePostLike } from "@/lib/blog-api";
 import {
+  addPostComment,
+  fetchPost,
+  fetchPosts,
+  togglePostLike,
+} from "@/lib/blog-api";
+import {
+  extractHeadings,
   extractTextFromContent,
   countNestedComments,
+  formatReadingTime,
   insertNestedComment,
+  readingTimeMinutes,
   resolveAsset,
+  slugify,
   type Post as BlogPostRecord,
+  type TocHeading,
 } from "@/lib/blog-utils";
+import {
+  getPostNeighbors,
+  getSeriesContext,
+  type SeriesContext,
+} from "@/lib/blog-navigation";
 import {
   ensureAnonymousLikeId,
   readAnonymousLikeId,
@@ -29,6 +50,21 @@ const BLOG_POST_FALLBACK_TITLE = "Mirabellier ⭐ — Cute thoughts & cozy corne
 const BLOG_POST_FALLBACK_DESCRIPTION =
   "A tiny, cozy blog sharing small joys, photos, and short posts.";
 const BLOG_POST_FALLBACK_IMAGE = "https://mirabellier.com/background.jpg";
+
+// Mirrors `buildPostOgVersion` in mirabellier-backend/lib/post-og-image.js so the
+// SPA and the crawler HTML request the exact same generated-card URL.
+function getPostOgVersion(post: BlogPostRecord) {
+  return String(post.updatedAt || post.createdAt || "")
+    .replace(/[^0-9a-z]/gi, "")
+    .slice(0, 24);
+}
+
+function getGeneratedOgImage(slug: string | undefined, post: BlogPostRecord | null) {
+  if (!slug) return BLOG_POST_FALLBACK_IMAGE;
+  const version = post ? getPostOgVersion(post) : "";
+  const query = version ? `?v=${encodeURIComponent(version)}` : "";
+  return `https://mirabellier.com/og/post/${encodeURIComponent(slug)}.png${query}`;
+}
 
 function getBlogSeoDescription(post: BlogPostRecord) {
   const summary = (post.shortDescription || "").trim();
@@ -70,11 +106,160 @@ function CommentIcon() {
   );
 }
 
+const MIN_TOC_HEADINGS = 2;
+
+function TableOfContents({
+  headings,
+  activeId,
+  onNavigate,
+}: {
+  headings: TocHeading[];
+  activeId: string | null;
+  onNavigate: (event: ReactMouseEvent<HTMLAnchorElement>, id: string) => void;
+}) {
+  return (
+    <nav aria-label="Table of contents" className="text-sm">
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-blue-500 dark:text-purple-300">
+        On this page
+      </p>
+      <ul className="space-y-1">
+        {headings.map((heading) => (
+          <li
+            key={heading.id}
+            style={{ paddingInlineStart: `${(heading.level - 2) * 0.75}rem` }}
+          >
+            <a
+              href={`#${heading.id}`}
+              onClick={(event) => onNavigate(event, heading.id)}
+              aria-current={activeId === heading.id ? "location" : undefined}
+              className={`block rounded py-0.5 transition-colors hover:text-pink-600 ${
+                activeId === heading.id
+                  ? "font-semibold text-pink-600"
+                  : "text-blue-600 dark:text-purple-200"
+              }`}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function blogPath(post: Pick<BlogPostRecord, "id" | "title">) {
+  return `/blog/${slugify(post.title)}-${post.id}`;
+}
+
+function FlowLink({
+  direction,
+  label,
+  post,
+}: {
+  direction: "prev" | "next";
+  label: string;
+  post: BlogPostRecord | null;
+}) {
+  if (!post) {
+    // Keep the empty grid cell so the sibling link holds its side.
+    return <span aria-hidden="true" className="hidden sm:block" />;
+  }
+
+  return (
+    <Link
+      to={blogPath(post)}
+      className={`flex flex-col rounded-xl border border-blue-200 bg-blue-50/60 p-3 transition hover:border-pink-300 hover:bg-pink-50/60 dark:border-purple-500/30 dark:bg-purple-900/20 ${
+        direction === "next" ? "sm:items-end sm:text-right" : ""
+      }`}
+    >
+      <span className="text-xs font-semibold uppercase tracking-wide text-blue-400">
+        {direction === "prev" ? "← " : ""}
+        {label}
+        {direction === "next" ? " →" : ""}
+      </span>
+      <span className="mt-1 line-clamp-2 font-semibold text-blue-800 dark:text-purple-200">
+        {post.title}
+      </span>
+    </Link>
+  );
+}
+
+function PostFlowNav({
+  series,
+  older,
+  newer,
+}: {
+  series: SeriesContext<BlogPostRecord> | null;
+  older: BlogPostRecord | null;
+  newer: BlogPostRecord | null;
+}) {
+  // Inside a series, part-to-part links replace the date-based older/newer.
+  const prev = series ? series.previous : older;
+  const next = series ? series.next : newer;
+
+  if (!series && !prev && !next) return null;
+
+  return (
+    <nav aria-label="Keep reading" className="card-border space-y-4 p-4 sm:p-6">
+      {series ? (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-blue-500 dark:text-purple-300">
+            Part {series.index + 1} of {series.parts.length}
+          </p>
+          <p className="text-lg font-bold text-blue-800 dark:text-purple-200">
+            {series.name}
+          </p>
+          <ol className="mt-3 space-y-1 text-sm">
+            {series.parts.map((part, index) => (
+              <li key={part.id} className="flex gap-2">
+                <span className="w-5 shrink-0 text-right tabular-nums text-blue-400">
+                  {index + 1}.
+                </span>
+                {index === series.index ? (
+                  <span
+                    aria-current="page"
+                    className="font-semibold text-pink-600"
+                  >
+                    {part.title}
+                  </span>
+                ) : (
+                  <Link
+                    to={blogPath(part)}
+                    className="text-blue-600 hover:underline dark:text-purple-200"
+                  >
+                    {part.title}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      {prev || next ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FlowLink
+            direction="prev"
+            label={series ? "Previous part" : "Older post"}
+            post={prev}
+          />
+          <FlowLink
+            direction="next"
+            label={series ? "Next part" : "Newer post"}
+            post={next}
+          />
+        </div>
+      ) : null}
+    </nav>
+  );
+}
+
 const BlogPost = () => {
   const { slug } = useParams();
   const auth = useAuth();
   const isDark = useIsDarkMode();
   const commentInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const articleRef = useRef<HTMLDivElement | null>(null);
   const id = (() => {
     if (!slug) return undefined;
     const parts = slug.split("-");
@@ -82,6 +267,8 @@ const BlogPost = () => {
   })();
 
   const [post, setPost] = useState<BlogPostRecord | null>(null);
+  const [allPosts, setAllPosts] = useState<BlogPostRecord[]>([]);
+  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -99,7 +286,7 @@ const BlogPost = () => {
     ? getBlogSeoDescription(post)
     : BLOG_POST_FALLBACK_DESCRIPTION;
   const postSeoImage = post
-    ? resolveAsset(post.thumbnail) || BLOG_POST_FALLBACK_IMAGE
+    ? resolveAsset(post.thumbnail) || getGeneratedOgImage(slug, post)
     : BLOG_POST_FALLBACK_IMAGE;
   const authorProfileUrl =
     post && post.userId
@@ -144,6 +331,112 @@ const BlogPost = () => {
       type: post ? "article" : "website",
     },
   });
+
+  const headings = useMemo<TocHeading[]>(
+    () => (post ? extractHeadings(post.content) : []),
+    [post],
+  );
+  const readMinutes = post ? readingTimeMinutes(post.content) : 0;
+  const showToc = headings.length >= MIN_TOC_HEADINGS;
+
+  // The whole archive, for prev/next and series grouping. This reuses the
+  // cached `/posts` SWR fetch, so arriving from /blog usually costs nothing.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchPosts(controller.signal)
+      .then(setAllPosts)
+      .catch(() => {
+        /* prev/next is a bonus — silently skip it if the archive won't load */
+      });
+    return () => controller.abort();
+  }, []);
+
+  const neighbors = useMemo(
+    () =>
+      post
+        ? getPostNeighbors(allPosts, post.id)
+        : { older: null, newer: null },
+    [allPosts, post],
+  );
+  const seriesContext = useMemo(
+    () => (post ? getSeriesContext(allPosts, post.id) : null),
+    [allPosts, post],
+  );
+
+  // Give the rendered <h2>–<h4> elements the same ids `extractHeadings` derived
+  // (matched by document order, skipping any empty headings), and track which
+  // one the reader has scrolled past for the sticky TOC. The Tiptap editor
+  // mounts asynchronously and can re-mount when table support loads, so re-sync
+  // on any subtree change.
+  useEffect(() => {
+    const container = articleRef.current;
+    if (!container || headings.length === 0) {
+      setActiveHeadingId(null);
+      return;
+    }
+
+    // The heading text sits ~120px below the anchor line we consider "current".
+    const ACTIVE_OFFSET = 120;
+    let frame = 0;
+
+    const assignIds = () => {
+      const rendered = Array.from(
+        container.querySelectorAll<HTMLElement>("h2, h3, h4"),
+      ).filter((element) => (element.textContent ?? "").trim().length > 0);
+
+      rendered.forEach((element, index) => {
+        const heading = headings[index];
+        if (heading && element.id !== heading.id) element.id = heading.id;
+      });
+    };
+
+    const updateActive = () => {
+      let current: string | null = null;
+      for (const heading of headings) {
+        const element = document.getElementById(heading.id);
+        if (!element) continue;
+        if (element.getBoundingClientRect().top - ACTIVE_OFFSET <= 0) {
+          current = heading.id;
+        } else {
+          break; // headings are in document order — nothing later can be past.
+        }
+      }
+      setActiveHeadingId(current);
+    };
+
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        assignIds();
+        updateActive();
+      });
+    };
+
+    assignIds();
+    updateActive();
+
+    const mutations = new MutationObserver(schedule);
+    mutations.observe(container, { childList: true, subtree: true });
+    window.addEventListener("scroll", schedule, { passive: true });
+
+    return () => {
+      mutations.disconnect();
+      window.removeEventListener("scroll", schedule);
+      cancelAnimationFrame(frame);
+    };
+  }, [headings]);
+
+  const handleTocNavigate = (
+    event: ReactMouseEvent<HTMLAnchorElement>,
+    headingId: string,
+  ) => {
+    const target = document.getElementById(headingId);
+    if (!target) return;
+    event.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", `#${headingId}`);
+    setActiveHeadingId(headingId);
+  };
 
   const loadPost = async (postId: string) => {
     const found = await fetchPost(postId);
@@ -271,7 +564,7 @@ const BlogPost = () => {
 
   return (
     <div className="blog-post-page min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
-      <Header title={post?.title} />
+      <Header ownsPageHeading={false} />
       <div
         className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
         style={{ backgroundImage: "var(--page-bg)" }}
@@ -296,15 +589,20 @@ const BlogPost = () => {
             <div className="mx-auto w-full max-w-4xl space-y-4">
               {loading ? (
                 <div className="card-border p-4 text-center sm:p-6">
+                  <h1 className="sr-only">Blog post</h1>
                   <p>Loading post...</p>
                 </div>
               ) : error ? (
                 <div className="rounded-xl border border-red-400 bg-red-100 p-4 text-red-700 sm:p-6">
+                  <h1 className="sr-only">Blog post</h1>
                   Error: {error}
                 </div>
               ) : post ? (
                 <>
                   <div className="card-border p-4 sm:p-6 lg:p-8">
+                    <h1 className="mb-4 text-2xl font-bold leading-tight text-blue-800 sm:text-3xl dark:text-purple-200">
+                      {post.title}
+                    </h1>
                     <p className="mb-4 flex flex-wrap items-center gap-2 text-sm text-blue-500">
                       {post.userId ? (
                         <Link
@@ -353,6 +651,9 @@ const BlogPost = () => {
                       <span>
                         • {new Date(post.createdAt).toLocaleDateString()}
                       </span>
+                      {readMinutes ? (
+                        <span>• {formatReadingTime(readMinutes)}</span>
+                      ) : null}
                     </p>
 
                     {post.tags && post.tags.length > 0 ? (
@@ -363,10 +664,31 @@ const BlogPost = () => {
                       />
                     ) : null}
 
-                    <div>
+                    {showToc ? (
+                      <details className="mb-4 rounded-xl border border-blue-200 bg-blue-50/70 p-3 lg:hidden dark:border-purple-500/30 dark:bg-purple-900/20">
+                        <summary className="cursor-pointer text-sm font-semibold text-blue-700 dark:text-purple-200">
+                          Table of contents
+                        </summary>
+                        <div className="mt-3">
+                          <TableOfContents
+                            headings={headings}
+                            activeId={activeHeadingId}
+                            onNavigate={handleTocNavigate}
+                          />
+                        </div>
+                      </details>
+                    ) : null}
+
+                    <div ref={articleRef}>
                       <Post html={post.content} />
                     </div>
                   </div>
+
+                  <PostFlowNav
+                    series={seriesContext}
+                    older={neighbors.older}
+                    newer={neighbors.newer}
+                  />
 
                   <div className="card-border p-4 sm:p-6">
                     <div className="flex flex-wrap items-center gap-3">
@@ -489,13 +811,25 @@ const BlogPost = () => {
                 </>
               ) : (
                 <div className="card-border space-y-1 p-4 sm:p-6">
-                  <h2 className="mb-2 text-center text-xl font-bold text-blue-700">
+                  <h1 className="mb-2 text-center text-xl font-bold text-blue-700">
                     Post not found
-                  </h2>
+                  </h1>
                 </div>
               )}
             </div>
           </main>
+
+          {post && showToc ? (
+            <aside className="hidden shrink-0 lg:block lg:w-[220px]">
+              <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-blue-200 bg-blue-50/80 p-4 dark:border-purple-500/30 dark:bg-purple-900/20">
+                <TableOfContents
+                  headings={headings}
+                  activeId={activeHeadingId}
+                  onNavigate={handleTocNavigate}
+                />
+              </div>
+            </aside>
+          ) : null}
         </div>
       </div>
       <Footer />

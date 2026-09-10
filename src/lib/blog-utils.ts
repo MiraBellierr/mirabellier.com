@@ -1,164 +1,17 @@
 import { API_BASE } from "@/lib/config";
+import type { ContentNode, DocumentNode } from "@/lib/blog-reading";
 
-type TextNode = {
-  type: "text";
-  text: string;
-  marks?: Array<{
-    type: string;
-    attrs?: Record<string, unknown>;
-  }>;
-};
-
-type ParagraphNode = {
-  type: "paragraph";
-  attrs?: { textAlign: string | null };
-  content: ContentNode[];
-};
-
-type HeadingNode = {
-  type: "heading";
-  attrs?: { textAlign: string | null; level: number };
-  content: ContentNode[];
-};
-
-type ListNode = {
-  type: "bulletList" | "orderedList";
-  content: ListItemNode[];
-};
-
-type ListItemNode = {
-  type: "listItem";
-  content: ContentNode[];
-};
-
-type TableNode = {
-  type: "table";
-  content: TableRowNode[];
-};
-
-type TableRowNode = {
-  type: "tableRow";
-  content: TableCellNode[];
-};
-
-type TableCellNode = {
-  type: "tableCell" | "tableHeader";
-  content: ContentNode[];
-};
-
-type ImageNode = {
-  type: "image";
-  attrs: {
-    src: string;
-    alt: string | null;
-    title: string | null;
-    caption?: string | null;
-    width: number | null;
-    height: number | null;
-  };
-};
-
-type HardBreakNode = {
-  type: "hardBreak";
-};
-
-type DocumentNode = {
-  type: "doc";
-  content: ContentNode[];
-};
-
-type ContentNode =
-  | TextNode
-  | ParagraphNode
-  | HeadingNode
-  | ListNode
-  | ListItemNode
-  | TableNode
-  | TableRowNode
-  | TableCellNode
-  | ImageNode
-  | HardBreakNode;
-
-export function extractTextFromContent(
-  content: DocumentNode | ContentNode[] | null | undefined,
-): string {
-  if (!content) return "";
-  if (
-    typeof content === "object" &&
-    "type" in content &&
-    content.type === "doc"
-  ) {
-    return extractTextFromContent(content.content);
-  }
-  if (Array.isArray(content)) {
-    let result = "";
-
-    content.forEach((node) => {
-      if (!node) return;
-
-      switch (node.type) {
-        case "text":
-          result += node.text + " ";
-          break;
-
-        case "paragraph":
-        case "heading":
-        case "listItem":
-          if (node.content) {
-            result += extractTextFromContent(node.content);
-          }
-          break;
-
-        case "bulletList":
-        case "orderedList":
-          if (node.content) {
-            node.content.forEach((item) => {
-              result += extractTextFromContent(item.content);
-            });
-          }
-          break;
-
-        case "table":
-        case "tableRow":
-        case "tableCell":
-        case "tableHeader":
-          if (node.content) {
-            result += `${extractTextFromContent(node.content)} `;
-          }
-          break;
-
-        case "image":
-          if (node.attrs?.caption) {
-            result += `${node.attrs.caption} `;
-          }
-          break;
-
-        case "hardBreak":
-          break;
-
-        default:
-          break;
-      }
-    });
-
-    return result.trim();
-  }
-
-  return "";
-}
-
-export function slugify(input?: string) {
-  if (!input) return "";
-  return input
-    .toString()
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 80);
-}
+// Tiptap-document helpers live in `blog-reading.ts` (config-free so they can be
+// unit-tested); re-exported here so existing importers are unaffected.
+export {
+  extractTextFromContent,
+  slugify,
+  countWords,
+  readingTimeMinutes,
+  formatReadingTime,
+  extractHeadings,
+  type TocHeading,
+} from "@/lib/blog-reading";
 
 export const resolveAsset = (val?: string | null) => {
   if (!val) return null;
@@ -196,6 +49,7 @@ export type Post = {
   content: DocumentNode | ContentNode[] | null;
   shortDescription?: string | null;
   thumbnail?: string | null;
+  series?: string | null;
   tags?: string[];
   likes?: string[];
   comments?: BlogComment[];
@@ -302,6 +156,10 @@ export function normalizePost(value: unknown): Post {
         ? source.shortDescription
         : null,
     thumbnail: typeof source.thumbnail === "string" ? source.thumbnail : null,
+    series:
+      typeof source.series === "string" && source.series.trim()
+        ? source.series.trim()
+        : null,
     tags: normalizeStringArray(source.tags),
     likes: normalizeStringArray(source.likes),
     comments: normalizeComments(source.comments),

@@ -80,9 +80,16 @@ type HeaderProps = {
    * headings must start at `<h2>`.
    */
   title?: string | null;
+  /**
+   * Whether this header carries the page `<h1>`. Defaults to `true`. Pass
+   * `false` when the page renders its own `<h1>` inside its main content (e.g.
+   * a blog post shows its title above the byline); the band then labels the
+   * route with a plain `<p>` so the page still has exactly one `<h1>`.
+   */
+  ownsPageHeading?: boolean;
 };
 
-const Header = ({ title }: HeaderProps = {}) => {
+const Header = ({ title, ownsPageHeading = true }: HeaderProps = {}) => {
   const location = useLocation();
   const routeTitle = resolveHeaderTitle(location.pathname);
   const pageTitle = title?.trim() ? title.trim() : routeTitle;
@@ -110,7 +117,11 @@ const Header = ({ title }: HeaderProps = {}) => {
       >
         Skip to main content
       </a>
-      <h1 className="text-center tracking-widest">{pageTitle}</h1>
+      {ownsPageHeading ? (
+        <h1 className="text-center tracking-widest">{pageTitle}</h1>
+      ) : (
+        <p className="text-center tracking-widest">{pageTitle}</p>
+      )}
     </header>
   );
 };
