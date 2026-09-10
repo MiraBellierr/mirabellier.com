@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Mirabellier — Blog</title>
+  <subtitle>Cute thoughts, cozy corners, and little projects — new posts from mirabellier.com.</subtitle>
+  <link href="https://mirabellier.com/feed.xml" rel="self" type="application/atom+xml" />
+  <link href="https://mirabellier.com/blog" />
+  <id>https://mirabellier.com/blog</id>
+  <updated>2026-09-07T09:25:58.843Z</updated>
+  <author><name>Mirabellier</name></author>
+  <entry>
+    <title>Arena: How to Play, How It Works, and How to Win</title>
+    <link href="https://mirabellier.com/blog/arena-how-to-play-how-it-works-and-how-to-win-1788772749574" />
+    <id>https://mirabellier.com/blog/arena-how-to-play-how-it-works-and-how-to-win-1788772749574</id>
+    <published>2026-09-07T09:19:09.574Z</published>
+    <updated>2026-09-07T09:25:58.843Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>A complete guide to the Arena — the ten-minute quickstart, how cards, IVs and affinity work, the full damage pipeline, gear and consumables, the skill tree, ELO seasons, the player market, and a cheat sheet of every number that matters.</summary>
+    <category term="arena" />
+    <category term="guide" />
+    <category term="tutorial" />
+    <category term="dev-post" />
+    <category term="author" />
+  </entry>
+  <entry>
+    <title>test</title>
+    <link href="https://mirabellier.com/blog/test-1777617712928" />
+    <id>https://mirabellier.com/blog/test-1777617712928</id>
+    <published>2026-05-01T06:41:52.928Z</published>
+    <updated>2026-05-01T06:41:52.928Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>test</summary>
+    <category term="test" />
+  </entry>
+  <entry>
+    <title>Kalos&apos; Ultimate Cutest Squad in Pokemon Generation 6.</title>
+    <link href="https://mirabellier.com/blog/kalos-ultimate-cutest-squad-in-pokemon-generation-6-1773270866059" />
+    <id>https://mirabellier.com/blog/kalos-ultimate-cutest-squad-in-pokemon-generation-6-1773270866059</id>
+    <published>2026-03-11T23:14:26.059Z</published>
+    <updated>2026-05-01T06:10:32.594Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Generation 6 (X/Y) featured Fairy types as well as the cutest Pokemon ever! This cute combination of Sylveon, Goodra, Slurpuff, Florges, Dedenne, and Furfrou is sheer cuteness while defeating gyms and the Elite Four in a relaxed playthrough.</summary>
+    <category term="cutestPokemon" />
+    <category term="Gen6Team" />
+    <category term="Kalos" />
+    <category term="FairyType" />
+    <category term="CuteSquad" />
+    <category term="PokemonXY" />
+  </entry>
+  <entry>
+    <title>The world&apos;s first webcam was invented for one of the most relatable reasons in tech history: laziness (or extreme efficiency) when it came to coffee</title>
+    <link href="https://mirabellier.com/blog/the-worlds-first-webcam-was-invented-for-one-of-the-most-relatable-reasons-in-tech-history-laziness-or-extreme-efficiency-when-it-came-to-coffee-1773640150011" />
+    <id>https://mirabellier.com/blog/the-worlds-first-webcam-was-invented-for-one-of-the-most-relatable-reasons-in-tech-history-laziness-or-extreme-efficiency-when-it-came-to-coffee-1773640150011</id>
+    <published>2026-03-16T05:49:10.011Z</published>
+    <updated>2026-03-16T05:49:10.011Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>The story of how a simple coffee pot in a Cambridge University lab accidentally birthed the webcam, saving researchers from pointless walks and kickstarting live video streaming on the internet.</summary>
+    <category term="FirstWebcam" />
+    <category term="TrojanRoomCoffeePot" />
+    <category term="TechHistory" />
+    <category term="InternetOrigins" />
+    <category term="CambridgeUniversity" />
+    <category term="FunTechFacts" />
+    <category term="WebcamInvention" />
+  </entry>
+  <entry>
+    <title>Cats Can&apos;t Taste Sweetness - And That&apos;s Totally Fine for Them!</title>
+    <link href="https://mirabellier.com/blog/cats-cant-taste-sweetness-and-thats-totally-fine-for-them-1773113305661" />
+    <id>https://mirabellier.com/blog/cats-cant-taste-sweetness-and-thats-totally-fine-for-them-1773113305661</id>
+    <published>2026-03-10T03:28:25.662Z</published>
+    <updated>2026-03-10T03:28:25.662Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Ever offered your cat a bit of ice cream or cake? They probably ignored it completely. Here&apos;s the surprising science behind why cats are &quot;sweet blind&quot; and what it tells us about their wild side.</summary>
+    <category term="cats" />
+    <category term="facts" />
+    <category term="felines" />
+    <category term="petlover" />
+    <category term="catbehavior" />
+    <category term="science" />
+    <category term="funfacts" />
+    <category term="sweetness" />
+    <category term="tastebuds" />
+    <category term="carnivore" />
+  </entry>
+  <entry>
+    <title>Chris Nordgren: Indie Creator of Everhood and Mojang&apos;s VFX Mastermind</title>
+    <link href="https://mirabellier.com/blog/chris-nordgren-indie-creator-of-everhood-and-mojangs-vfx-mastermind-1773055680568" />
+    <id>https://mirabellier.com/blog/chris-nordgren-indie-creator-of-everhood-and-mojangs-vfx-mastermind-1773055680568</id>
+    <published>2026-03-09T11:28:00.568Z</published>
+    <updated>2026-03-09T11:28:00.568Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>While employed at Mojang Studios as a Senior Realtime VFX/3D Artist, Chris Nordgren co-created the cult-hit rhythm role-playing game Everhood. He brought explosive effects to Minecraft Dungeons and is now back with Everhood 2.</summary>
+    <category term="ChrisNordgren" />
+    <category term="Everhood" />
+    <category term="Everhood2" />
+    <category term="Mojang" />
+    <category term="VFX" />
+    <category term="MinecraftDungeons" />
+    <category term="indieGames" />
+    <category term="rhythmRPG" />
+  </entry>
+  <entry>
+    <title>Cloudflare&apos;s Famous Lava Lamp Wall: How Retro Lamps Secure the Modern Internet</title>
+    <link href="https://mirabellier.com/blog/cloudflares-famous-lava-lamp-wall-how-retro-lamps-secure-the-modern-internet-1772929487882" />
+    <id>https://mirabellier.com/blog/cloudflares-famous-lava-lamp-wall-how-retro-lamps-secure-the-modern-internet-1772929487882</id>
+    <published>2026-03-08T00:24:47.882Z</published>
+    <updated>2026-03-08T00:24:47.882Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Cloudflare uses a wall of 100 colorful lava lamps in its San Francisco HQ as a source of true randomness (entropy) to generate secure encryption keys for SSL/TLS, protecting vast portions of internet traffic.</summary>
+    <category term="Cloudflare" />
+    <category term="encryption" />
+    <category term="lava-lamps" />
+    <category term="randomness" />
+    <category term="entropy" />
+    <category term="cybersecurity" />
+    <category term="SSL-TLS" />
+  </entry>
+  <entry>
+    <title>Apple Developing &quot;Orchard&quot;: The Next-Generation Programming Language for AI-Driven and Secure Ecosystems</title>
+    <link href="https://mirabellier.com/blog/apple-developing-orchard-the-next-generation-programming-language-for-ai-driven-and-secure-ecosystems-1772926606491" />
+    <id>https://mirabellier.com/blog/apple-developing-orchard-the-next-generation-programming-language-for-ai-driven-and-secure-ecosystems-1772926606491</id>
+    <published>2026-03-07T23:36:46.491Z</published>
+    <updated>2026-03-07T23:36:46.491Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Apple is reportedly developing &quot;Orchard&quot;, a new programming language aimed at ultra-safe, deterministic code for on-device AI, AR/VR, and low-level systems, building on Swift&apos;s success without replacing it.</summary>
+    <category term="Apple" />
+    <category term="Orchard" />
+    <category term="Swift" />
+    <category term="AI" />
+    <category term="Tech" />
+    <category term="programming" />
+    <category term="tech" />
+    <category term="coding" />
+  </entry>
+</feed>

@@ -58,6 +58,20 @@ const SEO_ROUTES: RouteSeo[] = [
     structuredData: ARENA_STRUCTURED_DATA,
   },
   {
+    path: "/now",
+    title: "Now — Mirabellier",
+    description:
+      "What Mirabellier is focused on right now: reading, watching, building, and listening. A /now page in the nownownow.com sense.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "ProfilePage",
+      name: "Now — Mirabellier",
+      description:
+        "What Mirabellier is focused on right now: reading, watching, building, and listening.",
+      url: `${SITE_URL}/now`,
+    },
+  },
+  {
     path: "/blog",
     title: "Blog — Mirabellier",
     description: "Personal blog with thoughts, stories, and updates.",

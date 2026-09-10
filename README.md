@@ -68,7 +68,7 @@ WEBSITE_BASE=https://mirabellier.com
 
 - For local backend development, `VITE_API_BASE` is usually `http://localhost:3000/v1`.
 - `VITE_SITE_ORIGIN` is optional; it overrides the origin used for canonical/share links (defaults to the real domain in a production build, the dev-server origin otherwise).
-- Only `VITE_`-prefixed vars reach the browser bundle. `WEBSITE_BASE` is used by sitemap generation.
+- Only `VITE_`-prefixed vars reach the browser bundle. `WEBSITE_BASE` is used by sitemap and feed generation.
 
 ### 3. Start the frontend
 

@@ -79,6 +79,13 @@ const adminTools = [
     action: "Open question admin",
   },
   {
+    title: "Now Page",
+    description:
+      "Edit the hand-written /now page — intro plus free-form sections for reading, watching, building, and listening.",
+    to: "/admin/now",
+    action: "Open now editor",
+  },
+  {
     title: "Shrine Pages",
     description:
       "Create and edit shrine pages from admin, including full shrine payload JSON and SEO metadata.",

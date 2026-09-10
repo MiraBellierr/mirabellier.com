@@ -271,6 +271,22 @@ const Blog = () => {
                   {filteredPosts.length !== 1 ? "s" : ""} found
                 </p>
               )}
+              <p className="mt-3 text-xs font-medium text-blue-500">
+                Subscribe:{" "}
+                <a
+                  className="underline underline-offset-2 hover:text-pink-600"
+                  href="/feed.xml"
+                >
+                  RSS
+                </a>{" "}
+                ·{" "}
+                <a
+                  className="underline underline-offset-2 hover:text-pink-600"
+                  href="/feed.json"
+                >
+                  JSON
+                </a>
+              </p>
             </div>
             <div className="flex justify-center">
               <img

@@ -1,0 +1,716 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Mirabellier — Question of the Day",
+  "description": "One small question a day. This feed carries each day's prompt as it moves into the archive.",
+  "home_page_url": "https://mirabellier.com/question-of-the-day/archive",
+  "feed_url": "https://mirabellier.com/feed/questions.json",
+  "authors": [
+    {
+      "name": "Mirabellier",
+      "url": "https://mirabellier.com/"
+    }
+  ],
+  "language": "en",
+  "items": [
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-09",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-09",
+      "title": "If you could spend a day in someone else’s shoes, whose would they be?",
+      "summary": "If you could spend a day in someone else’s shoes, whose would they be?",
+      "content_text": "If you could spend a day in someone else’s shoes, whose would they be?",
+      "date_published": "2026-09-09T12:00:00.000Z",
+      "date_modified": "2026-09-09T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-08",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-08",
+      "title": "What’s a random fact you love to share with people?",
+      "summary": "What’s a random fact you love to share with people?",
+      "content_text": "What’s a random fact you love to share with people?",
+      "date_published": "2026-09-08T12:00:00.000Z",
+      "date_modified": "2026-09-08T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-07",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-07",
+      "title": "If you could have any fictional device, what would it be?",
+      "summary": "If you could have any fictional device, what would it be?",
+      "content_text": "If you could have any fictional device, what would it be?",
+      "date_published": "2026-09-07T12:00:00.000Z",
+      "date_modified": "2026-09-07T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-06",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-06",
+      "title": "What’s an unusual habit you’re proud of?",
+      "summary": "What’s an unusual habit you’re proud of?",
+      "content_text": "What’s an unusual habit you’re proud of?",
+      "date_published": "2026-09-06T12:00:00.000Z",
+      "date_modified": "2026-09-06T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-05",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-05",
+      "title": "If you had to live in a novel’s world for a year, which novel would it be?",
+      "summary": "If you had to live in a novel’s world for a year, which novel would it be?",
+      "content_text": "If you had to live in a novel’s world for a year, which novel would it be?",
+      "date_published": "2026-09-05T12:00:00.000Z",
+      "date_modified": "2026-09-05T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-04",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-04",
+      "title": "What’s a simple thing that brings you joy?",
+      "summary": "What’s a simple thing that brings you joy?",
+      "content_text": "What’s a simple thing that brings you joy?",
+      "date_published": "2026-09-04T12:00:00.000Z",
+      "date_modified": "2026-09-04T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-03",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-03",
+      "title": "If you could be an Olympic athlete, what sport would you compete in?",
+      "summary": "If you could be an Olympic athlete, what sport would you compete in?",
+      "content_text": "If you could be an Olympic athlete, what sport would you compete in?",
+      "date_published": "2026-09-03T12:00:00.000Z",
+      "date_modified": "2026-09-03T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-02",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-02",
+      "title": "What’s a tradition from another culture that you find fascinating?",
+      "summary": "What’s a tradition from another culture that you find fascinating?",
+      "content_text": "What’s a tradition from another culture that you find fascinating?",
+      "date_published": "2026-09-02T12:00:00.000Z",
+      "date_modified": "2026-09-02T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-09-01",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-09-01",
+      "title": "If you could learn one rare skill, what would it be?",
+      "summary": "If you could learn one rare skill, what would it be?",
+      "content_text": "If you could learn one rare skill, what would it be?",
+      "date_published": "2026-09-01T12:00:00.000Z",
+      "date_modified": "2026-09-01T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-31",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-31",
+      "title": "What’s an unusual fear you have or have overcome?",
+      "summary": "What’s an unusual fear you have or have overcome?",
+      "content_text": "What’s an unusual fear you have or have overcome?",
+      "date_published": "2026-08-31T12:00:00.000Z",
+      "date_modified": "2026-08-31T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-30",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-30",
+      "title": "If you could eliminate one thing from your daily routine, what would it be?",
+      "summary": "If you could eliminate one thing from your daily routine, what would it be?",
+      "content_text": "If you could eliminate one thing from your daily routine, what would it be?",
+      "date_published": "2026-08-30T12:00:00.000Z",
+      "date_modified": "2026-08-30T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-29",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-29",
+      "title": "What’s an important life lesson you learned the hard way?",
+      "summary": "What’s an important life lesson you learned the hard way?",
+      "content_text": "What’s an important life lesson you learned the hard way?",
+      "date_published": "2026-08-29T12:00:00.000Z",
+      "date_modified": "2026-08-29T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-28",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-28",
+      "title": "If you could have dinner with any three people from history, who would they be?",
+      "summary": "If you could have dinner with any three people from history, who would they be?",
+      "content_text": "If you could have dinner with any three people from history, who would they be?",
+      "date_published": "2026-08-28T12:00:00.000Z",
+      "date_modified": "2026-08-28T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-27",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-27",
+      "title": "What’s a hobby or activity you think everyone should try at least once?",
+      "summary": "What’s a hobby or activity you think everyone should try at least once?",
+      "content_text": "What’s a hobby or activity you think everyone should try at least once?",
+      "date_published": "2026-08-27T12:00:00.000Z",
+      "date_modified": "2026-08-27T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-26",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-26",
+      "title": "If you could have one item from any movie or book, what would it be?",
+      "summary": "If you could have one item from any movie or book, what would it be?",
+      "content_text": "If you could have one item from any movie or book, what would it be?",
+      "date_published": "2026-08-26T12:00:00.000Z",
+      "date_modified": "2026-08-26T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-25",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-25",
+      "title": "What’s a book everyone should read?",
+      "summary": "What’s a book everyone should read?",
+      "content_text": "What’s a book everyone should read?",
+      "date_published": "2026-08-25T12:00:00.000Z",
+      "date_modified": "2026-08-25T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-24",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-24",
+      "title": "If you could be a master in any form of dance, what would it be?",
+      "summary": "If you could be a master in any form of dance, what would it be?",
+      "content_text": "If you could be a master in any form of dance, what would it be?",
+      "date_published": "2026-08-24T12:00:00.000Z",
+      "date_modified": "2026-08-24T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-23",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-23",
+      "title": "What’s a place you’ve always wanted to explore?",
+      "summary": "What’s a place you’ve always wanted to explore?",
+      "content_text": "What’s a place you’ve always wanted to explore?",
+      "date_published": "2026-08-23T12:00:00.000Z",
+      "date_modified": "2026-08-23T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-22",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-22",
+      "title": "If you could experience a day in the life of any celebrity, who would it be?",
+      "summary": "If you could experience a day in the life of any celebrity, who would it be?",
+      "content_text": "If you could experience a day in the life of any celebrity, who would it be?",
+      "date_published": "2026-08-22T12:00:00.000Z",
+      "date_modified": "2026-08-22T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-21",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-21",
+      "title": "What’s a small gesture from someone that made a big impact on you?",
+      "summary": "What’s a small gesture from someone that made a big impact on you?",
+      "content_text": "What’s a small gesture from someone that made a big impact on you?",
+      "date_published": "2026-08-21T12:00:00.000Z",
+      "date_modified": "2026-08-21T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-20",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-20",
+      "title": "If you could create a new invention, what problem would it solve?",
+      "summary": "If you could create a new invention, what problem would it solve?",
+      "content_text": "If you could create a new invention, what problem would it solve?",
+      "date_published": "2026-08-20T12:00:00.000Z",
+      "date_modified": "2026-08-20T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-19",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-19",
+      "title": "What’s a movie everyone should watch at least once?",
+      "summary": "What’s a movie everyone should watch at least once?",
+      "content_text": "What’s a movie everyone should watch at least once?",
+      "date_published": "2026-08-19T12:00:00.000Z",
+      "date_modified": "2026-08-19T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-18",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-18",
+      "title": "If you could have any historical figure as a mentor, who would you choose?",
+      "summary": "If you could have any historical figure as a mentor, who would you choose?",
+      "content_text": "If you could have any historical figure as a mentor, who would you choose?",
+      "date_published": "2026-08-18T12:00:00.000Z",
+      "date_modified": "2026-08-18T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-17",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-17",
+      "title": "What’s a unique family tradition you cherish?",
+      "summary": "What’s a unique family tradition you cherish?",
+      "content_text": "What’s a unique family tradition you cherish?",
+      "date_published": "2026-08-17T12:00:00.000Z",
+      "date_modified": "2026-08-17T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-16",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-16",
+      "title": "If you could collaborate with any person on a project, who would it be?",
+      "summary": "If you could collaborate with any person on a project, who would it be?",
+      "content_text": "If you could collaborate with any person on a project, who would it be?",
+      "date_published": "2026-08-16T12:00:00.000Z",
+      "date_modified": "2026-08-16T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-15",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-15",
+      "title": "What’s an activity or sport you’ve never tried but would like to?",
+      "summary": "What’s an activity or sport you’ve never tried but would like to?",
+      "content_text": "What’s an activity or sport you’ve never tried but would like to?",
+      "date_published": "2026-08-15T12:00:00.000Z",
+      "date_modified": "2026-08-15T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-14",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-14",
+      "title": "If you could choose any era to grow up in, which would you pick?",
+      "summary": "If you could choose any era to grow up in, which would you pick?",
+      "content_text": "If you could choose any era to grow up in, which would you pick?",
+      "date_published": "2026-08-14T12:00:00.000Z",
+      "date_modified": "2026-08-14T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-13",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-13",
+      "title": "What’s the most compelling mystery or unsolved case you’ve heard about?",
+      "summary": "What’s the most compelling mystery or unsolved case you’ve heard about?",
+      "content_text": "What’s the most compelling mystery or unsolved case you’ve heard about?",
+      "date_published": "2026-08-13T12:00:00.000Z",
+      "date_modified": "2026-08-13T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-12",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-12",
+      "title": "If you could own a piece of art from any artist, which would it be?",
+      "summary": "If you could own a piece of art from any artist, which would it be?",
+      "content_text": "If you could own a piece of art from any artist, which would it be?",
+      "date_published": "2026-08-12T12:00:00.000Z",
+      "date_modified": "2026-08-12T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-11",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-11",
+      "title": "What’s a language or dialect you find fascinating?",
+      "summary": "What’s a language or dialect you find fascinating?",
+      "content_text": "What’s a language or dialect you find fascinating?",
+      "date_published": "2026-08-11T12:00:00.000Z",
+      "date_modified": "2026-08-11T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-10",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-10",
+      "title": "If you could live in any TV show universe, which one would it be?",
+      "summary": "If you could live in any TV show universe, which one would it be?",
+      "content_text": "If you could live in any TV show universe, which one would it be?",
+      "date_published": "2026-08-10T12:00:00.000Z",
+      "date_modified": "2026-08-10T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-09",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-09",
+      "title": "What’s a personal achievement you’re particularly proud of?",
+      "summary": "What’s a personal achievement you’re particularly proud of?",
+      "content_text": "What’s a personal achievement you’re particularly proud of?",
+      "date_published": "2026-08-09T12:00:00.000Z",
+      "date_modified": "2026-08-09T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-08",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-08",
+      "title": "If you could have witnessed any famous event in history, what would it be?",
+      "summary": "If you could have witnessed any famous event in history, what would it be?",
+      "content_text": "If you could have witnessed any famous event in history, what would it be?",
+      "date_published": "2026-08-08T12:00:00.000Z",
+      "date_modified": "2026-08-08T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-07",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-07",
+      "title": "What’s the best piece of life wisdom you’ve received?",
+      "summary": "What’s the best piece of life wisdom you’ve received?",
+      "content_text": "What’s the best piece of life wisdom you’ve received?",
+      "date_published": "2026-08-07T12:00:00.000Z",
+      "date_modified": "2026-08-07T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-06",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-06",
+      "title": "If you could have any animal as a loyal companion, what would it be?",
+      "summary": "If you could have any animal as a loyal companion, what would it be?",
+      "content_text": "If you could have any animal as a loyal companion, what would it be?",
+      "date_published": "2026-08-06T12:00:00.000Z",
+      "date_modified": "2026-08-06T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-05",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-05",
+      "title": "What’s a topic you could give an impromptu 20-minute presentation on?",
+      "summary": "What’s a topic you could give an impromptu 20-minute presentation on?",
+      "content_text": "What’s a topic you could give an impromptu 20-minute presentation on?",
+      "date_published": "2026-08-05T12:00:00.000Z",
+      "date_modified": "2026-08-05T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-04",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-04",
+      "title": "If you could instantly be transported to any place on Earth, where would you go?",
+      "summary": "If you could instantly be transported to any place on Earth, where would you go?",
+      "content_text": "If you could instantly be transported to any place on Earth, where would you go?",
+      "date_published": "2026-08-04T12:00:00.000Z",
+      "date_modified": "2026-08-04T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-03",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-03",
+      "title": "What’s the most unusual food combination you enjoy?",
+      "summary": "What’s the most unusual food combination you enjoy?",
+      "content_text": "What’s the most unusual food combination you enjoy?",
+      "date_published": "2026-08-03T12:00:00.000Z",
+      "date_modified": "2026-08-03T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-02",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-02",
+      "title": "If you could experience life in any profession for a week, what would you choose?",
+      "summary": "If you could experience life in any profession for a week, what would you choose?",
+      "content_text": "If you could experience life in any profession for a week, what would you choose?",
+      "date_published": "2026-08-02T12:00:00.000Z",
+      "date_modified": "2026-08-02T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-08-01",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-08-01",
+      "title": "What’s the most meaningful conversation you’ve ever had?",
+      "summary": "What’s the most meaningful conversation you’ve ever had?",
+      "content_text": "What’s the most meaningful conversation you’ve ever had?",
+      "date_published": "2026-08-01T12:00:00.000Z",
+      "date_modified": "2026-08-01T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-31",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-31",
+      "title": "If you could create your own country, what would be its main values and traditions?",
+      "summary": "If you could create your own country, what would be its main values and traditions?",
+      "content_text": "If you could create your own country, what would be its main values and traditions?",
+      "date_published": "2026-07-31T12:00:00.000Z",
+      "date_modified": "2026-07-31T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-30",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-30",
+      "title": "What’s a childhood hobby you’d like to revisit?",
+      "summary": "What’s a childhood hobby you’d like to revisit?",
+      "content_text": "What’s a childhood hobby you’d like to revisit?",
+      "date_published": "2026-07-30T12:00:00.000Z",
+      "date_modified": "2026-07-30T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-29",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-29",
+      "title": "If you could bring one character from a book to life, who would it be?",
+      "summary": "If you could bring one character from a book to life, who would it be?",
+      "content_text": "If you could bring one character from a book to life, who would it be?",
+      "date_published": "2026-07-29T12:00:00.000Z",
+      "date_modified": "2026-07-29T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-28",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-28",
+      "title": "What’s an unusual talent you have or would like to have?",
+      "summary": "What’s an unusual talent you have or would like to have?",
+      "content_text": "What’s an unusual talent you have or would like to have?",
+      "date_published": "2026-07-28T12:00:00.000Z",
+      "date_modified": "2026-07-28T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-27",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-27",
+      "title": "If you could master any form of artistic expression overnight, what would it be?",
+      "summary": "If you could master any form of artistic expression overnight, what would it be?",
+      "content_text": "If you could master any form of artistic expression overnight, what would it be?",
+      "date_published": "2026-07-27T12:00:00.000Z",
+      "date_modified": "2026-07-27T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-26",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-26",
+      "title": "What’s a movie or book character you most identify with?",
+      "summary": "What’s a movie or book character you most identify with?",
+      "content_text": "What’s a movie or book character you most identify with?",
+      "date_published": "2026-07-26T12:00:00.000Z",
+      "date_modified": "2026-07-26T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-25",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-25",
+      "title": "If you could have lunch with one famous person (alive or dead), who would it be?",
+      "summary": "If you could have lunch with one famous person (alive or dead), who would it be?",
+      "content_text": "If you could have lunch with one famous person (alive or dead), who would it be?",
+      "date_published": "2026-07-25T12:00:00.000Z",
+      "date_modified": "2026-07-25T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-24",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-24",
+      "title": "What’s the most heartwarming act of kindness you’ve ever seen or experienced?",
+      "summary": "What’s the most heartwarming act of kindness you’ve ever seen or experienced?",
+      "content_text": "What’s the most heartwarming act of kindness you’ve ever seen or experienced?",
+      "date_published": "2026-07-24T12:00:00.000Z",
+      "date_modified": "2026-07-24T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-23",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-23",
+      "title": "If you could have a secret room in your house, what would it contain?",
+      "summary": "If you could have a secret room in your house, what would it contain?",
+      "content_text": "If you could have a secret room in your house, what would it contain?",
+      "date_published": "2026-07-23T12:00:00.000Z",
+      "date_modified": "2026-07-23T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    },
+    {
+      "id": "https://mirabellier.com/question-of-the-day/archive/2026-07-22",
+      "url": "https://mirabellier.com/question-of-the-day/archive/2026-07-22",
+      "title": "What’s a song that you feel was written about you?",
+      "summary": "What’s a song that you feel was written about you?",
+      "content_text": "What’s a song that you feel was written about you?",
+      "date_published": "2026-07-22T12:00:00.000Z",
+      "date_modified": "2026-07-22T12:00:00.000Z",
+      "authors": [
+        {
+          "name": "Mirabellier"
+        }
+      ]
+    }
+  ]
+}

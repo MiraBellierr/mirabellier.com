@@ -108,6 +108,22 @@ const QuestionArchive = () => {
                   <p className="text-sm text-blue-500">
                     Every archived day keeps its answer and public answers.
                   </p>
+                  <p className="mt-1 text-xs font-medium text-blue-400">
+                    Subscribe:{" "}
+                    <a
+                      className="underline underline-offset-2 hover:text-pink-600"
+                      href="/feed/questions.xml"
+                    >
+                      RSS
+                    </a>{" "}
+                    ·{" "}
+                    <a
+                      className="underline underline-offset-2 hover:text-pink-600"
+                      href="/feed/questions.json"
+                    >
+                      JSON
+                    </a>
+                  </p>
                 </div>
 
                 <Link
