@@ -10,11 +10,9 @@ const Footer = () => {
       <span className="tracking-tight text-left">
         Made with love ❤️ by mirabellier
       </span>
-      <nav
-        aria-label="Legal"
-        className="flex flex-col items-center justify-center gap-1"
-      >
-        <span className="flex items-center gap-3">
+
+      <div className="flex flex-col items-center justify-center gap-1">
+        <nav aria-label="Legal" className="flex items-center gap-3">
           <Link className="underline underline-offset-4 hover:text-pink-600" to="/privacy">
             Privacy
           </Link>
@@ -26,7 +24,8 @@ const Footer = () => {
           <Link className="underline underline-offset-4 hover:text-pink-600" to="/links">
             Links
           </Link>
-        </span>
+        </nav>
+
         {webring.enabled ? (
           <nav
             aria-label={webring.name || "Webring"}
@@ -48,14 +47,16 @@ const Footer = () => {
             >
               {webring.name || "webring"}
             </a>
-            <a
-              className="underline underline-offset-4 hover:text-pink-600"
-              href={webring.randomUrl}
-              rel="external"
-              title={`Random site in ${webring.name}`}
-            >
-              rand
-            </a>
+            {webring.randomUrl ? (
+              <a
+                className="underline underline-offset-4 hover:text-pink-600"
+                href={webring.randomUrl}
+                rel="external"
+                title={`Random site in ${webring.name}`}
+              >
+                rand
+              </a>
+            ) : null}
             <a
               className="underline underline-offset-4 hover:text-pink-600"
               href={webring.nextUrl}
@@ -66,7 +67,8 @@ const Footer = () => {
             </a>
           </nav>
         ) : null}
-      </nav>
+      </div>
+
       <p className="tracking-tight text-left sm:text-right">I love ya!! ❤️</p>
     </footer>
   );
