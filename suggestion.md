@@ -102,7 +102,23 @@ thing is React 19 + Vite 7 on a VPS with atomic symlink deploys. It's a genre
 page, people link to them, and yours would be more interesting than most because
 the deploy story is actually good.
 
-### 5. Webring + blogroll
+### 5. Webring + blogroll  ✅ DONE (2026-09-10)
+
+**Shipped:** owner-editable, backed by a `site_links` table (one JSON row,
+`GET /links` public + `PUT /links` owner-only — same "seed then DB" pattern as
+`/now`). `src/pages/Links.tsx` renders a blogroll of sections ("friends &
+neighbours", "small-web corners") — each entry name + optional `rss` link +
+blurb — a webring section, and a "want a link back?" pointer to the guestbook;
+empty sections are hidden. `src/lib/links.ts` now only holds the pre-save
+default list. Owner editor `src/pages/AdminLinks.tsx` (`/admin/links`,
+`/admin` card): add/remove/rename sections, add/remove link rows, and a webring
+form. The webring only "enables" once its hub + prev + next URLs are all set;
+until then the `Footer.tsx` widget (`‹ prev · ring · rand · next ›`) and the
+on-page panel stay hidden, so there are never dead links. The footer reads the
+live webring via `useWebring()` (shares the `/links` SWR fetch). All URL fields
+run through the backend `sanitize-website` helper. Also wired into
+`Navigation.tsx`, the `vite.config.ts` SEO route list (prerendered head), and
+`lib/sitemap.js`. Tests in `mirabellier-backend/test/site-links.test.js`.
 
 Pure small-web. A `/links` page of sites you like, and a webring widget in
 `Footer.tsx`. Low effort, high "this is a real personal site" signal. Pairs
@@ -262,3 +278,8 @@ Right now it sits in between.
 - **2026-09-10**: Shipped #1 (blog + QOTD feeds), #2 (`/now` page + editor),
   #3 (`/changelog` + editor), #4 (`/uses` static colophon). Next up per the
   order: command palette, then OG images.
+- **2026-09-10**: Shipped small-web #5 (`/links` blogroll + `Footer.tsx` webring
+  widget). Now owner-editable: `site_links` table + `GET/PUT /links` +
+  `src/pages/AdminLinks.tsx` at `/admin/links`. Webring only lights up once its
+  hub/prev/next URLs are set, so no dead links. Command palette and OG images
+  still next.

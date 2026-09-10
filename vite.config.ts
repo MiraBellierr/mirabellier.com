@@ -98,6 +98,17 @@ const SEO_ROUTES: RouteSeo[] = [
     },
   },
   {
+    path: "/links",
+    title: "Links | Mirabellier",
+    description:
+      "A blogroll for mirabellier.com: personal sites I read, friends' corners of the web, and the small-web directories worth browsing.",
+    structuredData: collectionPageJsonLd(
+      "Links",
+      "A blogroll for mirabellier.com: personal sites I read, friends' corners of the web, and the small-web directories worth browsing.",
+      `${SITE_URL}/links`,
+    ),
+  },
+  {
     path: "/blog",
     title: "Blog | Mirabellier",
     description: "Personal blog with thoughts, stories, and updates.",

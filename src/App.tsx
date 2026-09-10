@@ -8,6 +8,7 @@ const About = lazy(() => import("./pages/About"));
 const Now = lazy(() => import("./pages/Now"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const Uses = lazy(() => import("./pages/Uses"));
+const Links = lazy(() => import("./pages/Links"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Shrine = lazy(() => import("./pages/Shrine"));
 const Kanna = lazy(() => import("./pages/Kanna"));
@@ -46,6 +47,7 @@ const AdminQuestionOfTheDay = lazy(
 );
 const AdminNow = lazy(() => import("./pages/AdminNow"));
 const AdminChangelog = lazy(() => import("./pages/AdminChangelog"));
+const AdminLinks = lazy(() => import("./pages/AdminLinks"));
 const AdminShrines = lazy(() => import("./pages/AdminShrines"));
 const AdminShrinePreview = lazy(() => import("./pages/AdminShrinePreview"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
@@ -126,6 +128,7 @@ function App() {
       <Route path="/now" element={<Now />} />
       <Route path="/changelog" element={<Changelog />} />
       <Route path="/uses" element={<Uses />} />
+      <Route path="/links" element={<Links />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />
       <Route path="/fanart" element={<Fanart />} />
@@ -195,6 +198,7 @@ function App() {
       />
       <Route path="/admin/now" element={<AdminNow />} />
       <Route path="/admin/changelog" element={<AdminChangelog />} />
+      <Route path="/admin/links" element={<AdminLinks />} />
       <Route path="/admin/shrines" element={<AdminShrines />} />
       <Route path="/admin/shrines/preview" element={<AdminShrinePreview />} />
       <Route path="/admin/users" element={<AdminUsers />} />

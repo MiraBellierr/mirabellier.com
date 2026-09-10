@@ -93,6 +93,13 @@ const adminTools = [
     action: "Open changelog editor",
   },
   {
+    title: "Links Page",
+    description:
+      "Edit the /links blogroll — sections of sites with blurbs — and the webring shown in the site footer.",
+    to: "/admin/links",
+    action: "Open links editor",
+  },
+  {
     title: "Shrine Pages",
     description:
       "Create and edit shrine pages from admin, including full shrine payload JSON and SEO metadata.",
