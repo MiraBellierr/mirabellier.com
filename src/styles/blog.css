@@ -465,3 +465,24 @@
 .blog-post-page .prose :is(h1, h2, h3, h4) {
   scroll-margin-top: 6rem;
 }
+
+/* Dark mode: these pills/buttons keep a light Tailwind background (the global
+   border+rounded darkening rule doesn't catch a bare `border` class), so their
+   text must stay dark instead of the light-purple the global `.dark .text-blue-*`
+   / `.dark .card-border span` overrides would otherwise force. */
+.dark .blog-pagination button.bg-blue-200 {
+  color: rgb(30 58 138) !important; /* blue-900 on light blue-200 */
+}
+
+.dark .blog-pagination button.bg-gray-200 {
+  color: rgb(75 85 99) !important; /* gray-600 on light gray-200 (disabled) */
+}
+
+.dark .blog-post-page .card-border .blog-like-count {
+  color: rgb(51 65 85) !important; /* slate-600 on the white/80 badge */
+}
+
+/* Disabled "Post comment" fades to light pink-300 — keep its label dark. */
+.dark .blog-post-page .card-border .blog-comment-submit:disabled {
+  color: rgb(131 24 67) !important; /* pink-900 on pink-300 */
+}

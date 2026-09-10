@@ -704,7 +704,7 @@ const BlogPost = () => {
                       >
                         <HeartIcon filled={liked} />
                         <span>{liked ? "Liked" : "Like"}</span>
-                        <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs text-slate-600">
+                        <span className="blog-like-count rounded-full bg-white/80 px-2 py-0.5 text-xs text-slate-600">
                           {likes.length}
                         </span>
                       </button>
@@ -784,7 +784,7 @@ const BlogPost = () => {
                           disabled={
                             isCommenting || !auth.token || !commentText.trim()
                           }
-                          className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-pink-300"
+                          className="blog-comment-submit rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-pink-300"
                         >
                           {isCommenting ? "Posting..." : "Post comment"}
                         </button>
