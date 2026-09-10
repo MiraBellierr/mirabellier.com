@@ -124,7 +124,17 @@ Pure small-web. A `/links` page of sites you like, and a webring widget in
 `Footer.tsx`. Low effort, high "this is a real personal site" signal. Pairs
 naturally with #1 — you can only be in someone's reader if you have a feed.
 
-### 6. Guestbook "on this day"
+### 6. Guestbook "on this day"  ✅ DONE (2026-09-10)
+
+**Shipped:** `mirabellier-backend/lib/guestbook-on-this-day.js` (UTC month-day key +
+limit clamp + the one query) behind `GET /guestbook/on-this-day`, which returns
+`{ date, entries }` for notes pinned on today's calendar date in a strictly
+earlier year (matched with `substr(createdAt, …)` so it doesn't depend on the
+bundled SQLite's `strftime` "Z" handling). Reuses the route's existing
+`mapEntryRow`. Frontend: `fetchGuestbookOnThisDay` in `src/lib/guestbook-api.ts`
+and `src/parts/GuestbookOnThisDay.tsx`, a right-side panel on `/guestbook` that
+renders nothing when there are no memories or the fetch fails. Tests in
+`mirabellier-backend/test/guestbook-on-this-day.test.js`.
 
 The guestbook is a draggable board with moods already (`GuestbookMood` in
 `src/lib/guestbook-api.ts`). Add a widget that resurfaces entries left on this
@@ -283,3 +293,7 @@ Right now it sits in between.
   `src/pages/AdminLinks.tsx` at `/admin/links`. Webring only lights up once its
   hub/prev/next URLs are set, so no dead links. Command palette and OG images
   still next.
+- **2026-09-10**: Shipped small-web #6 (guestbook "on this day"):
+  `GET /guestbook/on-this-day` + `GuestbookOnThisDay.tsx` side panel on
+  `/guestbook`, hidden until there is history to show. Command palette and OG
+  images still next.

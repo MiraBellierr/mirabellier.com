@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
+import GuestbookOnThisDay from "../parts/GuestbookOnThisDay";
 import kannaShy from "@/assets/anime/kanna-shy.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import { resolveAsset } from "@/lib/blog-utils";
@@ -770,6 +771,8 @@ const Guestbook = () => {
                 <p>Hold Ctrl and scroll to zoom the board.</p>
               </div>
             </div>
+
+            <GuestbookOnThisDay />
 
             <div className="hidden justify-center lg:flex">
               <img

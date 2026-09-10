@@ -128,6 +128,37 @@ export async function fetchGuestbookEntries(
   return Array.isArray(data) ? data.map(normalizeEntry) : [];
 }
 
+export type GuestbookOnThisDay = {
+  date: string;
+  entries: GuestbookEntry[];
+};
+
+export async function fetchGuestbookOnThisDay(
+  signal?: AbortSignal,
+): Promise<GuestbookOnThisDay> {
+  const response = await fetch(`${API_BASE}/guestbook/on-this-day`, {
+    cache: "no-store",
+    credentials: "include",
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch guestbook memories");
+  }
+
+  const data = (await response.json()) as {
+    date?: unknown;
+    entries?: unknown;
+  };
+
+  return {
+    date: typeof data?.date === "string" ? data.date : "",
+    entries: Array.isArray(data?.entries)
+      ? data.entries.map(normalizeEntry)
+      : [],
+  };
+}
+
 export async function createGuestbookEntry(input: {
   message: string;
   mood: GuestbookMood;
