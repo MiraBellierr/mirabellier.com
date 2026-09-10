@@ -72,6 +72,17 @@ const SEO_ROUTES: RouteSeo[] = [
     },
   },
   {
+    path: "/changelog",
+    title: "Changelog — Mirabellier",
+    description:
+      "Notable changes and new features shipped to mirabellier.com, newest first.",
+    structuredData: collectionPageJsonLd(
+      "Changelog",
+      "Notable changes and new features shipped to mirabellier.com, newest first.",
+      `${SITE_URL}/changelog`,
+    ),
+  },
+  {
     path: "/blog",
     title: "Blog — Mirabellier",
     description: "Personal blog with thoughts, stories, and updates.",

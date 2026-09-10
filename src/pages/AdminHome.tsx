@@ -86,6 +86,13 @@ const adminTools = [
     action: "Open now editor",
   },
   {
+    title: "Changelog",
+    description:
+      "Add, edit, and remove entries on the public /changelog page — a dated title plus a short body, newest first.",
+    to: "/admin/changelog",
+    action: "Open changelog editor",
+  },
+  {
     title: "Shrine Pages",
     description:
       "Create and edit shrine pages from admin, including full shrine payload JSON and SEO metadata.",
