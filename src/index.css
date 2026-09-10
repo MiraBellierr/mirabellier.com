@@ -439,6 +439,11 @@ h6 {
     position: sticky;
     top: 1rem;
     align-self: flex-start;
+    /* Fixed width so the site nav is the same size on every page, regardless of
+       whether a page's right column is `w-1/5` or a fixed pixel width. Overrides
+       the `flex-grow` utility on the element (later source order, same
+       specificity). */
+    flex: 0 0 15.5rem;
   }
 }
 

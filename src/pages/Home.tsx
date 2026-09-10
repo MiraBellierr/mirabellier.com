@@ -16,6 +16,7 @@ import {
 import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
+import yorSticker from "@/assets/anime/yor-sticker1.webp";
 
 const DeferredAnimatedImage = lazy(
   () => import("@/components/DeferredAnimatedImage"),
@@ -155,6 +156,24 @@ function getHomePostHref(post: Post | null) {
   return `/blog/${slug ? `${slug}-${postId}` : postId}`;
 }
 
+// Flower that peeks over the top-right corner of a card. Place inside a
+// `position: relative` wrapper around a `.card-border` section.
+const SectionFlower = () => (
+  <img
+    className="pointer-events-none absolute h-14 w-14 object-contain"
+    src="/flower.webp"
+    width="56"
+    height="56"
+    alt=""
+    aria-hidden="true"
+    style={{
+      top: "-18px",
+      right: "-10px",
+      zIndex: 2,
+    }}
+  />
+);
+
 const Home = () => {
   const auth = useOptionalAuth();
   const [now, setNow] = useState(() => new Date());
@@ -285,75 +304,38 @@ const Home = () => {
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col p-4 lg:flex-row">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-
-            <div className="mt-3 mb-auto flex items-center justify-center">
-              {showAnimatedHero ? (
-                <Suspense
-                  fallback={
-                    <img
-                      className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-[300px]"
-                      src={HOME_HERO_POSTER_SRC}
-                      width="300"
-                      height="404"
-                      alt="anime poster"
-                      loading="eager"
-                      fetchPriority="high"
-                      decoding="async"
-                    />
-                  }
-                >
-                  <DeferredAnimatedImage
-                    className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-[300px]"
-                    posterSrc={HOME_HERO_POSTER_SRC}
-                    animatedSrc={kannaKobayashi}
-                    width="300"
-                    height="404"
-                    alt="anime gif"
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                    waitForLcp
-                  />
-                </Suspense>
-              ) : (
-                <img
-                  className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-[300px]"
-                  src={HOME_HERO_POSTER_SRC}
-                  width="300"
-                  height="404"
-                  alt="anime poster"
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-              )}
-            </div>
           </div>
 
           <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <div className="card-border space-y-1 p-4">
-              <h2 className="mb-2 text-xl font-bold text-blue-700">
-                🌸 About Me 🌸
-              </h2>
-              <p>Hiya!! I&apos;m Mirabellier! 💙</p>
-              <p>
-                I&apos;m just a{" "}
-                <span className="font-bold text-blue-600">
-                  chill internet spirit
-                </span>{" "}
-                who loves{" "}
-                <span className="font-bold text-blue-600 underline">cute</span>{" "}
-                things, and making friends!
-              </p>
-              <p>
-                I also enjoy programming, watching anime and cuddling with my
-                cat. (I love cats!! 😸)
-              </p>
-              <div className="mt-2 text-sm text-blue-500">
-                <p>If you see this, you&apos;re cute!!</p>
-              </div>
-              <div className="mt-2 border-t border-blue-200 pt-2 text-[14px]">
-                <p className="pr-2">channeling my phychic power. ⚡</p>
+            <div className="relative">
+              <SectionFlower />
+
+              <div className="card-border space-y-1 p-4">
+                <h2 className="mb-2 text-xl font-bold text-blue-700">
+                  🌸 About Me 🌸
+                </h2>
+                <p>Hiya!! I&apos;m Mirabellier! 💙</p>
+                <p>
+                  I&apos;m just a{" "}
+                  <span className="font-bold text-blue-600">
+                    chill internet spirit
+                  </span>{" "}
+                  who loves{" "}
+                  <span className="font-bold text-blue-600 underline">
+                    cute
+                  </span>{" "}
+                  things, and making friends!
+                </p>
+                <p>
+                  I also enjoy programming, watching anime and cuddling with my
+                  cat. (I love cats!! 😸)
+                </p>
+                <div className="mt-2 text-sm text-blue-500">
+                  <p>If you see this, you&apos;re cute!!</p>
+                </div>
+                <div className="mt-2 border-t border-blue-200 pt-2 text-[14px]">
+                  <p className="pr-2">channeling my phychic power. ⚡</p>
+                </div>
               </div>
             </div>
 
@@ -363,13 +345,24 @@ const Home = () => {
               <h2 className="mb-2 text-xl font-bold text-blue-700">
                 🧠 Random Facts!
               </h2>
-              <p>
-                • My favorite color is{" "}
-                <span className="font-bold text-blue-300">pastel blue</span> 💙
-              </p>
-              <p>• I love collecting plushies and stickers</p>
-              <p>• Sometimes I stay up too late making silly stuff like this</p>
-              <p>• I think you&apos;re awesome just for being here ^-^</p>
+              <div className="relative space-y-1">
+                <img
+                  className="pointer-events-none mx-auto block w-24 sm:absolute sm:right-2 sm:top-1/2 sm:mx-0 sm:w-32 sm:-translate-y-1/2"
+                  src={yorSticker}
+                  width="500"
+                  height="500"
+                  alt="Yor sticker"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <p>
+                  • My favorite color is{" "}
+                  <span className="font-bold text-blue-300">pastel blue</span> 💙
+                </p>
+                <p>• I love collecting plushies and stickers</p>
+                <p>• Sometimes I stay up too late making silly stuff like this</p>
+                <p>• I think you&apos;re awesome just for being here ^-^</p>
+              </div>
             </div>
 
             <Divider variant="image" />
@@ -522,6 +515,49 @@ const Home = () => {
                   </div>
                 ) : null}
               </div>
+            </div>
+
+            <div className="flex items-center justify-center">
+              {showAnimatedHero ? (
+                <Suspense
+                  fallback={
+                    <img
+                      className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-full"
+                      src={HOME_HERO_POSTER_SRC}
+                      width="300"
+                      height="404"
+                      alt="anime poster"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
+                  }
+                >
+                  <DeferredAnimatedImage
+                    className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-full"
+                    posterSrc={HOME_HERO_POSTER_SRC}
+                    animatedSrc={kannaKobayashi}
+                    width="300"
+                    height="404"
+                    alt="anime gif"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    waitForLcp
+                  />
+                </Suspense>
+              ) : (
+                <img
+                  className="h-auto w-[200px] rounded-2xl border border-blue-700 shadow-md sm:w-[240px] lg:w-full"
+                  src={HOME_HERO_POSTER_SRC}
+                  width="300"
+                  height="404"
+                  alt="anime poster"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              )}
             </div>
           </aside>
         </div>

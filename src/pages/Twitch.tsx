@@ -1448,27 +1448,20 @@ const Twitch = () => {
 
           <aside className="mb-auto w-full space-y-4 lg:w-1/5">
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-slate-800 dark:opacity-95">
-              <h2 className="text-center text-lg font-bold text-blue-700 dark:text-purple-100">
-                channels
-              </h2>
-              {channels.length === 0 ? (
-                <p className="mt-3 text-center text-sm text-blue-500 dark:text-purple-200">
-                  none tracked yet
+              <div className="space-y-3 text-sm text-blue-600 dark:text-purple-200">
+                <h2 className="text-center text-lg font-bold text-blue-700 dark:text-purple-100">
+                  how it works
+                </h2>
+                <p>
+                  Stream history is smoothed into a weekly schedule map and
+                  weighted toward recent streams, then blended with how long it
+                  has been since the last one.
                 </p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {channels.map((channel) => (
-                    <li key={channel.id}>
-                      <ChannelTab
-                        channel={channel}
-                        selected={channel.login === selectedLogin}
-                        onSelect={() => setSelectedLogin(channel.login)}
-                        fullWidth
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )}
+                <p>
+                  Predictions get sharper as more streams are recorded, and the
+                  model keeps track of its own accuracy.
+                </p>
+              </div>
             </div>
 
             {payload ? (
@@ -1526,23 +1519,6 @@ const Twitch = () => {
                 </dl>
               </div>
             ) : null}
-
-            <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 opacity-90 shadow-md dark:border-purple-400/30 dark:bg-slate-800 dark:opacity-95">
-              <div className="space-y-3 text-sm text-blue-600 dark:text-purple-200">
-                <h2 className="text-center text-lg font-bold text-blue-700 dark:text-purple-100">
-                  how it works
-                </h2>
-                <p>
-                  Stream history is smoothed into a weekly schedule map and
-                  weighted toward recent streams, then blended with how long it
-                  has been since the last one.
-                </p>
-                <p>
-                  Predictions get sharper as more streams are recorded, and the
-                  model keeps track of its own accuracy.
-                </p>
-              </div>
-            </div>
           </aside>
         </div>
       </div>

@@ -4,8 +4,8 @@ import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
-import kannaSmile from "@/assets/anime/kanna-smile.webp";
 import { usePageSeo } from "@/lib/seo";
+import anime3Gif from "@/assets/anime/anime3.webp";
 import { useWebSocket } from "@/states/WebSocketProvider";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
@@ -194,18 +194,6 @@ const Anime = () => {
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-
-            <div className="mt-3 mb-auto hidden items-center justify-center lg:flex">
-              <img
-                className="w-full max-w-[320px] rounded-2xl border border-blue-700 shadow-md"
-                src={kannaSmile}
-                width="320"
-                height="427"
-                alt="kanna smiling"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
           </div>
 
           <main className="w-full space-y-2 p-4 lg:w-3/5">
@@ -312,6 +300,19 @@ const Anime = () => {
                 </h2>
                 <p>Here are my updated currently watching anime. ^-^</p>
               </div>
+            </div>
+
+            <div className="flex justify-center">
+              <img
+                className="w-full max-w-[220px] rounded-xl"
+                src={anime3Gif}
+                width="480"
+                height="270"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           </aside>
         </div>

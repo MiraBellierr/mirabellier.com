@@ -3,7 +3,7 @@ import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
-import kannaSmile from "@/assets/anime/kanna-smile.webp";
+import anime4Gif from "@/assets/anime/anime4.webp";
 import { joinApi } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
@@ -259,10 +259,11 @@ const Quotes = () => {
             <div className="hidden justify-center lg:flex">
               <img
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaSmile}
-                width="320"
-                height="427"
-                alt="kanna smiling"
+                src={anime4Gif}
+                width="400"
+                height="400"
+                alt=""
+                aria-hidden="true"
                 loading="lazy"
                 decoding="async"
               />

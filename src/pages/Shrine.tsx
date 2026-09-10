@@ -2,13 +2,10 @@ import { useEffect } from "react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import DeferredAnimatedImage from "@/components/DeferredAnimatedImage";
 import Divider from "../parts/Divider";
 import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
-import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
-import kannaKobayashiPoster from "@/assets/anime/kanna-kobayashi-poster.webp";
 import kannaRight from "@/assets/anime/kanna-right.webp";
 import kannaShrinePreview from "@/assets/shrine/kanna1-320w.webp";
 import rossiShrinePreview from "@/assets/shrine/rossi1-320w.webp";
@@ -82,84 +79,86 @@ const Shrine = () => {
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-
-            <div className="mt-3 hidden justify-center lg:flex">
-              <div className="  w-full rounded-[1.4rem] p-3">
-                <div className="">
-                  <DeferredAnimatedImage
-                    className="h-[420px] w-full rounded-[1.15rem] object-cover object-top"
-                    posterSrc={kannaKobayashiPoster}
-                    animatedSrc={kannaKobayashi}
-                    width="320"
-                    height="420"
-                    alt="Kanna gif preview"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
 
           <main className="w-full space-y-2 p-4 lg:w-3/5">
-            <section className="card-border space-y-4 bg-white/55 p-4">
-              <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-blue-700">
-                  my shrine directory <span className="font-normal">₍₍⚞(˶{">"}ᗜ{"<"}˶)⚟⁾⁾</span>
-                </h2>
-                <p className="text-sm text-blue-500">
-                  little rooms for characters I really love
-                </p>
-              </div>
+            <div className="relative">
+              <img
+                className="pointer-events-none absolute h-14 w-14 object-contain"
+                src="/flower.webp"
+                width="56"
+                height="56"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  top: "-18px",
+                  right: "-10px",
+                  zIndex: 2,
+                }}
+              />
 
-              <ol className="space-y-1">
-                {[
-                  ...shrineEntries,
-                  ...dynamicEntries.map((entry) => ({
-                    title: entry.title,
-                    path: entry.path,
-                    imageSrc: entry.image || "/background.jpg",
-                    imageAlt: entry.imageAlt || `${entry.title} shrine preview`,
-                    summary: entry.description || entry.excerpt || "Shrine page",
-                    details: entry.excerpt || "Custom shrine entry",
-                  })),
-                ].map((entry, index) => (
-                  <li
-                    key={entry.path}
-                    className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
-                  >
-                    <article className="flex items-start gap-3">
-                      <img
-                        src={entry.imageSrc}
-                        alt={entry.imageAlt}
-                        className="h-20 w-14 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
-                        width="56"
-                        height="80"
-                        loading={index === 0 ? "eager" : "lazy"}
-                      />
+              <section className="card-border space-y-4 bg-white/55 p-4">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-blue-700">
+                    my shrine directory{" "}
+                    <span className="font-normal">₍₍⚞(˶{">"}ᗜ{"<"}˶)⚟⁾⁾</span>
+                  </h2>
+                  <p className="text-sm text-blue-500">
+                    little rooms for characters I really love
+                  </p>
+                </div>
 
-                      <div className="min-w-0 flex-1">
-                        <p className="break-words font-bold text-blue-700">
-                          {index + 1}. {entry.title}{" "}
-                          <Link
-                            to={entry.path}
-                            className="break-all text-sm font-normal text-blue-600 underline hover:text-blue-800"
-                          >
-                            (Open shrine)
-                          </Link>
-                        </p>
-                        <p className="text-sm text-slate-700">
-                          {entry.summary}
-                        </p>
-                        <p className="text-sm text-blue-500">
-                          {entry.details}
-                        </p>
-                      </div>
-                    </article>
-                  </li>
-                ))}
-              </ol>
-            </section>
+                <ol className="space-y-1">
+                  {[
+                    ...shrineEntries,
+                    ...dynamicEntries.map((entry) => ({
+                      title: entry.title,
+                      path: entry.path,
+                      imageSrc: entry.image || "/background.jpg",
+                      imageAlt:
+                        entry.imageAlt || `${entry.title} shrine preview`,
+                      summary:
+                        entry.description || entry.excerpt || "Shrine page",
+                      details: entry.excerpt || "Custom shrine entry",
+                    })),
+                  ].map((entry, index) => (
+                    <li
+                      key={entry.path}
+                      className="border-b border-blue-100 pb-3 last:border-b-0 last:pb-0"
+                    >
+                      <article className="flex items-start gap-3">
+                        <img
+                          src={entry.imageSrc}
+                          alt={entry.imageAlt}
+                          className="h-20 w-14 shrink-0 rounded-lg border border-blue-100 object-cover shadow-sm"
+                          width="56"
+                          height="80"
+                          loading={index === 0 ? "eager" : "lazy"}
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words font-bold text-blue-700">
+                            {index + 1}. {entry.title}{" "}
+                            <Link
+                              to={entry.path}
+                              className="break-all text-sm font-normal text-blue-600 underline hover:text-blue-800"
+                            >
+                              (Open shrine)
+                            </Link>
+                          </p>
+                          <p className="text-sm text-slate-700">
+                            {entry.summary}
+                          </p>
+                          <p className="text-sm text-blue-500">
+                            {entry.details}
+                          </p>
+                        </div>
+                      </article>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            </div>
 
             <Divider />
           </main>

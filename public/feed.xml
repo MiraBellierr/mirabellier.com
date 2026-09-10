@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>Mirabellier — Blog</title>
-  <subtitle>Cute thoughts, cozy corners, and little projects — new posts from mirabellier.com.</subtitle>
+  <title>Mirabellier Blog</title>
+  <subtitle>Cute thoughts, cozy corners, and little projects. New posts from mirabellier.com.</subtitle>
   <link href="https://mirabellier.com/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://mirabellier.com/blog" />
   <id>https://mirabellier.com/blog</id>

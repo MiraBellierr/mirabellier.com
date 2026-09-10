@@ -46,26 +46,26 @@ const collectionPageJsonLd = (name: string, description: string, url: string) =>
 const SEO_ROUTES: RouteSeo[] = [
   {
     path: "/arena",
-    title: "Character Card Arena ⚔️ — Mirabellier",
+    title: "Character Card Arena ⚔️ | Mirabellier",
     description: ARENA_DESCRIPTION,
     structuredData: ARENA_STRUCTURED_DATA,
   },
   {
     path: "/ar",
-    title: "Character Card Arena ⚔️ — Mirabellier",
+    title: "Character Card Arena ⚔️ | Mirabellier",
     description: ARENA_DESCRIPTION,
     url: `${SITE_URL}/arena`,
     structuredData: ARENA_STRUCTURED_DATA,
   },
   {
     path: "/now",
-    title: "Now — Mirabellier",
+    title: "Now | Mirabellier",
     description:
       "What Mirabellier is focused on right now: reading, watching, building, and listening. A /now page in the nownownow.com sense.",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "ProfilePage",
-      name: "Now — Mirabellier",
+      name: "Now | Mirabellier",
       description:
         "What Mirabellier is focused on right now: reading, watching, building, and listening.",
       url: `${SITE_URL}/now`,
@@ -73,7 +73,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/changelog",
-    title: "Changelog — Mirabellier",
+    title: "Changelog | Mirabellier",
     description:
       "Notable changes and new features shipped to mirabellier.com, newest first.",
     structuredData: collectionPageJsonLd(
@@ -83,8 +83,23 @@ const SEO_ROUTES: RouteSeo[] = [
     ),
   },
   {
+    path: "/uses",
+    title: "Uses | Mirabellier",
+    description:
+      "A colophon for mirabellier.com: the stack, fonts, hosting, and the atomic-symlink deploy that runs the site.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Uses | Mirabellier",
+      description:
+        "A colophon for mirabellier.com: the stack, fonts, hosting, and the atomic-symlink deploy that runs the site.",
+      url: `${SITE_URL}/uses`,
+      isPartOf: { "@type": "WebSite", name: "Mirabellier", url: SITE_URL },
+    },
+  },
+  {
     path: "/blog",
-    title: "Blog — Mirabellier",
+    title: "Blog | Mirabellier",
     description: "Personal blog with thoughts, stories, and updates.",
     structuredData: {
       "@context": "https://schema.org",
@@ -97,7 +112,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/quotes",
-    title: "Quotes — Mirabellier",
+    title: "Quotes | Mirabellier",
     description: "Daily quotes across love, art, nature, humor, and more.",
     structuredData: collectionPageJsonLd(
       "Quotes",
@@ -107,7 +122,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/question-of-the-day",
-    title: "Question of the Day — Mirabellier",
+    title: "Question of the Day | Mirabellier",
     description:
       "Answer one public question each UTC day, then browse the archive of past prompts and answers.",
     structuredData: collectionPageJsonLd(
@@ -118,7 +133,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/anime",
-    title: "Currently Watching — Mirabellier",
+    title: "Currently Watching | Mirabellier",
     description:
       "A live currently-watching anime page synced from MyAnimeList on a short backend refresh window.",
     structuredData: collectionPageJsonLd(
@@ -129,7 +144,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/fanart",
-    title: "Fan Art Search — Mirabellier",
+    title: "Fan Art Search | Mirabellier",
     description:
       "Search anime fan art across Safebooru and Pixiv, with links back to each artist's original post.",
     structuredData: collectionPageJsonLd(
@@ -140,7 +155,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/pixies",
-    title: "Pixies — Mirabellier",
+    title: "Pixies | Mirabellier",
     description: "Short videos and clips from the community.",
     image: `${SITE_URL}/pixies.webp`,
     structuredData: collectionPageJsonLd(
@@ -151,7 +166,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/shrine",
-    title: "Character Shrines — Mirabellier",
+    title: "Character Shrines | Mirabellier",
     description:
       "A directory for Mirabellier character shrine pages, including Kanna and Rossina shrine rooms.",
     structuredData: collectionPageJsonLd(
@@ -162,7 +177,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/shrine/kanna",
-    title: "Kanna Kamui Shrine — Mirabellier",
+    title: "Kanna Kamui Shrine | Mirabellier",
     description:
       "A long-form Kanna Kamui shrine with profile notes, lore, favorite line memories, and a personal gallery.",
     structuredData: {
@@ -176,7 +191,7 @@ const SEO_ROUTES: RouteSeo[] = [
   },
   {
     path: "/shrine/rossina",
-    title: "Rossina Wulfperl Luppino Shrine — Mirabellier",
+    title: "Rossina Wulfperl Luppino Shrine | Mirabellier",
     description:
       "A long-form Rossina Wulfperl Luppino shrine with profile details, Pack lore, battle notes, quotes, and personal favorites.",
     structuredData: {
@@ -278,7 +293,7 @@ async function blogPostSeoRoutes(): Promise<RouteSeo[]> {
     .map((post) => {
       const path = blogPathFor(post);
       const url = `${SITE_URL}${path}`;
-      const title = `${post.title} — Mirabellier`;
+      const title = `${post.title} | Mirabellier`;
       const description = postDescription(post);
       const image = resolvePostImage(post.thumbnail);
       const published = post.createdAt || undefined;

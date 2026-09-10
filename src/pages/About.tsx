@@ -7,7 +7,6 @@ import github from "../assets/github.webp";
 import patreon from "../assets/patreon.webp";
 import kofi from "../assets/kofi.webp";
 import Divider from "../parts/Divider";
-import kannaWink from "@/assets/anime/kanna-wink.webp";
 import { fetchGuestbookEntries, type GuestbookEntry } from "@/lib/guestbook-api";
 import { usePageSeo } from "@/lib/seo";
 
@@ -216,39 +215,48 @@ const About = () => {
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-            <div className="mt-3 flex justify-center overflow-hidden rounded-lg border shadow-md">
-              <iframe
-                className="hidden h-[575px] rounded-lg md:block lg:w-[339px]"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                src="https://ko-fi.com/mirabellier/?hidefeed=true&widget=true&embed=true&preview=true"
-              ></iframe>
-            </div>
           </div>
 
-          <main className="w-full lg:w-3/5 space-y-2 p-4">
-            <div className="space-y-1 p-2 card-border">
-              <h2 className="mb-2 text-xl font-bold text-blue-700">
-                ___🖊️ Introduction
-              </h2>
-              <div className="space-y-2">
-                <p>
-                  I&apos;m a Full Stack Developer with 3 years of experience in
-                  web development using React and NodeJS.
-                </p>
-                <p>
-                  I have worked on websites, APIs, bots, and mobile apps. My
-                  goal is to keep improving, stay current with the stack, and
-                  keep shipping things that are useful.
-                </p>
-                <p>
-                  I can also help when people get stuck with React or NodeJS.
-                  I want the skills I have picked up to be practical for other
-                  people too.
-                </p>
-                <p>
-                  Next step, I want to keep turning that work into bigger and
-                  better opportunities.
-                </p>
+          <main className="w-full min-w-0 lg:w-1/2 space-y-2 p-4">
+            <div className="relative">
+              <img
+                className="pointer-events-none absolute h-14 w-14 object-contain"
+                src="/flower.webp"
+                width="56"
+                height="56"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  top: "-18px",
+                  right: "-10px",
+                  zIndex: 2,
+                }}
+              />
+
+              <div className="space-y-1 p-2 card-border">
+                <h2 className="mb-2 text-xl font-bold text-blue-700">
+                  ___🖊️ Introduction
+                </h2>
+                <div className="space-y-2">
+                  <p>
+                    I&apos;m a Full Stack Developer with 3 years of experience in
+                    web development using React and NodeJS.
+                  </p>
+                  <p>
+                    I have worked on websites, APIs, bots, and mobile apps. My
+                    goal is to keep improving, stay current with the stack, and
+                    keep shipping things that are useful.
+                  </p>
+                  <p>
+                    I can also help when people get stuck with React or NodeJS. I
+                    want the skills I have picked up to be practical for other
+                    people too.
+                  </p>
+                  <p>
+                    Next step, I want to keep turning that work into bigger and
+                    better opportunities.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -416,8 +424,8 @@ const About = () => {
             </section>
           </main>
 
-          <div className="flex-col space-y-4">
-            <aside className="right-side-panel w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+          <div className="w-full shrink-0 flex-col space-y-4 lg:w-[340px]">
+            <aside className="right-side-panel mb-auto w-full bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
               <div className="space-y-2 text-sm text-center font-bold">
                 <h2 className="text-blue-600 font-bold text-lg">Skills</h2>
                 <p className="text-blue-500">1. JavaScript</p>
@@ -428,17 +436,7 @@ const About = () => {
               </div>
             </aside>
 
-            <div className="mt-3 mb-auto flex justify-center lg:w-[200px]">
-              <img
-                className="h-101 rounded-2xl"
-                src={kannaWink}
-                width="300"
-                height="404"
-                alt="kanna gif"
-              />
-            </div>
-
-            <aside className="right-side-panel w-full lg:w-[200px] mb-auto bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
+            <aside className="right-side-panel mb-auto w-full bg-blue-100 border border-blue-300 rounded-xl shadow-md p-4 opacity-90">
               <div className="space-y-2 text-sm text-center font-bold">
                 <h2 className="text-blue-600 font-bold text-lg">
                   Support me!!
@@ -490,6 +488,16 @@ const About = () => {
                 </a>
               </div>
             </aside>
+
+            <div className="mb-auto hidden w-full overflow-hidden rounded-lg border shadow-md md:block">
+              <iframe
+                className="block h-[575px] w-full rounded-lg"
+                width="340"
+                height="575"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                src="https://ko-fi.com/mirabellier/?hidefeed=true&widget=true&embed=true&preview=true"
+              ></iframe>
+            </div>
           </div>
         </div>
       </div>

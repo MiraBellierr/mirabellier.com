@@ -1,6 +1,6 @@
 {
   "version": "https://jsonfeed.org/version/1.1",
-  "title": "Mirabellier — Question of the Day",
+  "title": "Mirabellier Question of the Day",
   "description": "One small question a day. This feed carries each day's prompt as it moves into the archive.",
   "home_page_url": "https://mirabellier.com/question-of-the-day/archive",
   "feed_url": "https://mirabellier.com/feed/questions.json",

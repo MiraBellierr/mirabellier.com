@@ -1,7 +1,7 @@
 {
   "version": "https://jsonfeed.org/version/1.1",
-  "title": "Mirabellier — Blog",
-  "description": "Cute thoughts, cozy corners, and little projects — new posts from mirabellier.com.",
+  "title": "Mirabellier Blog",
+  "description": "Cute thoughts, cozy corners, and little projects. New posts from mirabellier.com.",
   "home_page_url": "https://mirabellier.com/blog",
   "feed_url": "https://mirabellier.com/feed.json",
   "authors": [

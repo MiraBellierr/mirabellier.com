@@ -5,7 +5,6 @@ import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
-import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import QuestionAnswerCard from "@/components/QuestionAnswerCard";
 import TurnstileWidget from "@/components/TurnstileWidget";
@@ -251,151 +250,158 @@ const QuestionOfTheDay = () => {
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-
-            <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
-              <img
-                className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaHappy}
-                width="320"
-                height="427"
-                alt="kanna looking happy"
-              />
-            </div>
           </div>
 
           <main className="w-full lg:w-3/5 space-y-2 p-4">
-            <section className="card-border space-y-4 p-4 bg-white/55">
-              <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-blue-700">
-                  Question of the day {headingDate ? `(${headingDate}) ₊˚⊹⋆` : ""}
-                </h2>
-              </div>
+            <div className="relative">
+              <img
+                className="pointer-events-none absolute h-14 w-14 object-contain"
+                src="/flower.webp"
+                width="56"
+                height="56"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  top: "-18px",
+                  right: "-10px",
+                  zIndex: 2,
+                }}
+              />
 
-              {loading && !currentData ? (
-                <AsyncStateCard
-                  variant="loading"
-                  title="Loading today's question..."
-                  message="Finding the current prompt and recent archive."
-                />
-              ) : error && !currentData ? (
-                <AsyncStateCard
-                  variant="error"
-                  title={questionLoadErrorMessage.title}
-                  message={questionLoadErrorMessage.message}
-                  detail={questionLoadErrorMessage.detail}
-                  actionLabel="Retry"
-                  onAction={retryPageLoad}
-                />
-              ) : (
-                <>
-                  {error ? (
-                    <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
-                      {error}
-                    </div>
-                  ) : null}
+              <section className="card-border space-y-4 p-4 bg-white/55">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-blue-700">
+                    Question of the day{" "}
+                    {headingDate ? `(${headingDate}) ₊˚⊹⋆` : ""}
+                  </h2>
+                </div>
 
-                  {currentData?.question ? (
-                    <div className="space-y-4">
-                      {isCarriedOverQuestion ? (
-                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-                          This question is still active because it has not
-                          received an answer yet.
-                        </div>
-                      ) : null}
-
-                      <div className="space-y-2">
-                        <p className="text-sm font-bold text-blue-700">
-                          Question:
-                        </p>
-                        <p className="text-slate-700 leading-relaxed">
-                          {currentData.question.prompt} ^-^
-                        </p>
+                {loading && !currentData ? (
+                  <AsyncStateCard
+                    variant="loading"
+                    title="Loading today's question..."
+                    message="Finding the current prompt and recent archive."
+                  />
+                ) : error && !currentData ? (
+                  <AsyncStateCard
+                    variant="error"
+                    title={questionLoadErrorMessage.title}
+                    message={questionLoadErrorMessage.message}
+                    detail={questionLoadErrorMessage.detail}
+                    actionLabel="Retry"
+                    onAction={retryPageLoad}
+                  />
+                ) : (
+                  <>
+                    {error ? (
+                      <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+                        {error}
                       </div>
+                    ) : null}
 
-                      <div className="space-y-2">
-                        <p className="text-sm text-blue-500">
-                          {auth?.user
-                            ? `Signed in as ${auth.user.username}.`
-                            : "Guests can answer too. Add a name first."}
-                        </p>
-                      </div>
+                    {currentData?.question ? (
+                      <div className="space-y-4">
+                        {isCarriedOverQuestion ? (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                            This question is still active because it has not
+                            received an answer yet.
+                          </div>
+                        ) : null}
 
-                      {currentData.hasAnswered ? (
-                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                          You already answered this question.
+                        <div className="space-y-2">
+                          <p className="text-sm font-bold text-blue-700">
+                            Question:
+                          </p>
+                          <p className="text-slate-700 leading-relaxed">
+                            {currentData.question.prompt} ^-^
+                          </p>
                         </div>
-                      ) : (
-                        <form className="space-y-4" onSubmit={handleSubmit}>
-                          {!auth?.user ? (
+
+                        <div className="space-y-2">
+                          <p className="text-sm text-blue-500">
+                            {auth?.user
+                              ? `Signed in as ${auth.user.username}.`
+                              : "Guests can answer too. Add a name first."}
+                          </p>
+                        </div>
+
+                        {currentData.hasAnswered ? (
+                          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+                            You already answered this question.
+                          </div>
+                        ) : (
+                          <form className="space-y-4" onSubmit={handleSubmit}>
+                            {!auth?.user ? (
+                              <label className="space-y-1 text-sm">
+                                <span className="font-semibold text-blue-600">
+                                  your name
+                                </span>
+                                <input
+                                  value={guestName}
+                                  onChange={(event) =>
+                                    setGuestName(event.target.value.slice(0, 40))
+                                  }
+                                  className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+                                  placeholder="enter your name"
+                                />
+                              </label>
+                            ) : null}
+
                             <label className="space-y-1 text-sm">
                               <span className="font-semibold text-blue-600">
-                                your name
+                                your answer
                               </span>
-                              <input
-                                value={guestName}
+                              <textarea
+                                value={answer}
                                 onChange={(event) =>
-                                  setGuestName(event.target.value.slice(0, 40))
+                                  setAnswer(event.target.value.slice(0, 500))
                                 }
-                                className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
-                                placeholder="enter your name"
+                                className="min-h-36 w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+                                placeholder="leave a tiny thought for today..."
                               />
                             </label>
-                          ) : null}
 
-                          <label className="space-y-1 text-sm">
-                            <span className="font-semibold text-blue-600">
-                              your answer
-                            </span>
-                            <textarea
-                              value={answer}
-                              onChange={(event) =>
-                                setAnswer(event.target.value.slice(0, 500))
-                              }
-                              className="min-h-36 w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
-                              placeholder="leave a tiny thought for today..."
+                            <TurnstileWidget
+                              action="question_of_the_day"
+                              onTokenChange={setTurnstileToken}
+                              resetKey={turnstileResetKey}
                             />
-                          </label>
 
-                          <TurnstileWidget
-                            action="question_of_the_day"
-                            onTokenChange={setTurnstileToken}
-                            resetKey={turnstileResetKey}
-                          />
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <p className="text-xs text-blue-400">
+                                {remainingCharacters} characters left
+                              </p>
 
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="text-xs text-blue-400">
-                              {remainingCharacters} characters left
-                            </p>
-
-                            <button
-                              type="submit"
-                              disabled={submitting || !turnstileToken}
-                              className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-pink-300"
-                            >
-                              {submitting ? "Posting..." : "Post answer"}
-                            </button>
-                          </div>
-
-                          {submitError ? (
-                            <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
-                              {submitError}
+                              <button
+                                type="submit"
+                                disabled={submitting || !turnstileToken}
+                                className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-pink-300"
+                              >
+                                {submitting ? "Posting..." : "Post answer"}
+                              </button>
                             </div>
-                          ) : null}
-                        </form>
-                      )}
-                    </div>
-                  ) : (
-                    <AsyncStateCard
-                      variant="empty"
-                      title="No active question yet."
-                      message="There is no live prompt right now. The answer form opens again as soon as a new question is available."
-                      actionLabel="Check again"
-                      onAction={retryPageLoad}
-                    />
-                  )}
-                </>
-              )}
-            </section>
+
+                            {submitError ? (
+                              <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+                                {submitError}
+                              </div>
+                            ) : null}
+                          </form>
+                        )}
+                      </div>
+                    ) : (
+                      <AsyncStateCard
+                        variant="empty"
+                        title="No active question yet."
+                        message="There is no live prompt right now. The answer form opens again as soon as a new question is available."
+                        actionLabel="Check again"
+                        onAction={retryPageLoad}
+                      />
+                    )}
+                  </>
+                )}
+              </section>
+            </div>
 
             <Divider />
 

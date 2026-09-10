@@ -81,14 +81,14 @@ const adminTools = [
   {
     title: "Now Page",
     description:
-      "Edit the hand-written /now page — intro plus free-form sections for reading, watching, building, and listening.",
+      "Edit the hand-written /now page: intro plus free-form sections for reading, watching, building, and listening.",
     to: "/admin/now",
     action: "Open now editor",
   },
   {
     title: "Changelog",
     description:
-      "Add, edit, and remove entries on the public /changelog page — a dated title plus a short body, newest first.",
+      "Add, edit, and remove entries on the public /changelog page: a dated title plus a short body, newest first.",
     to: "/admin/changelog",
     action: "Open changelog editor",
   },

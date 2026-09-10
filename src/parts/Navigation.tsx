@@ -68,6 +68,12 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) => pathname === "/projects",
       },
       {
+        label: "uses",
+        to: "/uses",
+        icon: projects,
+        isActive: (pathname) => pathname === "/uses",
+      },
+      {
         label: "anime",
         to: "/anime",
         icon: NAV_ICON_ANIME,

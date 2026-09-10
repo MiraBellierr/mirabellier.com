@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
+import Divider from "../parts/Divider";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import { usePageSeo } from "@/lib/seo";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { fetchChangelog, type ChangelogEntry } from "@/lib/site-changelog-api";
+import anime2Gif from "@/assets/anime/anime2.webp";
+
+const PAGE_SIZE = 5;
 
 function formatEntryDate(value: string) {
   const parsed = new Date(`${value}T00:00:00Z`);
@@ -70,6 +74,7 @@ const Changelog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [page, setPage] = useState(1);
 
   usePageSeo({
     canonical: "https://mirabellier.com/changelog",
@@ -77,7 +82,7 @@ const Changelog = () => {
     structuredData: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: "Changelog — Mirabellier",
+      name: "Changelog | Mirabellier",
       description: "Notable changes and new features shipped to mirabellier.com.",
       url: "https://mirabellier.com/changelog",
     },
@@ -91,10 +96,15 @@ const Changelog = () => {
       setError(null);
       try {
         const data = await fetchChangelog();
-        if (!cancelled) setEntries(data);
+        if (!cancelled) {
+          setEntries(data);
+          setPage(1);
+        }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load the changelog");
+          setError(
+            err instanceof Error ? err.message : "Failed to load the changelog",
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -106,6 +116,17 @@ const Changelog = () => {
       cancelled = true;
     };
   }, [reloadTick]);
+
+  const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const pageEntries = useMemo(
+    () => entries.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [entries, currentPage],
+  );
+  const rangeStart = entries.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, entries.length);
+
+  const hasEntries = !loading && !error && entries.length > 0;
 
   return (
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
@@ -121,8 +142,22 @@ const Changelog = () => {
           </div>
 
           <main className="w-full lg:w-3/5 space-y-2 p-4">
-            <section className="card-border space-y-4 p-4 bg-white/55">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="relative">
+              <img
+                className="pointer-events-none absolute h-14 w-14 object-contain"
+                src="/flower.webp"
+                width="56"
+                height="56"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  top: "-18px",
+                  right: "-10px",
+                  zIndex: 2,
+                }}
+              />
+
+              <section className="card-border space-y-4 p-4 bg-white/55">
                 <div>
                   <h2 className="text-2xl font-bold text-blue-700">changelog</h2>
                   <p className="text-sm text-blue-500">
@@ -130,61 +165,93 @@ const Changelog = () => {
                   </p>
                 </div>
 
-                {isOwner ? (
-                  <Link
-                    to="/admin/changelog"
-                    className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
-                  >
-                    edit
-                  </Link>
-                ) : null}
-              </div>
+                {loading ? (
+                  <AsyncStateCard
+                    variant="loading"
+                    title="Loading the changelog..."
+                    message="Gathering the recent updates."
+                  />
+                ) : error ? (
+                  <AsyncStateCard
+                    variant="error"
+                    title="Couldn't load the changelog"
+                    message={error}
+                    actionLabel="Retry"
+                    onAction={() => setReloadTick((value) => value + 1)}
+                  />
+                ) : entries.length === 0 ? (
+                  <AsyncStateCard
+                    variant="empty"
+                    title="No entries yet"
+                    message={
+                      isOwner
+                        ? "Use the edit button above to add the first entry."
+                        : "Nothing logged here yet. Check back soon."
+                    }
+                  />
+                ) : (
+                  <p className="text-xs font-medium text-blue-400">
+                    {entries.length} entr{entries.length === 1 ? "y" : "ies"} ·
+                    newest first
+                  </p>
+                )}
+              </section>
+            </div>
 
-              {loading ? (
-                <AsyncStateCard
-                  variant="loading"
-                  title="Loading the changelog..."
-                  message="Gathering the recent updates."
-                />
-              ) : error ? (
-                <AsyncStateCard
-                  variant="error"
-                  title="Couldn't load the changelog"
-                  message={error}
-                  actionLabel="Retry"
-                  onAction={() => setReloadTick((value) => value + 1)}
-                />
-              ) : entries.length === 0 ? (
-                <AsyncStateCard
-                  variant="empty"
-                  title="No entries yet"
-                  message={
-                    isOwner
-                      ? "Use the edit button above to add the first entry."
-                      : "Nothing logged here yet. Check back soon."
-                  }
-                />
-              ) : (
-                <ol className="space-y-6">
-                  {entries.map((entry, index) => (
-                    <li
-                      key={entry.id}
-                      className={index > 0 ? "border-t border-blue-100 pt-6" : ""}
-                    >
+            {hasEntries
+              ? pageEntries.map((entry) => (
+                  <div key={entry.id}>
+                    <Divider />
+                    <section className="card-border space-y-2 p-4 bg-white/55">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">
                         <time dateTime={entry.entryDate}>
                           {formatEntryDate(entry.entryDate)}
                         </time>
                       </p>
-                      <h3 className="mt-1 text-lg font-bold text-blue-700">
+                      <h3 className="text-lg font-bold text-blue-700">
                         {entry.title}
                       </h3>
                       <EntryBody body={entry.body} />
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
+                    </section>
+                  </div>
+                ))
+              : null}
+
+            {hasEntries && totalPages > 1 ? (
+              <>
+                <Divider />
+                <section className="card-border p-4 bg-white/55">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-blue-400">
+                      Showing {rangeStart}-{rangeEnd} of {entries.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage <= 1}
+                        className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={currentPage >= totalPages}
+                        className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </>
+            ) : null}
           </main>
 
           <aside className="w-full lg:w-1/5 mb-auto space-y-4">
@@ -197,18 +264,30 @@ const Changelog = () => {
                   The bigger visible changes, newest first. Small fixes and
                   behind-the-scenes work usually don&apos;t make the list.
                 </p>
-                <p>
-                  Arena has its own update log at{" "}
-                  <Link
-                    to="/arena/archive"
-                    className="underline underline-offset-2 hover:text-pink-600"
-                  >
-                    /arena/archive
-                  </Link>
-                  .
-                </p>
               </div>
             </div>
+
+            <div className="flex justify-center">
+              <img
+                className="w-full max-w-[220px] rounded-xl"
+                src={anime2Gif}
+                width="480"
+                height="270"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            {isOwner ? (
+              <Link
+                to="/admin/changelog"
+                className="block rounded-full border border-blue-200 bg-white px-4 py-2 text-center text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
+              >
+                edit
+              </Link>
+            ) : null}
           </aside>
         </div>
       </div>

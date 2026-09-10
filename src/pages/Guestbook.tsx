@@ -524,16 +524,6 @@ const Guestbook = () => {
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-
-            <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
-              <img
-                className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaShy}
-                width="320"
-                height="427"
-                alt="kanna shy"
-              />
-            </div>
           </div>
 
           <main className="w-full lg:w-3/5 space-y-4 p-4">
@@ -779,6 +769,18 @@ const Guestbook = () => {
                 <p>Drag any pinned note to a new spot on the board.</p>
                 <p>Hold Ctrl and scroll to zoom the board.</p>
               </div>
+            </div>
+
+            <div className="hidden justify-center lg:flex">
+              <img
+                className="w-full rounded-2xl border border-blue-700 shadow-md"
+                src={kannaShy}
+                width="320"
+                height="427"
+                alt="kanna shy"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           </aside>
         </div>

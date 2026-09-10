@@ -366,7 +366,7 @@ const AdminNow = () => {
             <section className="card-border space-y-2 p-4 bg-white/55 text-sm text-slate-700">
               <h3 className="text-lg font-bold text-blue-700">tips</h3>
               <p>• Line breaks are kept, so you can use short lists inside a section.</p>
-              <p>• Keep it present tense — this is &ldquo;now&rdquo;, not a changelog.</p>
+              <p>• Keep it present tense. This is &ldquo;now&rdquo;, not a changelog.</p>
               <p>• No deploy needed; saving updates the live page immediately.</p>
             </section>
           </main>
@@ -378,7 +378,7 @@ const AdminNow = () => {
                   now note
                 </h2>
                 <p>One row of content, owner-edited.</p>
-                <p>Sections are free-form — rename or reorder as life changes.</p>
+                <p>Sections are free-form; rename or reorder as life changes.</p>
               </div>
             </div>
           </aside>

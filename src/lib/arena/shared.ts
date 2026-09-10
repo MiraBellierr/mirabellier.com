@@ -65,7 +65,7 @@ export type ArenaEquipmentPiece = {
   createdAt: string | null;
 };
 export type ArenaSpriteRef = {
-  sheet: "game.png";
+  sheet: "game.webp";
   row: number;
   col: number;
   size: number;

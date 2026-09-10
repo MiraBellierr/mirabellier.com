@@ -7,6 +7,7 @@ const Blog = lazy(() => import("./pages/Blog"));
 const About = lazy(() => import("./pages/About"));
 const Now = lazy(() => import("./pages/Now"));
 const Changelog = lazy(() => import("./pages/Changelog"));
+const Uses = lazy(() => import("./pages/Uses"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Shrine = lazy(() => import("./pages/Shrine"));
 const Kanna = lazy(() => import("./pages/Kanna"));
@@ -124,6 +125,7 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/now" element={<Now />} />
       <Route path="/changelog" element={<Changelog />} />
+      <Route path="/uses" element={<Uses />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />
       <Route path="/fanart" element={<Fanart />} />

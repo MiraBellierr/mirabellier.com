@@ -12,6 +12,8 @@
     "preview": "vite preview",
     "backend:dev": "node mirabellier-backend/app.js",
     "generate:sitemap": "node generate-sitemap.cjs",
+    "convert:assets": "node convert-assets.cjs",
+    "convert:assets:dry": "node convert-assets.cjs --dry-run",
     "indexnow:submit-all": "node mirabellier-backend/scripts/submit-indexnow-all.js"
   },
   "dependencies": {

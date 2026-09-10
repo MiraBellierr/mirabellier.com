@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>Mirabellier — Question of the Day</title>
+  <title>Mirabellier Question of the Day</title>
   <subtitle>One small question a day. This feed carries each day&apos;s prompt as it moves into the archive.</subtitle>
   <link href="https://mirabellier.com/feed/questions.xml" rel="self" type="application/atom+xml" />
   <link href="https://mirabellier.com/question-of-the-day/archive" />

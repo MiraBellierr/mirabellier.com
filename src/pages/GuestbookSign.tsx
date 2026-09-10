@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
-import kannaSmile from "@/assets/anime/kanna-smile.webp";
 import { resolveAsset } from "@/lib/blog-utils";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { createGuestbookEntry, type GuestbookMood } from "@/lib/guestbook-api";
@@ -109,18 +108,6 @@ const GuestbookSign = () => {
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
-
-            <div className="mt-3 mb-auto justify-center items-center hidden lg:flex">
-              <img
-                className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaSmile}
-                width="320"
-                height="427"
-                alt="kanna smiling"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
           </div>
 
           <main className="w-full lg:w-3/5 space-y-4 p-4">

@@ -13,11 +13,11 @@ backlog. This file is the *fun* backlog.
 
 ## Top 5, if you only do five
 
-1. **RSS / Atom / JSON feed** — the single biggest gap. Cheap, high value.
+1. ~~**RSS / Atom / JSON feed**~~ ✅ done (2026-09-10). Blog + QOTD feeds.
 2. **`⌘K` sitewide command palette** — the site has 50+ routes and no way to jump.
 3. **Per-post generated OG images** — every link currently unfurls with the same picture.
-4. **A `/now` page** — Home already computes half of it.
-5. **Public changelog page** — `changes.md` exists and nobody can read it.
+4. ~~**A `/now` page**~~ ✅ done (2026-09-10). Public page + owner editor.
+5. ~~**Public changelog page**~~ ✅ done (2026-09-10). `/changelog` + owner editor.
 
 ---
 
@@ -25,7 +25,13 @@ backlog. This file is the *fun* backlog.
 
 These fit the "soft internet things" framing in the README better than anything else.
 
-### 1. RSS / Atom / JSON feeds  ⭐ highest value/effort ratio
+### 1. RSS / Atom / JSON feeds  ⭐ highest value/effort ratio  ✅ DONE (2026-09-10)
+
+**Shipped:** `lib/feed.js` (modelled on `sitemap.js`) writes `/feed.xml` + `/feed.json`
+for the blog and `/feed/questions.xml` + `/feed/questions.json` for Question of the
+Day, regenerated on every post/QOTD change and at boot. `<link rel="alternate">`
+discovery tags in `index.html`; visible "Subscribe: RSS · JSON" links on `/blog`
+and the QOTD archive. Tests in `mirabellier-backend/test/feed.test.js`.
 
 There is **no feed anywhere** — I grepped `mirabellier-backend/app.js` and the
 whole frontend; `rss` and `feed.xml` appear nowhere. A personal blog without a
@@ -43,7 +49,12 @@ thing that makes a site linkable from other people's blogrolls.
 
 **Effort:** an afternoon. **Risk:** none.
 
-### 2. A `/now` page
+### 2. A `/now` page  ✅ DONE (2026-09-10)
+
+**Shipped:** `site_now` table + `GET/PUT /now`; public `src/pages/Now.tsx` (intro +
+free-form sections, "Updated N days ago", auto-filled latest post / current anime /
+latest Pixie); owner editor `src/pages/AdminNow.tsx`; nav entry, `/admin` card,
+prerendered SEO head. Tests in `mirabellier-backend/test/site-now.test.js`.
 
 The nownownow.com convention: what you're doing *right now*, not a résumé.
 `src/pages/Home.tsx` already has `getHomeGreeting`, `getHomeStatus`, and a
@@ -55,7 +66,16 @@ anime from `/anime`, latest Pixie.
 Give it an admin editor like `AdminQuestionOfTheDay.tsx` so updating it doesn't
 need a deploy.
 
-### 3. A public changelog at `/changelog`
+### 3. A public changelog at `/changelog`  ✅ DONE (2026-09-10)
+
+**Shipped:** took a third route, a dedicated `site_changelog` table + `GET /changelog`
+and owner-only `POST`/`PUT`/`DELETE` (no `scope` column bolted onto `arena_updates`,
+so the Arena feature is untouched). Public `src/pages/Changelog.tsx` (dated entries
+newest first; `- ` lines render as bullets, no markdown dep) and owner editor
+`src/pages/AdminChangelog.tsx` (create/edit/delete). Nav entry, `/admin` card,
+prerendered SEO head. `changes.md` was **not** migrated. Its bullets are all
+Arena-specific and stale; Arena keeps its own log at `/arena/archive`.
+Tests in `mirabellier-backend/test/site-changelog.test.js`.
 
 `changes.md` is sitting in the repo root, dated July 6, formatted nicely, and
 surfaced **nowhere** — nothing in `src/` references it. Arena gets
@@ -67,7 +87,14 @@ Two ways, pick one:
 - **Nicer:** reuse the Arena updates table (`AdminArenaUpdates.tsx` is already a
   full editor UI) with a `scope` column so it can post site-wide entries too.
 
-### 4. `/uses` + colophon
+### 4. `/uses` + colophon  ✅ DONE (2026-09-10)
+
+**Shipped:** static page (no backend; content changes rarely, so it lives in
+`src/lib/uses.ts` like `src/lib/projects.ts`, not a DB). `src/pages/Uses.tsx`
+renders sections for the frontend/backend stack, hosting & the atomic-symlink
+deploy, type & theme, tooling, and desk. Nav entry, `/projects` cross-link,
+`/uses` in the sitemap + a prerendered SEO head. The "desk" section has a
+`TODO(mira)`: fill in editor / keyboard / anything personal.
 
 `/projects` covers *what you built*. `/uses` covers *what you build with* —
 editor, keyboard, theme, hosting, the fonts on this site, the fact that the whole
@@ -222,10 +249,16 @@ Right now it sits in between.
 
 ## Suggested order
 
-1. **RSS/JSON feed** — smallest change with the longest-lived payoff.
+1. ~~**RSS/JSON feed**~~ ✅ done 2026-09-10.
 2. **Command palette** — makes the other 50 routes reachable.
 3. **Per-post OG images** — every link you've ever shared gets better retroactively.
-4. **`/now` + `/changelog` + `/uses`** — three cheap pages, all half-written already.
+4. ~~**`/now` + `/changelog` + `/uses`**~~ ✅ done 2026-09-10 (all three).
 5. **Reading time + TOC + prev/next** — one focused pass on `BlogPost.tsx`.
 6. **Push beyond Twitch**, then the profile activity feed.
 7. Arena extras and the cursor decision, whenever they sound fun rather than owed.
+
+## Progress log
+
+- **2026-09-10**: Shipped #1 (blog + QOTD feeds), #2 (`/now` page + editor),
+  #3 (`/changelog` + editor), #4 (`/uses` static colophon). Next up per the
+  order: command palette, then OG images.

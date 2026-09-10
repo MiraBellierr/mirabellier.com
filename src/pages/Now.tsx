@@ -14,6 +14,8 @@ import { fetchPosts } from "@/lib/blog-api";
 import { slugify, type Post } from "@/lib/blog-utils";
 import { fetchCurrentlyWatchingAnime } from "@/lib/anime-feed-api";
 import { fetchPixiesFeed } from "@/lib/pixies";
+import anyaSticker3 from "@/assets/anime/anya-sticker3.webp";
+import anime1Gif from "@/assets/anime/anime1.webp";
 
 type AutoFill = {
   latestPost: { title: string; href: string; date: string | null } | null;
@@ -82,7 +84,7 @@ const Now = () => {
     structuredData: {
       "@context": "https://schema.org",
       "@type": "ProfilePage",
-      name: "Now — Mirabellier",
+      name: "Now | Mirabellier",
       description:
         "What Mirabellier is focused on right now: reading, watching, building, and listening.",
       url: "https://mirabellier.com/now",
@@ -197,8 +199,22 @@ const Now = () => {
           </div>
 
           <main className="w-full lg:w-3/5 space-y-2 p-4">
-            <section className="card-border space-y-4 p-4 bg-white/55">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="relative">
+              <img
+                className="pointer-events-none absolute h-14 w-14 object-contain"
+                src="/flower.webp"
+                width="56"
+                height="56"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  top: "-18px",
+                  right: "-10px",
+                  zIndex: 2,
+                }}
+              />
+
+              <section className="card-border space-y-4 p-4 bg-white/55">
                 <div>
                   <h2 className="text-2xl font-bold text-blue-700">
                     what I&apos;m doing now
@@ -213,74 +229,65 @@ const Now = () => {
                   ) : null}
                 </div>
 
-                {isOwner ? (
-                  <Link
-                    to="/admin/now"
-                    className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
-                  >
-                    edit
-                  </Link>
-                ) : null}
-              </div>
+                {loading ? (
+                  <AsyncStateCard
+                    variant="loading"
+                    title="Loading the now page..."
+                    message="Catching up on what's current."
+                  />
+                ) : error ? (
+                  <AsyncStateCard
+                    variant="error"
+                    title="Couldn't load the now page"
+                    message={error}
+                    actionLabel="Retry"
+                    onAction={() => setReloadTick((value) => value + 1)}
+                  />
+                ) : !hasContent ? (
+                  <AsyncStateCard
+                    variant="empty"
+                    title="Nothing here yet"
+                    message={
+                      isOwner
+                        ? "Use the edit button above to add your first update."
+                        : "This page is waiting for its first update. Check back soon."
+                    }
+                  />
+                ) : (
+                  <div className="space-y-5">
+                    {now?.intro ? (
+                      <p className="whitespace-pre-line text-[15px] leading-relaxed text-slate-700">
+                        {now.intro}
+                      </p>
+                    ) : null}
 
-              {loading ? (
-                <AsyncStateCard
-                  variant="loading"
-                  title="Loading the now page..."
-                  message="Catching up on what's current."
-                />
-              ) : error ? (
-                <AsyncStateCard
-                  variant="error"
-                  title="Couldn't load the now page"
-                  message={error}
-                  actionLabel="Retry"
-                  onAction={() => setReloadTick((value) => value + 1)}
-                />
-              ) : !hasContent ? (
-                <AsyncStateCard
-                  variant="empty"
-                  title="Nothing here yet"
-                  message={
-                    isOwner
-                      ? "Use the edit button above to add your first update."
-                      : "This page is waiting for its first update. Check back soon."
-                  }
-                />
-              ) : (
-                <div className="space-y-5">
-                  {now?.intro ? (
-                    <p className="whitespace-pre-line text-[15px] leading-relaxed text-slate-700">
-                      {now.intro}
-                    </p>
-                  ) : null}
-
-                  {now?.sections.length ? (
-                    <div className="space-y-4">
-                      {now.sections.map((section, index) => (
-                        <article
-                          key={`${section.label}-${index}`}
-                          className={
-                            index > 0 ? "border-t border-blue-100 pt-4" : ""
-                          }
-                        >
-                          {section.label ? (
-                            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">
-                              {section.label}
-                            </h3>
-                          ) : null}
-                          {section.body ? (
-                            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                              {section.body}
-                            </p>
-                          ) : null}
-                        </article>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </section>
+                    {now?.sections.length ? (
+                      <div className="space-y-4">
+                        {now.sections.map((section, index) => (
+                          <article
+                            key={`${section.label}-${index}`}
+                            className={
+                              index > 0 ? "border-t border-blue-100 pt-4" : ""
+                            }
+                          >
+                            {section.label ? (
+                              <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">
+                                {section.label}
+                              </h3>
+                            ) : null}
+                            {section.body ? (
+                              <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                                {section.body}
+                              </p>
+                            ) : null}
+                          </article>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </section>
+            </div>
 
             <Divider />
 
@@ -294,71 +301,83 @@ const Now = () => {
                 </p>
               </div>
 
-              <dl className="space-y-3 text-sm">
-                <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-400">
-                    latest blog post
-                  </dt>
-                  <dd className="mt-0.5">
-                    {autoFill.latestPost ? (
-                      <Link
-                        to={autoFill.latestPost.href}
-                        className="font-semibold text-blue-700 underline underline-offset-2 hover:text-pink-600"
-                      >
-                        {autoFill.latestPost.title}
-                      </Link>
-                    ) : (
-                      <span className="text-blue-400">nothing yet</span>
-                    )}
-                    {autoFill.latestPost?.date ? (
-                      <span className="ml-2 text-xs text-blue-400">
-                        {autoFill.latestPost.date}
-                      </span>
-                    ) : null}
-                  </dd>
-                </div>
+              <div className="relative">
+                <img
+                  className="pointer-events-none mx-auto block w-24 sm:absolute sm:right-2 sm:top-1/2 sm:mx-0 sm:w-32 sm:-translate-y-1/2"
+                  src={anyaSticker3}
+                  width="500"
+                  height="500"
+                  alt="Anya sticker"
+                  loading="lazy"
+                  decoding="async"
+                />
 
-                <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-400">
-                    currently watching
-                  </dt>
-                  <dd className="mt-0.5">
-                    {autoFill.anime ? (
-                      <Link
-                        to="/anime"
-                        className="font-semibold text-blue-700 underline underline-offset-2 hover:text-pink-600"
-                      >
-                        {autoFill.anime.title}
-                      </Link>
-                    ) : (
-                      <span className="text-blue-400">nothing right now</span>
-                    )}
-                    {autoFill.anime?.episodes ? (
-                      <span className="ml-2 text-xs text-blue-400">
-                        {autoFill.anime.episodes}
-                      </span>
-                    ) : null}
-                  </dd>
-                </div>
+                <dl className="space-y-3 text-sm">
+                  <div>
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-400">
+                      latest blog post
+                    </dt>
+                    <dd className="mt-0.5">
+                      {autoFill.latestPost ? (
+                        <Link
+                          to={autoFill.latestPost.href}
+                          className="font-semibold text-blue-700 underline underline-offset-2 hover:text-pink-600"
+                        >
+                          {autoFill.latestPost.title}
+                        </Link>
+                      ) : (
+                        <span className="text-blue-400">nothing yet</span>
+                      )}
+                      {autoFill.latestPost?.date ? (
+                        <span className="ml-2 text-xs text-blue-400">
+                          {autoFill.latestPost.date}
+                        </span>
+                      ) : null}
+                    </dd>
+                  </div>
 
-                <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-400">
-                    latest pixie
-                  </dt>
-                  <dd className="mt-0.5">
-                    {autoFill.latestPixie ? (
-                      <Link
-                        to={autoFill.latestPixie.href}
-                        className="font-semibold text-blue-700 underline underline-offset-2 hover:text-pink-600"
-                      >
-                        {autoFill.latestPixie.title}
-                      </Link>
-                    ) : (
-                      <span className="text-blue-400">nothing yet</span>
-                    )}
-                  </dd>
-                </div>
-              </dl>
+                  <div>
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-400">
+                      currently watching
+                    </dt>
+                    <dd className="mt-0.5">
+                      {autoFill.anime ? (
+                        <Link
+                          to="/anime"
+                          className="font-semibold text-blue-700 underline underline-offset-2 hover:text-pink-600"
+                        >
+                          {autoFill.anime.title}
+                        </Link>
+                      ) : (
+                        <span className="text-blue-400">nothing right now</span>
+                      )}
+                      {autoFill.anime?.episodes ? (
+                        <span className="ml-2 text-xs text-blue-400">
+                          {autoFill.anime.episodes}
+                        </span>
+                      ) : null}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-400">
+                      latest pixie
+                    </dt>
+                    <dd className="mt-0.5">
+                      {autoFill.latestPixie ? (
+                        <Link
+                          to={autoFill.latestPixie.href}
+                          className="font-semibold text-blue-700 underline underline-offset-2 hover:text-pink-600"
+                        >
+                          {autoFill.latestPixie.title}
+                        </Link>
+                      ) : (
+                        <span className="text-blue-400">nothing yet</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             </section>
           </main>
 
@@ -378,6 +397,28 @@ const Now = () => {
                 </p>
               </div>
             </div>
+
+            <div className="flex justify-center">
+              <img
+                className="w-full max-w-[220px] rounded-xl"
+                src={anime1Gif}
+                width="500"
+                height="281"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            {isOwner ? (
+              <Link
+                to="/admin/now"
+                className="block rounded-full border border-blue-200 bg-white px-4 py-2 text-center text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
+              >
+                edit
+              </Link>
+            ) : null}
           </aside>
         </div>
       </div>

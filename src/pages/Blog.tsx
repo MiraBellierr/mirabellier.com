@@ -15,7 +15,6 @@ import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { usePageSeo } from "@/lib/seo";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
-import kannaSmile from "@/assets/anime/kanna-smile.webp";
 import {
   extractTextFromContent,
   slugify,
@@ -288,17 +287,6 @@ const Blog = () => {
                 </a>
               </p>
             </div>
-            <div className="flex justify-center">
-              <img
-                className="w-[350px] rounded-lg border border-blue-400"
-                src={kannaHappy}
-                width="350"
-                height="350"
-                alt="kanna gif"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
           </div>
 
           <main className="w-full lg:w-3/5 space-y-4 p-4">
@@ -541,10 +529,10 @@ const Blog = () => {
               </aside>
               <div className="flex justify-center">
                 <img
-                  className="border border-blue-400 rounded-lg"
-                  src={kannaSmile}
-                  width="498"
-                  height="498"
+                  className="w-full border border-blue-400 rounded-lg"
+                  src={kannaHappy}
+                  width="350"
+                  height="350"
                   alt="kanna gif"
                   loading="lazy"
                   decoding="async"
