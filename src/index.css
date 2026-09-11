@@ -162,6 +162,13 @@
   --tt-selection-color: rgba(157, 138, 255, 0.2);
   --tt-card-bg-color: var(--white);
   --tt-card-border-color: var(--tt-gray-light-a-100);
+  /* Base body/card text color. Left undefined, `body` and every element
+     matched by the `[class*="border-"][class*="rounded"]` rule below fall
+     back to the guaranteed-invalid value — normally black, but *white* when
+     `color-scheme: dark` is set on `<html>` (Pixies pins this while its
+     full-screen viewer is open) even though `.dark` isn't applied, making
+     light-mode text (e.g. the toast) invisible on its own light background. */
+  --tt-color-text-gray: #1e3a8a;
   --tt-color-highlight-gray: #e5e7eb;
   --tt-color-highlight-gray-contrast: #9ca3af;
   --tt-color-highlight-brown: #ead7c0;
@@ -201,6 +208,7 @@
   --tt-selection-color: rgba(200, 140, 255, 0.25);
   --tt-card-bg-color: rgba(40, 35, 55, 0.85);
   --tt-card-border-color: rgba(200, 180, 255, 0.15);
+  --tt-color-text-gray: rgb(233, 213, 255);
   --tt-color-highlight-gray: rgba(148, 163, 184, 0.35);
   --tt-color-highlight-gray-contrast: rgba(226, 232, 240, 0.7);
   --tt-color-highlight-brown: rgba(180, 134, 93, 0.4);
