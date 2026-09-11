@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
@@ -207,6 +207,83 @@ const SectionLabelText = ({ label }: { label: string }) => (
   </div>
 );
 
+// Matches `.left-side-rail`'s `top: 1rem` (index.css) — the offset at which
+// the rail's native `position: sticky` catches at the top of the viewport.
+const RAIL_TOP_OFFSET_PX = 16;
+const RAIL_STICKY_BREAKPOINT = "(min-width: 1024px)";
+
+/**
+ * On a page whose nav is taller than the viewport, plain `position: sticky`
+ * pins the rail at the top and never reveals the rest of it — the bottom
+ * links stay off-screen until the reader hits the very end of the (often much
+ * taller) main content column. This nudges the sticky rail up by exactly as
+ * much as the page scrolls, once it's caught at the top, until its bottom
+ * comes into view — then leaves it flush there — and reverses the same way
+ * on the way back up.
+ */
+function useRevealStickyRail(railRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const aside = railRef.current;
+    const rail = aside?.parentElement;
+    if (!rail) return;
+
+    const mediaQuery = window.matchMedia(RAIL_STICKY_BREAKPOINT);
+    let translateY = 0;
+    let lastScrollY = window.scrollY;
+    let frame = 0;
+
+    const reset = () => {
+      translateY = 0;
+      rail.style.transform = "";
+    };
+
+    const update = () => {
+      frame = 0;
+
+      if (!mediaQuery.matches) {
+        reset();
+        lastScrollY = window.scrollY;
+        return;
+      }
+
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY;
+      lastScrollY = currentScrollY;
+
+      // Back out our own transform to get the rail's native sticky-computed
+      // top, so we only start nudging once the browser has actually caught
+      // it at the top edge (otherwise it'd jump early, before it's stuck).
+      const nativeTop = rail.getBoundingClientRect().top - translateY;
+      if (nativeTop > RAIL_TOP_OFFSET_PX + 0.5) {
+        reset();
+        return;
+      }
+
+      const minTranslateY = Math.min(
+        0,
+        window.innerHeight - RAIL_TOP_OFFSET_PX - rail.offsetHeight,
+      );
+      translateY = Math.min(0, Math.max(minTranslateY, translateY - delta));
+      rail.style.transform = translateY ? `translateY(${translateY}px)` : "";
+    };
+
+    const onScrollOrResize = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize);
+
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+      if (frame) cancelAnimationFrame(frame);
+      reset();
+    };
+  }, [railRef]);
+}
+
 const Navigation = () => {
   const auth = useOptionalAuth();
   const location = useLocation();
@@ -215,6 +292,7 @@ const Navigation = () => {
   const avatarSrc = getAvatarSrc(auth?.user?.avatar);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const asideRef = useRef<HTMLElement>(null);
 
   const activeNavItem = navSections
     .flatMap((section) => section.items)
@@ -225,10 +303,13 @@ const Navigation = () => {
     setAccountMenuOpen(false);
   }, [location.pathname]);
 
-
+  useRevealStickyRail(asideRef);
 
   return (
-    <aside className="site-display nav-shell mb-auto w-full overflow-hidden rounded-xl border border-blue-300 bg-blue-100 shadow-md opacity-90">
+    <aside
+      ref={asideRef}
+      className="site-display nav-shell mb-auto w-full overflow-hidden rounded-xl border border-blue-300 bg-blue-100 shadow-md opacity-90"
+    >
       <div className="border-b border-blue-200/80 p-3 lg:hidden dark:border-purple-300/20">
         <button
           aria-controls="site-navigation-panel"

@@ -165,3 +165,7 @@ Arena routes are also reachable under the short `/ar/...` prefix (e.g. `/ar/figh
 
 This frontend is where I try to make code feel warm.  
 Cute on the surface, practical underneath, and comfy to keep growing over time.
+
+## License
+
+Licensed under the [Apache License 2.0](./LICENSE).

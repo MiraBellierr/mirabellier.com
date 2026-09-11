@@ -1,7 +1,7 @@
 import LegalPage, { type LegalSection } from "@/components/LegalPage";
 import { usePageSeo } from "@/lib/seo";
 
-const EFFECTIVE_DATE = "June 20, 2026";
+const EFFECTIVE_DATE = "September 11, 2026";
 const TERMS_DESCRIPTION =
   "The rules and conditions for visiting mirabellier.com, creating an account, publishing content, and using interactive features.";
 
@@ -125,6 +125,36 @@ const sections: LegalSection[] = [
     ),
   },
   {
+    id: "pixies",
+    title: "Pixies videos",
+    content: (
+      <>
+        <p>
+          Pixies is a short-video feature. If you upload a clip, the same
+          rules as &quot;Your content&quot; above apply: you must own the
+          rights or have permission to post it, and it must follow the
+          acceptable-use rules, including for footage of other identifiable
+          people.
+        </p>
+        <p>
+          Mira also curates a collection of clips from public TikTok,
+          Instagram, and YouTube posts for fan commentary and archival
+          purposes. These are credited to the original creator&apos;s username
+          where it is known, do not indicate that the creator endorses or is
+          affiliated with Mirabellier.com, and remain the creator&apos;s work.
+          A creator or rights holder who wants their clip removed can contact{" "}
+          <a
+            className="font-semibold text-blue-600 underline underline-offset-4 dark:text-purple-200"
+            href="mailto:privacy@mirabellier.com"
+          >
+            privacy@mirabellier.com
+          </a>{" "}
+          and it will be taken down promptly.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "arena",
     title: "Arena and virtual items",
     content: (
@@ -163,10 +193,11 @@ const sections: LegalSection[] = [
     content: (
       <p>
         The site may use or link to Discord, Cloudflare, GitHub, Ko-fi, Patreon,
-        MyAnimeList, media hosts, and other services. Mira does not
-        control their availability, content, security, or practices and is not
-        responsible for losses caused by your use of them. Review their terms
-        before providing information or making a payment.
+        MyAnimeList, TikTok, Instagram, YouTube, media hosts, and other
+        services. Mira does not control their availability, content, security,
+        or practices and is not responsible for losses caused by your use of
+        them. Review their terms before providing information or making a
+        payment.
       </p>
     ),
   },
@@ -181,10 +212,11 @@ const sections: LegalSection[] = [
           applicable law. These terms do not transfer ownership to you.
         </p>
         <p>
-          Anime, game, character, artwork, names, images, and trademarks
-          belonging to third parties remain the property of their respective
-          owners. Fan pages and commentary are unofficial and are not endorsed
-          by those owners unless expressly stated.
+          Anime, game, character, artwork, names, images, trademarks, and
+          curated Pixies videos belonging to third parties remain the property
+          of their respective owners or creators. Fan pages and commentary are
+          unofficial and are not endorsed by those owners unless expressly
+          stated.
         </p>
         <p>
           Send good-faith copyright or other rights concerns to{" "}
@@ -304,7 +336,7 @@ const Terms = () => {
       name: "Terms of Service",
       description: TERMS_DESCRIPTION,
       url: "https://mirabellier.com/terms",
-      dateModified: "2026-06-20",
+      dateModified: "2026-09-11",
       isPartOf: {
         "@type": "WebSite",
         name: "Mirabellier.com",

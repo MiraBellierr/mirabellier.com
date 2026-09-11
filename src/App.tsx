@@ -71,6 +71,7 @@ const InteractiveUiChrome = lazy(() => import("./parts/InteractiveUiChrome"));
 const ArenaCompensationPopup = lazy(
   () => import("./parts/ArenaCompensationPopup"),
 );
+const CookieNotice = lazy(() => import("./parts/CookieNotice"));
 
 import CommandPalette from "./parts/CommandPalette";
 import { rememberPostLoginRedirect } from "./lib/post-login-redirect";
@@ -272,6 +273,9 @@ function App() {
               <CommandPalette />
               <Suspense fallback={null}>
                 <ArenaCompensationPopup />
+              </Suspense>
+              <Suspense fallback={null}>
+                <CookieNotice />
               </Suspense>
               <Suspense fallback={null}>
                 {showCursorManager ? <CursorManager /> : null}

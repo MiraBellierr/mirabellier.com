@@ -7,8 +7,14 @@ const Footer = () => {
 
   return (
     <footer className="site-display grid gap-3 border-b-2 border-blue-300 bg-blue-50 p-4 text-sm font-bold text-blue-600 shadow-sm dark:border-purple-500/30 dark:bg-gradient-to-r dark:from-purple-900/40 dark:to-pink-900/30 dark:text-purple-200 sm:grid-cols-3 sm:items-center">
-      <span className="tracking-tight text-left">
+      <span className="flex flex-col text-left tracking-tight">
         Made with love ❤️ by mirabellier
+        <span className="text-xs font-normal opacity-80">
+          © {new Date().getFullYear()} Mirabellier ·{" "}
+          <a className="underline underline-offset-4 hover:text-pink-600" href="/LICENSE">
+            License
+          </a>
+        </span>
       </span>
 
       <div className="flex flex-col items-center justify-center gap-1">

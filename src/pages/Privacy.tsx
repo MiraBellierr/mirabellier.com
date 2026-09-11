@@ -1,7 +1,7 @@
 import LegalPage, { type LegalSection } from "@/components/LegalPage";
 import { usePageSeo } from "@/lib/seo";
 
-const EFFECTIVE_DATE = "June 20, 2026";
+const EFFECTIVE_DATE = "September 11, 2026";
 const PRIVACY_DESCRIPTION =
   "How Mirabellier.com collects, uses, shares, stores, and protects information when you visit the website.";
 
@@ -15,7 +15,8 @@ const sections: LegalSection[] = [
           Mira operates Mirabellier.com from Malaysia. This policy
           explains how information is handled when you browse the site, sign in,
           create a profile, post content, or use interactive features such as
-          the guestbook, question of the day, blog reactions, and Arena.
+          the guestbook, question of the day, blog reactions, Pixies short
+          videos, and Arena.
         </p>
         <p>
           This policy does not control third-party websites or services. Their
@@ -46,6 +47,23 @@ const sections: LegalSection[] = [
             <strong>Public contributions:</strong> guestbook names, messages,
             moods and websites; question-of-the-day answers; blog comments,
             likes and posts; and related timestamps.
+          </li>
+          <li>
+            <strong>Pixies videos:</strong> video files you upload, titles,
+            tags, duration, dimensions, thumbnails, captions, comments, likes,
+            follows, and viewing activity used to serve your feed (such as
+            watched, liked, and followed clips). If you sign in and browse
+            without picking interests, a device-level guest identifier is used
+            instead of an account to remember basic preferences.
+          </li>
+          <li>
+            <strong>Imported Pixies creator information:</strong> for clips
+            Mira curates from public TikTok, Instagram, or YouTube posts,
+            the source platform, the original creator&apos;s public username,
+            avatar, caption, and hashtags, and whether the source account
+            displayed a verified badge. These placeholder creator profiles are
+            not linked to a Mirabellier.com account and are built only from
+            information the creator already made public on that platform.
           </li>
           <li>
             <strong>Arena information:</strong> game profile, level, experience,
@@ -91,8 +109,9 @@ const sections: LegalSection[] = [
         <p>
           Profiles and contributions are designed to be public. Your username,
           avatar, banner, biography, location, website, posts, comments,
-          guestbook notes, question answers, and some Arena statistics may be
-          visible to anyone and may appear in search or social previews.
+          guestbook notes, question answers, uploaded Pixies videos and
+          captions, and some Arena statistics may be visible to anyone and may
+          appear in search or social previews.
         </p>
         <p>
           Do not publish private, sensitive, or confidential information. Public
@@ -129,6 +148,12 @@ const sections: LegalSection[] = [
           and security signals when it checks that a form or Arena request is
           being made by a person rather than an abusive automated system.
         </p>
+        <p>
+          A one-time notice on the site links to this section so first-time
+          visitors know cookies are in use. Dismissing it only stores an
+          acknowledgement flag in your browser and does not turn on any
+          additional tracking.
+        </p>
       </>
     ),
   },
@@ -154,7 +179,12 @@ const sections: LegalSection[] = [
           <li>
             external services you choose to open or interact with, including
             embedded or linked Ko-fi, Patreon, GitHub, MyAnimeList, and other
-            content providers; and
+            content providers;
+          </li>
+          <li>
+            public posts on TikTok, Instagram, and YouTube, which Mira may
+            fetch to curate Pixies clips and their captions, hashtags, and
+            creator attribution; and
           </li>
           <li>
             authorities or other parties when reasonably necessary to comply
@@ -297,7 +327,7 @@ const Privacy = () => {
       name: "Privacy Policy",
       description: PRIVACY_DESCRIPTION,
       url: "https://mirabellier.com/privacy",
-      dateModified: "2026-06-20",
+      dateModified: "2026-09-11",
       isPartOf: {
         "@type": "WebSite",
         name: "Mirabellier.com",
