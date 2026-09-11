@@ -53,7 +53,7 @@ const QuestionAnswerCard = ({
             height="44"
           />
         ) : (
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-xs font-bold uppercase text-blue-600">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-xs font-bold uppercase text-blue-600 dark:bg-purple-800 dark:text-purple-100">
             {displayName.slice(0, 2)}
           </div>
         )}
