@@ -39,9 +39,13 @@ function getDefaultCursorEnabled() {
     return true;
   }
 
-  // Touch-first devices do not benefit much from the custom cursor, so keep
-  // it off unless the user explicitly turns it on.
-  return !window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  // Touch-first devices do not benefit much from the custom cursor, and
+  // someone who's asked their OS for less motion didn't ask for a cursor
+  // that follows the pointer everywhere — keep it off by default unless the
+  // user explicitly turns it on.
+  return !window.matchMedia(
+    "(hover: none), (pointer: coarse), (prefers-reduced-motion: reduce)",
+  ).matches;
 }
 
 const CursorContext = createContext<CursorContextType>({

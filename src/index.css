@@ -26,6 +26,22 @@
     U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Collapse every CSS transition/keyframe animation (card flips, floaters,
+   wiggle buttons, fall-off, etc.) to effectively instant for anyone who's
+   asked their OS for less motion. JS-driven motion (holo tilt's auto-cycle,
+   the custom cursor, the hero's animated-image upgrade) isn't CSS and is
+   gated separately via `usePrefersReducedMotion`. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Critical CSS variables inlined to eliminate request chain */
 :root {
   overflow-wrap: break-word;
@@ -402,6 +418,27 @@ html.custom-cursor *,
 html.custom-cursor *::before,
 html.custom-cursor *::after {
   cursor: none !important;
+}
+
+/* Sparkle trail spawned by CursorManager — one short-lived span per
+   sparkle, removed from the DOM once this finishes (see CursorTrail.tsx). */
+@keyframes cursorSparkleFade {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.6) rotate(0deg); }
+  40% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(25deg); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.4) rotate(60deg); }
+}
+
+.cursor-sparkle {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 299999;
+  font-size: var(--cursor-sparkle-size, 14px);
+  color: var(--cursor-sparkle-color, #f9a8d4);
+  text-shadow: 0 0 4px rgba(249, 168, 212, 0.8);
+  animation: cursorSparkleFade 650ms ease-out forwards;
+  will-change: transform, opacity;
 }
 
 #root,

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { useReducedMotion } from "./use-reduced-motion";
 
 const AUTO_CYCLE_MS = 5000;
 const SNAP_STIFFNESS = 0.008;
@@ -46,7 +47,8 @@ function autoPos(phaseOffset: number) {
 }
 
 export function useHoloTilt(options?: HoloTiltOptions) {
-  const auto = options?.auto ?? false;
+  const reducedMotion = useReducedMotion();
+  const auto = (options?.auto ?? false) && !reducedMotion;
 
   const [style, setStyle] = useState<CSSProperties>(() =>
     computeTiltStyle(0.5, 0.5, auto ? "1" : "0"),
@@ -113,6 +115,12 @@ export function useHoloTilt(options?: HoloTiltOptions) {
 
   const onPointerLeave = useCallback(() => {
     cancelAnimationFrame(springRafRef.current);
+
+    if (reducedMotion) {
+      pointerOver.current = false;
+      setStyle(computeTiltStyle(0.5, 0.5, "0"));
+      return;
+    }
 
     const { x: startX, y: startY } = lastPos.current;
 
@@ -194,7 +202,7 @@ export function useHoloTilt(options?: HoloTiltOptions) {
     };
 
     springRafRef.current = requestAnimationFrame(animate);
-  }, [auto]);
+  }, [auto, reducedMotion]);
 
   return { tiltStyle: style, onPointerMove, onPointerLeave };
 }

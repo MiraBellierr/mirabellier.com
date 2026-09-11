@@ -182,10 +182,16 @@ function SpectateFight({ userId }: { userId: string }) {
         {isLoggedIn ? "🔴 live" : "updates every few seconds"}
       </p>
       <div className="grid grid-cols-2 gap-4">
-        <ArenaHpBar current={battle.currentHp.player} max={battle.maxHp.player} label="fighter" />
+        <ArenaHpBar
+          current={battle.currentHp.player}
+          max={battle.maxHp.player}
+          shield={battle.currentShield?.player}
+          label="fighter"
+        />
         <ArenaHpBar
           current={battle.currentHp.opponent}
           max={battle.maxHp.opponent}
+          shield={battle.currentShield?.opponent}
           label={opponent.displayName}
         />
       </div>

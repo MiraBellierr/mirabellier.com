@@ -1,4 +1,4 @@
-import type { ArenaFightResponse, ArenaActiveFight, ArenaBattleTurn } from "./shared";
+import type { ArenaFightResponse, ArenaActiveFight, ArenaBattleTurn, ArenaCard } from "./shared";
 import {
   arenaRequest,
   normalizeProfile,
@@ -87,6 +87,9 @@ export type ArenaFightReplayRecord = {
   xpDelta: number;
   coinDelta: number;
   createdAt: string;
+  // Nullable — fights recorded before this shipped have no card snapshot.
+  playerCard?: ArenaCard | null;
+  opponentCard?: ArenaCard | null;
 };
 
 // Replay links: read-only, no token required — a completed fight's rounds

@@ -238,6 +238,10 @@ export type ArenaProfile = {
   updatedAt: string | null;
   activeFight?: ArenaActiveFight | null;
   tutorialComplete: boolean;
+  loginStreak: number;
+  lastLoginDate: string | null;
+  canClaimDailyLogin: boolean;
+  dailyLoginPreview: { streak: number; coins: number };
 };
 export type ArenaEquipmentLoadout = {
   id: string;
@@ -311,6 +315,9 @@ export type ArenaRecentFight = {
   xpDelta: number;
   coinDelta: number;
   createdAt: string;
+  // Nullable — fights recorded before this shipped have no card snapshot.
+  playerCard?: ArenaCard | null;
+  opponentCard?: ArenaCard | null;
 };
 export type ArenaTitle = { id: string; name: string };
 export type ArenaTitlesResponse = {

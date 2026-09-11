@@ -522,31 +522,170 @@ correctly end to end — matching HP/damage numbers, auto-advanced to
 exactly, and the profile Activity feed's "won an Arena fight" entry linked
 straight into it.
 
-add cards display in replay
+**Follow-up refinements (2026-09-11), same session:** three rounds of "make
+it feel like the real fight" polish on top of the above.
+- Card portraits: `arena_fights` gained nullable `playerCardJson` /
+  `opponentCardJson` columns, populated at both fight-recording call sites
+  from data already computed in-memory (`simulation.playerCard`,
+  `opponent.selectedCard`); pre-existing fights fall back to `null` and the
+  page shows a plain `?` placeholder instead of guessing. `ArenaSpectate.tsx`
+  picked up the same shield prop while touching `ArenaHpBar`.
+- Visual parity with `ArenaFight.tsx`: `ArenaHpBar` absorbed `ArenaFight.tsx`'s
+  richer local `HpBar` (shield overlay + numeric readout) as the single
+  shared implementation instead of two diverging copies, and the replay
+  stage now uses the exact same `arena-fight-stage`/`arena-fight-combatant`
+  markup as the live page.
+- Combat effects: damage/miss/element-effectiveness floaters and card
+  shake/fall-off, copied verbatim from `ArenaFight.tsx`'s
+  `triggerTurnEffects`/`shakeCard`, but fired off the replay's own `revealed`
+  counter advancing (client-side playback) instead of server-pushed turn
+  messages — same visuals, different trigger.
 
-### 18. Daily quest / login streak
+Verified live: a real fight run through `runFight()` against a disposable
+throwaway test user (never the real owner account) replayed with damage
+floaters, correct HP/shield readouts, the loser's card falling off on
+finish, and a clean re-trigger of every effect on `[ restart ]`. `tsc
+--noEmit` clean; backend suite still green (386 pass, +0 from this
+frontend-only change). Test user and all its rows deleted afterward.
 
-The pieces are all there: scheduler patterns in
-`arena-hall-of-fame-scheduler.js`, an inbox in `ArenaInbox.tsx`, a shop to spend
-in. A simple daily objective is the standard fix for "I logged in, now what?".
+### 18. Daily quest / login streak  ✅ DONE (2026-09-11)
+
+No scheduler needed after all — the existing per-day idiom already used by
+`lastCardDrawDate`/`dailyOpponentCount` (compare against
+`getCurrentRecordedDate()`, reset on a gap) covers a login streak with zero
+new infra. Built as an **explicit claim**, not an auto-grant on every
+profile fetch: the first version granted coins as a side effect of
+`GET /arena/profile`, which is called constantly (every page load, from a
+dozen call sites via `ensureArenaProfile`) — mutating on a read broke 13
+unrelated tests that assumed fetching a profile was free of side effects,
+and is generally the wrong shape for a GET. Rebuilt so the profile payload
+only carries a read-only preview (`canClaimDailyLogin`, `dailyLoginPreview:
+{streak, coins}`), and a new `POST /arena/daily-login/claim` does the actual
+write.
+
+- `arena_profiles` gained `loginStreak` / `lastLoginDate` columns.
+- `lib/arena/profile.js`: `claimDailyLoginBonus` — streak continues only if
+  the last claim was exactly yesterday (`addDaysToRecordedDate` check), any
+  gap resets to 1; coins scale `10 + (streak-1)*5`, capped at 50; throws
+  `ARENA_DAILY_LOGIN_ALREADY_CLAIMED` (409) on a same-day re-claim. Reuses
+  the existing `createArenaNotification` — the inbox (#-adjacent feature)
+  already renders an unknown notification type generically, so "now what"
+  is answered by the bell icon with zero new frontend notification code.
+- `Arena.tsx` hub gained a "Login streak: N days 🔥" row with a
+  `[ claim day N: +C 🪙 ]` button when `canClaimDailyLogin` is true.
+- 5 new backend tests covering: unclaimed preview doesn't mutate, claim
+  grants + notifies once, double-claim same day is rejected, streak
+  continues/resets around a gap, and the 50-coin cap. Full suite: 391 pass.
+
+Verified against the real dev server: curl against a disposable throwaway
+user (session minted directly via `lib/users.js`, never the real owner)
+confirmed claim → `{streak:1,coins:10,coinsTotal:10}`, then a same-day
+re-claim → `409 ARENA_DAILY_LOGIN_ALREADY_CLAIMED`. Also confirmed in the
+browser (via a Bearer-token fetch from the page's own JS, since the real
+owner's session cookie already occupied the test tab and couldn't safely be
+overwritten — it's `HttpOnly`) that the CORS/network path matches. The real
+owner's page happened to already show the feature live — "Login streak: 1
+day 🔥", no claim button — read-only confirmation the "already claimed"
+render is correct; re-checked afterward that the owner's coins/streak were
+unchanged by any of this. All throwaway rows deleted, `dev-origins.js`
+reverted.
 
 ---
 
 ## 🛠️ Plumbing worth having
 
-### 19. `prefers-reduced-motion` audit
+### 19. `prefers-reduced-motion` audit  ✅ DONE (2026-09-11)
 
-The site leans on custom cursors (`src/parts/cursor/`), holo tilt
-(`use-holo-tilt.ts`), pack-opening animations, and a deferred animated hero. None
-of that should run for someone who asked their OS for less motion. One shared
-hook, applied in a few places.
+Split into a CSS half and a JS half, since most of the motion on this site
+is pure CSS transitions/keyframes (card flips, floaters, wiggle buttons,
+fall-off) that one global rule kills at once, and only the truly JS-driven
+motion (rAF loops, `<img>` src swaps) needed the "shared hook" the
+suggestion asked for.
 
-### 20. Bring the custom cursor to a decision
+- `src/index.css`: one `@media (prefers-reduced-motion: reduce)` block
+  collapsing every animation/transition duration to `0.01ms` and pinning
+  `scroll-behavior: auto` — the standard snippet, `!important` so it beats
+  Tailwind utilities and inline styles. Covers pack-opening flip/fly,
+  `arena-redraw-button`'s wiggle, `card-fall-off`, the damage/element
+  floaters, and the tiptap toolbar's smooth-scroll, with zero component
+  changes.
+- New `src/hooks/use-reduced-motion.ts`: `prefersReducedMotion()` (plain
+  one-off check) + `useReducedMotion()` (reactive, listens for the OS
+  setting changing mid-session) — mirrors the existing `useIsMobile`
+  pattern exactly.
+- `use-holo-tilt.ts`: `auto` is now `requestedAuto && !reducedMotion`, so
+  the perpetual auto-cycle `requestAnimationFrame` loop never gets
+  scheduled (the existing `if (!auto) return` early-out in that effect did
+  the rest — no new branch needed). The pointer-leave "spring back to
+  center" physics loop also short-circuits to an instant jump under reduced
+  motion. Interactive tilt-on-hover (direct pointer response, not
+  autoplaying) was left alone — that's user-driven feedback, not the kind
+  of motion the OS setting targets.
+- `DeferredAnimatedImage.tsx`: the idle-upgrade from poster to animated
+  image is skipped entirely under reduced motion — stays on the poster
+  frame forever instead of swapping in the animated hero once the page
+  settles.
+- `CursorContext.tsx`: `getDefaultCursorEnabled` now also defaults the
+  custom cursor off under reduced motion, one clause added to the media
+  query already used for the touch-device default (`(hover: none),
+  (pointer: coarse)` → `+ (prefers-reduced-motion: reduce)`) — same
+  "default off, user can still opt back in via the toggle" behavior as the
+  existing touch-device case, not a hard lock.
 
-`CursorContext` + `ToggleCursor` + three cursor components is a lot of surface
-for a feature many visitors turn off immediately. Either make it a first-class
-delight (trail, per-page variants, a cursor picker in `/settings`) or retire it.
-Right now it sits in between.
+Verified live: `window.matchMedia` overridden in-page (only the
+`prefers-reduced-motion` query intercepted, everything else passed
+through to the real implementation) confirmed the Home hero stays on
+`kanna-kobayashi-poster.webp` past the idle-upgrade window instead of
+swapping to the animated version, and that a holo card's rotator mounts
+with `--card-opacity: 0` (auto-cycle never armed) instead of `1`. Direct
+`requestAnimationFrame` timing couldn't be observed reliably — Chrome
+throttles rAF in a backgrounded automation tab — so the auto-cycle check
+relied on the initial-style proof plus the code's existing early-return,
+rather than watching frames change over a wall-clock wait. Fixture fight
+created via a disposable throwaway user (never the real owner) to get a
+card with art to inspect; all rows deleted after, `dev-origins.js`
+reverted, owner's profile re-checked unchanged. No backend changes —
+`node --test` untouched at 391 pass; `tsc --noEmit` clean.
+
+### 20. Bring the custom cursor to a decision  ✅ DONE (2026-09-11)
+
+Genuinely a coin-flip call ("make it first-class or retire it"), so asked
+rather than guessed — user picked first-class.
+
+- A cursor picker was off the table with existing assets: `public/cursors/`
+  only has one style (`Normal`/`Pointer`/`Text`), no alternates to pick
+  between, and generating new cursor art is out of scope here.
+- Built the trail instead: `CursorManager.tsx` spawns a small sparkle
+  (`⋆`/`✿`/`✧` — the glyphs the site already sprinkles on `Home.tsx` and
+  `Footer.tsx`, not a new motif) every ~28px of pointer travel, each one a
+  short-lived `<span>` that fades via a new `cursorSparkleFade` keyframe in
+  `index.css` and removes itself after 650ms — same spawn/`setTimeout`-cleanup
+  shape as the arena damage floaters, extending the existing
+  `handleMouseMove` listener rather than adding a second one.
+- Gated behind #19's `useReducedMotion` hook independent of the base on/off
+  toggle: someone who explicitly re-enables
+  the custom cursor despite their OS's reduced-motion setting still gets
+  the plain cursor, just not the trail — the continuous sparkle stream is
+  closer to what that setting targets than a static replacement pointer
+  image is.
+- Found `src/parts/ToggleCursor.tsx` was dead code — grep turned up zero
+  imports anywhere; the actual "anya cursor on/off" toggle visible in the
+  sidebar's Settings section is a separate inline implementation living in
+  `Navigation.tsx`. Deleted the unused duplicate while in this file, since
+  "a lot of surface for one feature" was the suggestion's own framing.
+
+Verified live: a `MutationObserver` counted 3 real sparkle spawns across 3
+pointer moves (confirming the distance-throttle fires once per ~28px
+rather than flooding on every `mousemove`), and inspecting a held-open
+node (`window.setTimeout` briefly patched to delay its own 650ms cleanup so
+there was time to look) showed the correct glyph, exact cursor-position
+`left`/`top`, and the `cursorSparkleFade` animation applied. `tsc --noEmit`
+clean; no backend involved. Didn't re-prove the *live* OS-toggle-mid-session
+path specifically for `CursorManager` — it's an App-root singleton that
+never remounts on route changes (unlike the holo-tilt card verified in #19),
+so the same remount trick doesn't apply; the underlying `useReducedMotion`
+hook is unchanged from the version already verified there, so this is a
+known, accepted gap rather than an untested code path.
 
 ---
 

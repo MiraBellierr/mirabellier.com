@@ -20,6 +20,7 @@ import {
   type ArenaProfile,
   type ArenaUpdate,
   MAIN_STAT_LABELS,
+  claimArenaDailyLogin,
   drawArenaPack,
   equipmentDisplayName,
   fetchArenaProfile,
@@ -111,6 +112,7 @@ const Arena = () => {
   const [profile, setProfile] = useState<ArenaProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [drawing, setDrawing] = useState(false);
+  const [claimingLogin, setClaimingLogin] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updates, setUpdates] = useState<ArenaUpdate[]>([]);
   const [expandedUpdates, setExpandedUpdates] = useState<Set<string>>(new Set());
@@ -211,6 +213,30 @@ const Arena = () => {
       }
     } finally {
       setDrawing(false);
+    }
+  };
+
+  const handleClaimDailyLogin = async () => {
+    if (!token) return;
+    setClaimingLogin(true);
+    setErrorMessage(null);
+    try {
+      const result = await claimArenaDailyLogin(token);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              coins: result.coinsTotal,
+              loginStreak: result.streak,
+              lastLoginDate: prev.lastLoginDate,
+              canClaimDailyLogin: false,
+            }
+          : prev,
+      );
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setClaimingLogin(false);
     }
   };
 
@@ -477,6 +503,27 @@ const Arena = () => {
                           <span className="font-black text-blue-600 dark:text-purple-300">
                             {profile.coins} 🪙
                           </span>
+                        </div>
+
+                        <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">
+                          <span className="mr-1 items-center justify-center text-md">
+                            Login streak:
+                          </span>{" "}
+                          <span className="font-black text-blue-600 dark:text-purple-300">
+                            {profile.loginStreak} day{profile.loginStreak === 1 ? "" : "s"} 🔥
+                          </span>
+                          {profile.canClaimDailyLogin ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleClaimDailyLogin()}
+                              disabled={claimingLogin}
+                              className="arena-redraw-button hover:animate-wiggle ml-2 text-xs"
+                            >
+                              {claimingLogin
+                                ? "[ claiming... ]"
+                                : `[ claim day ${profile.dailyLoginPreview.streak}: +${profile.dailyLoginPreview.coins} 🪙 ]`}
+                            </button>
+                          ) : null}
                         </div>
 
                         <div className="arena-draw-count-row border-t border-sky-100 dark:border-purple-400/20 pt-1 pb-1 text-sm font-semibold text-blue-950 dark:text-purple-200">

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ImgHTMLAttributes } from "react";
+import { prefersReducedMotion } from "@/hooks/use-reduced-motion";
 
 type DeferredAnimatedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   posterSrc: string;
@@ -21,6 +22,11 @@ const DeferredAnimatedImage = ({
   }, [posterSrc]);
 
   useEffect(() => {
+    // Someone who's asked their OS for less motion doesn't want the poster
+    // frame swapped out for an autoplaying animation, no matter how idle
+    // the page is.
+    if (prefersReducedMotion()) return;
+
     let isCancelled = false;
     let idleCallbackId: number | null = null;
     let upgradeTimeoutId: ReturnType<typeof setTimeout> | null = null;
