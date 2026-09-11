@@ -6,6 +6,8 @@ import AvatarImage from "../parts/AvatarImage";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
+import NotifyToggle from "../parts/NotifyToggle";
+import { followTopic } from "@/lib/push-api";
 import kannaPolice from "@/assets/anime/kanna-police.webp";
 
 const Settings = () => {
@@ -115,7 +117,7 @@ const Settings = () => {
             </div>
           </div>
 
-          <main className="w-full lg:w-3/5 flex items-center justify-center p-4">
+          <main className="w-full lg:w-3/5 flex flex-col items-center justify-center gap-4 p-4">
             <div className="w-full max-w-lg backdrop-blur-sm card-border rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">
@@ -249,6 +251,21 @@ const Settings = () => {
                 </div>
               </form>
             </div>
+
+            {user && (
+              <div className="w-full max-w-lg backdrop-blur-sm card-border rounded-2xl p-6 shadow-lg">
+                <h2 className="text-lg font-bold text-blue-700">Notifications</h2>
+                <p className="mt-1 text-sm text-blue-500">
+                  Get a browser notification when someone you follow posts a
+                  Pixie.{" "}
+                  <NotifyToggle
+                    topic={followTopic(user.id)}
+                    idleLabel="notify me"
+                    title="Get a browser notification when someone you follow posts a Pixie"
+                  />
+                </p>
+              </div>
+            )}
           </main>
 
           <aside className="right-side-panel w-full lg:w-1/5 mb-auto bg-blue-50 border border-blue-200 rounded-xl shadow-sm p-4 hidden lg:block">

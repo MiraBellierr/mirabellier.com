@@ -8,6 +8,7 @@ const About = lazy(() => import("./pages/About"));
 const Now = lazy(() => import("./pages/Now"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const Uses = lazy(() => import("./pages/Uses"));
+const Stats = lazy(() => import("./pages/Stats"));
 const Links = lazy(() => import("./pages/Links"));
 const Projects = lazy(() => import("./pages/Projects"));
 const Shrine = lazy(() => import("./pages/Shrine"));
@@ -26,6 +27,8 @@ const ArenaShop = lazy(() => import("./pages/ArenaShop"));
 const ArenaInventory = lazy(() => import("./pages/ArenaInventory"));
 const ArenaInbox = lazy(() => import("./pages/ArenaInbox"));
 const ArenaLeaderboard = lazy(() => import("./pages/ArenaLeaderboard"));
+const ArenaSpectate = lazy(() => import("./pages/ArenaSpectate"));
+const ArenaFightReplay = lazy(() => import("./pages/ArenaFightReplay"));
 const ArenaCollection = lazy(() => import("./pages/ArenaCollection"));
 const ArenaArchive = lazy(() => import("./pages/ArenaArchive"));
 const ArenaMarket = lazy(() => import("./pages/ArenaMarket"));
@@ -69,6 +72,7 @@ const ArenaCompensationPopup = lazy(
   () => import("./parts/ArenaCompensationPopup"),
 );
 
+import CommandPalette from "./parts/CommandPalette";
 import { rememberPostLoginRedirect } from "./lib/post-login-redirect";
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
@@ -135,6 +139,7 @@ function App() {
       <Route path="/now" element={<Now />} />
       <Route path="/changelog" element={<Changelog />} />
       <Route path="/uses" element={<Uses />} />
+      <Route path="/stats" element={<Stats />} />
       <Route path="/links" element={<Links />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />
@@ -142,11 +147,14 @@ function App() {
       <Route path="/twitch" element={<Twitch />} />
       <Route path="/arena" element={<Arena />} />
       <Route path="/arena/fight" element={<ArenaFight />} />
+      <Route path="/arena/fight/:id" element={<ArenaFightReplay />} />
       <Route path="/arena/hall-of-fame" element={<ArenaHallOfFame />} />
       <Route path="/arena/shop" element={<ArenaShop />} />
       <Route path="/arena/inventory" element={<ArenaInventory />} />
       <Route path="/arena/inbox" element={<ArenaInbox />} />
       <Route path="/arena/leaderboard" element={<ArenaLeaderboard />} />
+      <Route path="/arena/spectate" element={<ArenaSpectate />} />
+      <Route path="/arena/spectate/:userId" element={<ArenaSpectate />} />
       <Route path="/arena/collection" element={<ArenaCollection />} />
       <Route path="/arena/archive" element={<ArenaArchive />} />
       <Route path="/arena/market" element={<ArenaMarket />} />
@@ -158,11 +166,14 @@ function App() {
       <Route path="/arena/tcg/match" element={<TcgMatch />} />
       <Route path="/ar" element={<Arena />} />
       <Route path="/ar/fight" element={<ArenaFight />} />
+      <Route path="/ar/fight/:id" element={<ArenaFightReplay />} />
       <Route path="/ar/hall-of-fame" element={<ArenaHallOfFame />} />
       <Route path="/ar/shop" element={<ArenaShop />} />
       <Route path="/ar/inventory" element={<ArenaInventory />} />
       <Route path="/ar/inbox" element={<ArenaInbox />} />
       <Route path="/ar/leaderboard" element={<ArenaLeaderboard />} />
+      <Route path="/ar/spectate" element={<ArenaSpectate />} />
+      <Route path="/ar/spectate/:userId" element={<ArenaSpectate />} />
       <Route path="/ar/collection" element={<ArenaCollection />} />
       <Route path="/ar/archive" element={<ArenaArchive />} />
       <Route path="/ar/market" element={<ArenaMarket />} />
@@ -258,6 +269,7 @@ function App() {
         <CursorProvider>
           <AuthProvider>
             <WebSocketProvider>
+              <CommandPalette />
               <Suspense fallback={null}>
                 <ArenaCompensationPopup />
               </Suspense>

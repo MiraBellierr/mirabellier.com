@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
+import NotifyToggle from "../parts/NotifyToggle";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import { BlogTagList } from "@/components/BlogTagList";
@@ -26,6 +27,7 @@ import {
 } from "@/lib/blog-utils";
 import { fetchPosts, deletePost } from "@/lib/blog-api";
 import { imageWidthSrcSet } from "@/lib/image-srcset";
+import { TOPIC_NEW_POST } from "@/lib/push-api";
 import "@/styles/blog.css";
 
 const POST_MENU_WIDTH = 144;
@@ -541,7 +543,13 @@ const Blog = () => {
                     href="/feed.json"
                   >
                     JSON
-                  </a>
+                  </a>{" "}
+                  ·{" "}
+                  <NotifyToggle
+                    topic={TOPIC_NEW_POST}
+                    idleLabel="notify me of new posts"
+                    title="Get a browser notification for new blog posts"
+                  />
                 </p>
               </div>
 

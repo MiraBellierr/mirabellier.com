@@ -1181,6 +1181,33 @@ const ArenaFight = () => {
               </CollapsiblePanel>
             ) : null}
 
+            {profile?.recentFights?.length ? (
+              <CollapsiblePanel title="recent fights" defaultOpen={false}>
+                <ul className="space-y-1.5 text-xs">
+                  {profile.recentFights.map((fight) => {
+                    const opponentName =
+                      fight.rounds.find((r) => r.attacker === "opponent")?.attackerName ||
+                      fight.rounds.find((r) => r.defender === "opponent")?.defenderName ||
+                      "opponent";
+                    return (
+                      <li key={fight.id}>
+                        <Link
+                          to={`/arena/fight/${fight.id}`}
+                          className="flex items-center justify-between gap-2 hover:text-pink-600"
+                        >
+                          <span className={fight.result === "win" ? "text-emerald-600" : "text-red-500"}>
+                            {fight.result === "win" ? "W" : "L"}
+                          </span>
+                          <span className="flex-1 truncate text-slate-700">vs {opponentName}</span>
+                          <span className="text-blue-400">▶ replay</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CollapsiblePanel>
+            ) : null}
+
             <div className="right-side-panel rounded-xl border border-blue-300 bg-blue-100 p-4 shadow-md">
               <h2 className="text-center text-lg font-bold text-blue-700 mb-2">style matchups</h2>
               <div className="space-y-1 text-xs">

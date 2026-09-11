@@ -5,6 +5,7 @@ import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
+import NotifyToggle from "../parts/NotifyToggle";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import QuestionAnswerCard from "@/components/QuestionAnswerCard";
 import TurnstileWidget from "@/components/TurnstileWidget";
@@ -30,6 +31,7 @@ import {
   formatQuestionRecordedDate,
 } from "@/lib/question-of-the-day-ui";
 import { canModerateQuestionOfTheDay } from "@/lib/user-permissions";
+import { TOPIC_NEW_QOTD } from "@/lib/push-api";
 import { useConfirm } from "@/states/ConfirmContext";
 
 const QUESTION_DESCRIPTION =
@@ -274,6 +276,28 @@ const QuestionOfTheDay = () => {
                     Question of the day{" "}
                     {headingDate ? `(${headingDate}) ₊˚⊹⋆` : ""}
                   </h2>
+                  <p className="text-xs font-medium text-blue-400">
+                    Subscribe:{" "}
+                    <a
+                      className="underline underline-offset-2 hover:text-pink-600"
+                      href="/feed/questions.xml"
+                    >
+                      RSS
+                    </a>{" "}
+                    ·{" "}
+                    <a
+                      className="underline underline-offset-2 hover:text-pink-600"
+                      href="/feed/questions.json"
+                    >
+                      JSON
+                    </a>{" "}
+                    ·{" "}
+                    <NotifyToggle
+                      topic={TOPIC_NEW_QOTD}
+                      idleLabel="notify me of new questions"
+                      title="Get a browser notification for the new Question of the Day"
+                    />
+                  </p>
                 </div>
 
                 {loading && !currentData ? (

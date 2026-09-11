@@ -41,6 +41,7 @@ const GROUPS: NavGroup[] = [
     links: [
       { slug: "/hall-of-fame", label: "Hall of Fame" },
       { slug: "/leaderboard", label: "Leaderboard" },
+      { slug: "/spectate", label: "Spectate" },
       { slug: "/archive", label: "Archive" },
       { slug: "/inbox", label: "Inbox" },
     ],

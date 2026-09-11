@@ -14,7 +14,7 @@ backlog. This file is the *fun* backlog.
 ## Top 5, if you only do five
 
 1. ~~**RSS / Atom / JSON feed**~~ ✅ done (2026-09-10). Blog + QOTD feeds.
-2. **`⌘K` sitewide command palette** — the site has 50+ routes and no way to jump.
+2. ~~**`⌘K` sitewide command palette**~~ ✅ done (2026-09-11).
 3. ~~**Per-post generated OG images**~~ ✅ done (2026-09-10) for blog posts. Shrines/QOTD already have their own preview images.
 4. ~~**A `/now` page**~~ ✅ done (2026-09-10). Public page + owner editor.
 5. ~~**Public changelog page**~~ ✅ done (2026-09-10). `/changelog` + owner editor.
@@ -239,52 +239,162 @@ time you write.
 
 ## 🔍 Navigation & discovery
 
-### 11. `⌘K` command palette  ⭐
+### 11. `⌘K` command palette  ⭐  ✅ DONE (2026-09-11)
 
-The README lists **50+ routes**. Search currently exists only *inside*
-`Blog.tsx` (a client-side filter over already-fetched posts) and inside a few
-Arena pages. There is no way to get from anywhere to anywhere.
+**Shipped:** `src/parts/CommandPalette.tsx`, mounted once in `App.tsx`. A
+manual `document.addEventListener("keydown", …)` (same pattern as
+`ConfirmDialog.tsx`, so `⌘K`/`Ctrl+K` works even while a form input or the
+Tiptap editor has focus) toggles it open; a "search ⌘K" button in
+`Navigation.tsx` opens it too, via a tiny pub-sub (`src/lib/command-palette.ts`)
+rather than threading a new Context through the app. Static route list is
+**reused, not reinvented** — `Header.tsx`'s existing `HEADER_ROUTE_TITLES`
+(now exported) is filtered down to real, non-parameterized, non-`/ar/`-alias
+paths. Blog posts, shrine pages, and QOTD archive days are fetched lazily on
+first open via the already-existing `fetchPosts` / `fetchShrinePages` /
+`fetchQuestionOfTheDayArchive` (all backed by the `swrJson` cache, so repeat
+opens are free). Plain substring filter, grouped by section, arrow keys +
+Enter + Escape, click-outside to close. Individual **projects** were left out
+of the index — `/projects` has no per-project route, so a project result
+would just point at the same page the "projects" static entry already covers.
+The `?` shortcuts overlay was also skipped — one discoverable shortcut didn't
+need a help screen. `react-hotkeys-hook` / Radix popover / floating-ui /
+virtualized list were all skipped too — none were needed for a ~60-item,
+non-virtualized list with a manual keydown handler.
 
-Everything needed is already installed:
+### 12. Sitewide search endpoint  ✅ DONE (2026-09-11)
 
-- `react-hotkeys-hook` — currently used **only** inside the Tiptap editor
-- `@radix-ui/react-popover` + `@floating-ui/react` for the overlay
-- `@tanstack/react-virtual` if the result list gets long
+**Shipped:** `mirabellier-backend/lib/search-index.js` — one FTS5 virtual table
+(`search_index`) over post bodies, shrine blurbs, QOTD prompts, and QOTD
+answers, served from the new public **`GET /search?q=…`**
+(`mirabellier-backend/routes/search.js`). The index is kept in sync by SQLite
+**triggers** on `posts`/`shrine_pages`/`daily_questions`/`daily_question_answers`
+(installed once from `initializeSchema`), so every existing insert/update/delete
+route — `routes/posts.js`, `routes/shrines.js`, the QOTD routes — keeps working
+completely unmodified; nothing outside `search-index.js` knows the index
+exists. A custom SQL function (`db.function("mb_extract_post_text", …)`) walks
+each post's Tiptap JSON for the trigger to call, and a generous rowid-offset
+scheme (`kind offset + source-table rowid`) lets four tables share one FTS5
+table without collisions. User input is wrapped as quoted, prefix-matched
+phrases (`"word"*`) before hitting `MATCH`, so it can never be read as FTS5
+query syntax (`AND`/`OR`/column filters). Snippets use FTS5's own `snippet()`
+— no manual highlighting code. 9 tests in
+`mirabellier-backend/test/search-index.test.js` (trigger insert/update/delete,
+query sanitisation, the Tiptap text walker). **`quote_snapshots` was left out**
+of the index — those are externally-fetched BrainyQuote-of-the-day snapshots,
+not authored content, so searching them has little value and they don't fit
+the four "your own content" tables cleanly.
 
-Index posts, shrines, QOTD archive days, projects, and every static route. Add
-`?` for a keyboard-shortcuts overlay while you're in there.
-
-### 12. Sitewide search endpoint
-
-The palette is nicer with real backend search. SQLite's **FTS5** is built into
-`better-sqlite3` — a virtual table over posts, shrines, quotes, and QOTD answers
-is a small amount of code and would be very fast at this data size.
+`src/parts/CommandPalette.tsx` (#11) now calls this endpoint instead of
+fetching whole posts/shrines/QOTD-archive lists client-side and substring
+matching in the browser: static pages still filter client-side (instant, no
+network needed for ~60 rows), but any non-empty query is also sent to
+`/search` (250ms debounce, `AbortController` per keystroke) via the new
+`src/lib/search-api.ts`. This is a real capability upgrade, not just a
+refactor — search now reaches inside post **bodies** and QOTD **answers**,
+which the old client-side title-only filter could never do.
 
 ---
 
 ## 👥 Social layer
 
-### 13. Extend web push beyond Twitch
+### 13. Extend web push beyond Twitch  ✅ DONE (2026-09-11)
 
-`lib/twitch-push.js` already does "notify me when live" — the whole push
-subscription plumbing exists and works, and it's currently spent on one feature.
-Let people opt into: new blog post, new QOTD, someone you follow posted a Pixie.
-The follow graph (`src/lib/user-follows.ts`) and the notification model
-(`src/lib/pixie-notifications.ts`) are both already there.
+**Shipped:** a generic Web Push layer alongside Twitch's (untouched — it
+already had real subscriber rows, so it keeps its own table/routes/module).
 
-### 14. A real activity feed on `/profile`
+- `mirabellier-backend/lib/push-config.js` — the shared VAPID env/`web-push`
+  client, extracted from `lib/twitch-push.js` (which now delegates to it;
+  zero behavior change, same exports).
+- `mirabellier-backend/lib/push-subscriptions.js` — one new `push_subscriptions`
+  table keyed by an opaque `topic` string instead of a feature column, so it
+  covers all three asks without three tables: `"blog:new-post"`, `"qotd:new"`,
+  and one per account, `"pixie:follows:<userId>"`, fanned out to every
+  follower (`getFollowerIds`, added to `lib/user-follows.js`) on upload.
+- `mirabellier-backend/routes/push.js` — generic `/push/vapid-public-key`,
+  `/push/subscribe`, `/push/status`. A "follow" topic is authorization-checked
+  server-side: only the signed-in account matching that topic's userId may
+  subscribe to it (otherwise anyone could register push endpoints against
+  someone else's followers) — sitewide topics stay open, same as Twitch.
+- Triggers: `routes/posts.js` fires on a new post; a new
+  `lib/question-of-the-day-push.js` mirrors `question-of-the-day-discord.js`'s
+  "which question is active" detection (reused via an additive export,
+  `createNotifier`/`getCurrentRecordedDate`) with its own `pushNotifiedAt`
+  gate column so it fires whether or not the Discord webhook is configured,
+  wired into the same reactive call sites *and* its own 60s poller for the
+  midnight-rollover case Discord's scheduler already needed. `routes/pixies.js`
+  fans out on direct user uploads only (not admin/social imports).
+- 21 new backend tests (`test/push-subscriptions.test.js`,
+  `test/question-of-the-day-push.test.js`, `test/push-routes.test.js` —
+  including the follow-topic authorization boundary). Full suite: 369 pass.
 
-You have follows, blog comments, likes, guestbook entries, Pixies, and Arena
-events — all separately. A merged per-user timeline turns a profile from a
-static card into somewhere worth returning to.
+**Frontend:** `src/lib/push-support.ts` (browser helpers — including the
+Brave "push service error" message fix from earlier this session) and
+`src/lib/push-api.ts` (generic fetch layer) were extracted so
+`src/pages/Twitch.tsx`'s already-shipped `NotifyButton` and the new
+`src/parts/NotifyToggle.tsx` share one implementation instead of three
+copies. `NotifyToggle` is dropped into `/blog` and the QOTD archive page next
+to the existing "Subscribe: RSS · JSON" line, and into `/settings` as a
+"Notifications" card for the follow-topic (only shown when signed in).
+Verified against the real local backend: full subscribe → status →
+unsubscribe round-trips for all three topic shapes, and the sitewide toggles
+rendered correctly in the browser. The actual browser permission-prompt →
+`pushManager.subscribe()` leg couldn't be driven through browser automation
+(a native Chrome dialog, not page JS — same constraint that would block any
+test of the pre-existing Twitch button), but that code path is an unmodified,
+parameterized copy of Twitch's already-working flow.
 
-### 15. Public site stats / "year in review"
+### 14. A real activity feed on `/profile`  ✅ DONE (2026-09-11)
 
-`AdminArenaMetrics.tsx` and `routes/telemetry.js` mean you're already collecting
-numbers, but only you can see them. A public `/stats` page — posts written,
-guestbook signatures, QOTD answers, Arena fights fought, most-used guestbook
-mood — is the kind of page people actually share. A December "wrapped" variant
-writes itself.
+**Shipped:** `mirabellier-backend/lib/user-activity.js` merges posts,
+guestbook signatures, Pixie uploads, Pixie comments, blog comments (walked
+recursively out of the nested `posts.comments` JSON, same shape as
+`routes/auth.js`'s existing stats scan, cached the same way — TTL + keyed to
+the `db` instance so it can't go stale across a schema swap), new follows,
+and Arena fights into one chronologically sorted timeline, from
+`GET /user/:id/activity` (`routes/auth.js`, next to the existing
+`/user/:id/stats`). **Likes were left out** — neither `posts.likes` nor
+`user_videos.likes` records *when* a like happened, just a bare array of
+liker ids, so there's no timestamp to sort a like into a timeline by; fixing
+that would mean a schema change to every like path, out of scope for a
+read-only feed. Two new indexes (`user_video_comments`, `guestbook_entries`,
+both `(userId, createdAt DESC)`) so every source query is a plain indexed
+lookup except the necessarily-scanned comment blobs. 6 new backend tests.
+
+`src/pages/Profile.tsx`'s "Recent Activity Section" was already there —
+except it only ever showed the user's own posts (`stats.recentPosts`, now
+removed as dead weight). It's now a real merged feed via the new
+`src/lib/user-activity.ts` client and a `describeActivityEvent` renderer
+(icon + verb + optional preview per event type), reusing the section's
+existing card/loading/empty-state styling as-is. Verified in the browser
+against the real local backend: guestbook, posts, Arena fights, Pixie
+comments, and follows all appear correctly interleaved and sorted.
+
+### 15. Public site stats / "year in review"  ✅ DONE (2026-09-11)
+
+**Shipped:** `mirabellier-backend/lib/site-stats.js` — sitewide counts (blog
+posts, guestbook signatures + full mood breakdown, QOTD questions/answers,
+Arena fights + win count, Pixies, registered accounts) plus a `sinceDate`
+derived from the earliest post/guestbook-entry/question rather than a
+hardcoded launch date, so it can't drift out of sync. Every query is a
+single indexed `COUNT`/`GROUP BY` — no caching needed at this data size.
+Served from public **`GET /stats`** (`routes/site-stats.js`, 60s
+`Cache-Control`). 5 backend tests.
+
+`src/pages/Stats.tsx` at **`/stats`**: a tile grid of the headline numbers
+plus the guestbook mood breakdown (reusing the existing `guestbookMoodMeta`
+kaomoji labels from `/guestbook` — no new copy to write), wired into
+`App.tsx`, `Navigation.tsx`, `Header.tsx`'s route-title list, the
+prerendered-SEO route list in `vite.config.ts`, and `lib/sitemap.js` —
+the same five places every other top-level page in this list has gotten
+wired into. Verified live: real counts (8 posts, 27 guestbook signatures,
+76 QOTD answers, 561 questions asked, 16 Pixies, "cozy" the most popular
+mood) render correctly, tie-breaking in the mood list is alphabetical and
+tested.
+
+**Left out:** the December "wrapped" variant — genuinely a separate feature
+(date-range filtering across every one of these queries, plus its own
+design), not a natural extension of a live counts page. Worth its own pass
+closer to December rather than speculative code sitting unused for months.
 
 ---
 
@@ -292,19 +402,127 @@ writes itself.
 
 Only add these if Arena is still fun for you; it's the biggest surface already.
 
-### 16. Spectator mode
+### 16. Spectator mode  ✅ DONE (2026-09-11)
 
-Fights already stream over Socket.IO (`WebSocketProvider.tsx`,
-`lib/websocket-events.js`). Letting a third party subscribe read-only to an
-in-progress fight is mostly a room-join permission change, and it makes the
-leaderboard and Hall of Fame *watchable* rather than just readable.
+**Turned out more subtle than "a room-join permission change":** the actual
+fighter flow is REST-driven (`POST /arena/fight/start|advance|skip` via
+`src/lib/arena/combat.ts`) — the WS `ARENA_FIGHT_*` messages in `app.js`
+exist but nothing calls them. And every WS connection requires a one-time
+token from `/auth/ws-token`, which 401s when signed out — so real-time push
+can only ever reach *logged-in* spectators, not "any third party."
 
-### 17. Replay links
+**Shipped, working within those constraints:**
 
-If fights are deterministic given a seed — which the presence of
-`lib/arena-fight-verification.js` suggests — store the seed and let
-`/arena/fight/:id` re-play any historical fight. Very cheap storage, and it makes
-Hall of Fame entries clickable.
+- `lib/arena/playback.js`: the raw `startPlaybackFight` / `advancePlaybackFightTurn`
+  / `skipPlaybackFightToEnd` are wrapped once, at their `module.exports`
+  entries, to broadcast the new fight state to a `arena:fight:<fighterUserId>`
+  Socket.IO room — one hook point covers both the REST routes *and* the
+  (currently dormant) WS messages, instead of duplicating the broadcast at
+  every call site. A failed broadcast (no WS manager, e.g. in tests) is
+  swallowed — it must never break the fighter's own turn.
+- `lib/websocket-server.js`: `handleMessage` now also receives the raw
+  `socket`, and a new `broadcastToRoom` was added alongside the existing
+  `broadcast`/`sendToUser`. `app.js` handles two new C2S messages,
+  `ARENA_FIGHT_SPECTATE_JOIN`/`_LEAVE`, so a **signed-in** viewer's socket
+  can join/leave a fighter's room and gets pushed every future turn — this
+  is real, tested, working infra, just not wired to a frontend yet (see
+  below).
+- Two public REST endpoints (`routes/arena/index.js`, no auth) so *anyone*
+  can spectate: `GET /arena/spectate/active` (who's fighting right now —
+  `getActiveArenaFighters`, a new query joining `arena_active_fights` with
+  `users`) and `GET /arena/spectate/:userId` (that fighter's current state,
+  reusing `getPlaybackFightState` — the exact same shape already sent to the
+  fighter's own client, so nothing new to leak).
+- `src/pages/ArenaSpectate.tsx` at `/arena/spectate` (+ `/:userId`, both also
+  mounted under `/ar/...`): a list of who's fighting, and a read-only view
+  (HP bars, round score, the turn console log) that works for **every**
+  visitor via a 2s poll of the public endpoint — not the WS room, since that
+  needs a login the suggestion's "any third party" didn't assume. Added to
+  `ArenaSubNav`'s Community group and `Header.tsx`'s route titles.
+- 3 new backend tests (`test/arena-service.test.js`): `getActiveArenaFighters`
+  filtering/ordering, the broadcast firing with the right room/payload, and
+  broadcast failures not breaking the fighter's turn.
+
+**Update (same day):** the frontend is now wired to the WS room too.
+`ArenaSpectate.tsx` checks `useOptionalAuth()` — logged in sends
+`arena:fight:spectate:join`/`:leave` over the shared `WebSocketProvider`
+connection and drives the view entirely off `arena:fight:spectator-update`
+pushes (no poll at all; a "🔴 live" badge replaces "updates every few
+seconds"); logged out keeps the original 2s REST poll, since that's the only
+thing that works without a session. `arena:fight:error` is shared with the
+fighter's *own* action errors (rate limits, verification), so the handler
+only reacts to the join-specific `ARENA_FIGHT_NOT_FOUND` code — otherwise a
+viewer who happens to be fighting themselves in another tab could have this
+page misread their own unrelated error as "this fight ended." Verified
+end-to-end against the real dev server: joined as a logged-in viewer, no
+REST polling for 6+ seconds (confirmed via network tab), then advanced the
+watched fight through the *real* authenticated REST route (Turnstile-bypassed
+via `TURNSTILE_DEV_BYPASS`) and watched the page update instantly, no
+refresh — the full path (route → wrapped `advancePlaybackFightTurn` →
+`broadcastSpectatorUpdate` → Socket.IO room → shared WS client → re-render)
+genuinely works.
+
+**A caution for future you:** verifying this meant creating real rows on the
+local dev database twice. The first pass used the actual owner account as
+the test fighter — its poll reaching "finished" triggered the real
+reward-finalization path against that live profile (+3 XP, a phantom loss),
+by-hand reverted from the numbers in the fight's own stored `simulationJson`,
+then the fight row deleted. Lesson learned: the second pass (this update)
+created a fully disposable throwaway user/profile/session instead, deleted
+after — the safer way to do this kind of live check, worth doing from the
+start next time.
+
+### 17. Replay links  ✅ DONE (2026-09-11)
+
+**Both of this suggestion's premises were wrong, checked before writing any
+code:** `lib/arena-fight-verification.js` is Cloudflare Turnstile "are you
+human" tracking, nothing to do with fight determinism — there's no seed
+scheme and none was needed, because `arena_fights.roundsJson` already stores
+every turn's full result (attacker/defender names, damage, crit, HP) the
+moment a fight ends. And Hall of Fame (`lib/arena/hall-of-fame.js`) turned
+out to be a monthly top-3-by-ELO *player ranking* snapshot with no reference
+to any individual fight — there was nothing on that page to make clickable.
+
+**What actually needed building:** a public read of already-stored data, and
+somewhere to click into it from. `lib/arena/profile.js` already had
+`readRecentFights` bundling full round data into every profile fetch — and
+the frontend type `ArenaProfile.recentFights` already existed for it — but
+nothing rendered it; it was fetched and silently thrown away on every single
+profile load.
+
+- `lib/arena/profile.js`: new `getArenaFightById` (+ extracted
+  `parseFightRounds`, shared with `readRecentFights`) — a public lookup by
+  fight id, joined with `users` for the fighter's name.
+- `routes/arena/index.js`: public `GET /arena/fights/:id`.
+- `src/pages/ArenaFightReplay.tsx` at **`/arena/fight/:id`** (co-existing
+  with the existing exact-match `/arena/fight` live Battle route) — HP bars
+  derived from the max HP seen across the stored rounds, a turn-by-turn
+  play/pause/skip auto-advancing console reconstructed client-side from each
+  round's fields (the human-readable log lines themselves only ever existed
+  on the short-lived *active*-fight row, not the permanent one, so replay
+  rebuilds the same "X is attacking Y" / "X dealt N damage" text from the
+  numbers instead of re-deriving it server-side).
+- `ArenaFight.tsx` (the player's own Battle page) gained a "recent fights"
+  collapsible sidebar panel — pure addition, zero risk to that file's
+  already-complex resume-state-machine, and it needed no new fetch: the data
+  was already sitting in `profile.recentFights` unused.
+- `lib/user-activity.js`'s `arena_fight` activity events (#14) now link to
+  the real replay instead of the generic `/arena` hub — a concrete example
+  of one suggestion completing another.
+- Shared `src/parts/ArenaHpBar.tsx`, extracted out of `ArenaSpectate.tsx`'s
+  local copy (#16) rather than writing a third one — `ArenaFight.tsx` keeps
+  its own richer version (shield rendering) untouched, on purpose.
+- 2 new backend tests; the existing `user-activity` test updated for the new
+  href. Full suite: 384 pass.
+
+Verified against the real dev server: a genuine historical fight
+(`fight-1788767959989-ly9824v`, a real win from 2026-09-07) replayed
+correctly end to end — matching HP/damage numbers, auto-advanced to
+"Turn 11 of 11 · +13 XP, +16 coins" matching the stored `xpDelta`/`coinDelta`
+exactly, and the profile Activity feed's "won an Arena fight" entry linked
+straight into it.
+
+add cards display in replay
 
 ### 18. Daily quest / login streak
 
@@ -335,12 +553,18 @@ Right now it sits in between.
 ## Suggested order
 
 1. ~~**RSS/JSON feed**~~ ✅ done 2026-09-10.
-2. **Command palette** — makes the other 50 routes reachable.
+2. ~~**Command palette**~~ ✅ done 2026-09-11.
 3. ~~**Per-post OG images**~~ ✅ done 2026-09-10 (blog posts).
 4. ~~**`/now` + `/changelog` + `/uses`**~~ ✅ done 2026-09-10 (all three).
 5. ~~Reading time + TOC + prev/next~~ ✅ done 2026-09-11 (#8 + #9).
-6. **Push beyond Twitch**, then the profile activity feed.
-7. Arena extras and the cursor decision, whenever they sound fun rather than owed.
+6. ~~**Push beyond Twitch**~~ ✅ done 2026-09-11.
+7. ~~**Profile activity feed**~~ ✅ done 2026-09-11.
+8. ~~**Site stats page**~~ ✅ done 2026-09-11.
+9. ~~**Spectator mode**~~ ✅ done 2026-09-11 (#16, including the live-push
+   follow-up).
+10. ~~**Replay links**~~ ✅ done 2026-09-11 (#17). The daily quest / login
+    streak idea (#18), the rest of Arena, and the cursor decision are all
+    that's left, whenever they sound fun rather than owed.
 
 ## Progress log
 
@@ -376,3 +600,68 @@ Right now it sits in between.
   `countWords` / `readingTimeMinutes`. "Last saved" skipped — no autosave to
   time. Also on `/blog`: tags in cards are now clickable (set the search) and
   the search filter matches tags; the search box moved to the right column.
+- **2026-09-11**: Shipped #11 (`⌘K` command palette), the last of the top-5:
+  `src/parts/CommandPalette.tsx`, reusing `Header.tsx`'s route-title list for
+  static pages and the existing `fetchPosts`/`fetchShrinePages`/
+  `fetchQuestionOfTheDayArchive` calls (lazily, on first open) for posts,
+  shrines, and QOTD archive days. No new dependencies.
+- **2026-09-11**: Shipped #12 (sitewide search endpoint): an FTS5 virtual
+  table (`mirabellier-backend/lib/search-index.js`) over post bodies, shrine
+  blurbs, QOTD prompts, and QOTD answers, kept in sync by SQLite triggers on
+  the existing tables — no other route had to change. Served from
+  `GET /search`; the command palette now queries it (debounced) instead of
+  fetching whole lists and substring-filtering client-side.
+- **2026-09-11**: Shipped #13 (push beyond Twitch): a generic `push_subscriptions`
+  table keyed by topic (`blog:new-post`, `qotd:new`,
+  `pixie:follows:<userId>`), generic `/push/*` routes, and a shared frontend
+  `NotifyToggle` used on `/blog`, the QOTD archive, and `/settings`. Twitch's
+  own push table/routes were left untouched. Also added the same
+  Subscribe/notify line to `/question-of-the-day` itself (matching `/blog`),
+  reusing everything from #13 with no new code.
+- **2026-09-11**: Shipped #14 (profile activity feed): `lib/user-activity.js`
+  merges posts, guestbook signatures, Pixie uploads/comments, blog comments
+  (recursively walked out of the nested JSON), follows, and Arena fights into
+  one sorted timeline from `GET /user/:id/activity`. Likes excluded — no
+  per-like timestamp exists anywhere to sort by. Replaced `/profile`'s old
+  "Recent Posts"-only block with the real merged feed. Its item styling was
+  later changed from per-item cards to a bordered list (matching `/anime`),
+  paginated 10/page, reusing the same page-number control as the Videos
+  section below it.
+- **2026-09-11**: Shipped #15 (public site stats): `lib/site-stats.js` —
+  posts, guestbook signatures + mood breakdown, QOTD questions/answers,
+  Arena fights + wins, Pixies, accounts, and a derived (not hardcoded)
+  "running since" date, all single-query counts. New `/stats` page, wired
+  into every place a top-level route needs to register (nav, header
+  titles, sitemap, prerendered SEO). The December "wrapped" variant was
+  left for its own pass nearer December rather than built speculatively
+  now.
+- **2026-09-11**: Shipped #16 (Arena spectator mode). The real fighter flow
+  turned out to be REST-driven, not the dormant WS `ARENA_FIGHT_*` messages
+  the suggestion assumed — and WS itself requires a login. Built both
+  halves anyway: real Socket.IO room broadcast infra (`arena:fight:<userId>`,
+  join/leave, tested) for a future logged-in-only live-push upgrade, and a
+  public `/arena/spectate` page that works for anyone today via a 2s poll of
+  two new public REST endpoints. `lib/user-activity.js`'s new "no per-like
+  timestamp" and #16's "WS needs a login" are the same kind of finding —
+  suggestions read simpler from outside the code than the actual
+  architecture allows, so budget for a real read before estimating one of
+  these as small.
+- **2026-09-11 (later)**: #16 got its follow-up: `ArenaSpectate.tsx` now
+  actually uses the room-broadcast infra for logged-in viewers (join on
+  mount, drive the whole view off `arena:fight:spectator-update`, no poll —
+  a "🔴 live" badge replaces "updates every few seconds"), falling back to
+  the original 2s poll only when signed out. Verified against the real
+  server: zero REST polling for 6+ seconds while logged in, then watched a
+  turn advance reach the page instantly with no refresh.
+- **2026-09-11**: Shipped #17 (replay links) — turned out both of its
+  premises (a fight "seed", Hall of Fame entries meaning individual fights)
+  were wrong, caught before writing any code. What actually shipped: a
+  public `GET /arena/fights/:id` over data that was already fully stored
+  (`arena_fights.roundsJson`), a new `/arena/fight/:id` replay page with a
+  turn-by-turn auto-play, a "recent fights" panel on the player's own Battle
+  page surfacing a profile field (`recentFights`) that was already being
+  fetched and silently unused, and a real fix-forward for #14's activity
+  feed (`arena_fight` events now link to the actual replay instead of the
+  generic `/arena` hub). That's #1 through #17 — everything left (#18 daily
+  quest/streak, spectator/Hall-of-Fame-adjacent Arena extras, the cursor
+  decision) is opt-in, not owed.

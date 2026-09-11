@@ -5,6 +5,7 @@ import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
+import NotifyToggle from "../parts/NotifyToggle";
 import kannaRight from "@/assets/anime/kanna-right.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
@@ -14,6 +15,7 @@ import {
   type QuestionOfTheDayArchiveEntry,
 } from "@/lib/question-of-the-day-api";
 import { formatQuestionRecordedDate } from "@/lib/question-of-the-day-ui";
+import { TOPIC_NEW_QOTD } from "@/lib/push-api";
 
 const QuestionArchive = () => {
   const [entries, setEntries] = useState<QuestionOfTheDayArchiveEntry[]>([]);
@@ -122,7 +124,13 @@ const QuestionArchive = () => {
                       href="/feed/questions.json"
                     >
                       JSON
-                    </a>
+                    </a>{" "}
+                    ·{" "}
+                    <NotifyToggle
+                      topic={TOPIC_NEW_QOTD}
+                      idleLabel="notify me of new questions"
+                      title="Get a browser notification for the new Question of the Day"
+                    />
                   </p>
                 </div>
 

@@ -6,11 +6,12 @@ type HeaderRouteTitle = {
   title: string;
 };
 
-const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
+export const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/", title: "Home" },
   { path: "/home", title: "Home" },
   { path: "/about", title: "About" },
   { path: "/projects", title: "Projects" },
+  { path: "/stats", title: "Site Stats" },
   { path: "/anime", title: "Anime" },
   { path: "/fanart", title: "Fan Art Search" },
   { path: "/shrine", title: "Shrine" },
@@ -31,10 +32,13 @@ const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/guestbook/sign", title: "Sign Guestbook" },
   { path: "/arena", title: "Arena" },
   { path: "/arena/fight", title: "Arena Fight" },
+  { path: "/arena/fight/:id", title: "Arena Fight Replay" },
   { path: "/arena/shop", title: "Arena Shop" },
   { path: "/arena/inventory", title: "Arena Inventory" },
   { path: "/arena/inbox", title: "Arena Inbox" },
   { path: "/arena/leaderboard", title: "Arena Leaderboard" },
+  { path: "/arena/spectate", title: "Arena Spectate" },
+  { path: "/arena/spectate/:userId", title: "Arena Spectate" },
   { path: "/arena/collection", title: "Arena Collection" },
   { path: "/arena/archive", title: "Arena Archive" },
   { path: "/arena/market", title: "Arena Card Market" },

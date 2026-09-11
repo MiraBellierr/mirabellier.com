@@ -109,6 +109,21 @@ const SEO_ROUTES: RouteSeo[] = [
     ),
   },
   {
+    path: "/stats",
+    title: "Stats | Mirabellier",
+    description:
+      "Sitewide numbers for mirabellier.com: posts written, guestbook signatures, Question of the Day answers, Arena fights, and more.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Stats | Mirabellier",
+      description:
+        "Sitewide numbers for mirabellier.com: posts written, guestbook signatures, Question of the Day answers, Arena fights, and more.",
+      url: `${SITE_URL}/stats`,
+      isPartOf: { "@type": "WebSite", name: "Mirabellier", url: SITE_URL },
+    },
+  },
+  {
     path: "/blog",
     title: "Blog | Mirabellier",
     description: "Personal blog with thoughts, stories, and updates.",

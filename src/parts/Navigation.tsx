@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { openCommandPalette } from "@/lib/command-palette";
 import { API_BASE } from "@/lib/config";
 
 import home from "../assets/icons/img1-24.webp";
@@ -56,12 +57,6 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) => pathname === "/now",
       },
       {
-        label: "changelog",
-        to: "/changelog",
-        icon: about,
-        isActive: (pathname) => pathname === "/changelog",
-      },
-      {
         label: "projects",
         to: "/projects",
         icon: projects,
@@ -73,29 +68,33 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         icon: projects,
         isActive: (pathname) => pathname === "/uses",
       },
+    ],
+  },
+  {
+    label: "site",
+    items: [
+      {
+        label: "changelog",
+        to: "/changelog",
+        icon: about,
+        isActive: (pathname) => pathname === "/changelog",
+      },
+      {
+        label: "stats",
+        to: "/stats",
+        icon: about,
+        isActive: (pathname) => pathname === "/stats",
+      },
       {
         label: "links",
         to: "/links",
         icon: about,
         isActive: (pathname) => pathname === "/links",
       },
-      {
-        label: "anime",
-        to: "/anime",
-        icon: NAV_ICON_ANIME,
-        isActive: (pathname) => pathname === "/anime",
-      },
-      {
-        label: "shrine",
-        to: "/shrine",
-        icon: NAV_ICON_SHRINE,
-        isActive: (pathname) =>
-          pathname === "/shrine" || pathname.startsWith("/shrine/"),
-      },
     ],
   },
   {
-    label: "pages",
+    label: "create",
     items: [
       {
         label: "blog",
@@ -116,16 +115,34 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) => pathname === "/quotes",
       },
       {
+        label: "anime",
+        to: "/anime",
+        icon: NAV_ICON_ANIME,
+        isActive: (pathname) => pathname === "/anime",
+      },
+      {
+        label: "shrine",
+        to: "/shrine",
+        icon: NAV_ICON_SHRINE,
+        isActive: (pathname) =>
+          pathname === "/shrine" || pathname.startsWith("/shrine/"),
+      },
+      {
         label: "fan art",
         to: "/fanart",
         icon: NAV_ICON_SHRINE,
         isActive: (pathname) => pathname === "/fanart",
       },
+    ],
+  },
+  {
+    label: "community",
+    items: [
       {
-        label: "twitch",
-        to: "/twitch",
-        icon: NAV_ICON_TWITCH,
-        isActive: (pathname) => pathname === "/twitch",
+        label: "guestbook",
+        to: "/guestbook",
+        icon: guestbook,
+        isActive: (pathname) => pathname.startsWith("/guestbook"),
       },
       {
         label: "pixies",
@@ -133,6 +150,17 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         icon: NAV_ICON_ANIME,
         isActive: (pathname) => pathname === "/pixies",
       },
+      {
+        label: "twitch",
+        to: "/twitch",
+        icon: NAV_ICON_TWITCH,
+        isActive: (pathname) => pathname === "/twitch",
+      },
+    ],
+  },
+  {
+    label: "arena",
+    items: [
       {
         label: "arena",
         to: "/arena",
@@ -148,12 +176,6 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
         isActive: (pathname) =>
           pathname.startsWith("/arena/hall-of-fame") ||
           pathname.startsWith("/ar/hall-of-fame"),
-      },
-      {
-        label: "guestbook",
-        to: "/guestbook",
-        icon: guestbook,
-        isActive: (pathname) => pathname.startsWith("/guestbook"),
       },
     ],
   },
@@ -243,6 +265,17 @@ const Navigation = () => {
           site navigation
         </h2>
 
+        <button
+          type="button"
+          onClick={openCommandPalette}
+          className="flex w-full items-center justify-between gap-2 rounded-full bg-white/75 px-3 py-1.5 text-sm font-bold text-blue-500 shadow-sm transition hover:bg-white/90 dark:bg-purple-900/40 dark:text-purple-200 dark:hover:bg-purple-900/60"
+        >
+          <span>search</span>
+          <kbd className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[11px] text-blue-600 dark:bg-purple-950/60 dark:text-purple-200">
+            ⌘K
+          </kbd>
+        </button>
+
         <div className="space-y-4">
           {navSections.map((section) => (
             <div key={section.label} className="space-y-2">
@@ -253,41 +286,38 @@ const Navigation = () => {
                   const active = item.isActive(location.pathname);
 
                   return (
-                    <>
-                      <div
-                        key={item.label}
-                        className="flex items-center justify-center gap-2"
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <img
+                        className="h-4 w-4"
+                        src={item.icon}
+                        alt=""
+                        aria-hidden="true"
+                        width="16"
+                        height="16"
+                      />
+                      <Link
+                        aria-current={active ? "page" : undefined}
+                        className={`text-center text-sm font-bold hover:animate-wiggle hover:underline ${
+                          active
+                            ? "text-blue-700 dark:text-purple-100"
+                            : "text-blue-500 dark:text-purple-200"
+                        }`}
+                        to={item.to}
                       >
-                        <img
-                          className="h-4 w-4"
-                          src={item.icon}
-                          alt=""
-                          aria-hidden="true"
-                          width="16"
-                          height="16"
-                        />
-                        <Link
-                          aria-current={active ? "page" : undefined}
-                          className={`text-center text-sm font-bold hover:animate-wiggle hover:underline ${
-                            active
-                              ? "text-blue-700 dark:text-purple-100"
-                              : "text-blue-500 dark:text-purple-200"
-                          }`}
-                          to={item.to}
-                        >
-                          {active ? `[${item.label}]` : item.label}
-                        </Link>
-                        <img
-                          className="h-4 w-4"
-                          src={item.icon}
-                          alt=""
-                          aria-hidden="true"
-                          width="16"
-                          height="16"
-                        />
-                      </div>
-
-                    </>
+                        {active ? `[${item.label}]` : item.label}
+                      </Link>
+                      <img
+                        className="h-4 w-4"
+                        src={item.icon}
+                        alt=""
+                        aria-hidden="true"
+                        width="16"
+                        height="16"
+                      />
+                    </div>
                   );
                 })}
               </div>

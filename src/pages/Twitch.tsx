@@ -13,6 +13,11 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import { usePageSeo } from "@/lib/seo";
+import {
+  describePushError,
+  supportsPushNotifications,
+  urlBase64ToUint8Array,
+} from "@/lib/push-support";
 import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import "@/styles/shrine.css";
 import {
@@ -80,26 +85,6 @@ function formatViewers(count: number | null) {
   if (count < 1000) return String(count);
   const thousands = count / 1000;
   return `${thousands >= 10 ? Math.round(thousands) : thousands.toFixed(1)}k`;
-}
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i += 1) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-function supportsPushNotifications() {
-  return (
-    typeof window !== "undefined" &&
-    "Notification" in window &&
-    "serviceWorker" in navigator &&
-    "PushManager" in window
-  );
 }
 
 function formatCompactNumber(value: number | null) {
@@ -881,9 +866,7 @@ function NotifyButton({
       await subscribeToLiveNotification(channelLogin, subscription.toJSON());
       setSubscribed(true);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to enable notifications",
-      );
+      setError(describePushError(err));
     } finally {
       setBusy(false);
     }

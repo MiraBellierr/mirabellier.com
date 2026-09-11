@@ -16,6 +16,7 @@ import {
   toggleFollow,
   type FollowState,
 } from "@/lib/user-follows";
+import { fetchUserActivity, type UserActivityEvent } from "@/lib/user-activity";
 import AuthGateShell from "../parts/AuthGateShell";
 import AvatarImage from "../parts/AvatarImage";
 import Header from "../parts/Header";
@@ -25,12 +26,25 @@ import { Link, useParams } from "react-router-dom";
 import kobayashiMaidDragon from "@/assets/anime/kobayashi-maid-dragon.webp";
 
 const VIDEOS_PER_PAGE = 10;
+const ACTIVITY_PER_PAGE = 10;
+
+function buildPageNumbers(current: number, total: number): Array<number | "gap"> {
+  const pages: Array<number | "gap"> = [];
+  const window = 2;
+  for (let page = 1; page <= total; page += 1) {
+    if (page === 1 || page === total || (page >= current - window && page <= current + window)) {
+      pages.push(page);
+    } else if (pages[pages.length - 1] !== "gap") {
+      pages.push("gap");
+    }
+  }
+  return pages;
+}
 
 interface Stats {
   postsCount: number;
   likesCount: number;
   commentsCount: number;
-  recentPosts: Array<{ id: string; title: string; createdAt: string }>;
 }
 
 interface UserData {
@@ -41,6 +55,41 @@ interface UserData {
   bio?: string | null;
   location?: string | null;
   website?: string | null;
+}
+
+function describeActivityEvent(
+  event: UserActivityEvent,
+): { icon: string; label: string; detail: string | null } {
+  switch (event.type) {
+    case "post":
+      return { icon: "📝", label: `wrote "${event.title}"`, detail: null };
+    case "guestbook":
+      return { icon: "💌", label: "signed the guestbook", detail: event.preview };
+    case "pixie":
+      return { icon: "🎬", label: `posted "${event.title}"`, detail: null };
+    case "pixie_comment":
+      return { icon: "💬", label: "commented on a Pixie", detail: event.preview };
+    case "blog_comment":
+      return {
+        icon: "💬",
+        label: `commented on "${event.postTitle}"`,
+        detail: event.preview,
+      };
+    case "follow":
+      return {
+        icon: "🤝",
+        label: `started following ${event.username}`,
+        detail: null,
+      };
+    case "arena_fight":
+      return {
+        icon: "⚔️",
+        label: event.result === "win" ? "won an Arena fight" : "lost an Arena fight",
+        detail: null,
+      };
+    default:
+      return { icon: "🌟", label: "did something", detail: null };
+  }
 }
 
 const Profile = () => {
@@ -56,6 +105,9 @@ const Profile = () => {
   const [videosPage, setVideosPage] = useState(1);
   const [follow, setFollow] = useState<FollowState | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
+  const [activity, setActivity] = useState<UserActivityEvent[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [activityPage, setActivityPage] = useState(1);
   const profileUserForSeo = username ? profileUser : auth.user;
   const profileCanonical = username
     ? `https://mirabellier.com/profile/${username}`
@@ -182,6 +234,32 @@ const Profile = () => {
     return () => controller.abort();
   }, [user?.id]);
 
+  // Merged activity timeline (posts, comments, guestbook, Pixies, follows,
+  // Arena fights) whenever the displayed user changes.
+  useEffect(() => {
+    if (!user?.id) {
+      setActivity([]);
+      setActivityLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setActivityLoading(true);
+    fetchUserActivity(user.id, controller.signal)
+      .then((events) => {
+        if (controller.signal.aborted) return;
+        setActivity(events);
+        setActivityPage(1);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setActivity([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setActivityLoading(false);
+      });
+    return () => controller.abort();
+  }, [user?.id]);
+
   // Follow relationship + follower count for the displayed profile.
   useEffect(() => {
     if (!user?.id) {
@@ -250,22 +328,17 @@ const Profile = () => {
     videosPage * VIDEOS_PER_PAGE,
   );
 
-  const buildPageNumbers = (): Array<number | "gap"> => {
-    const pages: Array<number | "gap"> = [];
-    const window = 2;
-    for (let page = 1; page <= totalVideoPages; page += 1) {
-      if (
-        page === 1 ||
-        page === totalVideoPages ||
-        (page >= videosPage - window && page <= videosPage + window)
-      ) {
-        pages.push(page);
-      } else if (pages[pages.length - 1] !== "gap") {
-        pages.push("gap");
-      }
-    }
-    return pages;
-  };
+  const totalActivityPages = Math.max(
+    1,
+    Math.ceil(activity.length / ACTIVITY_PER_PAGE),
+  );
+  useEffect(() => {
+    if (activityPage > totalActivityPages) setActivityPage(totalActivityPages);
+  }, [activityPage, totalActivityPages]);
+  const visibleActivity = activity.slice(
+    (activityPage - 1) * ACTIVITY_PER_PAGE,
+    activityPage * ACTIVITY_PER_PAGE,
+  );
 
   if (!user && !loading) {
     return (
@@ -527,38 +600,106 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Recent Activity Section */}
+              {/* Activity Section */}
               <div className="mt-6 card-border rounded-2xl p-6 bg-white/90 dark:bg-purple-900/80">
                 <h3 className="text-xl font-bold text-blue-700 dark:text-purple-200 mb-4 flex items-center gap-2">
-                  <span>📝</span>
-                  <span>Recent Posts</span>
+                  <span>🕒</span>
+                  <span>Activity</span>
                 </h3>
-                {loading ? (
+                {activityLoading ? (
                   <div className="text-center text-blue-500 dark:text-purple-300 py-8">
                     <div className="text-4xl mb-2">⏳</div>
                     <p>Loading...</p>
                   </div>
-                ) : stats?.recentPosts && stats.recentPosts.length > 0 ? (
-                  <div className="space-y-3">
-                    {stats.recentPosts.map((post) => (
-                      <Link
-                        key={post.id}
-                        to={`/blog?search=${encodeURIComponent(post.title)}`}
-                        className="block p-3 bg-blue-50 dark:bg-purple-800/50 rounded-lg hover:bg-blue-100 dark:hover:bg-purple-700/50 transition-colors"
-                      >
-                        <h4 className="font-medium text-blue-700 dark:text-purple-200">
-                          {post.title}
-                        </h4>
-                        <p className="text-xs text-blue-500 dark:text-purple-400 mt-1">
-                          {new Date(post.createdAt).toLocaleDateString()}
-                        </p>
-                      </Link>
-                    ))}
-                  </div>
+                ) : activity.length > 0 ? (
+                  <>
+                    <ol className="space-y-1">
+                      {visibleActivity.map((event, index) => {
+                        const { icon, label, detail } = describeActivityEvent(event);
+                        return (
+                          <li
+                            key={`${event.type}-${event.createdAt}-${index}`}
+                            className="border-b border-blue-100 dark:border-purple-800/60 pb-3 last:border-b-0 last:pb-0"
+                          >
+                            <Link
+                              to={event.href}
+                              className="flex items-start gap-3 hover:text-pink-600"
+                            >
+                              <span className="text-lg leading-6">{icon}</span>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-blue-700 dark:text-purple-200">
+                                  {label}
+                                </p>
+                                {detail && (
+                                  <p className="mt-0.5 text-sm text-blue-600 dark:text-purple-300 line-clamp-2">
+                                    {detail}
+                                  </p>
+                                )}
+                                <p className="text-xs text-blue-500 dark:text-purple-400 mt-0.5">
+                                  {new Date(event.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ol>
+
+                    {totalActivityPages > 1 && (
+                      <div className="mt-5 flex items-center justify-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          disabled={activityPage <= 1}
+                          onClick={() =>
+                            setActivityPage((page) => Math.max(1, page - 1))
+                          }
+                          className="rounded-full px-3 py-1.5 text-sm font-bold text-blue-600 dark:text-purple-200 hover:bg-blue-100 dark:hover:bg-purple-800/60 disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                          ←
+                        </button>
+                        {buildPageNumbers(activityPage, totalActivityPages).map(
+                          (entry, index) =>
+                            entry === "gap" ? (
+                              <span
+                                key={`gap-${index}`}
+                                className="px-1.5 text-sm text-blue-400 dark:text-purple-400"
+                              >
+                                …
+                              </span>
+                            ) : (
+                              <button
+                                key={entry}
+                                type="button"
+                                onClick={() => setActivityPage(entry)}
+                                className={`h-8 min-w-8 rounded-full px-2 text-sm font-bold transition ${
+                                  entry === activityPage
+                                    ? "bg-pink-500 text-white"
+                                    : "text-blue-600 dark:text-purple-200 hover:bg-blue-100 dark:hover:bg-purple-800/60"
+                                }`}
+                              >
+                                {entry}
+                              </button>
+                            ),
+                        )}
+                        <button
+                          type="button"
+                          disabled={activityPage >= totalActivityPages}
+                          onClick={() =>
+                            setActivityPage((page) =>
+                              Math.min(totalActivityPages, page + 1),
+                            )
+                          }
+                          className="rounded-full px-3 py-1.5 text-sm font-bold text-blue-600 dark:text-purple-200 hover:bg-blue-100 dark:hover:bg-purple-800/60 disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                          →
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center text-blue-500 dark:text-purple-300 py-8">
                     <div className="text-4xl mb-2">🌟</div>
-                    <p>No posts yet. Start creating!</p>
+                    <p>Nothing here yet. Get started!</p>
                   </div>
                 )}
               </div>
@@ -644,7 +785,7 @@ const Profile = () => {
                         >
                           ←
                         </button>
-                        {buildPageNumbers().map((entry, index) =>
+                        {buildPageNumbers(videosPage, totalVideoPages).map((entry, index) =>
                           entry === "gap" ? (
                             <span
                               key={`gap-${index}`}
