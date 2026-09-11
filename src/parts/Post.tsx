@@ -221,7 +221,10 @@ const Post = ({ html }: { html: PostContent }) => {
   );
 
   useEffect(() => {
-    if (!hasTableContent || tableExtensions) return;
+    if (!hasTableContent || tableExtensions) {
+      setTableSupportLoading(false);
+      return;
+    }
 
     let cancelled = false;
     setTableSupportLoading(true);

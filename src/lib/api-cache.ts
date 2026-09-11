@@ -92,7 +92,10 @@ export async function swrJson<T>(
       return value;
     })
     .catch((err: unknown) => {
-      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      if (err instanceof DOMException && err.name === "AbortError") {
+        cache.delete(url);
+        throw err;
+      }
       const stale = cache.get(url) as Entry<T> | undefined;
       if (stale?.value !== undefined && Date.now() - stale.at <= maxAgeMs * 4) {
         return stale.value;

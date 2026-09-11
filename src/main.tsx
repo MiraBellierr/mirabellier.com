@@ -77,7 +77,10 @@ const CHUNK_RELOAD_QUERY = "__chunk_reload";
 const CHUNK_RELOAD_COOLDOWN_MS = 90_000;
 const CHUNK_FAILURE_KEY = "mirabellier-chunk-failures";
 const CHUNK_FAILURE_WINDOW_MS = 30_000;
-const CHUNK_FAILURE_THRESHOLD = 3;
+// Vite 7's __vitePreload calls preventDefault() to suppress the throw, so a
+// stale chunk never produces a second import attempt to count toward a
+// higher threshold — the page is already dead after the first failure.
+const CHUNK_FAILURE_THRESHOLD = 1;
 
 const SKIP_CHUNK_RELOAD = isIOS();
 
@@ -214,22 +217,28 @@ function shouldReload(): boolean {
   return true;
 }
 
-function reloadForUpdatedBuild() {
-  if (!shouldReload()) return;
+function reloadForUpdatedBuild(): boolean {
+  if (!shouldReload()) return false;
 
   const now = Date.now();
   writeChunkReloadGuardToSession(now);
   const nextUrl = new URL(window.location.href);
   nextUrl.searchParams.set(CHUNK_RELOAD_QUERY, String(now));
   window.location.replace(nextUrl.toString());
+  return true;
 }
 
 consumeChunkReloadGuardFromUrl();
 
 if (!SKIP_CHUNK_RELOAD) {
   window.addEventListener("vite:preloadError", (event) => {
-    event.preventDefault();
-    reloadForUpdatedBuild();
+    // Only suppress the throw when a reload is actually happening — if the
+    // cooldown blocks it, let the error propagate so the error boundary
+    // reports something real instead of `lazy` reading `.default` off
+    // `undefined`.
+    if (reloadForUpdatedBuild()) {
+      event.preventDefault();
+    }
   });
 
   window.addEventListener("unhandledrejection", (event) => {
@@ -245,8 +254,9 @@ if (!SKIP_CHUNK_RELOAD) {
       reason.includes("Importing a module script failed") ||
       reason.includes("ChunkLoadError")
     ) {
-      event.preventDefault();
-      reloadForUpdatedBuild();
+      if (reloadForUpdatedBuild()) {
+        event.preventDefault();
+      }
     }
   });
 } else {

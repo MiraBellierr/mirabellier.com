@@ -90,6 +90,13 @@ function App() {
     rememberPostLoginRedirect(`${location.pathname}${location.search}`);
   }, [location.pathname, location.search]);
 
+  // Route changes don't reset scroll on their own (BrowserRouter, no
+  // <ScrollRestoration>), so a scrolled list->detail nav lands mid-page and
+  // scroll anchoring drags it further as content streams in.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   useEffect(() => {
     let timeoutId: number | null = null;
 

@@ -1,4 +1,25 @@
 const STATIC_CHUNK_CACHE = "mirabellier-static-chunks-v20260624";
+// The cache name never changes across deploys (see `activate` below, which
+// only clears caches with a *different* name), so nothing ever evicts old
+// builds' chunks on its own — cap it and drop the oldest entries instead.
+const STATIC_CHUNK_CACHE_MAX_ENTRIES = 200;
+
+async function putInCache(cache, request, response) {
+  try {
+    await cache.put(request, response);
+  } catch {
+    // A full/blocked cache quota must not fail the actual network response.
+    return;
+  }
+
+  const keys = await cache.keys();
+  const overflow = keys.length - STATIC_CHUNK_CACHE_MAX_ENTRIES;
+  if (overflow > 0) {
+    await Promise.all(
+      keys.slice(0, overflow).map((key) => cache.delete(key)),
+    );
+  }
+}
 
 function isCacheableStaticChunk(request) {
   if (request.method !== "GET") {
@@ -65,7 +86,7 @@ self.addEventListener("fetch", (event) => {
         void fetch(request)
           .then((networkResponse) => {
             if (networkResponse.ok) {
-              return cache.put(request, networkResponse.clone());
+              return putInCache(cache, request, networkResponse.clone());
             }
           })
           .catch(() => {});
@@ -76,7 +97,7 @@ self.addEventListener("fetch", (event) => {
       const networkResponse = await fetch(request);
 
       if (networkResponse.ok) {
-        await cache.put(request, networkResponse.clone());
+        await putInCache(cache, request, networkResponse.clone());
       }
 
       return networkResponse;
