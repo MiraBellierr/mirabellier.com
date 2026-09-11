@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { useToast } from "@/states/ToastContext";
 import { usePageSeo } from "@/lib/seo";
 import { SITE_ORIGIN } from "@/lib/config";
+import { redirectToDiscordLogin } from "@/lib/discord-auth";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import {
   deletePixie,
@@ -26,6 +27,7 @@ import {
   type PixieComment,
 } from "@/lib/pixies";
 import { MentionText } from "@/parts/MentionText";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 import AvatarImage from "@/parts/AvatarImage";
 import VerifiedBadge from "@/parts/VerifiedBadge";
 import { PixiesOnboarding } from "@/parts/PixiesOnboarding";
@@ -342,7 +344,6 @@ const PixieCaptionText = ({
 
 const Pixies = () => {
   const auth = useOptionalAuth();
-  const navigate = useNavigate();
   const { showToast } = useToast();
   const { videoId: sharedVideoId } = useParams<{ videoId?: string }>();
   const isDarkMode = useIsDarkMode();
@@ -701,7 +702,7 @@ const Pixies = () => {
     const author = pixie.author;
     if (!author?.id) return;
     if (!auth?.user) {
-      navigate("/login");
+      redirectToDiscordLogin();
       return;
     }
     if (author.id === auth.user.id || followBusy.has(author.id)) return;
@@ -1350,7 +1351,7 @@ const Pixies = () => {
 
   const handleLike = async (pixie: Pixie) => {
     if (!auth?.user) {
-      navigate("/login");
+      redirectToDiscordLogin();
       return;
     }
     const previous = likeStateFor(pixie);
@@ -1419,7 +1420,7 @@ const Pixies = () => {
 
   const openComments = async (pixie: Pixie) => {
     if (!auth?.user) {
-      navigate("/login");
+      redirectToDiscordLogin();
       return;
     }
     setCommentPanelOpen(true);
@@ -1495,7 +1496,7 @@ const Pixies = () => {
 
   const handleToggleCommentLike = async (pixie: Pixie, comment: PixieComment) => {
     if (!auth?.user) {
-      navigate("/login");
+      redirectToDiscordLogin();
       return;
     }
     const previous = commentLikeStateFor(comment);
@@ -1524,7 +1525,7 @@ const Pixies = () => {
 
   const startReply = (rootId: string, username: string) => {
     if (!auth?.user) {
-      navigate("/login");
+      redirectToDiscordLogin();
       return;
     }
     setReplyingTo({ id: rootId, username });
@@ -2154,12 +2155,9 @@ const Pixies = () => {
                   <p className="mb-5 text-sm text-white/70">
                     Log in to see clips from the creators you follow.
                   </p>
-                  <Link
-                    to="/login"
-                    className="inline-block rounded-full bg-pink-500 px-6 py-2 font-bold transition hover:bg-pink-600"
-                  >
+                  <DiscordLoginLink className="inline-block rounded-full bg-pink-500 px-6 py-2 font-bold transition hover:bg-pink-600">
                     Login
-                  </Link>
+                  </DiscordLoginLink>
                 </>
               ) : (
                 <>

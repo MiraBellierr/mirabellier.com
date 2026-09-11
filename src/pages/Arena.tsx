@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 import { createPortal } from "react-dom";
 
 import Header from "@/parts/Header";
@@ -278,9 +279,9 @@ const Arena = () => {
               {!token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-200">
                   <p className="font-semibold">Login is required to play Arena.</p>
-                  <Link to="/login" className="mt-2 inline-block font-bold underline">
+                  <DiscordLoginLink className="mt-2 inline-block font-bold underline">
                     go to login
-                  </Link>
+                  </DiscordLoginLink>
                 </div>
               ) : loading && !profile ? (
                 <p className="text-blue-500 dark:text-purple-300">Loading arena profile...</p>

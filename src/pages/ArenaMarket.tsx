@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaPortraitCard from "@/parts/ArenaPortraitCard";
@@ -620,9 +620,9 @@ const ArenaMarket = () => {
               {!token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
                   <p className="font-semibold">Login is required to use the card market.</p>
-                  <Link to="/login" className="mt-2 inline-block underline">
+                  <DiscordLoginLink className="mt-2 inline-block underline">
                     go to login
-                  </Link>
+                  </DiscordLoginLink>
                 </div>
               ) : (
                 <>

@@ -3,8 +3,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Link } from "react-router-dom";
-
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 import ArenaErrorNotice from "@/parts/ArenaErrorNotice";
 import ArenaSubNav from "@/parts/ArenaSubNav";
 import Divider from "@/parts/Divider";
@@ -243,9 +242,9 @@ const ArenaSkillTree = () => {
               {!token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-slate-600 dark:bg-slate-800 dark:text-white">
                   <p className="font-semibold">Login is required to use the skill tree.</p>
-                  <Link to="/login" className="mt-2 inline-block underline dark:text-white">
+                  <DiscordLoginLink className="mt-2 inline-block underline dark:text-white">
                     go to login
-                  </Link>
+                  </DiscordLoginLink>
                 </div>
               ) : loading && !tree ? (
                 <p className="text-blue-500">Loading skill tree...</p>

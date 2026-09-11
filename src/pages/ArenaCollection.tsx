@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 
 import Header from "@/parts/Header";
 import Navigation from "@/parts/Navigation";
@@ -274,9 +274,9 @@ const ArenaCollection = () => {
               {!token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
                   <p className="font-semibold">Login is required to view collection.</p>
-                  <Link to="/login" className="mt-2 inline-block underline">
+                  <DiscordLoginLink className="mt-2 inline-block underline">
                     go to login
-                  </Link>
+                  </DiscordLoginLink>
                 </div>
               ) : loading && !collection ? (
                 <p className="text-blue-500">Loading collection...</p>

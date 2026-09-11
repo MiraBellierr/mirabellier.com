@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 
 import Footer from "@/parts/Footer";
 import Header from "@/parts/Header";
@@ -196,9 +197,9 @@ const AdminUsers = () => {
               <section className="card-border space-y-4 bg-white/60 p-4 dark:bg-transparent">
                 <h2 className="text-2xl font-bold text-blue-700">Please log in</h2>
                 <p className="text-sm text-blue-500">You need to log in with the owner account.</p>
-                <Link to="/login" className="arena-redraw-button inline-block">
+                <DiscordLoginLink className="arena-redraw-button inline-block">
                   [ Go to login ]
-                </Link>
+                </DiscordLoginLink>
               </section>
             </main>
           </div>

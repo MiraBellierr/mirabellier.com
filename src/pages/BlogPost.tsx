@@ -6,6 +6,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { useParams, Link } from "react-router-dom";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
@@ -718,9 +719,9 @@ const BlogPost = () => {
                     {!auth.token ? (
                       <p className="mt-4 text-sm text-blue-500">
                         Likes work without logging in.{" "}
-                        <Link to="/login" className="font-semibold hover:underline">
+                        <DiscordLoginLink className="font-semibold hover:underline">
                           Log in
-                        </Link>{" "}
+                        </DiscordLoginLink>{" "}
                         to comment on this post.
                       </p>
                     ) : null}

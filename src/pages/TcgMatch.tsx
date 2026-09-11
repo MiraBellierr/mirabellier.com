@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { DECK_SIZE, ELEMENT_COLORS } from "@/lib/tcg-constants";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 import { readMobileTcgDrag, clearActiveTcgGame } from "@/lib/tcg-utils";
 import { useTcg } from "@/hooks/use-tcg";
 
@@ -58,7 +59,7 @@ export default function TcgMatch() {
               {!tcg.token ? (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 text-center">
                   <p className="font-semibold">Sign in required to access TCG.</p>
-                  <Link to="/login" className="mt-2 inline-block underline font-bold text-pink-600">go to login</Link>
+                  <DiscordLoginLink className="mt-2 inline-block underline font-bold text-pink-600">go to login</DiscordLoginLink>
                 </div>
               ) : (
                 <>

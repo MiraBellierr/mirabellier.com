@@ -5,6 +5,10 @@
 // The OAuth round-trip is a full-page navigation away to discord.com and back,
 // so React Router state does not survive it — but it returns to the same
 // origin/tab, so `sessionStorage` does.
+//
+// Kept dependency-free (no `@/lib/config` import) so this file's tests can
+// run under plain Node — `config.ts` reads `import.meta.env`, which only
+// Vite provides.
 
 const STORAGE_KEY = "auth:postLoginRedirect";
 

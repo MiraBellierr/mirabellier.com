@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import DiscordLoginLink from "@/components/DiscordLoginLink";
 import Header from "./Header";
 import Footer from "./Footer";
 import Navigation from "./Navigation";
@@ -53,14 +54,18 @@ export default function AuthGateShell({
                       {message}
                     </p>
                   )}
-                  {action && (
+                  {action && (action.to === "/login" ? (
+                    <DiscordLoginLink className="inline-flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-full hover:bg-pink-600 transition-colors">
+                      {action.label}
+                    </DiscordLoginLink>
+                  ) : (
                     <Link
                       to={action.to}
                       className="inline-flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-full hover:bg-pink-600 transition-colors"
                     >
                       {action.label}
                     </Link>
-                  )}
+                  ))}
                 </>
               )}
             </div>

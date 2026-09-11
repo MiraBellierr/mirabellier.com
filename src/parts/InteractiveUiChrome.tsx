@@ -1,7 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ConfirmProvider, useConfirm } from "@/states/ConfirmContext";
 import { ToastProvider } from "@/states/ToastContext";
+import { API_BASE } from "@/lib/config";
 const GuestbookReminder = lazy(() => import("./GuestbookReminder"));
+
+// The API origin (e.g. Discord OAuth kickoff links) is our own backend, not
+// a third-party site — don't flag it as "leaving mirabellier.com".
+const API_ORIGIN = new URL(API_BASE).origin;
 
 function ExternalLinkWarning() {
   const { confirm } = useConfirm();
@@ -23,7 +28,11 @@ function ExternalLinkWarning() {
       const url = new URL(anchor.href, window.location.href);
       const isHttpLink = url.protocol === "http:" || url.protocol === "https:";
 
-      if (!isHttpLink || url.origin === window.location.origin) {
+      if (
+        !isHttpLink ||
+        url.origin === window.location.origin ||
+        url.origin === API_ORIGIN
+      ) {
         return;
       }
 

@@ -8,6 +8,7 @@ import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
+import { redirectToDiscordLogin } from "@/lib/discord-auth";
 import missKobayashi from "@/assets/anime/miss-kobayashi.webp";
 import {
   fetchTagSuggestions,
@@ -66,9 +67,9 @@ const BlogEdit = () => {
 
   useEffect(() => {
     if (!auth?.token) {
-      navigate("/login");
+      redirectToDiscordLogin();
     }
-  }, [auth, navigate]);
+  }, [auth]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);

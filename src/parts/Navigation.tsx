@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
-import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { openCommandPalette } from "@/lib/command-palette";
-import { API_BASE } from "@/lib/config";
 
 import home from "../assets/icons/img1-24.webp";
 import about from "../assets/icons/img2-24.webp";
 import blog from "../assets/icons/img3-24.webp";
 import projects from "../assets/icons/img4-24.webp";
 import guestbook from "../assets/icons/cats-24.webp";
-import cursor from "../assets/icons/cursor-24.webp";
-import DarkToggle from "../components/DarkToggle";
-import { useCursor } from "../states/CursorContext";
+import twitch from "../assets/icons/twitch-24.webp";
 
 type NavItem = {
   label: string;
@@ -31,8 +27,6 @@ const NAV_ICON_QUOTES =
   "https://cdn.discordapp.com/emojis/761014368476332079.webp?size=40&animated=true";
 const NAV_ICON_ARENA =
   "https://cdn.discordapp.com/emojis/1077057865098997800.webp?size=40";
-const NAV_ICON_TWITCH =
-  "https://static.twitchcdn.net/assets/favicon-32-d6025c14e900565d6177.png";
 
 const navSections: Array<{ label: string; items: NavItem[] }> = [
   {
@@ -153,7 +147,7 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
       {
         label: "twitch",
         to: "/twitch",
-        icon: NAV_ICON_TWITCH,
+        icon: twitch,
         isActive: (pathname) => pathname === "/twitch",
       },
     ],
@@ -181,26 +175,6 @@ const navSections: Array<{ label: string; items: NavItem[] }> = [
   },
 ];
 
-function getAvatarSrc(avatar?: string | null) {
-  if (!avatar) {
-    return null;
-  }
-
-  if (avatar.startsWith("blob:") || /^https?:\/\//.test(avatar)) {
-    return avatar;
-  }
-
-  const base = API_BASE.replace(/\/$/, "");
-  return `${base}${avatar.startsWith("/") ? "" : "/"}${avatar}`;
-}
-
-const accountLinkClass = (active: boolean) =>
-  `block rounded-full px-3 py-1 text-center text-sm font-bold transition hover:underline ${
-    active
-      ? "bg-white/80 text-blue-700 shadow-sm dark:bg-purple-900/60 dark:text-purple-50"
-      : "text-blue-500 dark:text-purple-200"
-  }`;
-
 const SectionLabelText = ({ label }: { label: string }) => (
   <div className="text-center font-mono text-[11px] uppercase tracking-[0.24em] text-blue-400 dark:text-purple-300/80">
     -- <span className="font-bold">{label}</span> --
@@ -208,13 +182,8 @@ const SectionLabelText = ({ label }: { label: string }) => (
 );
 
 const Navigation = () => {
-  const auth = useOptionalAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { isCustomCursor, toggleCursor } = useCursor();
-  const avatarSrc = getAvatarSrc(auth?.user?.avatar);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const activeNavItem = navSections
     .flatMap((section) => section.items)
@@ -222,7 +191,6 @@ const Navigation = () => {
 
   useEffect(() => {
     setMobileNavOpen(false);
-    setAccountMenuOpen(false);
   }, [location.pathname]);
 
   return (
@@ -321,140 +289,6 @@ const Navigation = () => {
               </div>
             </div>
           ))}
-
-          <div className="space-y-2">
-            <SectionLabelText label="settings" />
-
-            <div className="flex justify-center">
-              <DarkToggle />
-            </div>
-
-            <div className="flex items-center justify-center space-x-1">
-              <img
-                className="h-4 w-4"
-                src={cursor}
-                width="16"
-                height="16"
-                alt=""
-                aria-hidden="true"
-              />
-              <button
-                onClick={toggleCursor}
-                className="text-center text-sm font-bold text-blue-500 hover:underline dark:text-purple-200"
-                aria-label={`${isCustomCursor ? "Disable" : "Enable"} custom cursor`}
-                type="button"
-              >
-                {isCustomCursor ? (
-                  <>
-                    <span className="hidden sm:inline">anya cursor</span> on
-                  </>
-                ) : (
-                  <>
-                    <span className="hidden sm:inline">anya cursor</span> off
-                  </>
-                )}
-              </button>
-              {!isCustomCursor && (
-                <span className="ml-2 animate-pulse text-xs font-semibold text-blue-600 dark:text-purple-200">
-                  click here
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <SectionLabelText label="account" />
-
-            {auth?.user ? (
-              <>
-                <button
-                  aria-expanded={accountMenuOpen}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-pink-100/50 px-3 py-2 text-sm font-bold text-blue-700 transition hover:animate-profile-hover dark:bg-purple-900/50 dark:text-purple-100"
-                  onClick={() => setAccountMenuOpen((open) => !open)}
-                  type="button"
-                >
-                  {avatarSrc ? (
-                    <img
-                      src={avatarSrc}
-                      alt={`${auth.user.username} avatar`}
-                      className="h-8 w-8 rounded-full"
-                      width="32"
-                      height="32"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-200 text-xs uppercase text-blue-700 dark:bg-purple-800 dark:text-purple-100">
-                      {auth.user.username.slice(0, 1)}
-                    </div>
-                  )}
-                  <span className="truncate">{auth.user.username}</span>
-                </button>
-
-                {accountMenuOpen && (
-                  <div className="space-y-1">
-                    <Link
-                      aria-current={
-                        location.pathname.startsWith("/profile")
-                          ? "page"
-                          : undefined
-                      }
-                      className={accountLinkClass(
-                        location.pathname.startsWith("/profile"),
-                      )}
-                      to="/profile"
-                    >
-                      {location.pathname.startsWith("/profile")
-                        ? "[profile]"
-                        : "profile"}
-                    </Link>
-                    <Link
-                      aria-current={
-                        location.pathname === "/pixies/upload"
-                          ? "page"
-                          : undefined
-                      }
-                      className={accountLinkClass(
-                        location.pathname === "/pixies/upload",
-                      )}
-                      to="/pixies/upload"
-                    >
-                      {location.pathname === "/pixies/upload"
-                        ? "[upload]"
-                        : "upload"}
-                    </Link>
-                    <Link
-                      aria-current={
-                        location.pathname === "/settings" ? "page" : undefined
-                      }
-                      className={accountLinkClass(location.pathname === "/settings")}
-                      to="/settings"
-                    >
-                      {location.pathname === "/settings"
-                        ? "[settings]"
-                        : "settings"}
-                    </Link>
-                    <button
-                      onClick={() => {
-                        auth.logout();
-                        navigate("/");
-                      }}
-                      className="block w-full rounded-full px-3 py-1 text-center text-sm font-bold text-red-600 transition hover:underline dark:text-pink-300"
-                      type="button"
-                    >
-                      logout
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Link
-                aria-current={location.pathname === "/login" ? "page" : undefined}
-                className={accountLinkClass(location.pathname === "/login")}
-                to="/login"
-              >
-                {location.pathname === "/login" ? "[login]" : "login"}
-              </Link>
-            )}
-          </div>
         </div>
       </nav>
     </aside>
