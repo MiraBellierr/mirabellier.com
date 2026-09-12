@@ -12,6 +12,7 @@ import ArenaTitleBadge from "@/parts/ArenaTitleBadge";
 import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { usePageSeo } from "@/lib/seo";
+import { equipmentDisplayName } from "@/lib/arena/equipment-display";
 import {
   type ArenaCard,
   type ArenaCardShopResponse,
@@ -175,7 +176,7 @@ function EquipmentRewardModal({
   onClose,
   onFodder,
 }: {
-  piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] };
+  piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; setId?: string | null; setName?: string | null };
   pieceId: string;
   refund: number;
   shopItem: ArenaShopItem;
@@ -233,13 +234,18 @@ function EquipmentRewardModal({
               id="equip-reward-title"
               className="mt-1 text-2xl font-bold text-blue-700 dark:text-purple-100"
             >
-              You got a {shopItem.name}!
+              You got a {equipmentDisplayName(piece)}!
             </h2>
           </div>
           <div className="flex justify-center">
             <ArenaItemSprite item={shopItem} className="h-14 w-14" />
           </div>
           <div className="space-y-2 text-sm text-blue-700 dark:text-purple-100">
+            {piece.setName ? (
+              <p className="text-xs font-bold uppercase tracking-wide text-pink-500">
+                {piece.setName} Set
+              </p>
+            ) : null}
             <p className="font-black text-lg">
               {MAIN_LABELS[piece.mainStatType] || piece.mainStatType} {piece.mainStatValue}
             </p>
@@ -293,7 +299,7 @@ const ArenaShop = () => {
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [obtainedCard, setObtainedCard] = useState<ArenaCard | null>(null);
   const [obtainedCards, setObtainedCards] = useState<ArenaCard[] | null>(null);
-  const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[] }; pieceId: string; refund: number; shopItem: ArenaShopItem } | null>(null);
+  const [obtainedPiece, setObtainedPiece] = useState<{ piece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; setId?: string | null; setName?: string | null }; pieceId: string; refund: number; shopItem: ArenaShopItem } | null>(null);
 
 
 

@@ -8,7 +8,7 @@ export async function buyArenaItem(
   token: string,
   itemId: string,
   quantity = 1,
-): Promise<{ purchasedItemId: string; purchasedQuantity: number; appliedInstantly: boolean; rolledPieceId: string | null; rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; fodderRefund: number } | null; shop: ArenaShopResponse }> {
+): Promise<{ purchasedItemId: string; purchasedQuantity: number; appliedInstantly: boolean; rolledPieceId: string | null; rolledPiece: { slot: string; mainStatType: string; mainStatValue: number; subStats: ArenaSubStat[]; setId?: string | null; setName?: string | null; fodderRefund: number } | null; shop: ArenaShopResponse }> {
   return arenaRequest("/arena/shop/buy", { token, body: { itemId, quantity } });
 }
 export async function useArenaConsumable(
