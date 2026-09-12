@@ -376,7 +376,7 @@ const BlogEdit = () => {
                     className="font-bold text-blue-600 dark:text-purple-200"
                     htmlFor="audio"
                   >
-                    Read aloud (mp3)
+                    Read aloud (mp3 or wav)
                   </label>
                   <p className="text-xs text-blue-500 dark:text-purple-300">
                     Optional — replaces the browser&apos;s text-to-speech voice
@@ -386,7 +386,7 @@ const BlogEdit = () => {
                     type="file"
                     id="audio"
                     name="audio"
-                    accept="audio/mpeg,.mp3"
+                    accept="audio/mpeg,audio/wav,.mp3,.wav"
                     disabled={isLoadingPost || isUploadingAudio}
                     onChange={handleAudioFileChange}
                     className="form-input border rounded-lg border-blue-300 p-2 dark:bg-gray-800 dark:text-white dark:border-gray-600"
