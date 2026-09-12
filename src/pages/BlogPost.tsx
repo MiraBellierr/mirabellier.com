@@ -381,7 +381,10 @@ const BlogPost = () => {
   const readMinutes = post ? readingTimeMinutes(post.content) : 0;
   const showToc = headings.length >= MIN_TOC_HEADINGS;
   const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
+  const hasNarrationAudio = Boolean(post?.audioUrl);
+  const canReadAloud = hasNarrationAudio || canSpeak;
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const narrationAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Voice list loads async in most browsers — grab it up front so the first
   // click doesn't fall back to the (usually robotic) default voice.
@@ -399,18 +402,34 @@ const BlogPost = () => {
   // Stop any in-flight narration when the post changes or the page unmounts.
   useEffect(() => {
     return () => {
+      narrationAudioRef.current?.pause();
       if (canSpeak) window.speechSynthesis.cancel();
     };
   }, [post?.id, canSpeak]);
 
   const handleToggleSpeech = () => {
-    if (!post || !canSpeak) return;
+    if (!post || !canReadAloud) return;
 
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      narrationAudioRef.current?.pause();
+      if (canSpeak) window.speechSynthesis.cancel();
       setIsSpeaking(false);
       return;
     }
+
+    // A creator-uploaded mp3 always wins over the synthesized voice.
+    if (post.audioUrl) {
+      const audio = narrationAudioRef.current ?? new Audio();
+      narrationAudioRef.current = audio;
+      audio.src = resolveAsset(post.audioUrl) || post.audioUrl;
+      audio.onended = () => setIsSpeaking(false);
+      audio.onerror = () => setIsSpeaking(false);
+      void audio.play();
+      setIsSpeaking(true);
+      return;
+    }
+
+    if (!canSpeak) return;
 
     const text = `${post.title}. ${extractTextFromContent(post.content)}`;
     const utterance = new SpeechSynthesisUtterance(text);
@@ -739,7 +758,7 @@ const BlogPost = () => {
                       {readMinutes ? (
                         <span className="inline-flex items-center gap-1">
                           • {formatReadingTime(readMinutes)}
-                          {canSpeak ? (
+                          {canReadAloud ? (
                             <button
                               type="button"
                               onClick={handleToggleSpeech}

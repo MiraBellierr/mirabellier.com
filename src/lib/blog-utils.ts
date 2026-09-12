@@ -49,6 +49,7 @@ export type Post = {
   content: DocumentNode | ContentNode[] | null;
   shortDescription?: string | null;
   thumbnail?: string | null;
+  audioUrl?: string | null;
   series?: string | null;
   tags?: string[];
   likes?: string[];
@@ -156,6 +157,7 @@ export function normalizePost(value: unknown): Post {
         ? source.shortDescription
         : null,
     thumbnail: typeof source.thumbnail === "string" ? source.thumbnail : null,
+    audioUrl: typeof source.audioUrl === "string" ? source.audioUrl : null,
     series:
       typeof source.series === "string" && source.series.trim()
         ? source.series.trim()

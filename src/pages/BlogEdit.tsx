@@ -14,11 +14,12 @@ import {
   fetchTagSuggestions,
   fetchPostForEdit,
   savePost,
+  uploadPostAudio,
   validateTags,
   normalizeTags,
 } from "@/lib/blog-edit-api";
 import { usePageSeo } from "@/lib/seo";
-import { countWords, readingTimeMinutes } from "@/lib/blog-utils";
+import { countWords, readingTimeMinutes, resolveAsset } from "@/lib/blog-utils";
 import "@/styles/blog.css";
 
 const SimpleEditor = lazy(() =>
@@ -37,6 +38,8 @@ const BlogEdit = () => {
   const [content, setContent] = useState<object | null>(null);
   const [shortDescription, setShortDescription] = useState("");
   const [thumbnail, setThumbnail] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [series, setSeries] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -105,6 +108,7 @@ const BlogEdit = () => {
         setContent(data.content || {});
         setShortDescription(data.shortDescription || "");
         setThumbnail(data.thumbnail || "");
+        setAudioUrl(data.audioUrl || "");
         setSeries(data.series || "");
         const normalized = normalizeTags(data).slice(0, MAX_TAGS);
         setTags(normalized);
@@ -207,6 +211,23 @@ const BlogEdit = () => {
     setTitle(e.target.value);
   };
 
+  const handleAudioFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsUploadingAudio(true);
+    try {
+      setAudioUrl(await uploadPostAudio(file));
+    } catch {
+      showGlobalToast("Failed to upload audio", { durationMs: 3000 });
+    } finally {
+      setIsUploadingAudio(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -218,8 +239,9 @@ const BlogEdit = () => {
         content: content,
         shortDescription: shortDescription || undefined,
         thumbnail: thumbnail || undefined,
-        // Always sent (null clears it) so editing a post can remove its series.
+        // Always sent (null clears it) so editing a post can remove its series/audio.
         series: series.trim() || null,
+        audioUrl: audioUrl || null,
       };
       if (tags && tags.length)
         blogData.tags = validateTags(tags).slice(0, MAX_TAGS);
@@ -234,6 +256,7 @@ const BlogEdit = () => {
       setContent(null);
       setShortDescription("");
       setThumbnail("");
+      setAudioUrl("");
       setSeries("");
       setTags([]);
       showGlobalToast("🎉 Post published successfully!", { durationMs: 3000 });
@@ -346,6 +369,46 @@ const BlogEdit = () => {
                     placeholder="Optional thumbnail image URL"
                     className="form-input border rounded-lg border-blue-300 p-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:placeholder-gray-400"
                   />
+                </div>
+
+                <div className="flex flex-col p-2 space-y-2">
+                  <label
+                    className="font-bold text-blue-600 dark:text-purple-200"
+                    htmlFor="audio"
+                  >
+                    Read aloud (mp3)
+                  </label>
+                  <p className="text-xs text-blue-500 dark:text-purple-300">
+                    Optional — replaces the browser&apos;s text-to-speech voice
+                    with this file on this post.
+                  </p>
+                  <input
+                    type="file"
+                    id="audio"
+                    name="audio"
+                    accept="audio/mpeg,.mp3"
+                    disabled={isLoadingPost || isUploadingAudio}
+                    onChange={handleAudioFileChange}
+                    className="form-input border rounded-lg border-blue-300 p-2 dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                  />
+                  {isUploadingAudio ? (
+                    <p className="text-sm text-blue-500">Uploading...</p>
+                  ) : audioUrl ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <audio
+                        controls
+                        src={resolveAsset(audioUrl) || audioUrl}
+                        className="h-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAudioUrl("")}
+                        className="text-sm text-red-500 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-col p-2 space-y-2">

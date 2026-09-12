@@ -48,6 +48,25 @@ export const savePost = async (
   return await response.json();
 };
 
+export const uploadPostAudio = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("audio", file);
+
+  const response = await fetch(`${API_BASE}/posts-audio`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}) as { error?: string });
+    throw new Error(body.error || "Failed to upload audio");
+  }
+
+  const result = await response.json();
+  return result.path as string;
+};
+
 export const validateTags = (tags: (string | unknown)[]) => {
   return tags
     .map((t) =>
