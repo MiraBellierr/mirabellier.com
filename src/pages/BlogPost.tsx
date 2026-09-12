@@ -67,6 +67,27 @@ function getGeneratedOgImage(slug: string | undefined, post: BlogPostRecord | nu
   return `https://mirabellier.com/og/post/${encodeURIComponent(slug)}.png${query}`;
 }
 
+// Ranked by how natural they sound; falls back to any English voice, then
+// whatever the browser defaults to.
+const PREFERRED_VOICE_NAMES = [
+  "Google UK English Female",
+  "Google US English",
+  "Microsoft Aria Online (Natural) - English (United States)",
+  "Microsoft Jenny Online (Natural) - English (United States)",
+  "Microsoft Libby Online (Natural) - English (United Kingdom)",
+  "Samantha",
+];
+
+function pickPreferredVoice(
+  voices: SpeechSynthesisVoice[],
+): SpeechSynthesisVoice | undefined {
+  for (const name of PREFERRED_VOICE_NAMES) {
+    const match = voices.find((voice) => voice.name === name);
+    if (match) return match;
+  }
+  return voices.find((voice) => voice.lang.startsWith("en"));
+}
+
 function getBlogSeoDescription(post: BlogPostRecord) {
   const summary = (post.shortDescription || "").trim();
   if (summary) return summary;
@@ -88,6 +109,25 @@ function HeartIcon({ filled }: { filled: boolean }) {
       strokeWidth="2"
     >
       <path d="M12 21s-6.716-4.35-9.193-8.228C.903 9.78 2.04 6 5.87 6c2.068 0 3.388 1.11 4.13 2.18C10.742 7.11 12.062 6 14.13 6 17.96 6 19.097 9.78 21.193 12.772 18.716 16.65 12 21 12 21Z" />
+    </svg>
+  );
+}
+
+function SpeakerIcon({ speaking }: { speaking: boolean }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      {speaking ? (
+        <path d="M6 9v6h4l5 4V5l-5 4H6ZM19 9a5 5 0 0 1 0 6" />
+      ) : (
+        <path d="M6 9v6h4l5 4V5l-5 4H6ZM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12" />
+      )}
     </svg>
   );
 }
@@ -280,6 +320,7 @@ const BlogPost = () => {
   const [interactionError, setInteractionError] = useState<string | null>(null);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const postUrl = slug
     ? `https://mirabellier.com/blog/${slug}`
     : "https://mirabellier.com/blog";
@@ -339,6 +380,49 @@ const BlogPost = () => {
   );
   const readMinutes = post ? readingTimeMinutes(post.content) : 0;
   const showToc = headings.length >= MIN_TOC_HEADINGS;
+  const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+
+  // Voice list loads async in most browsers — grab it up front so the first
+  // click doesn't fall back to the (usually robotic) default voice.
+  useEffect(() => {
+    if (!canSpeak) return;
+    const loadVoices = () => {
+      voicesRef.current = window.speechSynthesis.getVoices();
+    };
+    loadVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+  }, [canSpeak]);
+
+  // Stop any in-flight narration when the post changes or the page unmounts.
+  useEffect(() => {
+    return () => {
+      if (canSpeak) window.speechSynthesis.cancel();
+    };
+  }, [post?.id, canSpeak]);
+
+  const handleToggleSpeech = () => {
+    if (!post || !canSpeak) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const text = `${post.title}. ${extractTextFromContent(post.content)}`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = pickPreferredVoice(voicesRef.current);
+    if (voice) utterance.voice = voice;
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  };
 
   // The whole archive, for prev/next and series grouping. This reuses the
   // cached `/posts` SWR fetch, so arriving from /blog usually costs nothing.
@@ -653,7 +737,23 @@ const BlogPost = () => {
                         • {new Date(post.createdAt).toLocaleDateString()}
                       </span>
                       {readMinutes ? (
-                        <span>• {formatReadingTime(readMinutes)}</span>
+                        <span className="inline-flex items-center gap-1">
+                          • {formatReadingTime(readMinutes)}
+                          {canSpeak ? (
+                            <button
+                              type="button"
+                              onClick={handleToggleSpeech}
+                              aria-label={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+                              className={`inline-flex h-5 w-5 items-center justify-center rounded-full transition ${
+                                isSpeaking
+                                  ? "text-pink-600"
+                                  : "text-blue-600 hover:text-blue-700"
+                              }`}
+                            >
+                              <SpeakerIcon speaking={isSpeaking} />
+                            </button>
+                          ) : null}
+                        </span>
                       ) : null}
                     </p>
 

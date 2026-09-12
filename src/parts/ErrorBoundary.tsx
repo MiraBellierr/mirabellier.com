@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { isChunkLoadErrorMessage, reloadForUpdatedBuild } from "@/lib/chunk-reload";
 
 type Props = { children: ReactNode };
 
@@ -17,6 +18,14 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     // eslint-disable-next-line no-console
     console.error("ErrorBoundary caught:", error, info.componentStack);
+
+    // A lazy route chunk 404ing after a redeploy rejects React.lazy's
+    // import() and is thrown straight into render — it never fires
+    // `vite:preloadError` or `unhandledrejection` (see chunk-reload.ts),
+    // so this is the only place left to catch it and force a reload.
+    if (isChunkLoadErrorMessage(error.message)) {
+      reloadForUpdatedBuild();
+    }
   }
 
   render() {
