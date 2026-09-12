@@ -666,7 +666,7 @@ const BlogPost = () => {
                     ) : null}
 
                     {showToc ? (
-                      <details className="mb-4 rounded-xl border border-blue-200 bg-blue-50/70 p-3 lg:hidden dark:border-purple-500/30 dark:bg-purple-900/20">
+                      <details className="mb-4 rounded-xl border border-blue-200 bg-blue-50/70 p-3 dark:border-purple-500/30 dark:bg-purple-900/20">
                         <summary className="cursor-pointer text-sm font-semibold text-blue-700 dark:text-purple-200">
                           Table of contents
                         </summary>
@@ -819,18 +819,6 @@ const BlogPost = () => {
               )}
             </div>
           </main>
-
-          {post && showToc ? (
-            <aside className="hidden shrink-0 lg:block lg:w-[220px]">
-              <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-blue-200 bg-blue-50/80 p-4 dark:border-purple-500/30 dark:bg-purple-900/20">
-                <TableOfContents
-                  headings={headings}
-                  activeId={activeHeadingId}
-                  onNavigate={handleTocNavigate}
-                />
-              </div>
-            </aside>
-          ) : null}
         </div>
       </div>
       <Footer />
