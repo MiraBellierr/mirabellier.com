@@ -584,7 +584,10 @@ const ArenaFight = () => {
             setErrorMessage(err.message || "Please verify you're human to keep fighting.");
             break;
           }
-          if (err?.code === "ARENA_FIGHT_COOLDOWN" && isAutoStartRef.current) {
+          if (
+            (err?.code === "ARENA_FIGHT_COOLDOWN" || err?.code === "ARENA_FIGHT_RATE_LIMIT") &&
+            isAutoStartRef.current
+          ) {
             const retryAfterMs = Math.max(err.retryAfterMs || 250, 250);
             if (autoTimerRef.current !== null) {
               window.clearTimeout(autoTimerRef.current);
