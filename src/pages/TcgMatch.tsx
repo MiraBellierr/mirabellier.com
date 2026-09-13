@@ -36,7 +36,7 @@ export default function TcgMatch() {
         />
       ) : null}
       <Header />
-      <div className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll" style={{ backgroundImage: "var(--page-bg)" }}>
+      <div className="flex flex-1 flex-col bg-cover bg-no-repeat bg-fixed" style={{ backgroundImage: "var(--page-bg)" }}>
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-2 p-2 sm:gap-4 sm:p-4 lg:flex-row">
           <div className="left-side-rail flex-grow flex-col hidden lg:flex">
             <Navigation />

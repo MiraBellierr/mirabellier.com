@@ -259,7 +259,7 @@ const AdminShrines = () => {
     <div className="min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header />
       <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-fixed"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">

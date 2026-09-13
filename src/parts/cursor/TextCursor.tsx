@@ -1,11 +1,10 @@
 import textCursor from "/cursors/Text.gif";
 
 type TextCursorProps = {
-  position: { x: number; y: number };
   isActive: boolean;
 };
 
-export default function TextCursor({ position, isActive }: TextCursorProps) {
+export default function TextCursor({ isActive }: TextCursorProps) {
   const config = {
     width: 32,
     height: 32,
@@ -22,7 +21,9 @@ export default function TextCursor({ position, isActive }: TextCursorProps) {
         position: "fixed",
         left: 0,
         top: 0,
-        transform: `translate3d(${position.x + config.offsetX}px, ${position.y + config.offsetY}px, 0)`,
+        // Position comes from the custom properties CursorManager writes each
+        // animation frame (see NormalCursor for the fallback).
+        transform: `translate3d(calc(var(--cursor-x, -100px) + ${config.offsetX}px), calc(var(--cursor-y, -100px) + ${config.offsetY}px), 0)`,
         willChange: "transform",
         width: `${config.width}px`,
         height: `${config.height}px`,
@@ -30,7 +31,6 @@ export default function TextCursor({ position, isActive }: TextCursorProps) {
         backgroundSize: "contain",
         pointerEvents: "none",
         zIndex: 300000,
-        // keep vertical alignment via translate3d above
       }}
     />
   );

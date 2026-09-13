@@ -4,8 +4,10 @@ import { swrJson } from "@/lib/api-cache";
 import {
   normalizeComments,
   normalizePost,
+  normalizePostSummary,
   type BlogComment,
   type Post,
+  type PostSummary,
 } from "@/lib/blog-utils";
 
 type LikeAction = "like" | "unlike";
@@ -23,10 +25,26 @@ async function readErrorText(response: Response) {
   }
 }
 
+// Full documents (tiptap `content`, comment bodies). The app renders from
+// `fetchPostSummaries`; this stays for callers that need whole posts.
 export const fetchPosts = (signal?: AbortSignal): Promise<Post[]> =>
   swrJson(
     `${API_BASE}/posts`,
     (json) => (Array.isArray(json) ? json.map(normalizePost) : []),
+    {
+      init: { credentials: "include" },
+      signal,
+      errorFrom: () => new Error("Failed to fetch posts"),
+    },
+  );
+
+// The lightweight list projection (`?view=list`): ~8 kB for the whole archive
+// instead of the full tiptap documents. Use this wherever only list metadata
+// is rendered.
+export const fetchPostSummaries = (signal?: AbortSignal): Promise<PostSummary[]> =>
+  swrJson(
+    `${API_BASE}/posts?view=list`,
+    (json) => (Array.isArray(json) ? json.map(normalizePostSummary) : []),
     {
       init: { credentials: "include" },
       signal,

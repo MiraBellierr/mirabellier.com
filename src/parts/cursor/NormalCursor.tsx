@@ -1,14 +1,10 @@
 import normalCursor from "/cursors/Normal.gif";
 
 type NormalCursorProps = {
-  position: { x: number; y: number };
   isActive: boolean;
 };
 
-export default function NormalCursor({
-  position,
-  isActive,
-}: NormalCursorProps) {
+export default function NormalCursor({ isActive }: NormalCursorProps) {
   const config = {
     width: 32,
     height: 32,
@@ -25,7 +21,10 @@ export default function NormalCursor({
         position: "fixed",
         left: 0,
         top: 0,
-        transform: `translate3d(${position.x + config.offsetX}px, ${position.y + config.offsetY}px, 0)`,
+        // `--cursor-x`/`--cursor-y` are written once per animation frame by
+        // CursorManager; the -100px fallback parks the node offscreen until the
+        // first pointer event lands.
+        transform: `translate3d(calc(var(--cursor-x, -100px) + ${config.offsetX}px), calc(var(--cursor-y, -100px) + ${config.offsetY}px), 0)`,
         willChange: "transform",
         width: `${config.width}px`,
         height: `${config.height}px`,

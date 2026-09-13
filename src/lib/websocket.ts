@@ -1,11 +1,30 @@
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { API_BASE } from "./config";
 
 export type ConnectionState = "connecting" | "connected" | "disconnected";
 
 type EventCallback = (data: unknown) => void;
+type SocketIoModule = typeof import("socket.io-client");
 
 const MAX_QUEUED_MESSAGES = 50;
+
+// socket.io-client + engine.io (~13 kB gzip) are fetched on demand — the first
+// subscription, queued send, or ArenaFight's dedicated socket — instead of at
+// module scope, so a page that never opens a socket never downloads them. The
+// catch-all `vendor` rule in vite.config.ts explicitly excludes these packages
+// so Rollup can keep them behind the dynamic import boundary.
+let socketIoPromise: Promise<SocketIoModule> | null = null;
+
+function loadSocketIo(): Promise<SocketIoModule> {
+  if (!socketIoPromise) {
+    socketIoPromise = import("socket.io-client").catch((error) => {
+      // Allow a later call to retry after a transient chunk-load failure.
+      socketIoPromise = null;
+      throw error;
+    });
+  }
+  return socketIoPromise;
+}
 
 export interface WebSocketClient {
   get connectionState(): ConnectionState;
@@ -39,9 +58,27 @@ async function fetchWsToken(): Promise<string> {
   return data.token;
 }
 
+function createSocket(io: SocketIoModule["io"]): Socket {
+  return io(resolveApiUrl(), {
+    path: "/ws",
+    autoConnect: false,
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 30000,
+    reconnectionAttempts: Infinity,
+    transports: ["websocket"],
+    auth: (cb: (data: object) => void) => {
+      fetchWsToken()
+        .then((token) => cb({ token }))
+        .catch(() => cb({ token: "" }));
+    },
+  });
+}
+
 export function createWebSocketClient(): WebSocketClient {
   let state: ConnectionState = "disconnected";
   let socket: Socket | null = null;
+  let socketPromise: Promise<Socket | null> | null = null;
   let closed = false;
   let connectCalled = false;
   const queuedMessages: Record<string, unknown>[] = [];
@@ -55,51 +92,6 @@ export function createWebSocketClient(): WebSocketClient {
     for (const cb of stateListeners) cb(state);
   }
 
-  function ensureSocket() {
-    if (socket || closed) return socket;
-
-    socket = io(resolveApiUrl(), {
-      path: "/ws",
-      autoConnect: false,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 30000,
-      reconnectionAttempts: Infinity,
-      transports: ["websocket"],
-      auth: (cb: (data: object) => void) => {
-        fetchWsToken()
-          .then((token) => cb({ token }))
-          .catch(() => cb({ token: "" }));
-      },
-    });
-
-    socket.on("connect", () => {
-      if (socket?.connected) {
-        setState("connected");
-        flushQueue();
-      }
-    });
-
-    socket.on("disconnect", () => {
-      setState("disconnected");
-    });
-
-    socket.on("connect_error", () => {
-      setState("disconnected");
-    });
-
-    socket.on("message", (msg: { type: string; data: unknown }) => {
-      if (msg && typeof msg.type === "string") {
-        const cbs = listeners.get(msg.type);
-        if (cbs) {
-          for (const cb of cbs) cb(msg.data);
-        }
-      }
-    });
-
-    return socket;
-  }
-
   function flushQueue() {
     while (queuedMessages.length > 0 && socket?.connected) {
       const data = queuedMessages.shift();
@@ -108,13 +100,67 @@ export function createWebSocketClient(): WebSocketClient {
     }
   }
 
+  function attachHandlers(s: Socket) {
+    s.on("connect", () => {
+      if (s.connected) {
+        setState("connected");
+        flushQueue();
+      }
+    });
+
+    s.on("disconnect", () => {
+      setState("disconnected");
+    });
+
+    s.on("connect_error", () => {
+      setState("disconnected");
+    });
+
+    s.on("message", (msg: { type: string; data: unknown }) => {
+      if (msg && typeof msg.type === "string") {
+        const cbs = listeners.get(msg.type);
+        if (cbs) {
+          for (const cb of cbs) cb(msg.data);
+        }
+      }
+    });
+  }
+
+  function ensureSocket(): Promise<Socket | null> {
+    if (socket) return Promise.resolve(socket);
+    if (closed) return Promise.resolve(null);
+    if (!socketPromise) {
+      socketPromise = loadSocketIo()
+        .then(({ io }) => {
+          if (closed) return null;
+          const s = createSocket(io);
+          socket = s;
+          attachHandlers(s);
+          return s;
+        })
+        .catch((error: unknown) => {
+          socketPromise = null;
+          throw error;
+        });
+    }
+    return socketPromise;
+  }
+
   function triggerConnect() {
     if (closed || connectCalled) return;
-    const s = ensureSocket();
-    if (!s) return;
     connectCalled = true;
     setState("connecting");
-    s.connect();
+    void ensureSocket()
+      .then((s) => {
+        if (!s) return;
+        s.connect();
+      })
+      .catch(() => {
+        // A failed socket.io chunk load must not wedge the client: clear the
+        // latch so a later subscription can retry, and report disconnected.
+        connectCalled = false;
+        setState("disconnected");
+      });
   }
 
   return {
@@ -138,7 +184,6 @@ export function createWebSocketClient(): WebSocketClient {
         socket.emit("message", data);
         return true;
       }
-      ensureSocket();
       if (queuedMessages.length >= MAX_QUEUED_MESSAGES) {
         queuedMessages.shift();
       }
@@ -184,6 +229,8 @@ export function createWebSocketClient(): WebSocketClient {
       closed = true;
       connectCalled = false;
       queuedMessages.length = 0;
+      // An in-flight creation is discarded by `ensureSocket`'s `closed` check.
+      socketPromise = null;
       if (socket) {
         socket.disconnect();
         socket.removeAllListeners();
@@ -196,21 +243,9 @@ export function createWebSocketClient(): WebSocketClient {
   };
 }
 
-export function createDedicatedSocket(): Socket {
-  return io(resolveApiUrl(), {
-    path: "/ws",
-    autoConnect: false,
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 30000,
-    reconnectionAttempts: Infinity,
-    transports: ["websocket"],
-    auth: (cb: (data: object) => void) => {
-      fetchWsToken()
-        .then((token) => cb({ token }))
-        .catch(() => cb({ token: "" }));
-    },
-  });
+export async function createDedicatedSocket(): Promise<Socket> {
+  const { io } = await loadSocketIo();
+  return createSocket(io);
 }
 
 let defaultClient: WebSocketClient | null = null;

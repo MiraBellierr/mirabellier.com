@@ -116,8 +116,8 @@ self.addEventListener("push", (event) => {
   const title = payload.title || "Twitch notification";
   const options = {
     body: payload.body || "",
-    icon: "/favicon.jpg",
-    badge: "/favicon.jpg",
+    icon: "/apple-touch-icon.png",
+    badge: "/icon-48.png",
     data: { url: payload.url || "/twitch" },
   };
 

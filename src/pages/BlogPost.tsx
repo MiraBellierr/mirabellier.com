@@ -18,7 +18,7 @@ import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import {
   addPostComment,
   fetchPost,
-  fetchPosts,
+  fetchPostSummaries,
   togglePostLike,
 } from "@/lib/blog-api";
 import {
@@ -31,6 +31,7 @@ import {
   resolveAsset,
   slugify,
   type Post as BlogPostRecord,
+  type PostSummary,
   type TocHeading,
 } from "@/lib/blog-utils";
 import {
@@ -188,7 +189,7 @@ function TableOfContents({
   );
 }
 
-function blogPath(post: Pick<BlogPostRecord, "id" | "title">) {
+function blogPath(post: Pick<PostSummary, "id" | "title">) {
   return `/blog/${slugify(post.title)}-${post.id}`;
 }
 
@@ -199,7 +200,7 @@ function FlowLink({
 }: {
   direction: "prev" | "next";
   label: string;
-  post: BlogPostRecord | null;
+  post: PostSummary | null;
 }) {
   if (!post) {
     // Keep the empty grid cell so the sibling link holds its side.
@@ -230,9 +231,9 @@ function PostFlowNav({
   older,
   newer,
 }: {
-  series: SeriesContext<BlogPostRecord> | null;
-  older: BlogPostRecord | null;
-  newer: BlogPostRecord | null;
+  series: SeriesContext<PostSummary> | null;
+  older: PostSummary | null;
+  newer: PostSummary | null;
 }) {
   // Inside a series, part-to-part links replace the date-based older/newer.
   const prev = series ? series.previous : older;
@@ -308,7 +309,7 @@ const BlogPost = () => {
   })();
 
   const [post, setPost] = useState<BlogPostRecord | null>(null);
-  const [allPosts, setAllPosts] = useState<BlogPostRecord[]>([]);
+  const [allPosts, setAllPosts] = useState<PostSummary[]>([]);
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -444,10 +445,10 @@ const BlogPost = () => {
   };
 
   // The whole archive, for prev/next and series grouping. This reuses the
-  // cached `/posts` SWR fetch, so arriving from /blog usually costs nothing.
+  // cached summary-list SWR fetch, so arriving from /blog usually costs nothing.
   useEffect(() => {
     const controller = new AbortController();
-    fetchPosts(controller.signal)
+    fetchPostSummaries(controller.signal)
       .then(setAllPosts)
       .catch(() => {
         /* prev/next is a bonus — silently skip it if the archive won't load */
@@ -670,7 +671,7 @@ const BlogPost = () => {
     <div className="blog-post-page min-h-screen text-blue-900 font-[sans-serif] flex flex-col">
       <Header ownsPageHeading={false} />
       <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-fixed"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">

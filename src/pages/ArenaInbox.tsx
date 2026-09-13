@@ -315,7 +315,7 @@ const ArenaInbox = () => {
     <div className="flex min-h-screen flex-col font-[sans-serif] text-blue-900">
       <Header />
       <div
-        className="flex flex-1 flex-col bg-cover bg-scroll bg-no-repeat"
+        className="flex flex-1 flex-col bg-cover bg-fixed bg-no-repeat"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-4 lg:flex-row">

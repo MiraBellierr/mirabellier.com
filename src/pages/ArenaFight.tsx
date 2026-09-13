@@ -410,40 +410,65 @@ const ArenaFight = () => {
   advanceViaHttpFallbackRef.current = () => void advanceViaHttpFallback();
 
   // ---- Dedicated Socket.IO setup for fight ----
+  //
+  // socket.io-client is behind a dynamic import (see lib/websocket.ts), so the
+  // socket arrives asynchronously. `cancelled` guards the unmount race; the
+  // connect effect below re-runs once `socketReady` flips.
+  const [socketReady, setSocketReady] = useState(false);
 
   useEffect(() => {
-    const socket = createDedicatedSocket();
+    let cancelled = false;
+    let created: Socket | null = null;
 
-    socket.on("connect", () => {
-      setFightConnected(true);
-      machineRef.current?.setConnected(true);
-    });
-    socket.on("disconnect", () => {
-      setFightConnected(false);
-      machineRef.current?.setConnected(false);
-    });
-    socket.on("connect_error", () => {
-      setFightConnected(false);
-      machineRef.current?.setConnected(false);
-    });
+    void createDedicatedSocket()
+      .then((socket) => {
+        if (cancelled) {
+          socket.disconnect();
+          socket.removeAllListeners();
+          return;
+        }
+        created = socket;
 
-    socketRef.current = socket;
+        socket.on("connect", () => {
+          setFightConnected(true);
+          machineRef.current?.setConnected(true);
+        });
+        socket.on("disconnect", () => {
+          setFightConnected(false);
+          machineRef.current?.setConnected(false);
+        });
+        socket.on("connect_error", () => {
+          setFightConnected(false);
+          machineRef.current?.setConnected(false);
+        });
+
+        socketRef.current = socket;
+        setSocketReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setFightConnected(false);
+      });
 
     return () => {
-      socket.disconnect();
-      socket.removeAllListeners();
+      cancelled = true;
+      const socket = created ?? socketRef.current;
+      if (socket) {
+        socket.disconnect();
+        socket.removeAllListeners();
+      }
       socketRef.current = null;
     };
   }, []);
 
   // Connect socket when ready (authenticated + verified)
   useEffect(() => {
+    if (!socketReady) return;
     const socket = socketRef.current;
     if (!socket || !token || !verified) return;
     if (!socket.connected) {
       socket.connect();
     }
-  }, [token, verified]);
+  }, [socketReady, token, verified]);
 
   // Sync fight state on reconnection
   const wasDisconnectedRef = useRef(false);
@@ -542,7 +567,8 @@ const ArenaFight = () => {
 
   // ---- WS action helpers ----
 
-  // Register fight event listeners on the dedicated socket
+  // Register fight event listeners on the dedicated socket. Depends on
+  // `socketReady` because the socket arrives asynchronously.
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
@@ -609,7 +635,7 @@ const ArenaFight = () => {
 
     socket.on("message", handler);
     return () => { socket.off("message", handler); };
-  }, [processFightState]);
+  }, [socketReady, processFightState]);
 
   // ---- User actions ----
 
@@ -736,7 +762,7 @@ const ArenaFight = () => {
     <div className="min-h-screen flex flex-col font-[sans-serif] text-blue-900">
       <Header />
       <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-fixed"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col gap-4 p-2 sm:p-4 lg:flex-row">

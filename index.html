@@ -32,13 +32,6 @@
       type="font/woff2"
       crossorigin
     />
-    <link
-      rel="preload"
-      as="font"
-      href="/fonts/quicksand-latin-variable.woff2"
-      type="font/woff2"
-      crossorigin
-    />
 
     <style>
       @font-face {
@@ -200,13 +193,13 @@
       }
       /* Keep the theme background discoverable before the app hydrates. */
       div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-        background-image: url("/light.webp?v=20260502");
+        background-image: url("/light.webp?v=20260913");
         background-size: cover;
         background-position: center;
-        background-attachment: scroll;
+        background-attachment: fixed;
       }
       html.dark div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-        background-image: url("/dark.webp?v=20260502");
+        background-image: url("/dark.webp?v=20260913");
       }
       html.dark .boot-shell {
         background:
@@ -262,7 +255,8 @@
       })();
     </script>
 
-    <link rel="icon" href="/favicon.jpg" />
+    <link rel="icon" href="/icon-48.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="canonical" href="https://mirabellier.com/" />
     <link
       rel="alternate"

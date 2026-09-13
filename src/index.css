@@ -648,15 +648,15 @@ h6 {
 }
 
 :root {
-  --page-bg: url("/light.webp?v=20260502");
+  --page-bg: url("/light.webp?v=20260913");
 }
 .dark {
-  --page-bg: url("/dark.webp?v=20260502");
+  --page-bg: url("/dark.webp?v=20260913");
 }
 
-/* Keep the page background cheap to paint while preserving cover behavior. */
+/* Pin the page background to the viewport while preserving cover behavior. */
 [style*="var(--page-bg)"] {
-  background-attachment: scroll !important;
+  background-attachment: fixed !important;
   background-position: center center !important;
   background-size: cover !important;
 }

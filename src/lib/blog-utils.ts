@@ -1,5 +1,10 @@
 import { API_BASE } from "@/lib/config";
-import type { ContentNode, DocumentNode } from "@/lib/blog-reading";
+import {
+  extractTextFromContent,
+  readingTimeMinutes,
+  type ContentNode,
+  type DocumentNode,
+} from "@/lib/blog-reading";
 
 // Tiptap-document helpers live in `blog-reading.ts` (config-free so they can be
 // unit-tested); re-exported here so existing importers are unaffected.
@@ -54,6 +59,28 @@ export type Post = {
   tags?: string[];
   likes?: string[];
   comments?: BlogComment[];
+};
+
+// The `/posts?view=list` projection: list metadata plus derived fields, with
+// no tiptap `content` and no comment bodies. This is what Home / Blog / Now /
+// BlogPost's prev-next fetch — `content` is only in the full `Post`.
+export type PostSummary = {
+  id: string | number;
+  title: string;
+  userId?: string | null;
+  author: string;
+  authorAvatar?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+  excerpt: string;
+  readingMinutes: number;
+  shortDescription?: string | null;
+  thumbnail?: string | null;
+  audioUrl?: string | null;
+  series?: string | null;
+  tags: string[];
+  likeCount: number;
+  commentCount: number;
 };
 
 function parseJsonSafely<T>(value: string, fallback: T): T {
@@ -165,6 +192,82 @@ export function normalizePost(value: unknown): Post {
     tags: normalizeStringArray(source.tags),
     likes: normalizeStringArray(source.likes),
     comments: normalizeComments(source.comments),
+  };
+}
+
+export function normalizePostSummary(value: unknown): PostSummary {
+  const source =
+    value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+  // Fallback for an older backend that ignored `?view=list` and returned the
+  // full document: derive the projection client-side so the UI still renders.
+  const hasProjection =
+    typeof source.excerpt === "string" ||
+    typeof source.likeCount === "number" ||
+    typeof source.commentCount === "number";
+  const content = source.content as Post["content"];
+  const likes = normalizeStringArray(source.likes);
+
+  return {
+    id: source.id ? String(source.id) : "",
+    title: typeof source.title === "string" ? source.title : "Untitled",
+    userId:
+      source.userId === null || source.userId === undefined
+        ? null
+        : String(source.userId),
+    author: typeof source.author === "string" ? source.author : "Unknown",
+    authorAvatar:
+      typeof source.authorAvatar === "string" ? source.authorAvatar : null,
+    createdAt:
+      typeof source.createdAt === "string"
+        ? source.createdAt
+        : new Date().toISOString(),
+    updatedAt:
+      typeof source.updatedAt === "string" ? source.updatedAt : null,
+    excerpt:
+      typeof source.excerpt === "string"
+        ? source.excerpt
+        : hasProjection
+          ? ""
+          : extractTextFromContent(
+              typeof content === "string"
+                ? (parseJsonSafely(content, null) as Post["content"])
+                : content,
+            )
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 320),
+    readingMinutes:
+      typeof source.readingMinutes === "number" &&
+      Number.isFinite(source.readingMinutes)
+        ? source.readingMinutes
+        : hasProjection
+          ? 0
+          : content
+            ? readingTimeMinutes(content)
+            : 0,
+    shortDescription:
+      typeof source.shortDescription === "string"
+        ? source.shortDescription
+        : null,
+    thumbnail: typeof source.thumbnail === "string" ? source.thumbnail : null,
+    audioUrl: typeof source.audioUrl === "string" ? source.audioUrl : null,
+    series:
+      typeof source.series === "string" && source.series.trim()
+        ? source.series.trim()
+        : null,
+    tags: normalizeStringArray(source.tags),
+    likeCount:
+      typeof source.likeCount === "number" && Number.isFinite(source.likeCount)
+        ? source.likeCount
+        : likes.length,
+    commentCount:
+      typeof source.commentCount === "number" &&
+      Number.isFinite(source.commentCount)
+        ? source.commentCount
+        : hasProjection
+          ? 0
+          : countNestedComments(normalizeComments(source.comments)),
   };
 }
 

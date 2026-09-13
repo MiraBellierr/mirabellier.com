@@ -7,15 +7,15 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 
 import { Link } from "react-router-dom";
-import { fetchPosts } from "@/lib/blog-api";
-import { slugify, type Post } from "@/lib/blog-utils";
+import { fetchPostSummaries } from "@/lib/blog-api";
+import { slugify, type PostSummary } from "@/lib/blog-utils";
 import {
   fetchCurrentQuestionOfTheDay,
   type QuestionOfTheDayQuestion,
 } from "@/lib/question-of-the-day-api";
 import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
-import kannaKobayashi from "@/assets/anime/kanna-kobayashi.webp";
+import kannaKobayashi from "@/assets/anime/kanna-kobayashi-lite.webp";
 import yorSticker from "@/assets/anime/yor-sticker1.webp";
 
 const DeferredAnimatedImage = lazy(
@@ -26,17 +26,35 @@ const MALAYSIA_TIMEZONE = "Asia/Kuala_Lumpur";
 const HOME_HERO_ANIMATION_MEDIA_QUERY = "(min-width: 1024px)";
 
 type HomeUpdatesState = {
-  latestPost: Post | null;
+  latestPost: PostSummary | null;
   currentQuestion: QuestionOfTheDayQuestion | null;
 };
 
+// Cached formatters: constructing an `Intl.DateTimeFormat` costs ~0.4ms, while
+// a cached instance formats in ~0.001ms. These helpers run at 1 Hz (and on
+// every Home render), so build them once at module scope.
+const HOME_CLOCK_PARTS_FORMATTER = new Intl.DateTimeFormat("en-MY", {
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+  timeZone: MALAYSIA_TIMEZONE,
+});
+
+const HOME_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  timeZone: MALAYSIA_TIMEZONE,
+});
+
+const MALAYSIA_HOUR_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  hour12: false,
+  timeZone: MALAYSIA_TIMEZONE,
+});
+
 function getHomeClockParts(value: Date) {
-  const parts = new Intl.DateTimeFormat("en-MY", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: MALAYSIA_TIMEZONE,
-  }).formatToParts(value);
+  const parts = HOME_CLOCK_PARTS_FORMATTER.formatToParts(value);
 
   return {
     hour: parts.find((part) => part.type === "hour")?.value || "12",
@@ -48,20 +66,11 @@ function getHomeClockParts(value: Date) {
 }
 
 function formatHomeDate(value: Date) {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    timeZone: MALAYSIA_TIMEZONE,
-  }).format(value);
+  return HOME_DATE_FORMATTER.format(value);
 }
 
 function getMalaysiaHour(value: Date) {
-  const formatted = new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    hour12: false,
-    timeZone: MALAYSIA_TIMEZONE,
-  }).format(value);
+  const formatted = MALAYSIA_HOUR_FORMATTER.format(value);
   const parsed = Number(formatted);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -142,7 +151,7 @@ function truncateHomeText(value: string, maxLength = 96) {
   return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
 }
 
-function getHomePostHref(post: Post | null) {
+function getHomePostHref(post: PostSummary | null) {
   if (!post) {
     return "/blog";
   }
@@ -154,6 +163,74 @@ function getHomePostHref(post: Post | null) {
 
   const slug = slugify(post.title);
   return `/blog/${slug ? `${slug}-${postId}` : postId}`;
+}
+
+function useHomeNow(intervalMs: number) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, intervalMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [intervalMs]);
+
+  return now;
+}
+
+// The clock owns the only 1 Hz tick on the page (for its blinking colon).
+// Keeping the interval in this small component means the per-second re-render
+// no longer reconciles Header, Navigation, Footer, the aside and every card.
+function HomeClock() {
+  const now = useHomeNow(1000);
+  const clockParts = getHomeClockParts(now);
+  const showClockSeparator = now.getSeconds() % 2 === 0;
+
+  return (
+    <div className="p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-400">
+        my time
+      </p>
+      <div className="mt-2 flex items-end gap-2 text-blue-700">
+        <p className="text-3xl font-bold tabular-nums">
+          <span>{clockParts.hour}</span>
+          <span
+            aria-hidden="true"
+            className={`inline-block w-[0.55ch] text-center transition-opacity duration-150 ${
+              showClockSeparator ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            :
+          </span>
+          <span>{clockParts.minute}</span>
+        </p>
+        {clockParts.dayPeriod ? (
+          <span className="pb-1 text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
+            {clockParts.dayPeriod}
+          </span>
+        ) : null}
+      </div>
+      <p className="text-sm font-semibold text-blue-500">{formatHomeDate(now)}</p>
+      <p className="home-clock-greeting mt-3 rounded-full bg-pink-100/70 px-3 py-1 text-center text-xs font-bold tracking-[0.16em] text-pink-600">
+        {getHomeGreeting(now)}
+      </p>
+    </div>
+  );
+}
+
+// The status only changes when the Malaysia hour crosses 12:00 or 18:00, so a
+// minute tick is plenty — and it re-renders just this one line.
+function HomeStatus() {
+  const now = useHomeNow(60_000);
+
+  return (
+    <p className="text-xs font-semibold leading-snug text-blue-700 dark:text-purple-100">
+      {getHomeStatus(now)}
+    </p>
+  );
 }
 
 // Flower that peeks over the top-right corner of a card. Place inside a
@@ -176,7 +253,6 @@ const SectionFlower = () => (
 
 const Home = () => {
   const auth = useOptionalAuth();
-  const [now, setNow] = useState(() => new Date());
   const [homeUpdates, setHomeUpdates] = useState<HomeUpdatesState>({
     latestPost: null,
     currentQuestion: null,
@@ -190,8 +266,6 @@ const Home = () => {
 
     return window.matchMedia(HOME_HERO_ANIMATION_MEDIA_QUERY).matches;
   });
-  const clockParts = getHomeClockParts(now);
-  const showClockSeparator = now.getSeconds() % 2 === 0;
 
   usePageSeo({
     canonical: "https://mirabellier.com/",
@@ -210,16 +284,6 @@ const Home = () => {
       },
     },
   });
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -247,7 +311,7 @@ const Home = () => {
       setHomeUpdatesError(null);
 
       const [postsResult, questionResult] = await Promise.allSettled([
-        fetchPosts(),
+        fetchPostSummaries(),
         fetchCurrentQuestionOfTheDay(),
       ]);
 
@@ -255,7 +319,7 @@ const Home = () => {
         return;
       }
 
-      let latestPost: Post | null = null;
+      let latestPost: PostSummary | null = null;
       let currentQuestion: QuestionOfTheDayQuestion | null = null;
       const failedSections: string[] = [];
 
@@ -298,7 +362,7 @@ const Home = () => {
       <Header />
 
       <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-fixed"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="mx-auto flex w-full max-w-7xl flex-grow flex-col p-4 lg:flex-row">
@@ -390,36 +454,7 @@ const Home = () => {
               />
 
               <div className="relative space-y-4 text-sm">
-                <div className="p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-400">
-                    my time
-                  </p>
-                  <div className="mt-2 flex items-end gap-2 text-blue-700">
-                    <p className="text-3xl font-bold tabular-nums">
-                      <span>{clockParts.hour}</span>
-                      <span
-                        aria-hidden="true"
-                        className={`inline-block w-[0.55ch] text-center transition-opacity duration-150 ${
-                          showClockSeparator ? "opacity-100" : "opacity-0"
-                        }`}
-                      >
-                        :
-                      </span>
-                      <span>{clockParts.minute}</span>
-                    </p>
-                    {clockParts.dayPeriod ? (
-                      <span className="pb-1 text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
-                        {clockParts.dayPeriod}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="text-sm font-semibold text-blue-500">
-                    {formatHomeDate(now)}
-                  </p>
-                  <p className="home-clock-greeting mt-3 rounded-full bg-pink-100/70 px-3 py-1 text-center text-xs font-bold tracking-[0.16em] text-pink-600">
-                    {getHomeGreeting(now)}
-                  </p>
-                </div>
+                <HomeClock />
 
                 <div className="border-t border-blue-200/70 pt-4 dark:border-purple-300/20">
                   <p className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-400">
@@ -431,9 +466,7 @@ const Home = () => {
                       <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-400">
                         status
                       </p>
-                      <p className="text-xs font-semibold leading-snug text-blue-700 dark:text-purple-100">
-                        {getHomeStatus(now)}
-                      </p>
+                      <HomeStatus />
                     </div>
 
                     <div className="space-y-0.5">

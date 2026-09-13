@@ -523,26 +523,55 @@ export default defineConfig({
               return "web-vitals";
             }
 
+            // socket.io-client + engine.io are behind a dynamic `import()` in
+            // src/lib/websocket.ts. Assigning them to a chunk that is also
+            // statically imported (like `vendor`) would undo that boundary and
+            // drag the ~13 kB gzip back onto every page's critical path, so
+            // leave them to Rollup's default async-chunk splitting.
+            if (
+              chunkId.includes("/socket.io-client/") ||
+              chunkId.includes("/socket.io-parser/") ||
+              chunkId.includes("/engine.io-client/") ||
+              chunkId.includes("/engine.io-parser/") ||
+              chunkId.includes("/@socket.io/")
+            ) {
+              return undefined;
+            }
+
+            // Lazy-only libs: react-hotkeys-hook (editor) and
+            // @tanstack/react-virtual (ArenaMint). Their own chunks keep them
+            // off the pages that never mount those components.
+            if (chunkId.includes("/react-hotkeys-hook/")) {
+              return "hotkeys-vendor";
+            }
+            if (
+              chunkId.includes("/@tanstack/react-virtual/") ||
+              chunkId.includes("/@tanstack/virtual-core/")
+            ) {
+              return "virtual-vendor";
+            }
+
+            // `debug` + `ms` only exist for socket.io (and, in `debug`'s case,
+            // nothing else in the browser bundle). Leaving them unassigned
+            // lets Rollup hoist them into the socket.io async chunk.
+            if (
+              /\/node_modules\/(debug|ms)\//.test(chunkId)
+            ) {
+              return undefined;
+            }
+
             // Everything else from node_modules that isn't categorised above
             // goes to one shared vendor chunk instead of inflating the entry
             // chunk (or being duplicated across route chunks).
             return "vendor";
           }
 
-          // Only the editor template itself, which BlogEdit.tsx already pulls
-          // in via a dynamic import(). BlogEdit.tsx must NOT be listed here:
-          // it statically imports the app shell (Navigation/Header/Footer/
-          // Toast), and a manual-chunk assignment for those shared modules
-          // wins over the lazy route boundary, dragging the whole editor
-          // (tiptap + prosemirror, ~243 kB gzip) onto every page's critical
-          // path. The entryChunkPurityPlugin assertion below guards this.
-          if (chunkId.includes("/src/components/tiptap-templates/simple/")) {
-            return "simple-editor";
-          }
-
-          if (chunkId.includes("/src/lib/arena-shop-ui.tsx")) {
-            return "arena-shop-ui";
-          }
+          // Do NOT add `src/` routes/components to manualChunks. A rule for
+          // the editor template or the arena UI forced Rollup to hoist shared
+          // modules (e.g. useIsMobile) into those chunks, dragging the whole
+          // editor stack (tiptap + prosemirror, ~247 kB gzip) onto every
+          // Arena route. Let Rollup split at the route boundary instead. The
+          // entryChunkPurityPlugin assertion below guards this.
         },
         // Optimize asset naming for better caching
         chunkFileNames: "assets/[name]-[hash].js",

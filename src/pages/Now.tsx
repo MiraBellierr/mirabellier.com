@@ -10,8 +10,8 @@ import { usePageSeo } from "@/lib/seo";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { fetchNow, type NowContent } from "@/lib/site-now-api";
-import { fetchPosts } from "@/lib/blog-api";
-import { slugify, type Post } from "@/lib/blog-utils";
+import { fetchPostSummaries } from "@/lib/blog-api";
+import { slugify, type PostSummary } from "@/lib/blog-utils";
 import { fetchCurrentlyWatchingAnime } from "@/lib/anime-feed-api";
 import { fetchPixiesFeed } from "@/lib/pixies";
 import anyaSticker3 from "@/assets/anime/anya-sticker3.webp";
@@ -56,7 +56,7 @@ function formatUpdatedAgo(value: string | null | undefined) {
   return relative === day ? `Updated ${day}` : `Updated ${relative} · ${day}`;
 }
 
-function blogHref(post: Post) {
+function blogHref(post: PostSummary) {
   const id = String(post.id || "").trim();
   if (!id) return "/blog";
   const slug = slugify(post.title);
@@ -120,7 +120,7 @@ const Now = () => {
 
     const loadAutoFill = async () => {
       const [postsResult, animeResult, pixiesResult] = await Promise.allSettled([
-        fetchPosts(),
+        fetchPostSummaries(),
         fetchCurrentlyWatchingAnime(),
         fetchPixiesFeed(undefined, { limit: 1 }),
       ]);
@@ -190,7 +190,7 @@ const Now = () => {
       <Header />
 
       <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-fixed"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full gap-4">

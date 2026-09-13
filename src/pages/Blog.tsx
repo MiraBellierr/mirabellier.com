@@ -17,15 +17,12 @@ import { usePageSeo } from "@/lib/seo";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
 import {
-  extractTextFromContent,
   formatReadingTime,
-  readingTimeMinutes,
   slugify,
   resolveAsset,
-  countNestedComments,
-  type Post as PostType,
+  type PostSummary,
 } from "@/lib/blog-utils";
-import { fetchPosts, deletePost } from "@/lib/blog-api";
+import { fetchPostSummaries, deletePost } from "@/lib/blog-api";
 import { imageWidthSrcSet } from "@/lib/image-srcset";
 import { TOPIC_NEW_POST } from "@/lib/push-api";
 import "@/styles/blog.css";
@@ -36,8 +33,8 @@ const POST_MENU_GAP = 8;
 const POST_MENU_VIEWPORT_PADDING = 8;
 
 const Blog = () => {
-  const [posts, setPosts] = useState<PostType[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<PostType[]>([]);
+  const [posts, setPosts] = useState<PostSummary[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<PostSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -165,7 +162,7 @@ const Blog = () => {
     setLoading(true);
 
     try {
-      const data = await fetchPosts(signal);
+      const data = await fetchPostSummaries(signal);
       setPosts(data);
       setFilteredPosts(data);
       setError(null);
@@ -224,7 +221,7 @@ const Blog = () => {
             (post.tags || []).some((tag) =>
               tag.toLowerCase().includes(term),
             ) ||
-            extractTextFromContent(post.content).toLowerCase().includes(term),
+            post.excerpt.toLowerCase().includes(term),
         );
         setFilteredPosts(filtered);
         setCurrentPage(1);
@@ -254,7 +251,7 @@ const Blog = () => {
       <Header />
 
       <div
-        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-scroll"
+        className="flex flex-1 flex-col bg-cover bg-no-repeat bg-fixed"
         style={{ backgroundImage: "var(--page-bg)" }}
       >
         <div className="flex lg:flex-row flex-col flex-grow p-4 max-w-7xl mx-auto w-full">
@@ -305,9 +302,9 @@ const Blog = () => {
               <>
                 {currentPosts.map((post, index) => {
                   const previewText = (
-                    post.shortDescription || extractTextFromContent(post.content)
+                    post.shortDescription || post.excerpt
                   ).trim();
-                  const readMinutes = readingTimeMinutes(post.content);
+                  const readMinutes = post.readingMinutes;
 
                   return (
                     <div
@@ -386,13 +383,11 @@ const Blog = () => {
                                 <div className="blog-card-footer">
                                   <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-blue-400">
                                     <span>
-                                      {Array.isArray(post.likes)
-                                        ? post.likes.length
-                                        : 0}{" "}
+                                      {post.likeCount}{" "}
                                       likes
                                     </span>
                                     <span>
-                                      {countNestedComments(post.comments || [])}{" "}
+                                      {post.commentCount}{" "}
                                       comments
                                     </span>
                                   </div>

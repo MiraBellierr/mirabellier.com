@@ -1,36 +1,11 @@
-import { useEffect } from "react";
-import { useCursor } from "../../states/CursorContext";
-
 import pointerCursor from "/cursors/Pointer.gif";
 
 type PointerCursorProps = {
-  position: { x: number; y: number };
   isActive: boolean;
 };
 
-export default function PointerCursor({
-  position,
-  isActive,
-}: PointerCursorProps) {
-  const { isCustomCursor } = useCursor();
-  useEffect(() => {
-    if (isActive && isCustomCursor) {
-      const elements = document.querySelectorAll(
-        'a, button, [role="button"], [onclick]',
-      );
-      elements.forEach((el) => {
-        (el as HTMLElement).style.cursor = "none";
-      });
-
-      return () => {
-        elements.forEach((el) => {
-          (el as HTMLElement).style.cursor = "";
-        });
-      };
-    }
-  }, [isActive, isCustomCursor]);
-
-  if (!isActive || !isCustomCursor) return null;
+export default function PointerCursor({ isActive }: PointerCursorProps) {
+  if (!isActive) return null;
 
   const config = {
     width: 32,
@@ -46,7 +21,9 @@ export default function PointerCursor({
         position: "fixed",
         left: 0,
         top: 0,
-        transform: `translate3d(${position.x + config.offsetX}px, ${position.y + config.offsetY}px, 0)`,
+        // Position comes from the custom properties CursorManager writes each
+        // animation frame (see NormalCursor for the fallback).
+        transform: `translate3d(calc(var(--cursor-x, -100px) + ${config.offsetX}px), calc(var(--cursor-y, -100px) + ${config.offsetY}px), 0)`,
         willChange: "transform",
         width: `${config.width}px`,
         height: `${config.height}px`,

@@ -1,10 +1,26 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const CURSOR_STORAGE_KEY = "mirabellier-cursor-enabled";
+
+type PointerPosition = { x: number; y: number };
 
 type CursorContextType = {
   isCustomCursor: boolean;
   toggleCursor: () => void;
+  /**
+   * The last pointer position seen over the document, or null if the pointer
+   * has not moved over the page yet. `CursorManager` uses this to place the
+   * custom cursor (and suppress the native one) the instant it loads, instead
+   * of waiting for the next `mousemove`.
+   */
+  getPointerPosition: () => PointerPosition | null;
 };
 
 function getStoredCursorEnabled() {
@@ -51,10 +67,12 @@ function getDefaultCursorEnabled() {
 const CursorContext = createContext<CursorContextType>({
   isCustomCursor: true,
   toggleCursor: () => {},
+  getPointerPosition: () => null,
 });
 
 export function CursorProvider({ children }: { children: React.ReactNode }) {
   const [isCustomCursor, setIsCustomCursor] = useState(getDefaultCursorEnabled);
+  const pointerPositionRef = useRef<PointerPosition | null>(null);
 
   useEffect(() => {
     try {
@@ -67,34 +85,32 @@ export function CursorProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isCustomCursor]);
 
-  // Drive native-cursor suppression from a single class on <html>. The
-  // `html.custom-cursor *` rule in index.css does the hiding and — via
-  // `!important` — beats Tailwind `cursor-*` utilities and inline `cursor`
-  // styles on any element, including UI mounted long after this provider
-  // (the Pixies viewer, modals, late routes). This replaces the old one-shot
-  // querySelectorAll pass, which never reached those elements.
+  // Track the pointer from the first movement — long before the lazy
+  // `CursorManager` chunk loads — so the native-to-custom swap can happen at
+  // the exact position the pointer already is. The native cursor is *not*
+  // hidden here: CursorManager owns that (see the note there), so a visitor
+  // who enables the custom cursor never has a cursor-less window while the
+  // chunk is still loading.
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle("custom-cursor", isCustomCursor);
-    document.body.style.cursor = isCustomCursor ? "none" : "default";
-    return () => {
-      root.classList.remove("custom-cursor");
-      document.body.style.cursor = "default";
+    const handleMouseMove = (event: MouseEvent) => {
+      pointerPositionRef.current = { x: event.clientX, y: event.clientY };
     };
-  }, [isCustomCursor]);
 
-  const toggleCursor = () => {
-    const newValue = !isCustomCursor;
-    setIsCustomCursor(newValue);
-    if (newValue) {
-      document.body.style.cursor = "none";
-    } else {
-      document.body.style.cursor = "default";
-    }
-  };
+    document.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => document.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  const getPointerPosition = useCallback(
+    () => pointerPositionRef.current,
+    [],
+  );
+
+  const toggleCursor = () => setIsCustomCursor((value) => !value);
 
   return (
-    <CursorContext.Provider value={{ isCustomCursor, toggleCursor }}>
+    <CursorContext.Provider
+      value={{ isCustomCursor, toggleCursor, getPointerPosition }}
+    >
       {children}
     </CursorContext.Provider>
   );
