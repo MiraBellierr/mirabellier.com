@@ -372,6 +372,38 @@ const SEO_ROUTES: RouteSeo[] = [
       `${SITE_URL}/question-of-the-day/archive`,
     ),
   },
+  // Private / thin routes. `usePageSeo` also sets robots at runtime, but a
+  // crawler that does not run the bundle only sees the static head, so the
+  // override is baked in here too.
+  ...(
+    [
+      {
+        path: "/login",
+        title: "Log In | Mirabellier",
+        description: "Sign in to Mirabellier with Discord.",
+      },
+      {
+        path: "/settings",
+        title: "Settings | Mirabellier",
+        description: "Account settings and preferences.",
+      },
+      {
+        path: "/blog/edit",
+        title: "Blog Editor | Mirabellier",
+        description: "Create or edit a blog post.",
+      },
+      {
+        path: "/pixies/upload",
+        title: "Upload a Pixie | Mirabellier",
+        description: "Share a short video clip with the Mirabellier community.",
+      },
+      {
+        path: "/auth/callback",
+        title: "Signing In | Mirabellier",
+        description: "Completing the sign-in flow.",
+      },
+    ] as const
+  ).map((route) => ({ ...route, robots: "noindex,follow" })),
 ];
 
 // ---------------------------------------------------------------------------

@@ -28,6 +28,13 @@ export type RouteSeo = {
   image?: string;
   /** `og:type` — "website" (default) for listing pages, "article" for posts. */
   ogType?: string;
+  /**
+   * Overrides the `robots` meta for this route (e.g. `"noindex,follow"` on a
+   * private or thin page). The SPA sets this at runtime via `usePageSeo`, but a
+   * crawler that does not execute JavaScript only ever sees this static head,
+   * so the override has to be baked in at build time.
+   */
+  robots?: string;
   /** JSON-LD structured data object injected as `application/ld+json`. */
   structuredData?: Record<string, unknown>;
 };
@@ -103,6 +110,10 @@ function applyRouteSeo(
   );
 
   next = upsertMetaTag(next, "name", "description", route.description);
+
+  if (route.robots) {
+    next = upsertMetaTag(next, "name", "robots", route.robots);
+  }
 
   next = upsertMetaTag(next, "property", "og:type", route.ogType ?? "website");
   next = upsertMetaTag(next, "property", "og:title", route.title);
