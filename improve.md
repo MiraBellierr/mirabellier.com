@@ -60,20 +60,36 @@ Confirmed with a Googlebot UA. They are neither in `SEO_ROUTES` (`vite.config.ts
 
 ### 3. Canonical vs redirect mismatch (trailing slash)
 
-The SPA/SEO heads use slash-less canonicals, but nginx `try_files $uri $uri/ ...` 301s many of them to a slash:
+**Status: DONE (2026-09-14).** Root cause was the live nginx `location /`:
+`try_files $uri $uri/ /index.html` matched the bare directory for every
+prerendered route and answered `301 /about/`, contradicting the slash-less
+canonical. The site block now uses `try_files $uri $uri/index.html /index.html`
+— the directory's index file is served at the canonical URL with no redirect,
+and a directory without an `index.html` stays on the SPA fallback instead of
+301-ing into a 403. Verified in a real nginx container against the built
+`dist/` before applying.
 
-| Live URL behavior | Canonical says |
-| --- | --- |
-| `/arena` -> 301 -> `/arena/` | `/arena` |
-| `/blog` -> 301 -> `/blog/` | `/blog` |
-| `/now`, `/changelog`, `/uses`, `/links`, `/stats`, `/fanart`, `/ar` -> 301 slash | slash-less |
-| `/shrine/kanna/` -> 307 -> `/shrine/kanna` | `/shrine/kanna` |
+The config was server-only; it now lives at
+`mirabellier-backend/deploy/nginx/mirabellier.com.conf` and the backend deploy
+syncs it, running `nginx -t` and restoring the previous file if validation
+fails. Live check: all 107 sitemap URLs return 200 at their canonical
+slash-less URL.
 
-Google may treat the canonical target as a redirect and pick the wrong URL. Fix by serving `try_files $uri $uri/index.html` (drop the slash redirect) or by pointing canonicals at the final redirecting URL consistently.
+Two further bugs surfaced while verifying this and are also fixed:
+
+- The build-time SEO fetches were challenged by Cloudflare (HTTP 403, "Just a
+  moment...") from CI runner IPs, so the last deploy silently shipped only 24
+  static prerendered heads instead of 108. The build now sends the same
+  identifying User-Agent `generate-sitemap.cjs` already used.
+- The backend sitemap/feed filtered question days on `recordedDate < today`
+  while the public archive cuts off at the active carried question, publishing
+  94 soft-404 URLs and leaking queued prompts. Both now share the archive's
+  cutoff.
 
 ### 4. Feeds share the same staleness risk
 
-`public/feed.xml` / `public/feed.json` were last committed 2026-09-10 (manual `a3bf343`), while the live copies match. Anything posted after that manual run won't appear until someone reruns it. Same CI fix as the sitemap.
+**Status: DONE.** Regenerated on every build (see item 1); the backend also
+refreshes them at runtime now that the output directory resolves correctly.
 
 ---
 
