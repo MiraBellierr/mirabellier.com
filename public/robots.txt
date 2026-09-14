@@ -1,7 +1,4 @@
 User-agent: *
-Allow: /
-
-# Disallow crawling of certain paths
 Disallow: /admin
 Disallow: /api
 Disallow: /v1

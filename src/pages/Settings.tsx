@@ -30,6 +30,8 @@ const Settings = () => {
 
   usePageSeo({
     canonical: "https://mirabellier.com/settings",
+    // Account settings are per-user and gated; never index them.
+    robots: "noindex,follow",
     structuredDataId: "settings-structured-data",
     structuredData: {
       "@context": "https://schema.org",

@@ -9,7 +9,12 @@ const AuthCallback = () => {
   const auth = useAuth();
   const startedRef = useRef(false);
 
-  usePageSeo({ canonical: "https://mirabellier.com/auth/callback" });
+  usePageSeo({
+    canonical: "https://mirabellier.com/auth/callback",
+    // Transient OAuth hop that immediately redirects; it has no content and
+    // would only ever be indexed as a duplicate of the login page.
+    robots: "noindex,follow",
+  });
 
   useEffect(() => {
     // `auth` gets a fresh identity when `handleAuthCallback` sets the user,

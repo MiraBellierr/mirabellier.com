@@ -60,6 +60,8 @@ const BlogEdit = () => {
 
   usePageSeo({
     canonical: "https://mirabellier.com/blog/edit",
+    // Authoring UI behind auth; nothing here belongs in an index.
+    robots: "noindex,follow",
     structuredDataId: "blogedit-structured-data",
     structuredData: {
       "@context": "https://schema.org",

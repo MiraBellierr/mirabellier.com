@@ -154,7 +154,7 @@ function generateSiteMap(entries) {
     <loc>${escapeXml(entry.url)}</loc>
     <lastmod>${entry.lastmod || new Date().toISOString().split("T")[0]}</lastmod>
     <changefreq>${entry.changefreq || "weekly"}</changefreq>
-    <priority>${entry.priority || "0.5"}</priority>
+    <priority>${entry.priority || "0.5"}</priority>${renderImages(entry.images)}
   </url>`,
     )
     .join("");
@@ -164,6 +164,35 @@ function generateSiteMap(entries) {
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${urls}
 </urlset>`;
+}
+
+// Google's image-sitemap extension. Posts and shrine pages supply an `images`
+// array; everything else renders without the block.
+function renderImages(images) {
+  if (!Array.isArray(images) || images.length === 0) return "";
+
+  return images
+    .filter((image) => image && image.url)
+    .map(
+      (image) => `
+    <image:image>
+      <image:loc>${escapeXml(image.url)}</image:loc>${
+        image.title
+          ? `
+      <image:title>${escapeXml(image.title)}</image:title>`
+          : ""
+      }
+    </image:image>`,
+    )
+    .join("");
+}
+
+function resolveImageUrl(thumbnail) {
+  const value = String(thumbnail || "").trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${WEBSITE_BASE}${value}`;
+  return `${API_BASE}/images/${value}`;
 }
 
 function escapeXml(str) {
@@ -618,11 +647,15 @@ async function main() {
       posts = await fetchFromAPI("/posts");
       if (Array.isArray(posts)) {
         posts.forEach((post) => {
+          const imageUrl = resolveImageUrl(post.thumbnail);
           entries.push({
             url: getPostUrl(post),
             lastmod: getPostLastmod(post),
             priority: "0.7",
             changefreq: "monthly",
+            ...(imageUrl
+              ? { images: [{ url: imageUrl, title: post.title || "Untitled" }] }
+              : {}),
           });
         });
         console.log(`  Added ${posts.length} blog posts`);
@@ -639,29 +672,48 @@ async function main() {
     try {
       console.log("Fetching shrine pages...");
       const shrines = await fetchFromAPI("/shrines/pages");
-      if (Array.isArray(shrines) && shrines.length) {
+
+      // Two independent sources, both real:
+      //   - API rooms from the `shrine_pages` table (kana, rimuru, ...)
+      //   - the built-in rooms (kanna, rossina) that have dedicated SPA pages
+      //     and are served by the backend's hardcoded list.
+      // Merge by URL so an API room sharing a built-in path wins.
+      const shrineEntries = new Map();
+
+      for (const route of FALLBACK_SHRINE_ROUTES) {
+        shrineEntries.set(`${WEBSITE_BASE}${route.path}`, {
+          url: `${WEBSITE_BASE}${route.path}`,
+          priority: route.priority,
+          changefreq: route.changefreq,
+        });
+      }
+
+      if (Array.isArray(shrines)) {
         shrines.forEach((shrine) => {
           if (!shrine?.path && !shrine?.slug) {
             return;
           }
 
-          entries.push({
-            url: getShrineUrl(shrine),
+          const url = getShrineUrl(shrine);
+          const imageUrl = resolveImageUrl(shrine.image);
+          shrineEntries.set(url, {
+            url,
             lastmod: formatSitemapDate(shrine.updatedAt || shrine.createdAt),
             priority: shrine.priority || "0.7",
             changefreq: shrine.changefreq || "monthly",
-          });
-        });
-        console.log(`  Added ${shrines.length} shrine pages`);
-      } else {
-        FALLBACK_SHRINE_ROUTES.forEach((route) => {
-          entries.push({
-            url: `${WEBSITE_BASE}${route.path}`,
-            priority: route.priority,
-            changefreq: route.changefreq,
+            ...(imageUrl
+              ? {
+                  images: [
+                    { url: imageUrl, title: shrine.title || "Shrine page" },
+                  ],
+                }
+              : {}),
           });
         });
       }
+
+      entries.push(...shrineEntries.values());
+      console.log(`  Added ${shrineEntries.size} shrine pages`);
     } catch (error) {
       const existingShrineEntries = readExistingShrineEntries();
       existingShrineEntries.forEach((entry) => entries.push(entry));

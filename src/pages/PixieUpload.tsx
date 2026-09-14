@@ -36,6 +36,8 @@ const PixieUpload = () => {
 
   usePageSeo({
     canonical: "https://mirabellier.com/pixies/upload",
+    // Upload form behind auth; no indexable content.
+    robots: "noindex,follow",
     structuredDataId: "pixies-upload-structured-data",
     structuredData: {
       "@context": "https://schema.org",

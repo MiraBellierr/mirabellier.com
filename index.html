@@ -131,15 +131,31 @@
         letter-spacing: 0.18em;
         text-transform: uppercase;
       }
-      .boot-shell__nav-value {
+      .boot-shell__nav-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem 0.6rem;
+        list-style: none;
+        margin: 0.6rem 0 0;
+        padding: 0;
+      }
+      .boot-shell__nav-list a {
         display: inline-block;
-        margin-top: 0.35rem;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.82);
         color: #1d4ed8;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 700;
-        padding: 0.35rem 0.8rem;
+        padding: 0.3rem 0.7rem;
+        text-decoration: none;
+      }
+      .boot-shell__nav-list a:hover {
+        background: #ffffff;
+        text-decoration: underline;
+      }
+      html.dark .boot-shell__nav-list a {
+        background: rgba(15, 23, 42, 0.6);
+        color: #e9d5ff;
       }
       .boot-shell__card {
         border-radius: 1rem;
@@ -240,7 +256,6 @@
       html.dark .boot-shell__eyebrow {
         color: #c4b5fd;
       }
-      html.dark .boot-shell__nav-value,
       html.dark .boot-shell__title,
       html.dark .boot-shell__copy {
         color: #f5e8ff;
@@ -329,9 +344,17 @@
     />
     <meta property="og:site_name" content="Mirabellier" />
     <meta property="og:url" content="https://mirabellier.com/" />
+    <meta property="og:locale" content="en_US" />
     <meta
       property="og:image"
       content="https://mirabellier.com/og-image.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta
+      property="og:image:alt"
+      content="Mirabellier — a tiny, cozy blog full of cute thoughts and soft internet things."
     />
 
     <meta name="twitter:card" content="summary_large_image" />
@@ -349,6 +372,10 @@
       name="twitter:image"
       content="https://mirabellier.com/og-image.jpg"
     />
+    <meta
+      name="twitter:image:alt"
+      content="Mirabellier — a tiny, cozy blog full of cute thoughts and soft internet things."
+    />
   </head>
   <body>
     <div id="root">
@@ -358,7 +385,26 @@
           <div class="boot-shell__layout">
             <aside class="boot-shell__nav">
               <div class="boot-shell__nav-label">site navigation</div>
-              <div class="boot-shell__nav-value">home</div>
+              <!-- Real anchors so a crawler that never executes the bundle
+                   still finds the site's structure. React replaces this
+                   subtree on hydration, so it costs nothing at runtime. -->
+              <ul class="boot-shell__nav-list">
+                <li><a href="/blog">Blog</a></li>
+                <li><a href="/shrine">Shrines</a></li>
+                <li><a href="/question-of-the-day">Question of the Day</a></li>
+                <li><a href="/question-of-the-day/archive">QOTD Archive</a></li>
+                <li><a href="/quotes">Quotes</a></li>
+                <li><a href="/anime">Anime</a></li>
+                <li><a href="/fanart">Fan Art</a></li>
+                <li><a href="/pixies">Pixies</a></li>
+                <li><a href="/projects">Projects</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/now">Now</a></li>
+                <li><a href="/links">Links</a></li>
+                <li><a href="/stats">Stats</a></li>
+                <li><a href="/changelog">Changelog</a></li>
+                <li><a href="/arena">Arena</a></li>
+              </ul>
             </aside>
             <main class="boot-shell__card">
               <p class="boot-shell__eyebrow">cute thoughts &amp; cozy corners</p>
@@ -399,11 +445,37 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Blog",
-        "name": "Mirabellier",
-        "url": "https://mirabellier.com",
-        "description": "A tiny, cozy blog sharing small joys, photos, and short posts.",
-        "publisher": { "@type": "Person", "name": "Mirabellier" }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://mirabellier.com/#website",
+            "name": "Mirabellier",
+            "url": "https://mirabellier.com/",
+            "description": "A tiny, cozy blog sharing small joys, photos, and short posts.",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://mirabellier.com/#person" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://mirabellier.com/#person",
+            "name": "Mirabellier",
+            "url": "https://mirabellier.com/",
+            "jobTitle": "Full Stack Developer",
+            "sameAs": [
+              "https://github.com/MiraBellierr",
+              "https://www.patreon.com/c/jasminebot/",
+              "https://ko-fi.com/mirabellier"
+            ]
+          },
+          {
+            "@type": "Blog",
+            "name": "Mirabellier",
+            "url": "https://mirabellier.com/blog",
+            "description": "A tiny, cozy blog sharing small joys, photos, and short posts.",
+            "isPartOf": { "@id": "https://mirabellier.com/#website" },
+            "publisher": { "@id": "https://mirabellier.com/#person" }
+          }
+        ]
       }
     </script>
   </body>

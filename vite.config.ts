@@ -29,6 +29,16 @@ const ARENA_STRUCTURED_DATA = {
   },
 };
 
+const breadcrumbList = (items: Array<{ name: string; url: string }>) => ({
+  "@type": "BreadcrumbList",
+  itemListElement: items.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.name,
+    item: item.url,
+  })),
+});
+
 const collectionPageJsonLd = (name: string, description: string, url: string) => ({
   "@context": "https://schema.org",
   "@type": "CollectionPage",
@@ -194,27 +204,24 @@ const SEO_ROUTES: RouteSeo[] = [
     path: "/shrine",
     title: "Character Shrines | Mirabellier",
     description:
-      "A directory for Mirabellier character shrine pages, including Kanna and Rossina shrine rooms.",
-    structuredData: collectionPageJsonLd(
-      "Character Shrines",
-      "A directory for Mirabellier character shrine pages, including Kanna and Rossina shrine rooms.",
-      `${SITE_URL}/shrine`,
-    ),
-  },
-  {
-    path: "/shrine/kanna",
-    title: "Kanna Kamui Shrine | Mirabellier",
-    description:
-      "A long-form Kanna Kamui shrine with profile notes, lore, favorite line memories, and a personal gallery.",
+      "A directory for Mirabellier character shrine pages, each one a long-form room for a favorite character.",
     structuredData: {
-      "@context": "https://schema.org",
-      "@type": "AboutPage",
-      name: "Kanna Kamui Shrine",
-      description:
-        "A long-form Kanna Kamui shrine with profile notes, lore, favorite line memories, and a personal gallery.",
-      url: `${SITE_URL}/shrine/kanna`,
+      ...collectionPageJsonLd(
+        "Character Shrines",
+        "A directory for Mirabellier character shrine pages, each one a long-form room for a favorite character.",
+        `${SITE_URL}/shrine`,
+      ),
+      breadcrumb: breadcrumbList([
+        { name: "Home", url: `${SITE_URL}/` },
+        { name: "Shrines", url: `${SITE_URL}/shrine` },
+      ]),
     },
   },
+  // NOTE: individual shrine rooms (/shrine/kana, /shrine/rimuru, ...) are
+  // DB-backed and proxied to the backend, which emits their crawler HTML with
+  // breadcrumbs. They are intentionally absent here: a build-time list goes
+  // stale the moment a room is created or renamed (this file still had the
+  // retired kanna/rossina pair).
   {
     path: "/about",
     title: "About Mirabellier",
@@ -500,6 +507,11 @@ async function blogPostSeoRoutes(): Promise<RouteSeo[]> {
           ...(post.tags && post.tags.length
             ? { keywords: post.tags.join(", ") }
             : {}),
+          breadcrumb: breadcrumbList([
+            { name: "Home", url: `${SITE_URL}/` },
+            { name: "Blog", url: `${SITE_URL}/blog` },
+            { name: post.title || "Untitled", url },
+          ]),
         },
       } satisfies RouteSeo;
     });
@@ -577,6 +589,12 @@ async function questionArchiveSeoRoutes(): Promise<RouteSeo[]> {
             name: "Mirabellier",
             url: SITE_URL,
           },
+          breadcrumb: breadcrumbList([
+            { name: "Home", url: `${SITE_URL}/` },
+            { name: "Question of the Day", url: `${SITE_URL}/question-of-the-day` },
+            { name: "Archive", url: `${SITE_URL}/question-of-the-day/archive` },
+            { name: recordedDate, url },
+          ]),
         },
       } satisfies RouteSeo;
     });

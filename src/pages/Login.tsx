@@ -8,6 +8,9 @@ import { usePageSeo } from "@/lib/seo";
 const Login = () => {
   usePageSeo({
     canonical: "https://mirabellier.com/login",
+    // A sign-in form is thin, account-specific, and adds nothing to search
+    // results; keep it crawlable (follow) but out of the index.
+    robots: "noindex,follow",
     structuredDataId: "login-structured-data",
     structuredData: {
       "@context": "https://schema.org",
