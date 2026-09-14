@@ -5,51 +5,126 @@
   <link href="https://mirabellier.com/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://mirabellier.com/blog" />
   <id>https://mirabellier.com/blog</id>
-  <updated>2026-09-07T09:25:58.843Z</updated>
+  <updated>2026-09-14T10:10:38.898Z</updated>
   <author><name>Mirabellier</name></author>
   <entry>
-    <title>Arena: How to Play, How It Works, and How to Win</title>
-    <link href="https://mirabellier.com/blog/arena-how-to-play-how-it-works-and-how-to-win-1788772749574" />
-    <id>https://mirabellier.com/blog/arena-how-to-play-how-it-works-and-how-to-win-1788772749574</id>
-    <published>2026-09-07T09:19:09.574Z</published>
-    <updated>2026-09-07T09:25:58.843Z</updated>
+    <title>You Are Bad at Statistics</title>
+    <link href="https://mirabellier.com/blog/you-are-bad-at-statistics-1789380261666" />
+    <id>https://mirabellier.com/blog/you-are-bad-at-statistics-1789380261666</id>
+    <published>2026-09-14T10:04:21.666Z</published>
+    <updated>2026-09-14T10:10:38.898Z</updated>
     <author><name>mirabellier</name></author>
-    <summary>A complete guide to the Arena — the ten-minute quickstart, how cards, IVs and affinity work, the full damage pipeline, gear and consumables, the skill tree, ELO seasons, the player market, and a cheat sheet of every number that matters.</summary>
-    <category term="arena" />
-    <category term="guide" />
-    <category term="tutorial" />
-    <category term="dev-post" />
+    <summary>I’m back with the bad news I promised. Last time I dug into how the mind works. This time it’s about numbers, chance, and the specific, reliable ways our brain gets them wrong. The short version is that we are pattern-hunting, story-loving creatures who were never built to reason about probability. …</summary>
+    <category term="statistics" />
+    <category term="cognitive-biases" />
+    <category term="decision-making" />
+    <category term="probability" />
+    <category term="psychology" />
+  </entry>
+  <entry>
+    <title>Fast Brain, Slow Brain: You&apos;re Not Driving This Thing</title>
+    <link href="https://mirabellier.com/blog/fast-brain-slow-brain-youre-not-driving-this-thing-1789304125788" />
+    <id>https://mirabellier.com/blog/fast-brain-slow-brain-youre-not-driving-this-thing-1789304125788</id>
+    <published>2026-09-13T12:55:25.789Z</published>
+    <updated>2026-09-13T20:19:43.903Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Your brain has two settings, and you’re only aware of one of them. System 1 and System 2 Picture your mind as two characters sharing one apartment. System 1 is the fast one. It never shuts up. It finishes “bread and…” for you, reads billboards without being asked, detects hostility in a voice before…</summary>
+    <category term="psychology" />
+    <category term="decision-making" />
+    <category term="cognitive-biases" />
+    <category term="intuition" />
+  </entry>
+  <entry>
+    <title>The Ethics of AI: Can Machines Be Moral Agents?</title>
+    <link href="https://mirabellier.com/blog/the-ethics-of-ai-can-machines-be-moral-agents-1789293550667" />
+    <id>https://mirabellier.com/blog/the-ethics-of-ai-can-machines-be-moral-agents-1789293550667</id>
+    <published>2026-09-13T09:59:10.668Z</published>
+    <updated>2026-09-13T10:46:59.363Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Can machines ever be moral agents? That’s the question I’ve been chewing on lately, especially as AI keeps showing up in more high-stakes places. Not “can AI do good things” or “can it follow rules”, but the deeper one, can it actually own moral responsibility the way a person does? Spoiler: I’m ske…</summary>
+    <category term="Ai" />
+    <category term="Tech" />
+  </entry>
+  <entry>
+    <title>Libet&apos;s Experiment: The Study That Made Free Will Feel Kind of... Awkward</title>
+    <link href="https://mirabellier.com/blog/libets-experiment-the-study-that-made-free-will-feel-kind-of-awkward-1789197947590" />
+    <id>https://mirabellier.com/blog/libets-experiment-the-study-that-made-free-will-feel-kind-of-awkward-1789197947590</id>
+    <published>2026-09-12T07:25:47.591Z</published>
+    <updated>2026-09-13T01:26:01.428Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Alright, so we’ve talked about free will, determinism, and that middle-ground thing called compatibilism. Today I want to bring up something that still messes with a lot of people’s heads, Libet’s experiment . If you’ve ever heard someone say “science proved free will doesn’t exist”, there’s a good …</summary>
+    <category term="philosophy" />
+  </entry>
+  <entry>
+    <title>Determinism vs Compatibilism: Are We Free… or Just Really Good at Feeling Free?</title>
+    <link href="https://mirabellier.com/blog/determinism-vs-compatibilism-are-we-free-or-just-really-good-at-feeling-free-1789104281726" />
+    <id>https://mirabellier.com/blog/determinism-vs-compatibilism-are-we-free-or-just-really-good-at-feeling-free-1789104281726</id>
+    <published>2026-09-11T05:24:41.726Z</published>
+    <updated>2026-09-12T22:13:08.913Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Okay, so last time I was rambling about free will and whether it’s real or just a nice story we tell ourselves. Today I want to dig into two of the main camps people fall into when they try to answer that question: determinism vs compatibilism . Don’t worry, I’m not going to turn this into a philoso…</summary>
+    <category term="philosophy" />
+  </entry>
+  <entry>
+    <title>Is Free Will Real... or Just Something We Tell Ourselves?</title>
+    <link href="https://mirabellier.com/blog/is-free-will-real-or-just-something-we-tell-ourselves-1789059842486" />
+    <id>https://mirabellier.com/blog/is-free-will-real-or-just-something-we-tell-ourselves-1789059842486</id>
+    <published>2026-09-10T17:04:02.487Z</published>
+    <updated>2026-09-12T15:49:19.891Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>You ever make a decision and then immediately wonder, “Wait… did I actually choose that, or was it just inevitable?” Like when you swear you’re going to bed early, put your phone on charge, turn off the lights… and somehow end up doom-scrolling for another hour and a half. Was that you choosing, or …</summary>
+    <category term="philosophy" />
+  </entry>
+  <entry>
+    <title>Arena: The Complete Mechanics Guide</title>
+    <link href="https://mirabellier.com/blog/arena-the-complete-mechanics-guide-1781933007104" />
+    <id>https://mirabellier.com/blog/arena-the-complete-mechanics-guide-1781933007104</id>
+    <published>2026-06-20T05:23:27.104Z</published>
+    <updated>2026-09-10T16:45:42.460Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Everything you need to know about cards, combat, crafting, and climbing the ladder with all the math explained.</summary>
     <category term="author" />
+    <category term="dev-post" />
+    <category term="arena" />
+    <category term="update" />
   </entry>
   <entry>
-    <title>test</title>
-    <link href="https://mirabellier.com/blog/test-1777617712928" />
-    <id>https://mirabellier.com/blog/test-1777617712928</id>
-    <published>2026-05-01T06:41:52.928Z</published>
-    <updated>2026-05-01T06:41:52.928Z</updated>
+    <title>The Secret Life of Cats: What Your Cat Really Does When You&apos;re Not Home</title>
+    <link href="https://mirabellier.com/blog/the-secret-life-of-cats-what-your-cat-really-does-when-youre-not-home-1777612400734" />
+    <id>https://mirabellier.com/blog/the-secret-life-of-cats-what-your-cat-really-does-when-youre-not-home-1777612400734</id>
+    <published>2026-05-01T05:13:20.734Z</published>
+    <updated>2026-09-12T22:14:07.234Z</updated>
     <author><name>mirabellier</name></author>
-    <summary>test</summary>
-    <category term="test" />
+    <summary>A clear, fun look at your cat’s hidden daily routine, sleeping, watching, exploring, grooming, and waiting for you.</summary>
+    <category term="cats" />
+    <category term="catbehavior" />
+    <category term="petcare" />
+    <category term="indoorcats" />
+    <category term="catenrichment" />
+    <category term="felinehealth" />
+    <category term="animalbehavior" />
+    <category term="petlifestyle" />
   </entry>
   <entry>
-    <title>Kalos&apos; Ultimate Cutest Squad in Pokemon Generation 6.</title>
-    <link href="https://mirabellier.com/blog/kalos-ultimate-cutest-squad-in-pokemon-generation-6-1773270866059" />
-    <id>https://mirabellier.com/blog/kalos-ultimate-cutest-squad-in-pokemon-generation-6-1773270866059</id>
-    <published>2026-03-11T23:14:26.059Z</published>
-    <updated>2026-05-01T06:10:32.594Z</updated>
+    <title>The Adorable Axolotl: Nature’s Forever Smiling “Baby” with Super Regeneration Powers</title>
+    <link href="https://mirabellier.com/blog/the-adorable-axolotl-natures-forever-smiling-baby-with-super-regeneration-powers-1777607864086" />
+    <id>https://mirabellier.com/blog/the-adorable-axolotl-natures-forever-smiling-baby-with-super-regeneration-powers-1777607864086</id>
+    <published>2026-05-01T03:57:44.086Z</published>
+    <updated>2026-05-01T03:58:10.506Z</updated>
     <author><name>mirabellier</name></author>
-    <summary>Generation 6 (X/Y) featured Fairy types as well as the cutest Pokemon ever! This cute combination of Sylveon, Goodra, Slurpuff, Florges, Dedenne, and Furfrou is sheer cuteness while defeating gyms and the Elite Four in a relaxed playthrough.</summary>
-    <category term="cutestPokemon" />
-    <category term="Gen6Team" />
-    <category term="Kalos" />
-    <category term="FairyType" />
-    <category term="CuteSquad" />
-    <category term="PokemonXY" />
+    <summary>Meet the axolotl, an incredibly cute Mexican salamander that stays looking like a baby its whole life, has feathery external gills, and can regrow entire limbs, spinal cord, and even parts of its brain.</summary>
+    <category term="Axoloth" />
+    <category term="CuteAnimals" />
+    <category term="Regeneration" />
+    <category term="Neoteny" />
+    <category term="SuperpowerAnimal" />
+    <category term="MexicanSalamander" />
+    <category term="FunAnimalFacts" />
   </entry>
   <entry>
     <title>The world&apos;s first webcam was invented for one of the most relatable reasons in tech history: laziness (or extreme efficiency) when it came to coffee</title>
-    <link href="https://mirabellier.com/blog/the-worlds-first-webcam-was-invented-for-one-of-the-most-relatable-reasons-in-tech-history-laziness-or-extreme-efficiency-when-it-came-to-coffee-1773640150011" />
-    <id>https://mirabellier.com/blog/the-worlds-first-webcam-was-invented-for-one-of-the-most-relatable-reasons-in-tech-history-laziness-or-extreme-efficiency-when-it-came-to-coffee-1773640150011</id>
+    <link href="https://mirabellier.com/blog/the-worlds-first-webcam-was-invented-for-one-of-the-most-relatable-reasons-in-te-1773640150011" />
+    <id>https://mirabellier.com/blog/the-worlds-first-webcam-was-invented-for-one-of-the-most-relatable-reasons-in-te-1773640150011</id>
     <published>2026-03-16T05:49:10.011Z</published>
     <updated>2026-03-16T05:49:10.011Z</updated>
     <author><name>mirabellier</name></author>
@@ -61,6 +136,21 @@
     <category term="CambridgeUniversity" />
     <category term="FunTechFacts" />
     <category term="WebcamInvention" />
+  </entry>
+  <entry>
+    <title>Kalos&apos; Ultimate Cutest Squad in Pokemon Generation 6.</title>
+    <link href="https://mirabellier.com/blog/kalos-ultimate-cutest-squad-in-pokemon-generation-6-1773270866059" />
+    <id>https://mirabellier.com/blog/kalos-ultimate-cutest-squad-in-pokemon-generation-6-1773270866059</id>
+    <published>2026-03-11T23:14:26.059Z</published>
+    <updated>2026-03-11T23:16:33.625Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Generation 6 (X/Y) featured Fairy types as well as the cutest Pokemon ever! This cute combination of Sylveon, Goodra, Slurpuff, Florges, Dedenne, and Furfrou is sheer cuteness while defeating gyms and the Elite Four in a relaxed playthrough.</summary>
+    <category term="cutestPokemon" />
+    <category term="Gen6Team" />
+    <category term="Kalos" />
+    <category term="FairyType" />
+    <category term="CuteSquad" />
+    <category term="PokemonXY" />
   </entry>
   <entry>
     <title>Cats Can&apos;t Taste Sweetness - And That&apos;s Totally Fine for Them!</title>
@@ -116,8 +206,8 @@
   </entry>
   <entry>
     <title>Apple Developing &quot;Orchard&quot;: The Next-Generation Programming Language for AI-Driven and Secure Ecosystems</title>
-    <link href="https://mirabellier.com/blog/apple-developing-orchard-the-next-generation-programming-language-for-ai-driven-and-secure-ecosystems-1772926606491" />
-    <id>https://mirabellier.com/blog/apple-developing-orchard-the-next-generation-programming-language-for-ai-driven-and-secure-ecosystems-1772926606491</id>
+    <link href="https://mirabellier.com/blog/apple-developing-orchard-the-next-generation-programming-language-for-ai-driven--1772926606491" />
+    <id>https://mirabellier.com/blog/apple-developing-orchard-the-next-generation-programming-language-for-ai-driven--1772926606491</id>
     <published>2026-03-07T23:36:46.491Z</published>
     <updated>2026-03-07T23:36:46.491Z</updated>
     <author><name>mirabellier</name></author>

@@ -1,12 +1,23 @@
 #!/usr/bin/env node
 
 /**
- * Generates sitemap.xml for the Mirabellier.com website.
- * Includes static pages and dynamically fetches blog posts.
+ * Generates sitemap.xml for the Mirabellier.com website from the public API.
+ *
+ * Runs in CI before `npm run build` so every deploy ships a sitemap that
+ * matches the routes and content that release actually serves. The static
+ * route list mirrors `mirabellier-backend/lib/sitemap.js`; blog posts, shrine
+ * pages, and archived question days are fetched from the API.
  *
  * Usage:
  *   node generate-sitemap.cjs
  *   VITE_API_BASE=https://api.mirabellier.com/v1 node generate-sitemap.cjs
+ *
+ * `SITEMAP_LOCAL_BACKEND=1` opts into reading the sibling
+ * `mirabellier-backend/` SQLite database instead of the API (development
+ * convenience only; CI always uses the API).
+ *
+ * On a fetch failure the already-committed sitemap is preserved so a flaky
+ * API can never shrink the live sitemap.
  */
 
 const fs = require("fs");
@@ -19,18 +30,24 @@ const WEBSITE_BASE = (
   process.env.WEBSITE_BASE || "https://mirabellier.com"
 ).replace(/\/+$/, "");
 const OUTPUT_PATH = path.join(__dirname, "public", "sitemap.xml");
+const FEED_OUTPUT_DIR = path.join(__dirname, "public");
 const BACKEND_DIR = path.join(__dirname, "mirabellier-backend");
+const USE_LOCAL_BACKEND = process.env.SITEMAP_LOCAL_BACKEND === "1";
 
 const STATIC_ROUTES = [
   { path: "/", priority: "1.0", changefreq: "weekly" },
   { path: "/about", priority: "0.8", changefreq: "monthly" },
+  { path: "/now", priority: "0.6", changefreq: "weekly" },
+  { path: "/changelog", priority: "0.5", changefreq: "weekly" },
+  { path: "/uses", priority: "0.5", changefreq: "monthly" },
+  { path: "/links", priority: "0.5", changefreq: "monthly" },
+  { path: "/stats", priority: "0.5", changefreq: "daily" },
   { path: "/projects", priority: "0.8", changefreq: "monthly" },
   { path: "/anime", priority: "0.8", changefreq: "daily" },
   { path: "/fanart", priority: "0.7", changefreq: "weekly" },
+  { path: "/twitch", priority: "0.7", changefreq: "hourly" },
   { path: "/pixies", priority: "0.8", changefreq: "daily" },
   { path: "/shrine", priority: "0.8", changefreq: "monthly" },
-  { path: "/shrine/kanna", priority: "0.7", changefreq: "monthly" },
-  { path: "/shrine/rossina", priority: "0.7", changefreq: "monthly" },
   { path: "/question-of-the-day", priority: "0.8", changefreq: "daily" },
   {
     path: "/question-of-the-day/archive",
@@ -41,10 +58,17 @@ const STATIC_ROUTES = [
   { path: "/blog", priority: "0.9", changefreq: "daily" },
   { path: "/privacy", priority: "0.4", changefreq: "yearly" },
   { path: "/terms", priority: "0.4", changefreq: "yearly" },
+  // Login-gated Arena subpages (inventory, market, shop, TCG, ...) are left out
+  // on purpose; only the public hub and the skill-tree explainer are indexable.
   { path: "/arena", priority: "0.6", changefreq: "weekly" },
-  { path: "/arena/inventory", priority: "0.5", changefreq: "monthly" },
-  { path: "/arena/market", priority: "0.5", changefreq: "daily" },
   { path: "/arena/skill-tree", priority: "0.5", changefreq: "monthly" },
+];
+
+// Shrine pages are backed by the database and served through the API, but the
+// built-in rooms double as the offline fallback when the fetch fails.
+const FALLBACK_SHRINE_ROUTES = [
+  { path: "/shrine/kanna", priority: "0.7", changefreq: "monthly" },
+  { path: "/shrine/rossina", priority: "0.7", changefreq: "monthly" },
 ];
 
 function fetchFromAPI(endpoint, redirectsLeft = 3) {
@@ -159,12 +183,17 @@ function getPostUrl(post) {
   }
 
   if (post.title) {
-    const slug = post.title
+    // Must match `slugify()` in mirabellier-backend/routes/posts.js and
+    // `getPostUrl`/`slugifyTitle` in vite.config.ts byte for byte, otherwise
+    // the sitemap and the prerendered canonical disagree on the URL.
+    const slug = String(post.title)
       .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[^a-z0-9\s-]/g, "")
       .trim()
-      .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
+      .replace(/-+/g, "-")
+      .slice(0, 80);
     return `${WEBSITE_BASE}/blog/${slug ? `${slug}-${post.id}` : post.id}`;
   }
 
@@ -270,6 +299,41 @@ function readExistingQuestionArchiveEntries() {
   return entries;
 }
 
+function getShrineUrl(entry) {
+  if (entry.path) {
+    return `${WEBSITE_BASE}${entry.path}`;
+  }
+  return `${WEBSITE_BASE}/shrine/${entry.slug}`;
+}
+
+function readExistingShrineEntries() {
+  if (!fs.existsSync(OUTPUT_PATH)) {
+    return [];
+  }
+
+  const xml = fs.readFileSync(OUTPUT_PATH, "utf-8");
+  const matches = xml.matchAll(/<url>([\s\S]*?)<\/url>/g);
+  const entries = [];
+
+  for (const match of matches) {
+    const block = match[1];
+    const loc = block.match(/<loc>(.*?)<\/loc>/)?.[1];
+
+    if (!loc || !loc.startsWith(`${WEBSITE_BASE}/shrine/`)) {
+      continue;
+    }
+
+    entries.push({
+      url: loc,
+      lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1],
+      changefreq: block.match(/<changefreq>(.*?)<\/changefreq>/)?.[1] || "monthly",
+      priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || "0.7",
+    });
+  }
+
+  return entries;
+}
+
 function loadEntriesFromLocalBackend() {
   const backendSitemapPath = path.join(BACKEND_DIR, "lib", "sitemap.js");
   const backendDbPath = path.join(BACKEND_DIR, "lib", "db.js");
@@ -300,35 +364,258 @@ function loadEntriesFromLocalBackend() {
   }
 }
 
+const FEED_AUTHOR = "Mirabellier";
+const FEED_MAX_ITEMS = 50;
+
+const BLOG_FEED = {
+  title: "Mirabellier Blog",
+  description:
+    "Cute thoughts, cozy corners, and little projects. New posts from mirabellier.com.",
+  homePath: "/blog",
+  selfPathXml: "/feed.xml",
+  selfPathJson: "/feed.json",
+};
+
+const QUESTIONS_FEED = {
+  title: "Mirabellier Question of the Day",
+  description:
+    "One small question a day. This feed carries each day's prompt as it moves into the archive.",
+  homePath: "/question-of-the-day/archive",
+  selfPathXml: "/feed/questions.xml",
+  selfPathJson: "/feed/questions.json",
+};
+
+function extractPlainText(node) {
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractPlainText).join(" ");
+  if (typeof node === "string") return node;
+  if (typeof node !== "object") return "";
+  if (node.type === "text") return node.text || "";
+  if (node.content) return extractPlainText(node.content);
+  return "";
+}
+
+function postContentText(contentValue) {
+  if (!contentValue) return "";
+
+  let parsed = contentValue;
+  if (typeof contentValue === "string") {
+    try {
+      parsed = JSON.parse(contentValue);
+    } catch {
+      return "";
+    }
+  }
+
+  if (!parsed || typeof parsed !== "object") return "";
+  return extractPlainText(parsed).replace(/\s+/g, " ").trim();
+}
+
+function parseTags(tagsValue) {
+  if (!tagsValue) return [];
+  try {
+    const parsed =
+      typeof tagsValue === "string" ? JSON.parse(tagsValue) : tagsValue;
+    return Array.isArray(parsed)
+      ? parsed.filter((tag) => typeof tag === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function toIso(value, fallback) {
+  const date = value ? new Date(value) : null;
+  if (date && !Number.isNaN(date.getTime())) return date.toISOString();
+  return fallback;
+}
+
+function truncate(text, max) {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function buildPostFeedItems(posts) {
+  const nowIso = new Date().toISOString();
+
+  return posts.slice(0, FEED_MAX_ITEMS).map((post) => {
+    const url = getPostUrl(post);
+    const published = toIso(post.createdAt, nowIso);
+    const updated = toIso(post.updatedAt || post.createdAt, published);
+    const contentText = postContentText(post.content);
+    const summary =
+      (post.shortDescription && String(post.shortDescription).trim()) ||
+      (contentText ? truncate(contentText, 300) : "") ||
+      post.title ||
+      "Untitled";
+
+    return {
+      id: url,
+      url,
+      title: post.title || "Untitled",
+      summary,
+      contentText: contentText || summary,
+      tags: parseTags(post.tags),
+      image: post.thumbnail || null,
+      author: post.author || FEED_AUTHOR,
+      published,
+      updated,
+    };
+  });
+}
+
+function buildQuestionFeedItems(entries) {
+  return entries.slice(0, FEED_MAX_ITEMS).map((entry) => {
+    const prompt = String(entry.prompt || "").trim() || "Question of the Day";
+    // Anchor both timestamps to noon UTC on the recorded date so readers order
+    // the entries the way the archive does.
+    const published = `${entry.recordedDate}T12:00:00.000Z`;
+    const updated = toIso(
+      entry.updatedAt && entry.updatedAt > published ? entry.updatedAt : null,
+      published,
+    );
+    const url = getQuestionArchiveUrl(entry);
+
+    return {
+      id: url,
+      url,
+      title: truncate(prompt, 120),
+      summary: prompt,
+      contentText: prompt,
+      tags: [],
+      image: null,
+      author: FEED_AUTHOR,
+      published,
+      updated,
+    };
+  });
+}
+
+function buildAtomFeed(items, meta) {
+  const selfUrl = `${WEBSITE_BASE}${meta.selfPathXml}`;
+  const homeUrl = `${WEBSITE_BASE}${meta.homePath}`;
+  const updated = items.length ? items[0].updated : new Date().toISOString();
+
+  const entries = items
+    .map((item) => {
+      const categories = item.tags
+        .map((tag) => `\n    <category term="${escapeXml(tag)}" />`)
+        .join("");
+      return `
+  <entry>
+    <title>${escapeXml(item.title)}</title>
+    <link href="${escapeXml(item.url)}" />
+    <id>${escapeXml(item.id)}</id>
+    <published>${item.published}</published>
+    <updated>${item.updated}</updated>
+    <author><name>${escapeXml(item.author)}</name></author>
+    <summary>${escapeXml(item.summary)}</summary>${categories}
+  </entry>`;
+    })
+    .join("");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>${escapeXml(meta.title)}</title>
+  <subtitle>${escapeXml(meta.description)}</subtitle>
+  <link href="${escapeXml(selfUrl)}" rel="self" type="application/atom+xml" />
+  <link href="${escapeXml(homeUrl)}" />
+  <id>${escapeXml(homeUrl)}</id>
+  <updated>${updated}</updated>
+  <author><name>${escapeXml(FEED_AUTHOR)}</name></author>${entries}
+</feed>
+`;
+}
+
+function buildJsonFeed(items, meta) {
+  return `${JSON.stringify(
+    {
+      version: "https://jsonfeed.org/version/1.1",
+      title: meta.title,
+      description: meta.description,
+      home_page_url: `${WEBSITE_BASE}${meta.homePath}`,
+      feed_url: `${WEBSITE_BASE}${meta.selfPathJson}`,
+      authors: [{ name: FEED_AUTHOR, url: `${WEBSITE_BASE}/` }],
+      language: "en",
+      items: items.map((item) => ({
+        id: item.id,
+        url: item.url,
+        title: item.title,
+        summary: item.summary,
+        content_text: item.contentText,
+        date_published: item.published,
+        date_modified: item.updated,
+        authors: [{ name: item.author }],
+        ...(item.tags.length ? { tags: item.tags } : {}),
+        ...(item.image ? { image: item.image } : {}),
+      })),
+    },
+    null,
+    2,
+  )}\n`;
+}
+
+function writeFeedPair(relXmlPath, relJsonPath, items, meta) {
+  const xmlTarget = path.join(FEED_OUTPUT_DIR, relXmlPath);
+  const jsonTarget = path.join(FEED_OUTPUT_DIR, relJsonPath);
+  fs.mkdirSync(path.dirname(xmlTarget), { recursive: true });
+  fs.writeFileSync(xmlTarget, buildAtomFeed(items, meta), "utf-8");
+  fs.writeFileSync(jsonTarget, buildJsonFeed(items, meta), "utf-8");
+}
+
+// `generateFeeds` is exported for tests; the CLI writes feeds directly in
+// `main()` so a failed posts fetch cannot clobber the committed blog feed.
+function generateFeeds(posts, archiveEntries) {
+  const blogItems = buildPostFeedItems(posts);
+  const questionItems = buildQuestionFeedItems(archiveEntries);
+
+  writeFeedPair("feed.xml", "feed.json", blogItems, BLOG_FEED);
+  writeFeedPair(
+    path.join("feed", "questions.xml"),
+    path.join("feed", "questions.json"),
+    questionItems,
+    QUESTIONS_FEED,
+  );
+
+  return { blogItems: blogItems.length, questionItems: questionItems.length };
+}
+
 async function main() {
   try {
-    console.log("Generating sitemap.xml...");
+    console.log("Generating sitemap.xml and feeds...");
     console.log(`  API Base: ${API_BASE}`);
     console.log(`  Website: ${WEBSITE_BASE}`);
 
-    const localBackendEntries = loadEntriesFromLocalBackend();
+    const staticEntries = STATIC_ROUTES.map((route) => ({
+      url: `${WEBSITE_BASE}${route.path}`,
+      priority: route.priority,
+      changefreq: route.changefreq,
+    }));
+
     const entries = [];
+    let posts = null;
+    let archiveEntries = null;
 
-    if (localBackendEntries?.length) {
-      entries.push(...localBackendEntries);
-      console.log(
-        `Loaded ${localBackendEntries.length} sitemap entries from local backend data.`,
-      );
-    } else {
-      console.log("Local backend sitemap data unavailable; falling back to API fetches.");
-
-      for (const route of STATIC_ROUTES) {
-        entries.push({
-          url: `${WEBSITE_BASE}${route.path}`,
-          priority: route.priority,
-          changefreq: route.changefreq,
-        });
+    if (USE_LOCAL_BACKEND) {
+      const localBackendEntries = loadEntriesFromLocalBackend();
+      if (localBackendEntries?.length) {
+        entries.push(...localBackendEntries);
+        console.log(
+          `Loaded ${localBackendEntries.length} sitemap entries from local backend data.`,
+        );
+      } else {
+        console.warn(
+          "Local backend sitemap data unavailable; falling back to API fetches.",
+        );
       }
+    }
+
+    if (!entries.length) {
+      entries.push(...staticEntries);
     }
 
     try {
       console.log("Fetching blog posts...");
-      const posts = await fetchFromAPI("/posts");
+      posts = await fetchFromAPI("/posts");
       if (Array.isArray(posts)) {
         posts.forEach((post) => {
           entries.push({
@@ -341,6 +628,7 @@ async function main() {
         console.log(`  Added ${posts.length} blog posts`);
       }
     } catch (error) {
+      posts = null;
       const existingBlogEntries = readExistingBlogEntries();
       existingBlogEntries.forEach((entry) => entries.push(entry));
       console.warn(
@@ -349,8 +637,51 @@ async function main() {
     }
 
     try {
+      console.log("Fetching shrine pages...");
+      const shrines = await fetchFromAPI("/shrines/pages");
+      if (Array.isArray(shrines) && shrines.length) {
+        shrines.forEach((shrine) => {
+          if (!shrine?.path && !shrine?.slug) {
+            return;
+          }
+
+          entries.push({
+            url: getShrineUrl(shrine),
+            lastmod: formatSitemapDate(shrine.updatedAt || shrine.createdAt),
+            priority: shrine.priority || "0.7",
+            changefreq: shrine.changefreq || "monthly",
+          });
+        });
+        console.log(`  Added ${shrines.length} shrine pages`);
+      } else {
+        FALLBACK_SHRINE_ROUTES.forEach((route) => {
+          entries.push({
+            url: `${WEBSITE_BASE}${route.path}`,
+            priority: route.priority,
+            changefreq: route.changefreq,
+          });
+        });
+      }
+    } catch (error) {
+      const existingShrineEntries = readExistingShrineEntries();
+      existingShrineEntries.forEach((entry) => entries.push(entry));
+      if (!existingShrineEntries.length) {
+        FALLBACK_SHRINE_ROUTES.forEach((route) => {
+          entries.push({
+            url: `${WEBSITE_BASE}${route.path}`,
+            priority: route.priority,
+            changefreq: route.changefreq,
+          });
+        });
+      }
+      console.warn(
+        `  Could not fetch shrine pages: ${error.message}. Continuing with ${existingShrineEntries.length} preserved shrine URLs...`,
+      );
+    }
+
+    try {
       console.log("Fetching question archive...");
-      const archiveEntries = await fetchFromAPI("/question-of-the-day/archive");
+      archiveEntries = await fetchFromAPI("/question-of-the-day/archive");
       if (Array.isArray(archiveEntries)) {
         archiveEntries.forEach((entry) => {
           if (!entry?.recordedDate) {
@@ -367,6 +698,7 @@ async function main() {
         console.log(`  Added ${archiveEntries.length} archived question days`);
       }
     } catch (error) {
+      archiveEntries = null;
       const existingArchiveEntries = readExistingQuestionArchiveEntries();
       existingArchiveEntries.forEach((entry) => entries.push(entry));
       console.warn(
@@ -378,16 +710,52 @@ async function main() {
       new Map(entries.map((entry) => [entry.url, entry])).values(),
     );
     const sitemap = generateSiteMap(deduplicatedEntries);
-    const publicDir = path.join(__dirname, "public");
 
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true });
+    if (!fs.existsSync(FEED_OUTPUT_DIR)) {
+      fs.mkdirSync(FEED_OUTPUT_DIR, { recursive: true });
     }
 
     fs.writeFileSync(OUTPUT_PATH, sitemap, "utf-8");
     console.log("Sitemap generated successfully.");
     console.log(`  Total URLs: ${deduplicatedEntries.length}`);
     console.log(`  Output: ${OUTPUT_PATH}`);
+
+    // Feeds mirror `mirabellier-backend/lib/feed.js`: a "latest N" view, not an
+    // archive. If the posts fetch failed, leave the committed feed untouched
+    // rather than replacing it with a stale or partial one.
+    if (Array.isArray(posts)) {
+      try {
+        const blogItems = buildPostFeedItems(posts);
+        writeFeedPair("feed.xml", "feed.json", blogItems, BLOG_FEED);
+        console.log(`  Wrote feed.xml / feed.json (${blogItems.length} items)`);
+      } catch (error) {
+        console.warn(`  Could not write blog feeds: ${error.message}`);
+      }
+    } else {
+      console.warn("  Blog feeds left untouched (posts fetch failed).");
+    }
+
+    const archiveForFeed = Array.isArray(archiveEntries)
+      ? archiveEntries
+      : readExistingQuestionArchiveEntries();
+    if (archiveForFeed.length) {
+      try {
+        const questionItems = buildQuestionFeedItems(archiveForFeed);
+        writeFeedPair(
+          path.join("feed", "questions.xml"),
+          path.join("feed", "questions.json"),
+          questionItems,
+          QUESTIONS_FEED,
+        );
+        console.log(
+          `  Wrote feed/questions.xml / questions.json (${questionItems.length} items)`,
+        );
+      } catch (error) {
+        console.warn(`  Could not write question feeds: ${error.message}`);
+      }
+    } else {
+      console.warn("  Question feeds left untouched (archive fetch failed).");
+    }
   } catch (error) {
     console.error("Error generating sitemap:", error);
     process.exit(1);
@@ -398,4 +766,13 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { generateSiteMap, fetchFromAPI, getPostUrl };
+module.exports = {
+  generateSiteMap,
+  generateFeeds,
+  fetchFromAPI,
+  getPostUrl,
+  buildPostFeedItems,
+  buildQuestionFeedItems,
+  buildAtomFeed,
+  buildJsonFeed,
+};

@@ -30,6 +30,13 @@ jobs:
       - name: Run linter
         run: npm run lint --if-present
 
+      # Regenerate sitemap.xml + feeds against the API before the build, so the
+      # release ships discovery files that match this deploy's content. A
+      # failed fetch leaves the committed files untouched (the script falls
+      # back to them), so a flaky API can never shrink the live sitemap.
+      - name: Generate sitemap and feeds
+        run: npm run generate:sitemap
+
       - name: Build frontend
         run: npm run build
 
