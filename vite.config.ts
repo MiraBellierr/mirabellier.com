@@ -435,11 +435,21 @@ function resolvePostImage(thumbnail?: string | null): string {
   return `${API_BASE}/images/${thumbnail}`;
 }
 
+// The API sits behind Cloudflare, which answers a bot challenge (HTTP 403,
+// "Just a moment...") to the default Node fetch User-Agent from CI runner IPs.
+// `generate-sitemap.cjs` sends this same identifying UA and is not challenged,
+// so the build-time SEO fetches must match it or the dynamic prerenders are
+// silently skipped on every deploy.
+const BUILD_FETCH_HEADERS = {
+  Accept: "application/json",
+  "User-Agent": "Mirabellier-Sitemap/1.0 (+https://mirabellier.com)",
+};
+
 async function blogPostSeoRoutes(): Promise<RouteSeo[]> {
   if (process.env.SKIP_BLOG_SEO_PRERENDER === "1") return [];
 
   const res = await fetch(`${API_BASE}/posts`, {
-    headers: { Accept: "application/json" },
+    headers: BUILD_FETCH_HEADERS,
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) {
@@ -523,7 +533,7 @@ async function questionArchiveSeoRoutes(): Promise<RouteSeo[]> {
   if (process.env.SKIP_BLOG_SEO_PRERENDER === "1") return [];
 
   const res = await fetch(`${API_BASE}/question-of-the-day/archive`, {
-    headers: { Accept: "application/json" },
+    headers: BUILD_FETCH_HEADERS,
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) {
