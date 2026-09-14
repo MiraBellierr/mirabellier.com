@@ -50,7 +50,7 @@ import { useAuth } from "@/states/AuthContext";
 import "@/styles/blog.css";
 import { imageWidthSrcSet } from "@/lib/image-srcset";
 
-const BLOG_POST_FALLBACK_TITLE = "Mirabellier ⭐ — Cute thoughts & cozy corners";
+const BLOG_POST_FALLBACK_TITLE = "Mirabellier ⭐ | Cute thoughts & cozy corners";
 const BLOG_POST_FALLBACK_DESCRIPTION =
   "A tiny, cozy blog sharing small joys, photos, and short posts.";
 const BLOG_POST_FALLBACK_IMAGE = "https://mirabellier.com/og-image.jpg";

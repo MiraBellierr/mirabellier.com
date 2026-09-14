@@ -16,7 +16,7 @@ type SocialMetaInput = {
 };
 
 const DEFAULT_SOCIAL_META: Required<SocialMetaInput> = {
-  title: "Mirabellier ⭐ — Cute thoughts & cozy corners",
+  title: "Mirabellier ⭐ | Cute thoughts & cozy corners",
   description: "A tiny, cozy blog sharing small joys, photos, and short posts.",
   url: "https://mirabellier.com/",
   image: "https://mirabellier.com/og-image.jpg",
