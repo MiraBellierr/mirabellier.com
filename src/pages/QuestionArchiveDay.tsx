@@ -54,14 +54,29 @@ const QuestionArchiveDay = () => {
     setReloadTick((value) => value + 1);
   };
 
+  const archiveDayPrompt = data?.question?.prompt?.trim() || "";
+  const archiveDayTitle = archiveDayPrompt
+    ? `${archiveDayPrompt} | Question of the Day`
+    : `Question of the Day Archive - ${recordedDate} | Mirabellier`;
+  const archiveDayDescription = archiveDayPrompt
+    ? `An archived question of the day from ${recordedDate}: "${archiveDayPrompt}"`
+    : `An archived question of the day from ${recordedDate} with public answers.`;
+
   usePageSeo({
     canonical: `https://mirabellier.com/question-of-the-day/archive/${recordedDate}`,
+    socialMeta: {
+      title: archiveDayTitle,
+      description: archiveDayDescription,
+      url: `https://mirabellier.com/question-of-the-day/archive/${recordedDate}`,
+      image: "https://mirabellier.com/og-image.jpg",
+      type: "website",
+    },
     structuredDataId: "question-archive-day-structured-data",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: `Question of the Day Archive - ${recordedDate}`,
-      description: "An archived question of the day with public answers.",
+      name: archiveDayTitle,
+      description: archiveDayDescription,
       url: `https://mirabellier.com/question-of-the-day/archive/${recordedDate}`,
     },
   });

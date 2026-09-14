@@ -32,7 +32,22 @@ files immediately instead of only at the next frontend deploy.
 
 ### 2. Many routes declare `canonical = homepage`
 
-`/about`, `/projects`, `/twitch`, `/guestbook`, `/privacy`, `/terms`, `/question-of-the-day/archive`, `/question-of-the-day/archive/<date>`, `/question-of-the-day/answers/<id>` serve the generic SPA head:
+**Status: DONE (2026-09-14).** Every sitemap URL now serves a self-referencing
+canonical + real title. Added to `SEO_ROUTES` (`vite.config.ts`): `/about`,
+`/projects`, `/twitch`, `/guestbook`, `/privacy`, `/terms`,
+`/question-of-the-day/archive`, `/arena/skill-tree` (+ `/ar/skill-tree`
+alias). A new `questionArchiveSeoRoutes()` build-time source prerenders a head
+per `/question-of-the-day/archive/<date>` page (69 today) with the real prompt
+as `<title>` and a `CollectionPage` node. The plugin now accepts
+`dynamicRouteSources` so the blog-post and archive fetches fail independently.
+Runtime fixes: `usePageSeo` on those pages gained matching `socialMeta` (so
+the hydrated DOM matches), `QuestionOfTheDay` canonicalizes `/answers/:id` to
+itself instead of the bare question page, and the backend's answer share-card
+404s emit `noindex,follow` with a `/question-of-the-day` canonical instead of a
+dead `.../answers/` URL. Prerendered heads went from 31 to 108. Login-gated
+`/arena/*` subpages remain intentionally out of the sitemap.
+
+`/about`, `/projects`, `/twitch`, `/guestbook`, `/privacy`, `/terms`, `/question-of-the-day/archive`, `/question-of-the-day/archive/<date>`, `/question-of-the-day/answers/<id>` served the generic SPA head:
 
 ```html
 <title>Mirabellier ⭐ | Cute thoughts & cozy corners</title>

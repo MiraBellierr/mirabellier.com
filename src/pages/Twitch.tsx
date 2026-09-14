@@ -1186,6 +1186,13 @@ const Twitch = () => {
 
   usePageSeo({
     canonical: "https://mirabellier.com/twitch",
+    socialMeta: {
+      title: "Twitch Stream Predictions | Mirabellier",
+      description: TWITCH_DESCRIPTION,
+      url: "https://mirabellier.com/twitch",
+      image: "https://mirabellier.com/og-image.jpg",
+      type: "website",
+    },
     structuredDataId: "twitch-structured-data",
     structuredData: {
       "@context": "https://schema.org",

@@ -106,6 +106,14 @@ const About = () => {
 
   usePageSeo({
     canonical: "https://mirabellier.com/about",
+    socialMeta: {
+      title: "About Mirabellier",
+      description:
+        "Full Stack Developer with 3 years of experience in React and NodeJS",
+      url: "https://mirabellier.com/about",
+      image: "https://mirabellier.com/og-image.jpg",
+      type: "website",
+    },
     structuredDataId: "about-structured-data",
     structuredData: {
       "@context": "https://schema.org",

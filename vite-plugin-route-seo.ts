@@ -43,6 +43,15 @@ type RouteSeoPluginOptions = {
    * the generic `index.html` head as before.
    */
   dynamicRoutes?: () => Promise<RouteSeo[]>;
+  /**
+   * Additional dynamic sources, each fetched and caught independently so one
+   * failing API endpoint cannot suppress another's prerendered heads. Each
+   * failure is reported through the Vite logger.
+   */
+  dynamicRouteSources?: Array<{
+    name: string;
+    load: () => Promise<RouteSeo[]>;
+  }>;
 };
 
 function escapeHtml(value: string): string {
@@ -148,16 +157,32 @@ export function routeSeoPlugin(options: RouteSeoPluginOptions): Plugin {
 
       const baseHtml = fs.readFileSync(indexPath, "utf8");
 
-      let dynamicRoutes: RouteSeo[] = [];
+      const dynamicRoutes: RouteSeo[] = [];
       if (options.dynamicRoutes) {
         try {
-          dynamicRoutes = await options.dynamicRoutes();
+          dynamicRoutes.push(...(await options.dynamicRoutes()));
           log(
             `[route-seo] resolved ${dynamicRoutes.length} dynamic route(s) at build time`,
           );
         } catch (error) {
           this.warn(
             `[route-seo] dynamicRoutes() failed, skipping them: ${
+              (error as Error).message
+            }`,
+          );
+        }
+      }
+
+      for (const source of options.dynamicRouteSources ?? []) {
+        try {
+          const routes = await source.load();
+          dynamicRoutes.push(...routes);
+          log(
+            `[route-seo] resolved ${routes.length} route(s) from ${source.name}`,
+          );
+        } catch (error) {
+          this.warn(
+            `[route-seo] ${source.name} failed, skipping it: ${
               (error as Error).message
             }`,
           );

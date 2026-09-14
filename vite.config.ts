@@ -216,18 +216,154 @@ const SEO_ROUTES: RouteSeo[] = [
     },
   },
   {
-    path: "/shrine/rossina",
-    title: "Rossina Wulfperl Luppino Shrine | Mirabellier",
-    description:
-      "A long-form Rossina Wulfperl Luppino shrine with profile details, Pack lore, battle notes, quotes, and personal favorites.",
+    path: "/about",
+    title: "About Mirabellier",
+    description: "Full Stack Developer with 3 years of experience in React and NodeJS",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "AboutPage",
-      name: "Rossina Wulfperl Luppino Shrine",
+      name: "About Mirabellier",
       description:
-        "A long-form Rossina Wulfperl Luppino shrine with profile details, Pack lore, battle notes, quotes, and personal favorites.",
-      url: `${SITE_URL}/shrine/rossina`,
+        "Full Stack Developer with 3 years of experience in React and NodeJS",
+      url: `${SITE_URL}/about`,
+      mainEntity: {
+        "@type": "Person",
+        name: "Mirabellier",
+        jobTitle: "Full Stack Developer",
+        knowsAbout: [
+          "JavaScript",
+          "NodeJS",
+          "TypeScript",
+          "React",
+          "React Native",
+        ],
+        url: SITE_URL,
+        sameAs: [
+          "https://github.com/MiraBellierr",
+          "https://www.patreon.com/c/jasminebot/",
+          "https://ko-fi.com/mirabellier",
+        ],
+      },
     },
+  },
+  {
+    path: "/projects",
+    title: "Projects | Mirabellier",
+    // Mirrors `PROJECTS_DESCRIPTION` in src/pages/Projects.tsx
+    // (projectCount=10, stackTags=20). Keep in sync when projects change.
+    description:
+      "Portfolio-style list of 10 public projects across 20 stack tags, including web apps, APIs, bots, and mobile builds by Mirabellier.",
+    image: `${SITE_URL}/kanna-kobayashi-poster.webp`,
+    structuredData: collectionPageJsonLd(
+      "Mirabellier Projects",
+      "Portfolio-style list of 10 public projects across 20 stack tags, including web apps, APIs, bots, and mobile builds by Mirabellier.",
+      `${SITE_URL}/projects`,
+    ),
+  },
+  {
+    path: "/twitch",
+    title: "Twitch Stream Predictions | Mirabellier",
+    description:
+      "When will the streamers we follow go live? A small statistical model predicts the next Twitch stream from each channel's history.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Twitch Stream Predictions",
+      description:
+        "When will the streamers we follow go live? A small statistical model predicts the next Twitch stream from each channel's history.",
+      url: `${SITE_URL}/twitch`,
+    },
+  },
+  {
+    path: "/guestbook",
+    title: "Guestbook Board | Mirabellier",
+    description:
+      "A draggable board full of pinned guestbook notes from visitors.",
+    structuredData: collectionPageJsonLd(
+      "Mirabellier Guestbook Board",
+      "A draggable board full of pinned guestbook notes from visitors.",
+      `${SITE_URL}/guestbook`,
+    ),
+  },
+  {
+    path: "/privacy",
+    title: "Privacy Policy | Mirabellier.com",
+    description:
+      "How Mirabellier.com collects, uses, shares, stores, and protects information when you visit the website.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Privacy Policy",
+      description:
+        "How Mirabellier.com collects, uses, shares, stores, and protects information when you visit the website.",
+      url: `${SITE_URL}/privacy`,
+      isPartOf: { "@type": "WebSite", name: "Mirabellier.com", url: SITE_URL },
+    },
+  },
+  {
+    path: "/terms",
+    title: "Terms of Service | Mirabellier.com",
+    description:
+      "The rules and conditions for visiting mirabellier.com, creating an account, publishing content, and using interactive features.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Terms of Service",
+      description:
+        "The rules and conditions for visiting mirabellier.com, creating an account, publishing content, and using interactive features.",
+      url: `${SITE_URL}/terms`,
+      isPartOf: { "@type": "WebSite", name: "Mirabellier.com", url: SITE_URL },
+    },
+  },
+  {
+    path: "/arena/skill-tree",
+    title: "Arena Skill Tree | Mirabellier",
+    description:
+      "Spend arena level-up points across offense, defense, and utility skills.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Arena Skill Tree",
+      description:
+        "Spend arena level-up points across offense, defense, and utility skills.",
+      url: `${SITE_URL}/arena/skill-tree`,
+      isPartOf: {
+        "@type": "WebSite",
+        name: "Mirabellier",
+        url: SITE_URL,
+      },
+    },
+  },
+  {
+    path: "/ar/skill-tree",
+    title: "Arena Skill Tree | Mirabellier",
+    description:
+      "Spend arena level-up points across offense, defense, and utility skills.",
+    url: `${SITE_URL}/arena/skill-tree`,
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Arena Skill Tree",
+      description:
+        "Spend arena level-up points across offense, defense, and utility skills.",
+      url: `${SITE_URL}/arena/skill-tree`,
+      isPartOf: {
+        "@type": "WebSite",
+        name: "Mirabellier",
+        url: SITE_URL,
+      },
+    },
+  },
+  {
+    path: "/question-of-the-day/archive",
+    title: "Question of the Day Archive | Mirabellier",
+    description:
+      "Browse previous question-of-the-day prompts and all public answers.",
+    structuredData: collectionPageJsonLd(
+      "Mirabellier Question of the Day Archive",
+      "Browse previous question-of-the-day prompts and all public answers.",
+      `${SITE_URL}/question-of-the-day/archive`,
+    ),
   },
 ];
 
@@ -359,6 +495,83 @@ async function blogPostSeoRoutes(): Promise<RouteSeo[]> {
     });
 }
 
+// ---------------------------------------------------------------------------
+// Per-day QOTD archive heads, resolved at build time.
+//
+// The 69+ `/question-of-the-day/archive/<date>` URLs are all in the sitemap,
+// but without this they served the generic homepage head (canonical `/`), so
+// Google discarded the whole archive. Each dated page gets a real prompt-derived
+// title/description plus a `CollectionPage` node. A failed fetch is swallowed by
+// the plugin and those paths keep the generic head, so the archive never breaks
+// the build.
+// ---------------------------------------------------------------------------
+
+type ApiArchiveDay = {
+  recordedDate?: string;
+  prompt?: string;
+  answerCount?: number;
+  updatedAt?: string | null;
+  createdAt?: string;
+};
+
+function truncateDescription(value: string, max = 160): string {
+  const text = value.replace(/\s+/g, " ").trim();
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+}
+
+async function questionArchiveSeoRoutes(): Promise<RouteSeo[]> {
+  if (process.env.SKIP_BLOG_SEO_PRERENDER === "1") return [];
+
+  const res = await fetch(`${API_BASE}/question-of-the-day/archive`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    throw new Error(
+      `GET ${API_BASE}/question-of-the-day/archive -> HTTP ${res.status}`,
+    );
+  }
+  const days = (await res.json()) as ApiArchiveDay[];
+  if (!Array.isArray(days)) {
+    throw new Error(
+      `GET ${API_BASE}/question-of-the-day/archive -> not an array`,
+    );
+  }
+
+  return days
+    .filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day?.recordedDate || ""))
+    .map((day) => {
+      const recordedDate = day.recordedDate as string;
+      const prompt =
+        (day.prompt || "").trim() || "Question of the Day";
+      const path = `/question-of-the-day/archive/${recordedDate}`;
+      const url = `${SITE_URL}${path}`;
+      const title = `${prompt} | Question of the Day`;
+      const description = truncateDescription(
+        `An archived question of the day from ${recordedDate}: "${prompt}"`,
+      );
+
+      return {
+        path,
+        title,
+        description,
+        url,
+        structuredData: {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: title,
+          description,
+          url,
+          isPartOf: {
+            "@type": "WebSite",
+            name: "Mirabellier",
+            url: SITE_URL,
+          },
+        },
+      } satisfies RouteSeo;
+    });
+}
+
 const JS_CHUNK_BUDGET_KB = 450;
 // Route-split CSS chunks (blog, guestbook, arena, simple-editor, …) should
 // stay lean.
@@ -457,7 +670,12 @@ export default defineConfig({
       siteUrl: SITE_URL,
       defaultImage: DEFAULT_OG_IMAGE,
       routes: SEO_ROUTES,
-      dynamicRoutes: blogPostSeoRoutes,
+      // Two independent build-time fetches; each source fails on its own so
+      // one flaky endpoint cannot suppress the other's prerendered heads.
+      dynamicRouteSources: [
+        { name: "blog posts", load: blogPostSeoRoutes },
+        { name: "question archive", load: questionArchiveSeoRoutes },
+      ],
     }),
   ],
   base: "/",

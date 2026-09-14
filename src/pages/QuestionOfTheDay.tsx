@@ -67,9 +67,27 @@ const QuestionOfTheDay = () => {
   const sharedAnswerId =
     routeParams.id ?? searchParams.get("answer") ?? null;
   const shareAnswer = useShareQuestionAnswer();
+  const viewingAnswer = Boolean(routeParams.id);
 
+  // `/question-of-the-day/answers/:id` renders this same page (highlighting the
+  // shared answer), but the answer URL is what gets shared and what the backend
+  // serves share-card HTML for, so it must canonicalize to itself — a
+  // canonical of the bare question page would tell Google to drop it.
   usePageSeo({
-    canonical: "https://mirabellier.com/question-of-the-day",
+    canonical: viewingAnswer
+      ? `https://mirabellier.com/question-of-the-day/answers/${routeParams.id}`
+      : "https://mirabellier.com/question-of-the-day",
+    socialMeta: {
+      title: viewingAnswer
+        ? "Answer · Question of the Day | Mirabellier"
+        : "Question of the Day | Mirabellier",
+      description: QUESTION_DESCRIPTION,
+      url: viewingAnswer
+        ? `https://mirabellier.com/question-of-the-day/answers/${routeParams.id}`
+        : "https://mirabellier.com/question-of-the-day",
+      image: "https://mirabellier.com/og-image.jpg",
+      type: "website",
+    },
     structuredDataId: "question-of-the-day-structured-data",
     structuredData: {
       "@context": "https://schema.org",

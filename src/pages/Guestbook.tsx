@@ -103,6 +103,14 @@ const Guestbook = () => {
 
   usePageSeo({
     canonical: "https://mirabellier.com/guestbook",
+    socialMeta: {
+      title: "Guestbook Board | Mirabellier",
+      description:
+        "A draggable board full of pinned guestbook notes from visitors.",
+      url: "https://mirabellier.com/guestbook",
+      image: "https://mirabellier.com/og-image.jpg",
+      type: "website",
+    },
     structuredDataId: "guestbook-board-structured-data",
     structuredData: {
       "@context": "https://schema.org",

@@ -27,6 +27,14 @@ const QuestionArchive = () => {
 
   usePageSeo({
     canonical: "https://mirabellier.com/question-of-the-day/archive",
+    socialMeta: {
+      title: "Question of the Day Archive | Mirabellier",
+      description:
+        "Browse previous question-of-the-day prompts and all public answers.",
+      url: "https://mirabellier.com/question-of-the-day/archive",
+      image: "https://mirabellier.com/og-image.jpg",
+      type: "website",
+    },
     structuredDataId: "question-archive-structured-data",
     structuredData: {
       "@context": "https://schema.org",
