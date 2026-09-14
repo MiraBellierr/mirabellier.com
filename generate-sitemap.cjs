@@ -22,8 +22,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
-const https = require("https");
 
 const API_BASE = process.env.VITE_API_BASE || "https://api.mirabellier.com/v1";
 const WEBSITE_BASE = (
@@ -74,86 +72,47 @@ const FALLBACK_SHRINE_ROUTES = [
 const BUILD_USER_AGENT = "Mirabellier-Sitemap/1.0 (+https://mirabellier.com)";
 
 // Cloudflare intermittently answers the API's bot challenge (HTTP 403, "Just a
-// moment...") to CI runner IPs — it is not consistent run to run, and it has hit
-// both this script and the Vite plugin. A couple of short retries get through
-// in practice; a permanent failure falls back to the committed file, which is
-// why the caller treats this as best-effort.
+// moment...") to CI runner IPs, and it does so by client: in the same run the
+// Vite plugin's `fetch` (undici) succeeded while this script's
+// `https.request` failed all three attempts. Use `fetch` too so both build
+// steps present the same client, and retry a couple of times on top.
 const FETCH_ATTEMPTS = 3;
 const FETCH_RETRY_DELAY_MS = 1500;
 
-function requestOnce(endpoint, redirectsLeft = 3) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(endpoint, API_BASE);
-    const protocol = url.protocol === "https:" ? https : http;
-
-    const options = {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": BUILD_USER_AGENT,
-      },
-    };
-
-    const req = protocol.request(url, options, (res) => {
-      if (
-        [301, 302, 303, 307, 308].includes(res.statusCode) &&
-        res.headers.location &&
-        redirectsLeft > 0
-      ) {
-        try {
-          const nextUrl = new URL(res.headers.location, url);
-          res.resume();
-          resolve(
-            requestOnce(nextUrl.pathname + nextUrl.search, redirectsLeft - 1),
-          );
-          return;
-        } catch (error) {
-          reject(new Error(`Redirect error from ${url.href}: ${error.message}`));
-          return;
-        }
-      }
-
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        let preview = "";
-        res.on("data", (chunk) => {
-          preview += chunk.toString();
-        });
-        res.on("end", () => {
-          reject(
-            new Error(
-              `HTTP ${res.statusCode} from ${url.href}. Preview: ${preview.slice(0, 120)}`,
-            ),
-          );
-        });
-        return;
-      }
-
-      const contentType = (res.headers["content-type"] || "").toLowerCase();
-      let data = "";
-      res.on("data", (chunk) => {
-        data += chunk;
-      });
-      res.on("end", () => {
-        try {
-          if (!contentType.includes("application/json")) {
-            throw new Error(`Unexpected content-type '${contentType}'`);
-          }
-          resolve(JSON.parse(data));
-        } catch (error) {
-          reject(
-            new Error(
-              `Failed to parse JSON from ${endpoint}: ${error.message}. Preview: ${String(data || "").slice(0, 120)}`,
-            ),
-          );
-        }
-      });
-    });
-
-    req.on("error", reject);
-    req.setTimeout(15000, () => {
-      req.destroy(new Error(`Request timed out for ${url.href}`));
-    });
-    req.end();
+async function requestOnce(endpoint) {
+  const url = new URL(endpoint, API_BASE);
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": BUILD_USER_AGENT,
+    },
+    signal: AbortSignal.timeout(15000),
+    redirect: "follow",
   });
+
+  if (!res.ok) {
+    const preview = (await res.text().catch(() => "")).slice(0, 120);
+    throw new Error(
+      `HTTP ${res.statusCode ?? res.status} from ${url.href}. Preview: ${preview}`,
+    );
+  }
+
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+  const text = await res.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `Unexpected content-type '${contentType}' from ${url.href}. Preview: ${text.slice(0, 120)}`,
+    );
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(
+      `Failed to parse JSON from ${endpoint}: ${error.message}. Preview: ${text.slice(0, 120)}`,
+    );
+  }
 }
 
 async function fetchFromAPI(endpoint) {
@@ -342,7 +301,13 @@ function readExistingEntries(matchesLoc, fallbackPriority) {
         title: imageMatch[1].match(/<image:title>(.*?)<\/image:title>/)?.[1],
       }))
       .filter((image) => image.url)
-      .map((image) => unescapeXml(image));
+      // Unescape the string fields, not the object: `renderImages` re-escapes
+      // when it writes, so without this a title containing `&` would come back
+      // double-escaped ("&amp;amp;").
+      .map((image) => ({
+        url: unescapeXml(image.url),
+        ...(image.title ? { title: unescapeXml(image.title) } : {}),
+      }));
 
     entries.push({
       url: loc,
