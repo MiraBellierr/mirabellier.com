@@ -6,7 +6,12 @@ import tseslint from "typescript-eslint";
 import { globalIgnores } from "eslint/config";
 
 export default tseslint.config([
-  globalIgnores(["dist"]),
+  // `mirabellier-backend` is a separate git repo (and gitignored here) with its
+  // own tooling. It is only present in a dev checkout, but `eslint .` walks it
+  // and finds no matching rule set — the config below is scoped to `ts/tsx`,
+  // and the backend is plain `.js` — so any directive in its files reads as
+  // "unused". Ignoring the directory keeps this config to its own project.
+  globalIgnores(["dist", "mirabellier-backend"]),
   {
     files: ["**/*.{ts,tsx}"],
     plugins: {

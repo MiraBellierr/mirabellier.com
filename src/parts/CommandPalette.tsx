@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 
 import { fetchSearchResults } from "@/lib/search-api";
-import { HEADER_ROUTE_TITLES } from "@/parts/Header";
+import { HEADER_ROUTE_TITLES } from "@/lib/header-route-titles";
 
 type PaletteItem = {
   key: string;
