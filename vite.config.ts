@@ -443,26 +443,48 @@ function resolvePostImage(thumbnail?: string | null): string {
 }
 
 // The API sits behind Cloudflare, which answers a bot challenge (HTTP 403,
-// "Just a moment...") to the default Node fetch User-Agent from CI runner IPs.
-// `generate-sitemap.cjs` sends this same identifying UA and is not challenged,
-// so the build-time SEO fetches must match it or the dynamic prerenders are
-// silently skipped on every deploy.
+// "Just a moment...") to CI runner IPs — inconsistently, and to both this
+// plugin and generate-sitemap.cjs. A couple of retries get through in practice;
+// the plugin's dynamicRouteSources wrapper turns a permanent failure into a
+// warning so the build still succeeds.
 const BUILD_FETCH_HEADERS = {
   Accept: "application/json",
   "User-Agent": "Mirabellier-Sitemap/1.0 (+https://mirabellier.com)",
 };
 
+const BUILD_FETCH_ATTEMPTS = 3;
+const BUILD_FETCH_RETRY_DELAY_MS = 1500;
+
+async function fetchApiJson(path: string): Promise<unknown> {
+  let lastError: Error = new Error(`No attempts made for ${path}`);
+
+  for (let attempt = 1; attempt <= BUILD_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        headers: BUILD_FETCH_HEADERS,
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) {
+        throw new Error(`GET ${API_BASE}${path} -> HTTP ${res.status}`);
+      }
+      return await res.json();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < BUILD_FETCH_ATTEMPTS) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, BUILD_FETCH_RETRY_DELAY_MS * attempt),
+        );
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 async function blogPostSeoRoutes(): Promise<RouteSeo[]> {
   if (process.env.SKIP_BLOG_SEO_PRERENDER === "1") return [];
 
-  const res = await fetch(`${API_BASE}/posts`, {
-    headers: BUILD_FETCH_HEADERS,
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) {
-    throw new Error(`GET ${API_BASE}/posts -> HTTP ${res.status}`);
-  }
-  const posts = (await res.json()) as ApiPost[];
+  const posts = (await fetchApiJson("/posts")) as ApiPost[];
   if (!Array.isArray(posts)) {
     throw new Error(`GET ${API_BASE}/posts -> not an array`);
   }
@@ -544,16 +566,9 @@ function truncateDescription(value: string, max = 160): string {
 async function questionArchiveSeoRoutes(): Promise<RouteSeo[]> {
   if (process.env.SKIP_BLOG_SEO_PRERENDER === "1") return [];
 
-  const res = await fetch(`${API_BASE}/question-of-the-day/archive`, {
-    headers: BUILD_FETCH_HEADERS,
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) {
-    throw new Error(
-      `GET ${API_BASE}/question-of-the-day/archive -> HTTP ${res.status}`,
-    );
-  }
-  const days = (await res.json()) as ApiArchiveDay[];
+  const days = (await fetchApiJson(
+    "/question-of-the-day/archive",
+  )) as ApiArchiveDay[];
   if (!Array.isArray(days)) {
     throw new Error(
       `GET ${API_BASE}/question-of-the-day/archive -> not an array`,

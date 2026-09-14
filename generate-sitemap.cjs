@@ -71,7 +71,17 @@ const FALLBACK_SHRINE_ROUTES = [
   { path: "/shrine/rossina", priority: "0.7", changefreq: "monthly" },
 ];
 
-function fetchFromAPI(endpoint, redirectsLeft = 3) {
+const BUILD_USER_AGENT = "Mirabellier-Sitemap/1.0 (+https://mirabellier.com)";
+
+// Cloudflare intermittently answers the API's bot challenge (HTTP 403, "Just a
+// moment...") to CI runner IPs — it is not consistent run to run, and it has hit
+// both this script and the Vite plugin. A couple of short retries get through
+// in practice; a permanent failure falls back to the committed file, which is
+// why the caller treats this as best-effort.
+const FETCH_ATTEMPTS = 3;
+const FETCH_RETRY_DELAY_MS = 1500;
+
+function requestOnce(endpoint, redirectsLeft = 3) {
   return new Promise((resolve, reject) => {
     const url = new URL(endpoint, API_BASE);
     const protocol = url.protocol === "https:" ? https : http;
@@ -79,7 +89,7 @@ function fetchFromAPI(endpoint, redirectsLeft = 3) {
     const options = {
       headers: {
         Accept: "application/json",
-        "User-Agent": "Mirabellier-Sitemap/1.0 (+https://mirabellier.com)",
+        "User-Agent": BUILD_USER_AGENT,
       },
     };
 
@@ -93,7 +103,7 @@ function fetchFromAPI(endpoint, redirectsLeft = 3) {
           const nextUrl = new URL(res.headers.location, url);
           res.resume();
           resolve(
-            fetchFromAPI(nextUrl.pathname + nextUrl.search, redirectsLeft - 1),
+            requestOnce(nextUrl.pathname + nextUrl.search, redirectsLeft - 1),
           );
           return;
         } catch (error) {
@@ -144,6 +154,28 @@ function fetchFromAPI(endpoint, redirectsLeft = 3) {
     });
     req.end();
   });
+}
+
+async function fetchFromAPI(endpoint) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      return await requestOnce(endpoint);
+    } catch (error) {
+      lastError = error;
+      if (attempt < FETCH_ATTEMPTS) {
+        console.warn(
+          `  Attempt ${attempt}/${FETCH_ATTEMPTS} for ${endpoint} failed (${error.message}); retrying...`,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, FETCH_RETRY_DELAY_MS * attempt),
+        );
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 function generateSiteMap(entries) {
@@ -265,6 +297,29 @@ function formatSitemapDate(value) {
 }
 
 function readExistingBlogEntries() {
+  return readExistingEntries(
+    (loc) => loc.startsWith(`${WEBSITE_BASE}/blog/`),
+    "0.7",
+  );
+}
+
+function readExistingQuestionArchiveEntries() {
+  return readExistingEntries(
+    (loc) =>
+      loc.startsWith(`${WEBSITE_BASE}/question-of-the-day/archive/`) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(
+        loc.replace(`${WEBSITE_BASE}/question-of-the-day/archive/`, "").trim(),
+      ),
+    "0.6",
+  );
+}
+
+/**
+ * Parse the committed sitemap back into entries when a fetch fails. Image
+ * blocks are carried through, otherwise a single flaky API call would strip
+ * every <image:image> from the file it is supposed to preserve.
+ */
+function readExistingEntries(matchesLoc, fallbackPriority) {
   if (!fs.existsSync(OUTPUT_PATH)) {
     return [];
   }
@@ -277,55 +332,37 @@ function readExistingBlogEntries() {
     const block = match[1];
     const loc = block.match(/<loc>(.*?)<\/loc>/)?.[1];
 
-    if (!loc || !loc.startsWith(`${WEBSITE_BASE}/blog/`)) {
+    if (!loc || !matchesLoc(loc)) {
       continue;
     }
+
+    const images = [...block.matchAll(/<image:image>([\s\S]*?)<\/image:image>/g)]
+      .map((imageMatch) => ({
+        url: imageMatch[1].match(/<image:loc>(.*?)<\/image:loc>/)?.[1],
+        title: imageMatch[1].match(/<image:title>(.*?)<\/image:title>/)?.[1],
+      }))
+      .filter((image) => image.url)
+      .map((image) => unescapeXml(image));
 
     entries.push({
       url: loc,
       lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1],
       changefreq: block.match(/<changefreq>(.*?)<\/changefreq>/)?.[1] || "monthly",
-      priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || "0.7",
+      priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || fallbackPriority,
+      ...(images.length ? { images } : {}),
     });
   }
 
   return entries;
 }
 
-function readExistingQuestionArchiveEntries() {
-  if (!fs.existsSync(OUTPUT_PATH)) {
-    return [];
-  }
-
-  const xml = fs.readFileSync(OUTPUT_PATH, "utf-8");
-  const matches = xml.matchAll(/<url>([\s\S]*?)<\/url>/g);
-  const entries = [];
-
-  for (const match of matches) {
-    const block = match[1];
-    const loc = block.match(/<loc>(.*?)<\/loc>/)?.[1];
-
-    if (!loc || !loc.startsWith(`${WEBSITE_BASE}/question-of-the-day/archive/`)) {
-      continue;
-    }
-
-    const recordedDate = loc
-      .replace(`${WEBSITE_BASE}/question-of-the-day/archive/`, "")
-      .trim();
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(recordedDate)) {
-      continue;
-    }
-
-    entries.push({
-      url: loc,
-      lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1],
-      changefreq: block.match(/<changefreq>(.*?)<\/changefreq>/)?.[1] || "monthly",
-      priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || "0.6",
-    });
-  }
-
-  return entries;
+function unescapeXml(value) {
+  return String(value || "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 function getShrineUrl(entry) {
@@ -336,31 +373,14 @@ function getShrineUrl(entry) {
 }
 
 function readExistingShrineEntries() {
-  if (!fs.existsSync(OUTPUT_PATH)) {
-    return [];
-  }
-
-  const xml = fs.readFileSync(OUTPUT_PATH, "utf-8");
-  const matches = xml.matchAll(/<url>([\s\S]*?)<\/url>/g);
-  const entries = [];
-
-  for (const match of matches) {
-    const block = match[1];
-    const loc = block.match(/<loc>(.*?)<\/loc>/)?.[1];
-
-    if (!loc || !loc.startsWith(`${WEBSITE_BASE}/shrine/`)) {
-      continue;
-    }
-
-    entries.push({
-      url: loc,
-      lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1],
-      changefreq: block.match(/<changefreq>(.*?)<\/changefreq>/)?.[1] || "monthly",
-      priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || "0.7",
-    });
-  }
-
-  return entries;
+  // Shrines have a reliable built-in fallback (`FALLBACK_SHRINE_ROUTES`) plus
+  // whatever the API returned, so a fetch failure needs no preserved entries.
+  // Kept as a named function because the shared parser already preserves the
+  // committed image blocks if this ever needs to change.
+  return readExistingEntries(
+    (loc) => loc.startsWith(`${WEBSITE_BASE}/shrine/`),
+    "0.7",
+  );
 }
 
 function loadEntriesFromLocalBackend() {
