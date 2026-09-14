@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
   sendArenaTradeRequest,
@@ -78,48 +79,41 @@ const ArenaTradeRequest = ({
     }
   });
 
-  useEffect(() => {
-    if (!token || step !== "waiting" || !requestId) return;
-    let cancelled = false;
+  // Polling backstop while waiting for the other side to answer. The
+  // websocket usually resolves it first; this pauses while hidden, where
+  // nobody is watching the request, and re-checks on return.
+  useVisibilityInterval(
+    () => {
+      void (async () => {
+        try {
+          const status = await fetchArenaTradeRequestStatus(token!, requestId!);
+          if (stepRef.current !== "waiting") return;
 
-    const checkStatus = async () => {
-      try {
-        const status = await fetchArenaTradeRequestStatus(token, requestId);
-        if (cancelled || stepRef.current !== "waiting") return;
-
-        if (status.status === "accepted" && status.sessionId) {
-          onSessionStart(status.sessionId);
-          return;
+          if (status.status === "accepted" && status.sessionId) {
+            onSessionStart(status.sessionId);
+            return;
+          }
+          if (status.status === "cancelled") {
+            setStepWrapper("declined");
+            setMessage("Trade request was cancelled.");
+            return;
+          }
+          if (status.status === "denied") {
+            setStepWrapper("declined");
+            setMessage("Trade request was declined.");
+            return;
+          }
+          if (status.status !== "pending") {
+            setStepWrapper("declined");
+            setMessage("Trade request ended.");
+          }
+        } catch {
+          // Keep waiting; the websocket handler can still resolve the request.
         }
-        if (status.status === "cancelled") {
-          setStepWrapper("declined");
-          setMessage("Trade request was cancelled.");
-          return;
-        }
-        if (status.status === "denied") {
-          setStepWrapper("declined");
-          setMessage("Trade request was declined.");
-          return;
-        }
-        if (status.status !== "pending") {
-          setStepWrapper("declined");
-          setMessage("Trade request ended.");
-        }
-      } catch {
-        // Keep waiting; the websocket handler can still resolve the request.
-      }
-    };
-
-    const intervalId = window.setInterval(() => {
-      void checkStatus();
-    }, 2000);
-    void checkStatus();
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [token, step, requestId, onSessionStart, setStepWrapper]);
+      })();
+    },
+    token && step === "waiting" && requestId ? 2000 : null,
+  );
 
   const handleCancel = useCallback(async () => {
     if (!token || !requestId) return;

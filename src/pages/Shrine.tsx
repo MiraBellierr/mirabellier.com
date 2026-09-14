@@ -6,7 +6,9 @@ import Divider from "../parts/Divider";
 import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaRight from "@/assets/anime/kanna-right.webp";
+import kannaRightPoster from "@/assets/anime/kanna-right-poster.webp";
 import kannaShrinePreview from "@/assets/shrine/kanna1-320w.webp";
 import rossiShrinePreview from "@/assets/shrine/rossi1-320w.webp";
 import { fetchShrinePages, type ShrinePageRecord } from "@/lib/shrine-api";
@@ -114,7 +116,7 @@ const Shrine = () => {
                     ...dynamicEntries.map((entry) => ({
                       title: entry.title,
                       path: entry.path,
-                      imageSrc: entry.image || "/background.jpg",
+                      imageSrc: entry.image || "/background.webp",
                       imageAlt:
                         entry.imageAlt || `${entry.title} shrine preview`,
                       summary:
@@ -175,9 +177,10 @@ const Shrine = () => {
               </ul>
             </section>
 
-                <img
+                <AnimeSticker
                   className="aspect-video w-full rounded-[1.15rem] object-cover object-center"
-                  src={kannaRight}
+                  animatedSrc={kannaRight}
+                  posterSrc={kannaRightPoster}
                   width="498"
                   height="280"
                   alt="Kanna gif preview"

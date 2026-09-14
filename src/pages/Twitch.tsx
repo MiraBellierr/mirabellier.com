@@ -19,6 +19,7 @@ import {
   urlBase64ToUint8Array,
 } from "@/lib/push-support";
 import { useAbortableRequest } from "@/hooks/use-abortable-request";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 import "@/styles/shrine.css";
 import {
   TwitchApiError,
@@ -1223,10 +1224,10 @@ const Twitch = () => {
     void refreshChannels(true);
   }, [refreshChannels]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 30 * 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+  // Relative timestamps ("live 2h ago") refresh on a slow tick. Kept running
+  // in the background — it only touches React state, never the network — but
+  // the immediate refresh on return keeps the labels honest.
+  useVisibilityInterval(() => setNowMs(Date.now()), 30 * 1000);
 
   useEffect(() => {
     selectedLoginRef.current = selectedLogin;
@@ -1246,16 +1247,14 @@ const Twitch = () => {
     }
   }, [selectedLogin, loadProfile]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      const selected = selectedLoginRef.current;
-      if (selected) {
-        loadProfile(selected);
-      }
-    }, 10 * 60 * 1000);
-
-    return () => window.clearInterval(timer);
-  }, [loadProfile]);
+  // A profile refresh every 10 minutes is not urgent enough to keep a
+  // backgrounded tab's radio warm.
+  useVisibilityInterval(() => {
+    const selected = selectedLoginRef.current;
+    if (selected) {
+      loadProfile(selected);
+    }
+  }, 10 * 60 * 1000, { immediate: false });
 
   const loadPrediction = useCallback(
     (login: string, options?: { quiet?: boolean }) => {
@@ -1298,17 +1297,14 @@ const Twitch = () => {
 
   // Background refresh: channel list + the selected channel's prediction every
   // 15s, quietly (no spinner, errors ignored — the visible data just stays).
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      void refreshChannels(false);
-      const selected = selectedLoginRef.current;
-      if (selected) {
-        void loadPrediction(selected, { quiet: true });
-      }
-    }, 15 * 1000);
-
-    return () => window.clearInterval(timer);
-  }, [refreshChannels, loadPrediction]);
+  // Paused while hidden; the hook refreshes the moment the tab comes back.
+  useVisibilityInterval(() => {
+    void refreshChannels(false);
+    const selected = selectedLoginRef.current;
+    if (selected) {
+      void loadPrediction(selected, { quiet: true });
+    }
+  }, 15 * 1000, { immediate: false });
 
   const selectedChannel = channels.find(
     (channel) => channel.login === selectedLogin,

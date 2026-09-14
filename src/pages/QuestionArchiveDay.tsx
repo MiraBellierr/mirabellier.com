@@ -5,7 +5,9 @@ import Footer from "../parts/Footer";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
+import kannaSmilePoster from "@/assets/anime/kanna-smile-poster.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import QuestionAnswerCard from "@/components/QuestionAnswerCard";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
@@ -143,9 +145,10 @@ const QuestionArchiveDay = () => {
             <Navigation />
 
             <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaSmile}
+                animatedSrc={kannaSmile}
+                posterSrc={kannaSmilePoster}
                 width="320"
                 height="427"
                 alt="kanna smiling"

@@ -5,7 +5,9 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
+import AnimeSticker from "@/components/AnimeSticker";
 import anime5Gif from "@/assets/anime/anime5.webp";
+import anime5Poster from "@/assets/anime/anime5-poster.webp";
 import {
   LINKS_UPDATED,
   countLinks,
@@ -260,9 +262,10 @@ const Links = () => {
             ) : null}
 
             <div className="hidden justify-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[220px] rounded-xl"
-                src={anime5Gif}
+                animatedSrc={anime5Gif}
+                posterSrc={anime5Poster}
                 width="480"
                 height="270"
                 alt=""

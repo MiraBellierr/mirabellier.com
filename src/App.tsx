@@ -73,7 +73,7 @@ const ArenaCompensationPopup = lazy(
 );
 const CookieNotice = lazy(() => import("./parts/CookieNotice"));
 
-import CommandPalette from "./parts/CommandPalette";
+import CommandPaletteLauncher from "./parts/CommandPaletteLauncher";
 import { rememberPostLoginRedirect } from "./lib/post-login-redirect";
 import { CursorProvider } from "./states/CursorContext";
 import { AuthProvider } from "./states/AuthContext";
@@ -270,7 +270,7 @@ function App() {
         <CursorProvider>
           <AuthProvider>
             <WebSocketProvider>
-              <CommandPalette />
+              <CommandPaletteLauncher />
               <Suspense fallback={null}>
                 <ArenaCompensationPopup />
               </Suspense>

@@ -5,7 +5,10 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import { usePageSeo } from "@/lib/seo";
+import AnimeSticker from "@/components/AnimeSticker";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 import anime3Gif from "@/assets/anime/anime3.webp";
+import anime3Poster from "@/assets/anime/anime3-poster.webp";
 import { useWebSocket } from "@/states/WebSocketProvider";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
@@ -124,24 +127,19 @@ const Anime = () => {
     setError(null);
   });
 
+  // Keep the feed fresh with a `anime:subscribe` nudge every minute, but only
+  // while the tab is visible — the hook refreshes once on return, which
+  // replaces the old manual visibilitychange handler.
+  useVisibilityInterval(
+    () => {
+      ws.send({ type: "anime:subscribe" });
+    },
+    ANIME_REFRESH_INTERVAL_MS,
+    { immediate: false },
+  );
+
   useEffect(() => {
     let cancelled = false;
-
-    const loadAnime = () => {
-      ws.send({ type: "anime:subscribe" });
-    };
-
-    const intervalId = window.setInterval(() => {
-      loadAnime();
-    }, ANIME_REFRESH_INTERVAL_MS);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        loadAnime();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     void (async () => {
       try {
@@ -178,8 +176,6 @@ const Anime = () => {
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [ws]);
 
@@ -303,9 +299,10 @@ const Anime = () => {
             </div>
 
             <div className="flex justify-center">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[220px] rounded-xl"
-                src={anime3Gif}
+                animatedSrc={anime3Gif}
+                posterSrc={anime3Poster}
                 width="480"
                 height="270"
                 alt=""

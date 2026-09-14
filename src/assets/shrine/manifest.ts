@@ -114,6 +114,24 @@ export const shrineManifest: Record<string, ShrineImageMeta> = {
       640
     ]
   },
+  "rossi-oa1": {
+    "w": 800,
+    "h": 313,
+    "variants": [
+      320,
+      480,
+      640
+    ]
+  },
+  "rossi-oa2": {
+    "w": 728,
+    "h": 409,
+    "variants": [
+      320,
+      480,
+      640
+    ]
+  },
   "rossi1": {
     "w": 736,
     "h": 736,

@@ -11,6 +11,7 @@ import ArenaSubNav from "@/parts/ArenaSubNav";
 import ArenaTitleBadge from "@/parts/ArenaTitleBadge";
 import { useAbortableRequest } from "@/hooks/use-abortable-request";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 import { usePageSeo } from "@/lib/seo";
 import { equipmentDisplayName } from "@/lib/arena/equipment-display";
 import {
@@ -439,14 +440,12 @@ const ArenaShop = () => {
     return () => window.clearTimeout(timeoutId);
   }, [cardShop?.randomOffer?.endsAt]);
 
-  useEffect(() => {
-    if (!cardShop?.randomOffer?.endsAt) return;
-    setCountdownNow(Date.now());
-    const intervalId = window.setInterval(() => {
-      setCountdownNow(Date.now());
-    }, 1000);
-    return () => window.clearInterval(intervalId);
-  }, [cardShop?.randomOffer?.endsAt]);
+  // 1 Hz countdown for the random-offer expiry. Paused while hidden; on
+  // return the hook renders the (now correct) remaining time at once.
+  useVisibilityInterval(
+    () => setCountdownNow(Date.now()),
+    cardShop?.randomOffer?.endsAt ? 1000 : null,
+  );
 
   const handleBuy = async (itemId: string) => {
     if (!token || !shop) return;

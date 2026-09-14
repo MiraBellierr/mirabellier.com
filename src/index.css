@@ -550,6 +550,41 @@ h6 {
   transition: filter 200ms ease;
 }
 
+/* ---------------------------------------------------------------------------
+   Coarse-pointer paint budget.
+
+   Everything below removes compositing/raster work that only pays for itself
+   on a desktop GPU. Touch-first devices keep the same layout and the same
+   information; they just skip the effects that force off-screen readbacks or
+   per-frame rasterisation. Desktop is untouched.
+   --------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) {
+  /* Filters put each image into its own off-screen raster and re-run on every
+     scroll frame. The dark-mode photo tint is a subtle 5% shift — not worth
+     that on a phone. */
+  .dark img {
+    filter: none;
+  }
+
+  /* A full-viewport `backdrop-filter` reads back and blurs the whole screen
+     every frame the scrim is up. These scrims are already 45–75% opaque, so
+     the blur behind them is invisible anyway.
+
+     Only two cases are dropped:
+       - full-screen scrims (`fixed` + `inset-0`, i.e. every modal backdrop);
+       - near-opaque surfaces (`/90`, `/95`), where a blur behind 95% white is
+         mathematically imperceptible.
+     Small translucent overlays on top of video (the Pixies search pill, tag
+     chips, the expanded caption) keep their blur — there it does real
+     legibility work and the readback region is tiny. */
+  [class*="backdrop-blur"][class*="fixed"][class*="inset-0"],
+  [class*="backdrop-blur"][class*="/90"],
+  [class*="backdrop-blur"][class*="/95"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 .dark h2 {
   text-shadow: 0 2px 12px rgba(200, 140, 255, 0.3);
 }
@@ -659,6 +694,29 @@ h6 {
   background-attachment: fixed !important;
   background-position: center center !important;
   background-size: cover !important;
+}
+
+/* On touch-first devices, `background-attachment: fixed` repaints the whole
+   background layer on every scroll frame (worst on older iOS Safari and some
+   Android WebViews). Move the same image onto a fixed full-viewport
+   pseudo-element instead: it composites once and never repaints on scroll.
+   The wrapper's own background is cleared so the two don't double-draw. */
+@media (hover: none) and (pointer: coarse) {
+  [style*="var(--page-bg)"] {
+    background-image: none !important;
+  }
+
+  [style*="var(--page-bg)"]::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    transform: translateZ(0);
+    background-image: var(--page-bg);
+    background-position: center center;
+    background-size: cover;
+  }
 }
 
 .site-entry-toast-shell {

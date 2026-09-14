@@ -17,6 +17,8 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import kannaPolice from "@/assets/anime/kanna-police.webp";
+import kannaPolicePoster from "@/assets/anime/kanna-police-poster.webp";
+import AnimeSticker from "@/components/AnimeSticker";
 
 const PixieUpload = () => {
   const auth = useAuth();
@@ -98,9 +100,10 @@ const PixieUpload = () => {
             <Navigation />
 
             <div className=" mt-3 mb-auto justify-center items-center flex lg:w-[339px]">
-              <img
+              <AnimeSticker
                 className="w-full border border-blue-700 shadow-md rounded-2xl"
-                src={kannaPolice}
+                animatedSrc={kannaPolice}
+                posterSrc={kannaPolicePoster}
                 width="498"
                 height="280"
                 alt="Kanna police"

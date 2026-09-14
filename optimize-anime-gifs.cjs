@@ -4,9 +4,10 @@ const path = require("path");
 
 /**
  * Re-encode the animated WebP stickers in src/assets/anime/ so they are no
- * bigger than they need to be:
+ * bigger than they need to be, and emit a static `-poster.webp` still (frame
+ * 0) next to each one:
  *
- *   node optimize-anime-gifs.cjs            # rewrite in place
+ *   node optimize-anime-gifs.cjs            # rewrite in place + write posters
  *   node optimize-anime-gifs.cjs --dry-run  # print the savings, change nothing
  *
  * These files are shown at ≤240px wide (so a 440px-wide asset still has 2x
@@ -22,8 +23,16 @@ const path = require("path");
  * Output is encoded with sharp's animated WebP writer at QUALITY/EFFORT. The
  * `loop: 0` flag is preserved (0 = loop forever).
  *
- * Skipped: `kanna-kobayashi-poster.webp` (a still) and anything with a single
- * frame.
+ * Posters: `AnimeSticker` (src/components/AnimeSticker.tsx) renders the still
+ * on phones/narrow windows and only swaps in the animation on a wide viewport
+ * with motion allowed, so the 80–380 kB animated file never reaches mobile.
+ * The posters are generated here so they can never drift from the animation's
+ * first frame.
+ *
+ * Skipped for posters: `kanna-kobayashi-poster.webp` (already a still),
+ * `kanna-kobayashi-lite.webp` (Home pairs it with a hand-picked poster) and
+ * `kanna-kobayashi.webp` (not imported anywhere). Anything with a single
+ * frame is skipped throughout.
  */
 
 const ANIME_DIR = path.join(__dirname, "src", "assets", "anime");
@@ -31,6 +40,19 @@ const TARGET_FPS = 12;
 const MAX_WIDTH = 440;
 const QUALITY = 55;
 const EFFORT = 4;
+
+// Static stills for the animated stickers. `-poster.webp` sits next to the
+// animation and has the same intrinsic size (frame 0, uncropped).
+const POSTER_QUALITY = 82;
+const POSTER_EFFORT = 6;
+const POSTER_EXCLUDE = new Set([
+  "kanna-kobayashi-lite.webp",
+  "kanna-kobayashi.webp",
+]);
+
+function posterPath(file) {
+  return path.join(ANIME_DIR, file.replace(/\.webp$/, "-poster.webp"));
+}
 
 // WebP stores an animated image as one tall image; libwebp rejects anything
 // with a dimension above 16383px.
@@ -122,10 +144,27 @@ async function optimize(file) {
   return { inputKb, outputKb };
 }
 
+async function writePoster(file) {
+  if (POSTER_EXCLUDE.has(file)) return null;
+
+  const src = path.join(ANIME_DIR, file);
+  const input = fs.readFileSync(src);
+  const out = await sharp(input, { page: 0 })
+    .webp({ quality: POSTER_QUALITY, effort: POSTER_EFFORT })
+    .toBuffer();
+  const name = file.replace(/\.webp$/, "-poster.webp");
+  const kb = out.length / 1024;
+
+  if (!DRY_RUN) fs.writeFileSync(posterPath(file), out);
+  console.log(`    + ${name} (${kb.toFixed(1)}kB)`);
+
+  return kb;
+}
+
 async function main() {
   const files = fs
     .readdirSync(ANIME_DIR)
-    .filter((f) => f.endsWith(".webp"))
+    .filter((f) => f.endsWith(".webp") && !f.endsWith("-poster.webp"))
     .sort();
 
   console.log(
@@ -134,6 +173,7 @@ async function main() {
 
   let inputTotal = 0;
   let outputTotal = 0;
+  let posterTotal = 0;
   let optimized = 0;
 
   for (const file of files) {
@@ -143,6 +183,9 @@ async function main() {
       inputTotal += result.inputKb;
       outputTotal += result.outputKb;
       optimized += 1;
+
+      const posterKb = await writePoster(file);
+      if (posterKb !== null) posterTotal += posterKb;
     } catch (err) {
       console.error(`  ✗ ${file}: ${err.message}`);
     }
@@ -152,6 +195,10 @@ async function main() {
     `\n${optimized} animated file(s) optimized: ` +
       `${inputTotal.toFixed(0)}kB -> ${outputTotal.toFixed(0)}kB ` +
       `(${(100 - (outputTotal / inputTotal) * 100).toFixed(0)}% smaller)`,
+  );
+  console.log(
+    `${posterTotal > 0 ? "Posters written" : "No posters written"}` +
+      (posterTotal > 0 ? `: ${posterTotal.toFixed(0)}kB total` : ""),
   );
 }
 

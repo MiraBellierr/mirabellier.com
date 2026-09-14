@@ -5,7 +5,7 @@ import type { OutputBundle } from "rollup";
 import { routeSeoPlugin, type RouteSeo } from "./vite-plugin-route-seo";
 
 const SITE_URL = "https://mirabellier.com";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/background.jpg`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 
 // Where the build-time blog-post fetch reads from. Mirrors the default in
 // `generate-sitemap.cjs` and `src/lib/config.ts`.

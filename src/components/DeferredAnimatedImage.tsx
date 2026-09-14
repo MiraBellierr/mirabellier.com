@@ -33,6 +33,12 @@ const DeferredAnimatedImage = ({
     let lcpFallbackTimeoutId: ReturnType<typeof setTimeout> | null = null;
     let lcpSettledTimeoutId: ReturnType<typeof setTimeout> | null = null;
     let observer: PerformanceObserver | null = null;
+    // `scheduleUpgrade` is reachable from two places that can both fire (the
+    // LCP observer's settled-timeout and the never-reported-LCP fallback), and
+    // from the `load` listener. Without this latch the later one starts a
+    // second `Image()` preload and overwrites `idleCallbackId`, leaking the
+    // first idle callback so it can no longer be cancelled on unmount.
+    let upgradeScheduled = false;
 
     const preloadAnimatedImage = () => {
       const image = new Image();
@@ -46,6 +52,15 @@ const DeferredAnimatedImage = ({
     };
 
     const scheduleUpgrade = () => {
+      if (upgradeScheduled || isCancelled) return;
+      upgradeScheduled = true;
+
+      // Whichever trigger got here first wins; the other must not fire later.
+      if (lcpFallbackTimeoutId !== null) {
+        clearTimeout(lcpFallbackTimeoutId);
+        lcpFallbackTimeoutId = null;
+      }
+
       // Keep the first frame lightweight for LCP, then upgrade once the page is idle.
       if ("requestIdleCallback" in window) {
         idleCallbackId = requestIdleCallback(preloadAnimatedImage, {

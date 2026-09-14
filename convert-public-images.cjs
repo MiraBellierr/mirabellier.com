@@ -16,6 +16,11 @@ const publicDir = path.join(__dirname, "public");
 // flower / sun / moon / board: decorations rendered tiny (16-56px) or as a
 // repeating CSS tile; the multi-hundred-KB PNG/JPG sources stay in
 // src/assets/decoration/ and only a small WebP ships.
+//
+// grain / pin: the arena card grain tile is drawn at `background-size: 200px`
+// (styles/arena.css) and the guestbook pin at 80x80 (styles/guestbook.css),
+// but shipped at 500x500 — ~10x the pixels and ~100 kB combined. Re-emitted
+// at 256/160px here so the display size still has retina headroom.
 const images = [
   { input: "background.jpg", output: "background.webp" },
   {
@@ -39,6 +44,24 @@ const images = [
     output: "board.webp",
     width: 480,
     quality: 70,
+  },
+  // Written back over itself — read into memory first (see convertImages).
+  { input: "img/grain.webp", output: "img/grain.webp", width: 256, quality: 80 },
+  // Transparency kept; the CSS refs move from /pin.png to /pin.webp.
+  { input: "pin.png", output: "pin.webp", width: 160, quality: 80 },
+];
+
+// Open Graph / Twitter share card. The site used to point every `og:image` at
+// the 272x272 `background.jpg`, which unfurls as a tiny letterboxed card;
+// this is the 1200x630 (1.91:1) crop crawlers expect, built from the 4000px
+// master. Referenced by index.html, vite.config.ts, src/lib/seo.ts and the
+// per-page socialMeta blocks.
+const ogImages = [
+  {
+    input: "../src/assets/background.jpeg",
+    output: "og-image.jpg",
+    width: 1200,
+    height: 630,
   },
 ];
 
@@ -76,7 +99,11 @@ async function convertImages() {
         `Converting ${img.input} (${(originalStats.size / 1024).toFixed(2)} KB)...`,
       );
 
-      let pipeline = sharp(inputPath);
+      // Read into memory: `img/grain.webp` is written back over its own input,
+      // and on Windows sharp keeps the source path open for the lifetime of
+      // the pipeline.
+      const input = fs.readFileSync(inputPath);
+      let pipeline = sharp(input);
       if (img.width) {
         pipeline = pipeline.resize({
           width: img.width,
@@ -130,6 +157,38 @@ async function convertIcons() {
   }
 }
 
+async function convertOgImages() {
+  for (const img of ogImages) {
+    const inputPath = path.join(publicDir, img.input);
+    const outputPath = path.join(publicDir, img.output);
+
+    try {
+      if (!fs.existsSync(inputPath)) {
+        console.log(`- ${img.input} not found, skipping`);
+        continue;
+      }
+
+      await sharp(inputPath)
+        .resize({
+          width: img.width,
+          height: img.height,
+          fit: "cover",
+          position: "center",
+        })
+        .jpeg({ quality: 82, progressive: true })
+        .toFile(outputPath);
+
+      const stats = fs.statSync(outputPath);
+      console.log(
+        `✓ Created ${img.output} (${img.width}x${img.height}, ${(stats.size / 1024).toFixed(2)} KB)`,
+      );
+    } catch (err) {
+      console.error(`✗ Error converting ${img.input}:`, err.message);
+    }
+  }
+}
+
 convertImages()
+  .then(convertOgImages)
   .then(convertIcons)
   .catch(console.error);

@@ -220,12 +220,12 @@ const shrine: CharacterShrineData = {
       note: "Where the red hood, sword line, and full Pack identity feel most polished and iconic.",
       items: [
         {
-          src: "/rossi-oa1.webp",
+          ...shrineImg("rossi-oa1", SHRINE_SIZES.gallery),
           alt: "Rossi key art image",
           caption: "The release-era image that sells the whole character in one glance.",
         },
         {
-          src: "/rossi-oa2.webp",
+          ...shrineImg("rossi-oa2", SHRINE_SIZES.gallery),
           alt: "Rossi polished portrait artwork",
           caption: "Ceremonial and dangerous in equal measure.",
         },

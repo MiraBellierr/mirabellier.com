@@ -1,7 +1,9 @@
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Footer from "../parts/Footer";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaWink from "@/assets/anime/kanna-wink.webp";
+import kannaWinkPoster from "@/assets/anime/kanna-wink-poster.webp";
 import { Link } from "react-router-dom";
 import { projectCount, projectSections } from "@/lib/projects";
 import { usePageSeo } from "@/lib/seo";
@@ -121,9 +123,10 @@ const Projects = () => {
             </aside>
 
             <div className="hidden justify-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaWink}
+                animatedSrc={kannaWink}
+                posterSrc={kannaWinkPoster}
                 width="300"
                 height="404"
                 alt="project mascot winking"

@@ -6,6 +6,8 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import kannaPolice from "@/assets/anime/kanna-police.webp";
+import kannaPolicePoster from "@/assets/anime/kanna-police-poster.webp";
+import AnimeSticker from "@/components/AnimeSticker";
 import {
   fetchCurrentQuestionOfTheDay,
   fetchQuestionOfTheDayAdminQueue,
@@ -334,9 +336,10 @@ const AdminQuestionOfTheDay = () => {
             <Navigation />
 
             <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaPolice}
+                animatedSrc={kannaPolice}
+                posterSrc={kannaPolicePoster}
                 width="320"
                 height="427"
                 alt="kanna police"

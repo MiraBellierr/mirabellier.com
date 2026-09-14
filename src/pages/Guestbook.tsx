@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,7 +13,9 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import GuestbookOnThisDay from "../parts/GuestbookOnThisDay";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaShy from "@/assets/anime/kanna-shy.webp";
+import kannaShyPoster from "@/assets/anime/kanna-shy-poster.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import { resolveAsset } from "@/lib/blog-utils";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
@@ -81,6 +84,10 @@ const Guestbook = () => {
     offsetY: number;
     lastX: number;
     lastY: number;
+    /** The note's rotation, so the imperative transform can reproduce it. */
+    rotation: number;
+    /** The dragged node, written directly while the pointer moves. */
+    node: HTMLElement | null;
   } | null>(null);
   const panRef = useRef<{
     startX: number;
@@ -201,13 +208,15 @@ const Guestbook = () => {
         dragRef.current.lastX = nextX;
         dragRef.current.lastY = nextY;
 
-        setEntries((current) =>
-          current.map((entry) =>
-            entry.id === dragRef.current?.id
-              ? { ...entry, x: nextX, y: nextY }
-              : entry,
-          ),
-        );
+        // Write the position straight to the dragged node instead of through
+        // `setEntries`. The old version re-rendered (and reconciled) every note
+        // on the board for each pointer event; here the same transform React
+        // would have rendered is applied imperatively, and the committed
+        // `setEntries` only happens once on pointer-up.
+        const { node, rotation } = dragRef.current;
+        if (node) {
+          node.style.transform = `translate(${nextX}px, ${nextY}px) rotate(${rotation}deg)`;
+        }
         return;
       }
 
@@ -225,6 +234,17 @@ const Guestbook = () => {
         const { id, lastX, lastY } = dragRef.current;
         dragRef.current = null;
         setDraggingNoteId(null);
+
+        // Hand the imperatively-written position to React. The inline
+        // transform is deliberately left in place: React's next style write is
+        // byte-identical, so there is no flash, and removing it first would
+        // snap the note back to its old spot for the frame before the state
+        // update lands.
+        setEntries((current) =>
+          current.map((entry) =>
+            entry.id === id ? { ...entry, x: lastX, y: lastY } : entry,
+          ),
+        );
 
         persistNotePosition(id, lastX, lastY);
       }
@@ -283,6 +303,7 @@ const Guestbook = () => {
   const handleNoteMouseDown = (
     event: ReactMouseEvent<HTMLElement>,
     entry: GuestbookEntry,
+    rotation: number,
   ) => {
     if (event.button !== 0 || !boardCanvasRef.current) return;
     if ((event.target as HTMLElement).closest("a, button")) return;
@@ -298,9 +319,23 @@ const Guestbook = () => {
         (event.clientY - canvasRect.top) / boardZoomRef.current - entry.y,
       lastX: entry.x,
       lastY: entry.y,
+      rotation,
+      node: event.currentTarget,
     };
     setDraggingNoteId(entry.id);
   };
+
+  // While a note is being dragged its position lives in the DOM (see the
+  // mousemove handler). Any React render that sneaks in mid-drag — a websocket
+  // push, a parent state change — would otherwise repaint the note at its
+  // stale committed `entry.x/y` and the note would jump out from under the
+  // pointer. Re-assert the in-flight position after every commit until the
+  // drag ends.
+  useLayoutEffect(() => {
+    const drag = dragRef.current;
+    if (!drag || !draggingNoteId || !drag.node) return;
+    drag.node.style.transform = `translate(${drag.lastX}px, ${drag.lastY}px) rotate(${drag.rotation}deg)`;
+  });
 
   const boardIsExpanded = isFullscreen || isExpandedFallback;
   const isAdmin = canModerateGuestbook(auth?.user);
@@ -628,7 +663,7 @@ const Guestbook = () => {
                               tabIndex={0}
                               aria-label={`Guestbook note by ${entry.author}`}
                               onMouseDown={(event) =>
-                                handleNoteMouseDown(event, entry)
+                                handleNoteMouseDown(event, entry, rotation)
                               }
                               onKeyDown={(event) => handleNoteKeyDown(event, entry.id)}
                               style={{
@@ -775,9 +810,10 @@ const Guestbook = () => {
             <GuestbookOnThisDay />
 
             <div className="hidden justify-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full rounded-2xl border border-blue-700 shadow-md"
-                src={kannaShy}
+                animatedSrc={kannaShy}
+                posterSrc={kannaShyPoster}
                 width="320"
                 height="427"
                 alt="kanna shy"

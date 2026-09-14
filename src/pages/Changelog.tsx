@@ -10,7 +10,9 @@ import { usePageSeo } from "@/lib/seo";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { fetchChangelog, type ChangelogEntry } from "@/lib/site-changelog-api";
+import AnimeSticker from "@/components/AnimeSticker";
 import anime2Gif from "@/assets/anime/anime2.webp";
+import anime2Poster from "@/assets/anime/anime2-poster.webp";
 
 const PAGE_SIZE = 5;
 
@@ -268,9 +270,10 @@ const Changelog = () => {
             </div>
 
             <div className="flex justify-center">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[220px] rounded-xl"
-                src={anime2Gif}
+                animatedSrc={anime2Gif}
+                posterSrc={anime2Poster}
                 width="480"
                 height="270"
                 alt=""

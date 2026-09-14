@@ -34,6 +34,9 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import kannaPolice from "@/assets/anime/kanna-police.webp";
+import kannaPolicePoster from "@/assets/anime/kanna-police-poster.webp";
+import AnimeSticker from "@/components/AnimeSticker";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 
 type JobView = {
   progress: number;
@@ -138,13 +141,10 @@ function ImportQueuePanel({ refreshKey }: { refreshKey: number }) {
   }, [load, refreshKey]);
 
   // Poll while the panel is open: briskly when work is in flight, lazily
-  // when the queue is idle. Leaving/refreshing the page just stops the timer;
-  // remounting reloads the true state from the server.
+  // when the queue is idle. A hidden tab has nobody watching the progress bar,
+  // so the timer parks and re-fetches when the admin comes back.
   const hasActive = items.some((item) => QUEUE_ACTIVE_STATES.has(item.status));
-  useEffect(() => {
-    const interval = window.setInterval(() => void load(), hasActive ? 2000 : 8000);
-    return () => window.clearInterval(interval);
-  }, [load, hasActive]);
+  useVisibilityInterval(load, hasActive ? 2000 : 8000, { immediate: false });
 
   const act = async (
     id: string,
@@ -516,9 +516,10 @@ const AdminPixies = () => {
             <Navigation />
 
             <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaPolice}
+                animatedSrc={kannaPolice}
+                posterSrc={kannaPolicePoster}
                 width="498"
                 height="280"
                 alt="Kanna police"

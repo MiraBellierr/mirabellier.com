@@ -5,6 +5,7 @@ import Divider from "../parts/Divider";
 
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 
 import { Link } from "react-router-dom";
 import { fetchPostSummaries } from "@/lib/blog-api";
@@ -165,18 +166,15 @@ function getHomePostHref(post: PostSummary | null) {
   return `/blog/${slug ? `${slug}-${postId}` : postId}`;
 }
 
+// Local-time display only (the clock's blinking colon and the status line),
+// so there is no network to save — but a hidden homepage has no reason to
+// re-render once a second, and the hook refreshes the moment it comes back.
 function useHomeNow(intervalMs: number) {
   const [now, setNow] = useState(() => new Date());
 
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(new Date());
-    }, intervalMs);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [intervalMs]);
+  useVisibilityInterval(() => {
+    setNow(new Date());
+  }, intervalMs);
 
   return now;
 }

@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Footer from "../parts/Footer";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaShy from "@/assets/anime/kanna-shy.webp";
+import kannaShyPoster from "@/assets/anime/kanna-shy-poster.webp";
 import { usePageSeo } from "@/lib/seo";
 
 const NOT_FOUND_DESCRIPTION =
@@ -28,7 +30,7 @@ const NotFound = () => {
       title: "Page not found | Mirabellier",
       description: NOT_FOUND_DESCRIPTION,
       url: "https://mirabellier.com/404",
-      image: "https://mirabellier.com/background.jpg",
+      image: "https://mirabellier.com/og-image.jpg",
       type: "website",
     },
   });
@@ -46,9 +48,10 @@ const NotFound = () => {
             <Navigation />
 
             <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaShy}
+                animatedSrc={kannaShy}
+                posterSrc={kannaShyPoster}
                 width="300"
                 height="404"
                 alt="a small dragon girl looking a little lost"

@@ -144,10 +144,27 @@ const initializeNonCriticalBoot = () => {
   preconnectOrigin(API_BASE);
   initTelemetry();
 
-  if (import.meta.env.PROD && "serviceWorker" in navigator && !isIOS()) {
-    void navigator.serviceWorker.register("/sw.js").catch(() => {
-      // Ignore registration failures and keep loading the app.
-    });
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+    // `updateViaCache: "none"` + an explicit `update()` are deliberate: without
+    // them the browser may serve `sw.js` itself from the HTTP cache, so a
+    // deployed fix to the worker can go unnoticed for as long as the script's
+    // cache lifetime (see commit 561c051, which added both after a stale
+    // worker served an old app shell).
+    //
+    // iOS is no longer excluded. The `!isIOS()` gate dates from when this
+    // worker cached the app shell (the stale-layout bug); the worker is now
+    // scoped to `/assets/` script/style requests only (`public/sw.js`), which
+    // are content-hashed and immutable, so `index.html` can never be served
+    // from cache and the failure it guarded against is gone. iOS also already
+    // registers this same worker through the push flows (`NotifyToggle`,
+    // `Twitch`), so the gate only ever suppressed the passive cache — exactly
+    // the repeat-visit win Safari needs most.
+    void navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch(() => {
+        // Ignore registration failures and keep loading the app.
+      });
   }
 };
 

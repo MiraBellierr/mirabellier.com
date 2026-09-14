@@ -11,7 +11,9 @@ import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Post from "../parts/Post";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
+import kannaHappyPoster from "@/assets/anime/kanna-happy-poster.webp";
 import { BlogTagList } from "@/components/BlogTagList";
 import { BlogCommentItem } from "@/components/BlogCommentItem";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
@@ -51,7 +53,7 @@ import { imageWidthSrcSet } from "@/lib/image-srcset";
 const BLOG_POST_FALLBACK_TITLE = "Mirabellier ⭐ — Cute thoughts & cozy corners";
 const BLOG_POST_FALLBACK_DESCRIPTION =
   "A tiny, cozy blog sharing small joys, photos, and short posts.";
-const BLOG_POST_FALLBACK_IMAGE = "https://mirabellier.com/background.jpg";
+const BLOG_POST_FALLBACK_IMAGE = "https://mirabellier.com/og-image.jpg";
 
 // Mirrors `buildPostOgVersion` in mirabellier-backend/lib/post-og-image.js so the
 // SPA and the crawler HTML request the exact same generated-card URL.
@@ -678,9 +680,10 @@ const BlogPost = () => {
           <div className="left-side-rail flex-col space-y-4 lg:w-[250px]">
             <Navigation />
             <div className="mt-3 mb-auto justify-center items-center flex">
-              <img
+              <AnimeSticker
                 className="w-full rounded-lg border border-blue-400"
-                src={kannaHappy}
+                animatedSrc={kannaHappy}
+                posterSrc={kannaHappyPoster}
                 width="350"
                 height="350"
                 alt="kanna gif"

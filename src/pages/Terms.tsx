@@ -347,7 +347,7 @@ const Terms = () => {
       title: "Terms of Service | Mirabellier.com",
       description: TERMS_DESCRIPTION,
       url: "https://mirabellier.com/terms",
-      image: "https://mirabellier.com/background.jpg",
+      image: "https://mirabellier.com/og-image.jpg",
       type: "website",
     },
   });

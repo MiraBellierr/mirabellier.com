@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
@@ -14,8 +14,11 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useIsDarkMode } from "@/hooks/use-is-dark-mode";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { usePageSeo } from "@/lib/seo";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaHappy from "@/assets/anime/kanna-happy.webp";
+import kannaHappyPoster from "@/assets/anime/kanna-happy-poster.webp";
 import kannaEating from "@/assets/anime/kanna-eating.webp";
+import kannaEatingPoster from "@/assets/anime/kanna-eating-poster.webp";
 import {
   formatReadingTime,
   slugify,
@@ -53,6 +56,10 @@ const Blog = () => {
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(
     null,
   );
+  // Mirrors `openMenuId` for the scroll/resize listeners, whose identities must
+  // stay stable so they aren't re-bound on every menu open.
+  const openMenuIdRef = useRef(openMenuId);
+  openMenuIdRef.current = openMenuId;
 
   usePageSeo({
     canonical: "https://mirabellier.com/blog",
@@ -71,6 +78,16 @@ const Blog = () => {
   });
 
   useEffect(() => {
+    // The scroll/resize handlers close the post menu, but they fire on every
+    // frame while scrolling. Read the open id from a ref so the listener can
+    // bail out immediately instead of calling setState (and re-rendering) for
+    // the whole page on each of those frames.
+    const closeMenu = () => {
+      if (openMenuIdRef.current === null) return;
+      setOpenMenuId(null);
+      setMenuPos(null);
+    };
+
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as Element | null;
       if (!target) return;
@@ -79,33 +96,21 @@ const Blog = () => {
         target.closest("[data-post-menu-button]")
       )
         return;
-      setOpenMenuId(null);
-      setMenuPos(null);
+      closeMenu();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpenMenuId(null);
-        setMenuPos(null);
-      }
-    };
-    const onScroll = () => {
-      setOpenMenuId(null);
-      setMenuPos(null);
-    };
-    const onResize = () => {
-      setOpenMenuId(null);
-      setMenuPos(null);
+      if (e.key === "Escape") closeMenu();
     };
 
     document.addEventListener("click", onDocClick);
     document.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", closeMenu, { passive: true });
+    window.addEventListener("resize", closeMenu);
     return () => {
       document.removeEventListener("click", onDocClick);
       document.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", closeMenu);
+      window.removeEventListener("resize", closeMenu);
     };
   }, []);
 
@@ -290,8 +295,9 @@ const Blog = () => {
                   actionLabel={searchTerm ? "Clear search" : undefined}
                   onAction={searchTerm ? () => setSearchTerm("") : undefined}
                 />
-                <img
-                  src={kannaEating}
+                <AnimeSticker
+                  animatedSrc={kannaEating}
+                  posterSrc={kannaEatingPoster}
                   alt="No posts"
                   className="mx-auto"
                   width="498"
@@ -549,9 +555,10 @@ const Blog = () => {
               </div>
 
               <div className="flex justify-center">
-                <img
+                <AnimeSticker
                   className="w-full border border-blue-400 rounded-lg"
-                  src={kannaHappy}
+                  animatedSrc={kannaHappy}
+                  posterSrc={kannaHappyPoster}
                   width="350"
                   height="350"
                   alt="kanna gif"

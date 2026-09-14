@@ -9,7 +9,9 @@ import { usePageSeo } from "@/lib/seo";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { fetchSiteStats, type SiteStats } from "@/lib/site-stats";
 import { guestbookMoodMeta } from "@/lib/guestbook-ui";
+import AnimeSticker from "@/components/AnimeSticker";
 import anime6Gif from "@/assets/anime/anime6.webp";
+import anime6Poster from "@/assets/anime/anime6-poster.webp";
 
 const STATS_DESCRIPTION =
   "Sitewide numbers for mirabellier.com: posts written, guestbook signatures, Question of the Day answers, Arena fights, and more.";
@@ -202,9 +204,10 @@ const Stats = () => {
             </div>
 
             <div className="flex justify-center">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[220px] rounded-xl"
-                src={anime6Gif}
+                animatedSrc={anime6Gif}
+                posterSrc={anime6Poster}
                 width="500"
                 height="281"
                 alt=""

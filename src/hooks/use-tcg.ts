@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 import { usePageSeo } from "@/lib/seo";
 
 import {
@@ -153,7 +154,7 @@ export function useTcg(mode: TcgPageMode) {
       title: mode === "decks" ? "TCG Decks" : "TCG Match",
       description: "Build a 10-card Arena deck and play Mirabellier TCG alpha matches.",
       url: `https://mirabellier.com/arena/tcg/${mode}`,
-      image: "https://mirabellier.com/background.jpg",
+      image: "https://mirabellier.com/og-image.jpg",
     },
   });
 
@@ -304,33 +305,40 @@ export function useTcg(mode: TcgPageMode) {
 
   useWebSocketEvent("tcg:queue:matched", handleQueueMatched);
 
-  useEffect(() => {
-    if (!token || queueState !== "searching") return;
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const status = await checkTcgQueue(token);
-        if (cancelled) return;
-        if (status.matched && status.gameId) {
-          await claimMatchedGame(status.gameId);
-        } else if (!status.waiting && !status.inQueue) {
-          setQueueState("idle");
-          claimedMatchRef.current = null;
-        }
-      } catch { /* websocket may still succeed */ }
-    };
-    const interval = window.setInterval(() => void poll(), 2000);
-    void poll();
-    return () => { cancelled = true; window.clearInterval(interval); };
-  }, [token, queueState, claimMatchedGame]);
+  // Queue-poll fallback while matchmaking. The websocket usually resolves the
+  // match first (`tcg:queue:matched`), so this is a backstop — and it pauses
+  // when the tab is hidden, where nobody is waiting on a match anyway. The
+  // immediate first poll matches the old effect's eager `void poll()`.
+  useVisibilityInterval(
+    () => {
+      void (async () => {
+        try {
+          const status = await checkTcgQueue(token!);
+          if (status.matched && status.gameId) {
+            await claimMatchedGame(status.gameId);
+          } else if (!status.waiting && !status.inQueue) {
+            setQueueState("idle");
+            claimedMatchRef.current = null;
+          }
+        } catch { /* websocket may still succeed */ }
+      })();
+    },
+    token && queueState === "searching" ? 2000 : null,
+  );
+
+  useVisibilityInterval(
+    () => void refreshActiveGameState(),
+    token && gameId && gameState?.board && !gameState.winner && gameState.phase !== "finished"
+      ? 5000
+      : null,
+    { immediate: false },
+  );
 
   useEffect(() => {
     if (!token || !gameId || !gameState?.board || gameState.winner || gameState.phase === "finished") return;
-    const interval = window.setInterval(() => void refreshActiveGameState(), 5000);
     const timeoutMs = gameState.turnStartedAt ? Math.max(0, gameState.turnStartedAt + 180000 - Date.now() + 300) : null;
     const timeout = timeoutMs == null ? null : window.setTimeout(() => void refreshActiveGameState(), timeoutMs);
     return () => {
-      window.clearInterval(interval);
       if (timeout != null) window.clearTimeout(timeout);
     };
   }, [gameId, gameState?.board, gameState?.phase, gameState?.turnStartedAt, gameState?.winner, refreshActiveGameState, token]);

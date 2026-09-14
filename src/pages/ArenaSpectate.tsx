@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import Header from "@/parts/Header";
@@ -10,6 +10,7 @@ import ArenaHpBar from "@/parts/ArenaHpBar";
 import ArenaSubNav from "@/parts/ArenaSubNav";
 import { usePageSeo } from "@/lib/seo";
 import { useOptionalAuth } from "@/hooks/use-optional-auth";
+import { useVisibilityInterval } from "@/hooks/use-visibility-interval";
 import { useWebSocket } from "@/states/WebSocketProvider";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import {
@@ -36,30 +37,21 @@ function SpectateList() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const list = await fetchActiveArenaFighters();
-        if (!cancelled) {
-          setFighters(list);
-          setErrorMessage(null);
-        }
-      } catch (error) {
-        if (!cancelled) setErrorMessage(normalizeArenaError(error));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void load();
-    const interval = window.setInterval(load, LIST_POLL_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
+  const load = useCallback(async () => {
+    try {
+      const list = await fetchActiveArenaFighters();
+      setFighters(list);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Poll while visible only; the hook fires once on return so the list isn't
+  // stale when the viewer comes back to the tab.
+  useVisibilityInterval(load, LIST_POLL_MS);
 
   if (loading) return <p className="text-blue-500">Checking who's fighting...</p>;
   if (errorMessage) return <ArenaErrorNotice message={errorMessage} />;
@@ -94,50 +86,48 @@ function SpectateFight({ userId }: { userId: string }) {
   const [fight, setFight] = useState<ArenaActiveFight | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const finishedRef = useRef(false);
+  finishedRef.current = Boolean(fight?.isFinished);
+
+  const load = useCallback(async () => {
+    const controller = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = controller;
+
+    try {
+      const state = await fetchSpectatedFight(userId, controller.signal);
+      if (controller.signal.aborted) return;
+      setFight(state);
+      setErrorMessage(state ? null : "This fight has ended.");
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      setErrorMessage(normalizeArenaError(error));
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }, [userId]);
 
   // Initial paint for everyone, then — logged out only — a plain poll.
   // Logged-in viewers get pushed updates instead (see the effect + the two
   // useWebSocketEvent subscriptions below).
   useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-
-    const load = async () => {
-      try {
-        const state = await fetchSpectatedFight(userId, controller.signal);
-        if (cancelled) return;
-        setFight(state);
-        setErrorMessage(state ? null : "This fight has ended.");
-      } catch (error) {
-        if (!cancelled) setErrorMessage(normalizeArenaError(error));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
     void load();
-
-    if (isLoggedIn) {
-      return () => {
-        cancelled = true;
-        controller.abort();
-      };
-    }
-
-    const interval = window.setInterval(() => {
-      // Stop hammering the server once the fight is over — nothing left to change.
-      setFight((current) => {
-        if (!current || !current.isFinished) void load();
-        return current;
-      });
-    }, FIGHT_POLL_MS);
-
     return () => {
-      cancelled = true;
-      controller.abort();
-      window.clearInterval(interval);
+      abortRef.current?.abort();
+      abortRef.current = null;
     };
-  }, [userId, isLoggedIn]);
+  }, [load]);
+
+  // Stop hammering the server once the fight is over — nothing left to change.
+  useVisibilityInterval(
+    () => {
+      if (finishedRef.current) return;
+      void load();
+    },
+    isLoggedIn ? null : FIGHT_POLL_MS,
+    { immediate: false },
+  );
 
   // Join/leave the fighter's spectator room whenever the fighter changes —
   // and always leave on unmount, so navigating away stops the pushes.

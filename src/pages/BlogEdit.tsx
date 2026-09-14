@@ -9,7 +9,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/states/AuthContext";
 import { useToast } from "@/states/ToastContext";
 import { redirectToDiscordLogin } from "@/lib/discord-auth";
+import AnimeSticker from "@/components/AnimeSticker";
 import missKobayashi from "@/assets/anime/miss-kobayashi.webp";
+import missKobayashiPoster from "@/assets/anime/miss-kobayashi-poster.webp";
 import {
   fetchTagSuggestions,
   fetchPostForEdit,
@@ -281,9 +283,10 @@ const BlogEdit = () => {
             <div className="left-side-rail flex-col space-y-4 lg:w-[250px]">
               <Navigation />
               <div className=" mt-3 mb-auto justify-center items-center flex">
-                <img
+                <AnimeSticker
                   className="w-full border-border-blue-300 rounded-lg shadow"
-                  src={missKobayashi}
+                  animatedSrc={missKobayashi}
+                  posterSrc={missKobayashiPoster}
                   width="498"
                   height="280"
                   alt="anime gif"

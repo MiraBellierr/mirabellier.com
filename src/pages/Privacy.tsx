@@ -338,7 +338,7 @@ const Privacy = () => {
       title: "Privacy Policy | Mirabellier.com",
       description: PRIVACY_DESCRIPTION,
       url: "https://mirabellier.com/privacy",
-      image: "https://mirabellier.com/background.jpg",
+      image: "https://mirabellier.com/og-image.jpg",
       type: "website",
     },
   });

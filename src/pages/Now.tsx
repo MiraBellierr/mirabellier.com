@@ -14,8 +14,10 @@ import { fetchPostSummaries } from "@/lib/blog-api";
 import { slugify, type PostSummary } from "@/lib/blog-utils";
 import { fetchCurrentlyWatchingAnime } from "@/lib/anime-feed-api";
 import { fetchPixiesFeed } from "@/lib/pixies";
+import AnimeSticker from "@/components/AnimeSticker";
 import anyaSticker3 from "@/assets/anime/anya-sticker3.webp";
 import anime1Gif from "@/assets/anime/anime1.webp";
+import anime1Poster from "@/assets/anime/anime1-poster.webp";
 
 type AutoFill = {
   latestPost: { title: string; href: string; date: string | null } | null;
@@ -399,9 +401,10 @@ const Now = () => {
             </div>
 
             <div className="flex justify-center">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[220px] rounded-xl"
-                src={anime1Gif}
+                animatedSrc={anime1Gif}
+                posterSrc={anime1Poster}
                 width="500"
                 height="281"
                 alt=""

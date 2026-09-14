@@ -23,7 +23,9 @@ import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Navigation from "../parts/Navigation";
 import { Link, useParams } from "react-router-dom";
+import AnimeSticker from "@/components/AnimeSticker";
 import kobayashiMaidDragon from "@/assets/anime/kobayashi-maid-dragon.webp";
+import kobayashiMaidDragonPoster from "@/assets/anime/kobayashi-maid-dragon-poster.webp";
 
 const VIDEOS_PER_PAGE = 10;
 const ACTIVITY_PER_PAGE = 10;
@@ -372,9 +374,10 @@ const Profile = () => {
             <Navigation />
 
             <div className="mt-3 mb-auto justify-center items-center flex lg:w-[339px]">
-              <img
+              <AnimeSticker
                 className="w-full border border-blue-700 shadow-md rounded-2xl"
-                src={kobayashiMaidDragon}
+                animatedSrc={kobayashiMaidDragon}
+                posterSrc={kobayashiMaidDragonPoster}
                 width="498"
                 height="498"
                 alt="anime gif"

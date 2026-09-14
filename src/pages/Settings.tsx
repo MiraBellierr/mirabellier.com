@@ -9,6 +9,8 @@ import Navigation from "../parts/Navigation";
 import NotifyToggle from "../parts/NotifyToggle";
 import { followTopic } from "@/lib/push-api";
 import kannaPolice from "@/assets/anime/kanna-police.webp";
+import kannaPolicePoster from "@/assets/anime/kanna-police-poster.webp";
+import AnimeSticker from "@/components/AnimeSticker";
 
 const Settings = () => {
   const auth = useAuth();
@@ -107,9 +109,10 @@ const Settings = () => {
             <Navigation />
 
             <div className=" mt-3 mb-auto justify-center items-center flex lg:w-[339px]">
-              <img
+              <AnimeSticker
                 className="w-full border border-blue-700 shadow-md rounded-2xl"
-                src={kannaPolice}
+                animatedSrc={kannaPolice}
+                posterSrc={kannaPolicePoster}
                 width="498"
                 height="498"
                 alt="kanna police gif"

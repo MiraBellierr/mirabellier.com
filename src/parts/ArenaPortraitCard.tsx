@@ -163,7 +163,7 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
   const levelLabel = normalizeLevel(level);
   const stars = "\u2605".repeat(visual.stars);
   const urTexture = card.rainbow ? "rainbow" : null;
-  const { tiltStyle, onPointerMove, onPointerLeave } = useHoloTilt({ auto });
+  const { tiltRef, onPointerMove, onPointerLeave } = useHoloTilt({ auto });
   const ivBonus = getCardIvBonus(card, boostedIv);
 
   const rootStyle: CSSProperties = {
@@ -235,8 +235,8 @@ const ArenaPortraitCard = forwardRef<HTMLElement, ArenaPortraitCardProps>(({
 
   const interactiveRotator = (
     <div
+      ref={tiltRef}
       className="arena-portrait-card__rotator"
-      style={tiltStyle}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
       onClick={onCardClick}

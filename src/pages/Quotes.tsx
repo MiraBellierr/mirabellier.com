@@ -3,7 +3,9 @@ import Navigation from "../parts/Navigation";
 import Header from "../parts/Header";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
+import AnimeSticker from "@/components/AnimeSticker";
 import anime4Gif from "@/assets/anime/anime4.webp";
+import anime4Poster from "@/assets/anime/anime4-poster.webp";
 import { joinApi } from "@/lib/config";
 import { usePageSeo } from "@/lib/seo";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
@@ -257,9 +259,10 @@ const Quotes = () => {
             </aside>
 
             <div className="hidden justify-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={anime4Gif}
+                animatedSrc={anime4Gif}
+                posterSrc={anime4Poster}
                 width="400"
                 height="400"
                 alt=""

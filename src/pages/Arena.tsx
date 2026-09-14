@@ -28,7 +28,9 @@ import {
   fetchArenaUpdates,
   normalizeArenaError,
 } from "@/lib/arena";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
+import kannaSmilePoster from "@/assets/anime/kanna-smile-poster.webp";
 
 function formatTime(value: string | null) {
   if (!value) return "unknown";
@@ -252,9 +254,10 @@ const Arena = () => {
           <div className="left-side-rail flex-grow flex-col">
             <Navigation />
             <div className="mt-3 mb-auto hidden items-center justify-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] rounded-2xl border border-blue-700 shadow-md"
-                src={kannaSmile}
+                animatedSrc={kannaSmile}
+                posterSrc={kannaSmilePoster}
                 width="320"
                 height="427"
                 alt="kanna smiling"

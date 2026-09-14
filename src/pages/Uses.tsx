@@ -2,7 +2,9 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Footer from "../parts/Footer";
 import Divider from "../parts/Divider";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaSmile from "@/assets/anime/kanna-smile.webp";
+import kannaSmilePoster from "@/assets/anime/kanna-smile-poster.webp";
 import anyaSticker1 from "@/assets/anime/anya-sticker1.webp";
 import anyaSticker2 from "@/assets/anime/anya-sticker2.webp";
 import { USES_UPDATED, usesItemCount, usesSections } from "@/lib/uses";
@@ -158,9 +160,10 @@ const Uses = () => {
             </aside>
 
             <div className="hidden justify-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full rounded-2xl border border-blue-700 shadow-md"
-                src={kannaSmile}
+                animatedSrc={kannaSmile}
+                posterSrc={kannaSmilePoster}
                 width="300"
                 height="404"
                 alt="uses mascot"

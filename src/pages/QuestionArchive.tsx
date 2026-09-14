@@ -6,7 +6,9 @@ import Header from "../parts/Header";
 import Navigation from "../parts/Navigation";
 import Divider from "../parts/Divider";
 import NotifyToggle from "../parts/NotifyToggle";
+import AnimeSticker from "@/components/AnimeSticker";
 import kannaRight from "@/assets/anime/kanna-right.webp";
+import kannaRightPoster from "@/assets/anime/kanna-right-poster.webp";
 import AsyncStateCard from "@/components/AsyncStateCard";
 import { getFriendlyFetchMessage } from "@/lib/friendly-fetch-message";
 import { usePageSeo } from "@/lib/seo";
@@ -90,9 +92,10 @@ const QuestionArchive = () => {
             <Navigation />
 
             <div className="mt-3 mb-auto hidden justify-center items-center lg:flex">
-              <img
+              <AnimeSticker
                 className="w-full max-w-[320px] border border-blue-700 shadow-md rounded-2xl"
-                src={kannaRight}
+                animatedSrc={kannaRight}
+                posterSrc={kannaRightPoster}
                 width="320"
                 height="427"
                 alt="kanna facing right"

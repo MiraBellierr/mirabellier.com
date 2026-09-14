@@ -168,7 +168,6 @@
   border-radius: 12px;
   perspective: 600px;
   transform-style: preserve-3d;
-  will-change: transform;
   transform-origin: center;
   cursor: pointer;
   user-select: none;
@@ -176,6 +175,17 @@
   box-shadow: inset 0 0 0 1px transparent;
   pointer-events: auto;
   transition: transform 100ms cubic-bezier(0.25, 0.1, 0.1, 1);
+}
+
+/* `will-change: transform` is *not* set here on purpose. A permanent hint
+   parks every rotator on its own compositor layer — on a market/trade page
+   with 20+ cards that is a lot of GPU memory on a phone, for an effect that
+   only runs under the pointer. `useHoloTilt` toggles it on the element for
+   exactly as long as the tilt is actually moving (auto cycle or spring
+   settle); see the `setWillChange` helper there. */
+.arena-portrait-card__rotator:hover,
+.arena-portrait-card__rotator:focus-visible {
+  will-change: transform;
 }
 
 .arena-portrait-card__rotator > * {
@@ -1880,3 +1890,35 @@
   }
 }
 
+
+/* ---------------------------------------------------------------------------
+   Coarse-pointer paint budget for the card's shine stack.
+
+   Every `mix-blend-mode` layer forces the browser to composite the card's
+   whole stacking context off-screen, and each UR texture stacks *two* blended
+   pseudo-elements on top of the base shine plus the glare. On a market/trade
+   page with 20+ cards that is the most expensive thing on the screen — for an
+   effect that only ever responds to a pointer a phone doesn't have.
+
+   This block sits at the end of the file on purpose: the UR texture rules
+   above have equal specificity and would otherwise win the cascade and
+   re-enable exactly the most expensive cards.
+
+   Touch devices keep the frame, portrait, badge, stats and rarity colour; they
+   lose only the moving highlight. The rainbow variant is excluded because it
+   sets `opacity: max(1, var(--card-opacity))` — its shine is a *static* colour
+   wash rather than a pointer highlight, so hiding it would visibly change
+   every minted card.
+   --------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) {
+  .arena-portrait-card__grain,
+  .arena-portrait-card:not([data-ur-texture="rainbow"]) .arena-portrait-card__shine {
+    display: none;
+  }
+
+  .arena-portrait-card__glare {
+    mix-blend-mode: normal;
+    filter: none;
+    opacity: calc(var(--card-opacity, 0) * 0.35);
+  }
+}

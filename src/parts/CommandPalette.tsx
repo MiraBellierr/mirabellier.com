@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 
-import { onOpenCommandPalette } from "@/lib/command-palette";
 import { fetchSearchResults } from "@/lib/search-api";
 import { HEADER_ROUTE_TITLES } from "@/parts/Header";
 
@@ -33,31 +32,25 @@ const STATIC_ITEMS: PaletteItem[] = HEADER_ROUTE_TITLES.filter(
 
 const MAX_PER_GROUP = 8;
 
-const CommandPalette = () => {
+type CommandPaletteProps = {
+  /**
+   * Controlled by `CommandPaletteLauncher`, which owns the Cmd/Ctrl+K and
+   * nav-button triggers. The palette deliberately does not subscribe to those
+   * itself: this module loads lazily, so the trigger that caused the download
+   * fires before its code has even evaluated — the launcher captures the
+   * request and passes it down instead.
+   */
+  open: boolean;
+  onClose: () => void;
+};
+
+const CommandPalette = ({ open, onClose }: CommandPaletteProps) => {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [dynamicItems, setDynamicItems] = useState<PaletteItem[]>([]);
   const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setOpen((wasOpen) => !wasOpen);
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    const unsubscribe = onOpenCommandPalette(() => setOpen(true));
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -137,14 +130,14 @@ const CommandPalette = () => {
   }, [results.length]);
 
   const goTo = (item: PaletteItem) => {
-    setOpen(false);
+    onClose();
     navigate(item.to);
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault();
-      setOpen(false);
+      onClose();
     } else if (event.key === "ArrowDown") {
       event.preventDefault();
       setActiveIndex((index) => Math.min(index + 1, results.length - 1));
@@ -169,7 +162,7 @@ const CommandPalette = () => {
   return createPortal(
     <div
       className="fixed inset-0 z-[240000] flex items-start justify-center bg-white/45 p-4 pt-[12vh] backdrop-blur-sm dark:bg-slate-950/60"
-      onClick={() => setOpen(false)}
+      onClick={onClose}
     >
       <div
         role="dialog"
