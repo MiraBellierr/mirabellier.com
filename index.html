@@ -207,37 +207,25 @@
         border-radius: 0.75rem;
         position: relative;
       }
-      /* Keep the theme background discoverable before the app hydrates. */
+      /* Keep the theme background discoverable before the app hydrates.
+         Drawn on a fixed full-viewport pseudo-element (src/index.css does the
+         same) so the transparent header/footer show the art behind them. */
       div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
+        background-image: none;
+      }
+      div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"]::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        transform: translateZ(0);
         background-image: url("/light.webp?v=20260913");
         background-size: cover;
         background-position: center;
-        background-attachment: fixed;
       }
-      html.dark div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
+      html.dark div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"]::before {
         background-image: url("/dark.webp?v=20260913");
-      }
-      /* Same fixed-attachment fix as src/index.css: on touch-first devices draw
-         the background on a fixed pseudo-element instead of repainting it every
-         scroll frame. Kept here too so the boot shell doesn't jank pre-hydration. */
-      @media (hover: none) and (pointer: coarse) {
-        div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"] {
-          background-image: none;
-        }
-        div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"]::before {
-          content: "";
-          position: fixed;
-          inset: 0;
-          z-index: -1;
-          pointer-events: none;
-          transform: translateZ(0);
-          background-image: url("/light.webp?v=20260913");
-          background-size: cover;
-          background-position: center;
-        }
-        html.dark div[class*="min-h-screen"][class*="bg-cover"][class*="bg-no-repeat"]::before {
-          background-image: url("/dark.webp?v=20260913");
-        }
       }
       html.dark .boot-shell {
         background:

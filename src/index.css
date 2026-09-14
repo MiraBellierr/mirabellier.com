@@ -689,34 +689,30 @@ h6 {
   --page-bg: url("/dark.webp?v=20260913");
 }
 
-/* Pin the page background to the viewport while preserving cover behavior. */
+/* Draw the page background on a fixed full-viewport pseudo-element instead of
+   the scrolling wrapper. The wrapper's own background is cleared so the two
+   don't double-draw. This is also what lets the transparent header/footer show
+   the art behind them on every device: painted on the wrapper, the art starts
+   below the header and ends above the footer, leaving both bands on the bare
+   body color.
+
+   Doing it this way (rather than `background-attachment: fixed`) also means the
+   layer composites once and never repaints on scroll, which is what older iOS
+   Safari and some Android WebViews struggle with. */
 [style*="var(--page-bg)"] {
-  background-attachment: fixed !important;
-  background-position: center center !important;
-  background-size: cover !important;
+  background-image: none !important;
 }
 
-/* On touch-first devices, `background-attachment: fixed` repaints the whole
-   background layer on every scroll frame (worst on older iOS Safari and some
-   Android WebViews). Move the same image onto a fixed full-viewport
-   pseudo-element instead: it composites once and never repaints on scroll.
-   The wrapper's own background is cleared so the two don't double-draw. */
-@media (hover: none) and (pointer: coarse) {
-  [style*="var(--page-bg)"] {
-    background-image: none !important;
-  }
-
-  [style*="var(--page-bg)"]::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    transform: translateZ(0);
-    background-image: var(--page-bg);
-    background-position: center center;
-    background-size: cover;
-  }
+[style*="var(--page-bg)"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transform: translateZ(0);
+  background-image: var(--page-bg);
+  background-position: center center;
+  background-size: cover;
 }
 
 .site-entry-toast-shell {
