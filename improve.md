@@ -1,0 +1,87 @@
+# SEO / Discoverability Improvements
+
+Investigation of mirabellier.com's discoverability, SEO, and search-engine crawlability.
+Findings below are based on the repo state and live HTTP checks (2026-09-14).
+
+---
+
+## P0 — actively hurting indexing
+
+### 1. Live `sitemap.xml` is ~3 months stale
+
+**Status: DONE (2026-09-14).** The frontend CI build now runs
+`npm run generate:sitemap` before `vite build`, which regenerates
+`public/sitemap.xml` plus all four feed files against the API on every deploy.
+The committed files were also regenerated (107 URLs, including all 15 posts and
+the two current shrine pages). The backend half is fixed too
+(`mirabellier-backend` commit `2269138`): `lib/sitemap.js`, `lib/feed.js`, and
+`lib/indexnow.js` now resolve their output directory through
+`lib/discovery-output.js`, which honors `FRONTEND_DEPLOY_PATH`
+(`/var/www/mirabellier.com/current`), so admin-created posts refresh discovery
+files immediately instead of only at the next frontend deploy.
+
+- The live file is byte-identical to the committed `public/sitemap.xml`, whose last git change was 2026-06-21 (`8c6bf7b`). All `lastmod` values are clustered on `2026-04-04` (59 URLs) and `2026-06-20` (16 URLs), so every URL reports an old date and Google re-crawls everything on a wrong schedule.
+- Missing routes: `/now`, `/changelog`, `/uses`, `/links`, `/stats`, `/twitch`, `/fanart`, `/arena`, `/guestbook`, all `/ar/...`, `/arenas` subpages except `/arena/market` + `/arena/skill-tree`, and every post published after June (e.g. "Arena: How to Play, How It Works, and How to Win", "You Are Bad at Statistics", "Fast Brain, Slow Brain", "Is Free Will Real?", "Determinism vs Compatibilism", "The Ethics of AI", "Libet's Experiment").
+- **Root cause:** the backend regenerates sitemap/feeds into `/var/www/mirabellier/dist/`:
+  - `mirabellier-backend/lib/sitemap.js:130` (`generateSitemap`)
+  - `mirabellier-backend/lib/feed.js:305` (`generateFeeds`)
+  - `mirabellier-backend/lib/indexnow.js:39` (`ensureIndexNowKeyFile`)
+  - `mirabellier-backend/app.js:441-442` (boot-time generation)
+- But the deploy now serves `/var/www/mirabellier.com/releases/<sha>/` via the `current` symlink (`.github/workflows/deploy.yml`), and the backend has no `FRONTEND_DEPLOY_PATH` configured. Those writes land in a directory nginx never serves. The only path to production today is a human manually running `npm run generate:sitemap` and committing the file.
+- **Suggested fix:** run sitemap + feed generation in CI before `npm run build`, or serve `/sitemap.xml` and the feed routes from the backend with the correct `publicDir`. Also set `FRONTEND_DEPLOY_PATH=/var/www/mirabellier.com/current` in the backend env so runtime regeneration targets the live release.
+
+### 2. Many routes declare `canonical = homepage`
+
+`/about`, `/projects`, `/twitch`, `/guestbook`, `/privacy`, `/terms`, `/question-of-the-day/archive`, `/question-of-the-day/archive/<date>`, `/question-of-the-day/answers/<id>` serve the generic SPA head:
+
+```html
+<title>Mirabellier ⭐ | Cute thoughts & cozy corners</title>
+<link rel="canonical" href="https://mirabellier.com/" />
+```
+
+Confirmed with a Googlebot UA. They are neither in `SEO_ROUTES` (`vite.config.ts:46`) nor covered by the backend crawler-HTML prefixes (`mirabellier-backend/app.js:95` `USER_AGENT_VARY_PREFIXES`). Google will dedupe them into `/`, and the 59 archive URLs in the sitemap currently all point at such pages.
+
+- **Suggested fix:** add these routes to `SEO_ROUTES` (build-time prerendered heads) and/or add backend crawler-HTML handlers, plus give each route a self-referencing canonical in `usePageSeo` (`src/lib/seo.ts`).
+
+### 3. Canonical vs redirect mismatch (trailing slash)
+
+The SPA/SEO heads use slash-less canonicals, but nginx `try_files $uri $uri/ ...` 301s many of them to a slash:
+
+| Live URL behavior | Canonical says |
+| --- | --- |
+| `/arena` -> 301 -> `/arena/` | `/arena` |
+| `/blog` -> 301 -> `/blog/` | `/blog` |
+| `/now`, `/changelog`, `/uses`, `/links`, `/stats`, `/fanart`, `/ar` -> 301 slash | slash-less |
+| `/shrine/kanna/` -> 307 -> `/shrine/kanna` | `/shrine/kanna` |
+
+Google may treat the canonical target as a redirect and pick the wrong URL. Fix by serving `try_files $uri $uri/index.html` (drop the slash redirect) or by pointing canonicals at the final redirecting URL consistently.
+
+### 4. Feeds share the same staleness risk
+
+`public/feed.xml` / `public/feed.json` were last committed 2026-09-10 (manual `a3bf343`), while the live copies match. Anything posted after that manual run won't appear until someone reruns it. Same CI fix as the sitemap.
+
+---
+
+## P1 — quick wins
+
+- **`/home` in sitemap** — it is a client-side alias of `/` (`src/App.tsx:84` `HOME_ALIAS_PATHS`), canonical `/`, so the sitemap entry is a duplicate. Remove it or make it a real 301.
+- **Image sitemap unused** — `xmlns:image` is declared in both sitemap generators but there are zero `<image:image>` entries. Add post thumbnails and shrine art for Google Images traffic.
+- **Structured data depth**
+  - Add `BreadcrumbList` JSON-LD on blog posts and shrine pages.
+  - Homepage JSON-LD is `Blog` only (`index.html:399`); add `WebSite` (with `SearchAction` if applicable) and `Person`/`Organization` with `sameAs` linking socials.
+  - Sparse og tags: add `og:image:width` / `og:image:height` (og-image.jpg is 1200x630), `twitter:image:alt`, `og:locale` to `index.html`.
+- **`noindex` on private/thin pages** — only `src/pages/NotFound.tsx:28` sets a robots override. `Login`, `Settings`, `BlogEdit`, `PixieUpload`, `AuthCallback` should be `noindex,follow` (and ideally excluded from any crawl path).
+- **No-JS crawl paths** — the SPA entry has no `<a>` links outside the boot shell; non-JS crawlers get no navigable structure. Add a `<noscript>` nav (or a small server-rendered link block) linking to blog index, shrine hub, QOTD archive.
+- **Robots.txt duplication** — two separate `User-agent: *` groups (Cloudflare-managed content signals block + the site block). Legal per REP, but consolidating avoids parser ambiguity.
+- **Verification** — IndexNow is fully wired (key file live, HTTP 200, auto-fires on post create/edit/delete via `refreshSearchDiscovery` in `mirabellier-backend/routes/posts.js:551`). No `google-site-verification` / Bing meta is in the repo; confirm GSC and Bing Webmaster Tools are verified via DNS and the sitemap is submitted in both.
+- **Trailing-slash canonical on backend HTML pages** — e.g. `/shrine/kanna` crawler HTML uses `https://mirabellier.com/shrine/kanna` while humans on `/shrine/kanna` get the SPA; the 307 behavior on the slash variant is inconsistent with other routes and worth normalizing.
+
+---
+
+## Suggested order of work
+
+1. CI: generate sitemap + feeds in the frontend build (or set `FRONTEND_DEPLOY_PATH` on the backend).
+2. Canonicals: add missing routes to `SEO_ROUTES` and backend crawler handling; make every canonical self-referencing.
+3. Trailing-slash: align nginx + canonicals.
+4. Enrich: image sitemap, breadcrumbs, og meta, noindex for private pages.
+5. Submit/verify in GSC + Bing; re-run IndexNow after the sitemap is correct.
