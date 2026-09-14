@@ -95,17 +95,57 @@ refreshes them at runtime now that the output directory resolves correctly.
 
 ## P1 — quick wins
 
-- **`/home` in sitemap** — it is a client-side alias of `/` (`src/App.tsx:84` `HOME_ALIAS_PATHS`), canonical `/`, so the sitemap entry is a duplicate. Remove it or make it a real 301.
-- **Image sitemap unused** — `xmlns:image` is declared in both sitemap generators but there are zero `<image:image>` entries. Add post thumbnails and shrine art for Google Images traffic.
-- **Structured data depth**
-  - Add `BreadcrumbList` JSON-LD on blog posts and shrine pages.
-  - Homepage JSON-LD is `Blog` only (`index.html:399`); add `WebSite` (with `SearchAction` if applicable) and `Person`/`Organization` with `sameAs` linking socials.
-  - Sparse og tags: add `og:image:width` / `og:image:height` (og-image.jpg is 1200x630), `twitter:image:alt`, `og:locale` to `index.html`.
-- **`noindex` on private/thin pages** — only `src/pages/NotFound.tsx:28` sets a robots override. `Login`, `Settings`, `BlogEdit`, `PixieUpload`, `AuthCallback` should be `noindex,follow` (and ideally excluded from any crawl path).
-- **No-JS crawl paths** — the SPA entry has no `<a>` links outside the boot shell; non-JS crawlers get no navigable structure. Add a `<noscript>` nav (or a small server-rendered link block) linking to blog index, shrine hub, QOTD archive.
-- **Robots.txt duplication** — two separate `User-agent: *` groups (Cloudflare-managed content signals block + the site block). Legal per REP, but consolidating avoids parser ambiguity.
-- **Verification** — IndexNow is fully wired (key file live, HTTP 200, auto-fires on post create/edit/delete via `refreshSearchDiscovery` in `mirabellier-backend/routes/posts.js:551`). No `google-site-verification` / Bing meta is in the repo; confirm GSC and Bing Webmaster Tools are verified via DNS and the sitemap is submitted in both.
-- **Trailing-slash canonical on backend HTML pages** — e.g. `/shrine/kanna` crawler HTML uses `https://mirabellier.com/shrine/kanna` while humans on `/shrine/kanna` get the SPA; the 307 behavior on the slash variant is inconsistent with other routes and worth normalizing.
+**Status: DONE (2026-09-14), except where noted.**
+
+- **`/home` in sitemap** — removed from both generators. It is a client-side
+  alias of `/` (`src/App.tsx:84` `HOME_ALIAS_PATHS`) with a `/` canonical, so
+  listing it only advertised a duplicate.
+- **Image sitemap** — both generators now emit `<image:image>` for post
+  thumbnails and shrine art (17 entries live). While wiring this up, the
+  generators were found to disagree on the slug shape for long/accented titles
+  (the backend used a third variant with no NFKD and no length cap), so there is
+  now one shared `lib/post-url.js`; the shrines also merge the built-in rooms
+  (`kanna`, `rossina`) with the database ones (`kana`, `rimuru`) instead of one
+  list replacing the other.
+- **Structured data depth** — `BreadcrumbList` added to blog posts and shrine
+  pages (both the backend crawler HTML and the build-time prerender).
+  Homepage `index.html` now ships a `WebSite` + `Person` (with `sameAs`) + `Blog`
+  `@graph` instead of a lone `Blog` node, plus `og:image:width/height/type/alt`,
+  `og:locale`, and `twitter:image:alt`.
+- **`noindex` on private/thin pages** — `/login`, `/settings`, `/blog/edit`,
+  `/pixies/upload`, and `/auth/callback` now set `noindex,follow`. The runtime
+  `usePageSeo` value never reached a non-JS crawler, so the prerender plugin
+  gained a per-route `robots` field and the value is baked into the static head.
+  `/pixies/upload` additionally needed an nginx exact-match location: the
+  `^/pixies/[^/]+/?$` proxy regex was catching it first and discarding the
+  prerendered head.
+- **No-JS crawl paths** — the SPA entry's boot shell now contains 14 real
+  anchors (blog, shrines, QOTD + archive, quotes, anime, fan-art, pixies,
+  projects, about, now, links, stats, changelog, arena). React replaces the
+  subtree on hydration, so there is no runtime cost.
+- **Robots.txt duplication** — our redundant `Allow: /` (and its comment) is
+  gone, leaving one site-owned `User-agent: *` group. The Cloudflare-managed
+  content-signals block is injected at the edge and cannot be merged from the
+  repo.
+- **Verification** — GSC is DNS-verified
+  (`google-site-verification=tE7eVSmDDR3ttThZoW5uyXkv_SdErkEzueWtuKdWT6Y` on the
+  apex). No Bing verification record is present; submit the sitemap in Bing
+  Webmaster Tools and re-run `npm run indexnow:submit-all` after this deploy.
+- **Trailing-slash canonical on backend HTML pages** — `/shrine/kanna/`,
+  `/shrine/rimuru/`, etc. now resolve to the slash-less canonical (see item 3);
+  the nginx `try_files $uri $uri/index.html /index.html` change covers the
+  proxied shrine paths as well as the static ones.
+
+### Also fixed while verifying item 4 (both would have silently undone it)
+
+- The build-time API fetches were intermittently challenged by Cloudflare
+  (HTTP 403, "Just a moment...") from CI runner IPs. The Vite plugin's `fetch`
+  succeeded in the same run that `generate-sitemap.cjs`'s `https.request`
+  failed 3/3, so the generator now uses `fetch` too, and both retry.
+- The sitemap's committed-file fallback applied `unescapeXml()` to the whole
+  image object rather than its string fields, so every image URL became
+  `[object Object]` and was dropped — a single flaky fetch stripped all 17
+  image entries from the file it was meant to preserve.
 
 ---
 
