@@ -17,11 +17,13 @@ import {
   fetchPostForEdit,
   savePost,
   uploadPostAudio,
+  uploadPostImage,
   validateTags,
   normalizeTags,
 } from "@/lib/blog-edit-api";
 import { usePageSeo } from "@/lib/seo";
 import { countWords, readingTimeMinutes, resolveAsset } from "@/lib/blog-utils";
+import { materializeInlineImages } from "@/lib/inline-images";
 import "@/styles/blog.css";
 
 const SimpleEditor = lazy(() =>
@@ -238,9 +240,15 @@ const BlogEdit = () => {
     setIsSubmitting(true);
 
     try {
+      // Pasted screenshots arrive as `data:` URLs in the document; upload them
+      // and swap in the returned file URLs before saving, otherwise a couple of
+      // images alone exceed the API's request limit (see lib/inline-images.ts).
+      const { content: saveContent, uploadedCount } =
+        await materializeInlineImages(content, uploadPostImage);
+
       const blogData: Record<string, unknown> = {
         title,
-        content: content,
+        content: saveContent,
         shortDescription: shortDescription || undefined,
         thumbnail: thumbnail || undefined,
         // Always sent (null clears it) so editing a post can remove its series/audio.
@@ -263,10 +271,22 @@ const BlogEdit = () => {
       setAudioUrl("");
       setSeries("");
       setTags([]);
-      showGlobalToast("🎉 Post published successfully!", { durationMs: 3000 });
+      showGlobalToast(
+        uploadedCount > 0
+          ? `🎉 Post published! ${uploadedCount} inline image${uploadedCount === 1 ? "" : "s"} uploaded`
+          : "🎉 Post published successfully!",
+        { durationMs: 3000 },
+      );
       navigate("/blog");
-    } catch {
-      showGlobalToast("Failed to publish post", { durationMs: 3000 });
+    } catch (err) {
+      // Save/upload failures carry a user-actionable reason (too large, image
+      // upload failed, …) — show it rather than a generic message.
+      showGlobalToast(
+        err instanceof Error && err.message
+          ? `Failed to publish post: ${err.message}`
+          : "Failed to publish post",
+        { durationMs: 5000 },
+      );
     } finally {
       setIsSubmitting(false);
     }

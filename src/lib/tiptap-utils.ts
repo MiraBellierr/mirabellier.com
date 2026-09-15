@@ -1,7 +1,7 @@
 import type { Node as TiptapNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { Editor } from "@tiptap/react";
-import { API_BASE } from "@/lib/config";
+import { uploadPostImage } from "@/lib/blog-edit-api";
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -176,21 +176,7 @@ export const handleImageUpload = async (
     );
   }
 
-  const formData = new FormData();
-  formData.append("image", file);
-
-  const response = await fetch(`${API_BASE}/posts-img`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-    signal: abortSignal,
-  });
-
-  if (!response.ok) {
-    throw new Error("Upload failed");
-  }
-
-  const result = await response.json();
+  const url = await uploadPostImage(file, abortSignal);
 
   if (onProgress) {
     for (let progress = 0; progress <= 100; progress += 10) {
@@ -202,7 +188,7 @@ export const handleImageUpload = async (
     }
   }
 
-  return `${API_BASE}${result.path}`;
+  return url;
 };
 
 export const convertFileToBase64 = (
