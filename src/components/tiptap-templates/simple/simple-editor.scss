@@ -16,12 +16,13 @@ body {
   padding: 0;
 }
 
-html,
-body,
-#root,
-#app {
+/* Scoped to the editor wrapper on purpose. `html`/`body`/`#root` are owned by
+   src/index.css, which paints the page background on a fixed `z-index: -1`
+   layer; an opaque background-color here would cover it (and the forced
+   `height: 100%` clipped it to the first viewport), which is why the art
+   looked misplaced on the blog edit page alone. */
+.simple-editor-wrapper {
   height: 100%;
-  background-color: var(--tt-bg-color);
 }
 
 ::-webkit-scrollbar {
