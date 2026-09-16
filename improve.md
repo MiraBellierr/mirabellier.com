@@ -304,6 +304,8 @@ blog feed from 16 to 16 (unchanged). `test/sitemap.test.js` (20 tests) and
 
 ### 6. No HSTS
 
+**Status: DONE (2026-09-17), not yet deployed.**
+
 ```
 Strict-Transport-Security    (absent)
 X-Content-Type-Options       (absent)
@@ -313,6 +315,62 @@ Referrer-Policy              (absent)
 Not a ranking factor on its own, but HSTS removes the redirect hop for repeat
 visitors and the other two are cheap hardening. Cloudflare can set all three at
 the edge, or add them to the nginx server block.
+
+The audit was only half the story. The backend already sent **all three** on
+every proxied response — `helmet()` in `app.js` defaults to exactly this set
+(live `/v1/posts` confirmed it). What was missing was on the paths nginx serves
+itself: the homepage, prerendered heads, the SPA fallback, hashed assets,
+`robots.txt`/`sitemap.xml`/feeds, the 404 document, and the `www`/`api`
+redirects.
+
+**Fix (shipped):** all three headers are declared at server-block level in
+`deploy/nginx/mirabellier.com.conf`, so every response from all three hosts
+carries them, and each location that declares its own `add_header` (nginx does
+**not** merge inherited ones) repeats the set.
+
+How it works, and the traps:
+
+- **Values mirror `helmet()` exactly**: `Strict-Transport-Security:
+  max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: no-referrer`. A test derives the expected values by running
+  the real helmet middlewares, so a dependency default change fails the test
+  instead of silently splitting the two response paths.
+- **`includeSubDomains` is safe here**: `www` was verified to serve a
+  Let's Encrypt cert with a `www` SAN, and `api`/`penbot` resolve behind
+  Cloudflare's `*.mirabellier.com` certificate. Every subdomain serves valid
+  HTTPS, so making certificate errors fatal (which is what HSTS does) cannot
+  strand a user. `preload` is deliberately omitted — it needs a
+  hstspreload.org submission and is hard to undo.
+- **`always` on every `add_header`.** Without it nginx omits the header on 4xx
+  and 5xx, so the 404 document and nginx's own error pages would miss HSTS
+  precisely when the browser is deciding whether to upgrade.
+- **Duplicates are suppressed with `proxy_hide_header`.** The upstream sends
+  the same three headers; without hiding them, proxied routes would carry two
+  `Strict-Transport-Security` fields (RFC 6797 allows only one). Verified with
+  an upstream whose HSTS value deliberately differs (`max-age=999`) so a leaked
+  copy is detectable — exactly one nginx-owned value arrives on every path.
+- **The `www` redirect sets the policy too**, because a visitor can land there
+  before ever touching the apex. HSTS cannot span sibling hosts, so the header
+  there only covers `*.www.mirabellier.com`; the apex header is what protects
+  everything else.
+- **OAuth is unaffected by `Referrer-Policy: no-referrer`.** The Discord
+  handoff does not read `Referer`: the frontend passes `redirect_origin`
+  explicitly (`src/lib/discord-auth.ts`) and the server falls back to
+  `FRONTEND_URL`.
+
+Verified end-to-end against real nginx 1.18.0 with the real `dist/` tree
+shape and a mock upstream that mimics helmet: 13 response paths (SPA entry,
+prerendered head, 404 document, hashed asset, `index.html`, `sw.js`,
+`sitemap.xml`, root image, proxied blog post, proxied SSR route, `www` 301,
+`api` 308, proxied API response) all carry each header exactly once with the
+expected value, and statuses (`404`/`301`/`308`) are unchanged. The 50-case
+routing harness for items 1–2 still passes. `test/nginx-security-headers.test.js`
+(8 tests) covers it; 488 backend tests pass.
+
+**One operational note:** once this ships, every visitor is pinned to HTTPS for
+a year with no click-through. Certificate renewal is the single thing that must
+keep working; if `certbot` ever fails silently, returning users get an
+unbypassable interstitial until the cert is fixed or the max-age expires.
 
 ---
 
@@ -350,5 +408,6 @@ the edge, or add them to the nginx server block.
 4. ~~Bing verification (item 3)~~ — **repo-side done** (see above) via
    `BingSiteAuth.xml`; verification and sitemap submission are the two manual
    steps left, after the next deploy.
-5. ~~API `noindex`~~ — **done** (see above). HSTS (item 6) still to do.
+5. ~~API `noindex`~~ — **done** (see above). ~~HSTS (item 6)~~ — **done** (see
+   above).
 6. Crawl-path and content items (the "smaller items" list) — incremental.
