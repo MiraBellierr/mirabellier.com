@@ -184,8 +184,13 @@ export async function createGuestbookEntry(input: {
       message: input.message,
       mood: input.mood,
       turnstileToken: input.turnstileToken,
-      x: input.x,
-      y: input.y,
+      // Placement is the server's call: only send a coordinate when the caller
+      // actually has one. An `{ x: undefined }` key, or the sign form's old
+      // placeholder `{ x: 0, y: 0 }`, is what pinned every new note to the
+      // board's top-left corner.
+      ...(typeof input.x === "number" && typeof input.y === "number"
+        ? { x: input.x, y: input.y }
+        : {}),
     }),
   });
 

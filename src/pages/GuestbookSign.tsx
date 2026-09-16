@@ -81,8 +81,6 @@ const GuestbookSign = () => {
         mood: form.mood,
         token: auth?.token ?? null,
         turnstileToken,
-        x: 0,
-        y: 0,
       });
 
       navigate("/guestbook");
