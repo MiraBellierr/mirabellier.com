@@ -32,6 +32,14 @@ const FEED_OUTPUT_DIR = path.join(__dirname, "public");
 const BACKEND_DIR = path.join(__dirname, "mirabellier-backend");
 const USE_LOCAL_BACKEND = process.env.SITEMAP_LOCAL_BACKEND === "1";
 
+// Static routes. None of them carry a `lastmod`: their content ships with the
+// frontend bundle, so the only date this build could report is "today" — and a
+// `lastmod` that moves on every deploy is the signal Google uses to decide the
+// field is untrustworthy and ignore it for the whole file. Omitting it is
+// honest ("no change information"). The backend generator has a database row
+// per page for a handful of these (`/now`, `/links`, `/changelog`, `/stats`,
+// `/anime`, `/pixies`, `/quotes`, `/blog`) and reports real dates for those;
+// this file is the CI fallback and the backend rewrites the live copy on boot.
 const STATIC_ROUTES = [
   { path: "/", priority: "1.0", changefreq: "weekly" },
   { path: "/about", priority: "0.8", changefreq: "monthly" },
@@ -137,13 +145,19 @@ async function fetchFromAPI(endpoint) {
   throw lastError;
 }
 
+// `<lastmod>` is omitted (not defaulted) when an entry has no trustworthy date.
+// The previous fallback stamped "today" on every entry, which trained Google to
+// distrust the field; see the STATIC_ROUTES comment.
+function renderLastmod(entry) {
+  return entry.lastmod ? `\n    <lastmod>${escapeXml(entry.lastmod)}</lastmod>` : "";
+}
+
 function generateSiteMap(entries) {
   const urls = entries
     .map(
       (entry) => `
   <url>
-    <loc>${escapeXml(entry.url)}</loc>
-    <lastmod>${entry.lastmod || new Date().toISOString().split("T")[0]}</lastmod>
+    <loc>${escapeXml(entry.url)}</loc>${renderLastmod(entry)}
     <changefreq>${entry.changefreq || "weekly"}</changefreq>
     <priority>${entry.priority || "0.5"}</priority>${renderImages(entry.images)}
   </url>`,
@@ -229,9 +243,17 @@ function getQuestionArchiveUrl(entry) {
   return `${WEBSITE_BASE}/question-of-the-day/archive/${entry.recordedDate}`;
 }
 
+// The day the question ran is the honest `lastmod` for its archive page: the
+// page is *about* that day. `updatedAt`/`createdAt` are bulk-import timestamps
+// shared by every row (all 165 days carried one date four months before most of
+// them existed), so using them told Google the field was meaningless. A real
+// owner edit still wins when it is later than the recorded day.
 function getQuestionArchiveLastmod(entry) {
-  const source = entry.updatedAt || entry.createdAt;
-  return formatSitemapDate(source);
+  const recordedDate = formatSitemapDate(entry.recordedDate);
+  const editedAt = formatSitemapDate(entry.updatedAt);
+
+  if (!recordedDate) return editedAt;
+  return editedAt && editedAt > recordedDate ? editedAt : recordedDate;
 }
 
 function formatSitemapDate(value) {
@@ -311,7 +333,11 @@ function readExistingEntries(matchesLoc, fallbackPriority) {
 
     entries.push({
       url: loc,
-      lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1],
+      // Only carried through when the committed file had one; static routes
+      // intentionally have none (see STATIC_ROUTES).
+      ...(block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1]
+        ? { lastmod: block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1] }
+        : {}),
       changefreq: block.match(/<changefreq>(.*?)<\/changefreq>/)?.[1] || "monthly",
       priority: block.match(/<priority>(.*?)<\/priority>/)?.[1] || fallbackPriority,
       ...(images.length ? { images } : {}),

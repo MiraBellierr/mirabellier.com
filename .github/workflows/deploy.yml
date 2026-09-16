@@ -40,6 +40,28 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      # `dist/` is wiped and regenerated on every build, so a site-root file
+      # that only ever existed there (dropped in by hand) is silently lost on
+      # the next deploy. Root files have to live in `public/` to ship. Catch
+      # that here, against the artifact that is actually about to be uploaded.
+      - name: Verify static root files ship
+        run: |
+          status=0
+          for file in \
+            BingSiteAuth.xml \
+            404.html \
+            robots.txt \
+            sitemap.xml \
+            sw.js \
+            feed.xml \
+            feed.json; do
+            if [ ! -f "dist/$file" ]; then
+              echo "::error::dist/$file is missing. Add it to public/ (not dist/) so it ships."
+              status=1
+            fi
+          done
+          exit $status
+
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v7
         with:

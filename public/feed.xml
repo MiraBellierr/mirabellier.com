@@ -5,16 +5,28 @@
   <link href="https://mirabellier.com/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://mirabellier.com/blog" />
   <id>https://mirabellier.com/blog</id>
-  <updated>2026-09-14T10:10:38.898Z</updated>
+  <updated>2026-09-16T12:03:23.564Z</updated>
   <author><name>Mirabellier</name></author>
+  <entry>
+    <title>Your Best Explanation Is a Story You Made Up</title>
+    <link href="https://mirabellier.com/blog/your-best-explanation-is-a-story-you-made-up-1789560203564" />
+    <id>https://mirabellier.com/blog/your-best-explanation-is-a-story-you-made-up-1789560203564</id>
+    <published>2026-09-16T12:03:23.564Z</published>
+    <updated>2026-09-16T12:03:23.564Z</updated>
+    <author><name>mirabellier</name></author>
+    <summary>Thinking, Fast and Slow, Part 3. Overconfidence A good story makes the base rates disappear. Kahneman opens this part with the Google origin story. Two Stanford grad students, a better search algorithm, and a company worth more than most countries. The pieces connect, so the ending feels earned. He …</summary>
+    <category term="psychology" />
+    <category term="decision-making" />
+    <category term="optimism" />
+  </entry>
   <entry>
     <title>You Are Bad at Statistics</title>
     <link href="https://mirabellier.com/blog/you-are-bad-at-statistics-1789380261666" />
     <id>https://mirabellier.com/blog/you-are-bad-at-statistics-1789380261666</id>
     <published>2026-09-14T10:04:21.666Z</published>
-    <updated>2026-09-14T10:10:38.898Z</updated>
+    <updated>2026-09-16T07:35:27.252Z</updated>
     <author><name>mirabellier</name></author>
-    <summary>I’m back with the bad news I promised. Last time I dug into how the mind works. This time it’s about numbers, chance, and the specific, reliable ways our brain gets them wrong. The short version is that we are pattern-hunting, story-loving creatures who were never built to reason about probability. …</summary>
+    <summary>Thinking, Fast and Slow, Part 2. Heuristics and Biases A phone poll of 300 seniors says 60% support the president. Summarize it in three words and you say &quot;elderly support president.&quot; Nobody says &quot;300-person poll.&quot; The sample size almost never makes it into the story. The missing sample size is the …</summary>
     <category term="statistics" />
     <category term="cognitive-biases" />
     <category term="decision-making" />
@@ -22,13 +34,13 @@
     <category term="psychology" />
   </entry>
   <entry>
-    <title>Fast Brain, Slow Brain: You&apos;re Not Driving This Thing</title>
-    <link href="https://mirabellier.com/blog/fast-brain-slow-brain-youre-not-driving-this-thing-1789304125788" />
-    <id>https://mirabellier.com/blog/fast-brain-slow-brain-youre-not-driving-this-thing-1789304125788</id>
+    <title>You Do Not Choose Most of What You Think</title>
+    <link href="https://mirabellier.com/blog/you-do-not-choose-most-of-what-you-think-1789304125788" />
+    <id>https://mirabellier.com/blog/you-do-not-choose-most-of-what-you-think-1789304125788</id>
     <published>2026-09-13T12:55:25.789Z</published>
-    <updated>2026-09-13T20:19:43.903Z</updated>
+    <updated>2026-09-16T01:04:03.980Z</updated>
     <author><name>mirabellier</name></author>
-    <summary>Your brain has two settings, and you’re only aware of one of them. System 1 and System 2 Picture your mind as two characters sharing one apartment. System 1 is the fast one. It never shuts up. It finishes “bread and…” for you, reads billboards without being asked, detects hostility in a voice before…</summary>
+    <summary>Thinking, Fast and Slow, Part 1. Two Systems A bat and a ball cost $1.10 between them. The bat costs a dollar more than the ball. How much does the ball cost? Ten cents arrives on its own. Wrong, of course. The ball costs five cents, and the correct answer takes a moment of real arithmetic. Kahneman…</summary>
     <category term="psychology" />
     <category term="decision-making" />
     <category term="cognitive-biases" />
