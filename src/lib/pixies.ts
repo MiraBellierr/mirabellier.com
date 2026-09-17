@@ -455,6 +455,91 @@ export interface VideoResolveResult {
   coverUrl: string;
 }
 
+/**
+ * A TikTok creator whose newest clip is auto-imported on a timer. Managed
+ * from the admin Pixies page; polled by lib/tiktok-feed-scheduler.js.
+ */
+export interface TikTokFeedAuthor {
+  id: number;
+  handle: string;
+  displayName: string;
+  avatarUrl: string;
+  enabled: boolean;
+  profileUrl: string;
+  lastCheckedAt: string | null;
+  lastVideoId: string | null;
+  lastStatus: "imported" | "error" | null;
+  lastError: string | null;
+  importedCount: number;
+  createdAt: string;
+}
+
+/** Result of an on-demand "poll now" for one author. */
+export interface TikTokFeedPollResult {
+  result: {
+    ok: boolean;
+    handle: string;
+    error?: string;
+    skipped?: string;
+  };
+  author: TikTokFeedAuthor;
+}
+
+export async function fetchTikTokFeedAuthors(
+  signal?: AbortSignal,
+): Promise<TikTokFeedAuthor[]> {
+  const data = await importQueueRequest<{ authors: TikTokFeedAuthor[] }>(
+    "/pixies/admin/tiktok/authors",
+    { signal },
+  );
+  return Array.isArray(data.authors) ? data.authors : [];
+}
+
+export async function addTikTokFeedAuthor(
+  handle: string,
+): Promise<TikTokFeedAuthor> {
+  const data = await importQueueRequest<{ author: TikTokFeedAuthor }>(
+    "/pixies/admin/tiktok/authors",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ handle }),
+    },
+  );
+  return data.author;
+}
+
+export async function setTikTokFeedAuthorEnabled(
+  id: number,
+  enabled: boolean,
+): Promise<TikTokFeedAuthor> {
+  const data = await importQueueRequest<{ author: TikTokFeedAuthor }>(
+    `/pixies/admin/tiktok/authors/${encodeURIComponent(String(id))}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    },
+  );
+  return data.author;
+}
+
+export async function removeTikTokFeedAuthor(id: number): Promise<void> {
+  await importQueueRequest(
+    `/pixies/admin/tiktok/authors/${encodeURIComponent(String(id))}`,
+    { method: "DELETE" },
+  );
+}
+
+export function pollTikTokFeedAuthorNow(
+  id: number,
+): Promise<TikTokFeedPollResult> {
+  return importQueueRequest<TikTokFeedPollResult>(
+    `/pixies/admin/tiktok/authors/${encodeURIComponent(String(id))}/poll`,
+    { method: "POST" },
+  );
+}
+
 export interface VideoJobStatus {
   jobId: string;
   state: "queued" | "running" | "done" | "error";

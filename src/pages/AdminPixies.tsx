@@ -6,24 +6,30 @@ import { usePageSeo } from "@/lib/seo";
 import { canAccessAdminPanel } from "@/lib/user-permissions";
 import { API_BASE } from "@/lib/config";
 import {
+  addTikTokFeedAuthor,
   cancelPixieImport,
   clearFinishedPixieImports,
   enqueuePixieImport,
   fetchPixieImportQueue,
+  fetchTikTokFeedAuthors,
   fetchVideoResolveStatus,
   MAX_AUTHOR_USERNAME_LENGTH,
   MAX_VIDEO_TITLE_LENGTH,
   newImportKey,
   normalizeVideoTags,
+  pollTikTokFeedAuthorNow,
   pollVideoJob,
   readVideoDuration,
+  removeTikTokFeedAuthor,
   resolveAvatarUrl,
   retryPixieImport,
+  setTikTokFeedAuthorEnabled,
   startVideoResolve,
   truncateCodePoints,
   uploadAdminPixie,
   type PixieImportQueueItem,
   type ResolvedVideoInfo,
+  type TikTokFeedAuthor,
 } from "@/lib/pixies";
 import AuthGateShell from "../parts/AuthGateShell";
 import AvatarImage from "../parts/AvatarImage";
@@ -118,6 +124,276 @@ function ProgressBlock({ job }: { job: JobView | null }) {
 }
 
 const QUEUE_ACTIVE_STATES = new Set(["queued", "running"]);
+
+function formatRelativeTime(iso: string | null): string {
+  if (!iso) return "never checked";
+  const then = Date.parse(iso);
+  if (!Number.isFinite(then)) return "never checked";
+  const seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (seconds < 60) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+/**
+ * TikTok creators whose newest clip is auto-imported on a timer. TikTok
+ * signature-gates its home feed, so each creator is polled individually
+ * through yt-dlp on the server.
+ */
+function FeedAuthorsPanel({ refreshKey }: { refreshKey: number }) {
+  const { showToast } = useToast();
+  const [authors, setAuthors] = useState<TikTokFeedAuthor[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [handleInput, setHandleInput] = useState("");
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setAuthors(await fetchTikTokFeedAuthors());
+    } catch {
+      // Transient — the next poll retries.
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load, refreshKey]);
+
+  useVisibilityInterval(load, 10000, { immediate: false });
+
+  const handleAdd = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const handle = handleInput.trim();
+    if (!handle || adding) return;
+
+    setAdding(true);
+    setError(null);
+    try {
+      const author = await addTikTokFeedAuthor(handle);
+      setHandleInput("");
+      showToast(`Now auto-importing @${author.handle}'s newest clip 🎬`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add that handle");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const act = async (id: number, fn: () => Promise<unknown>, failMessage: string) => {
+    setBusyId(id);
+    setError(null);
+    try {
+      await fn();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : failMessage);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handlePoll = async (id: number) => {
+    setBusyId(id);
+    setError(null);
+    try {
+      const { result } = await pollTikTokFeedAuthorNow(id);
+      await load();
+      if (result.ok && result.skipped === "already-imported") {
+        showToast("Already imported — that clip is still the newest one.");
+      } else if (result.ok) {
+        showToast("Newest clip added to the import queue 📥");
+      } else {
+        setError(result.error || "Could not read that profile");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not poll that handle");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (!loaded && authors.length === 0) return null;
+
+  const activeCount = authors.filter((author) => author.enabled).length;
+
+  return (
+    <div className="card-border rounded-2xl p-4 sm:p-6 shadow-lg bg-white/90 dark:bg-purple-900/80">
+      <h2 className="text-lg sm:text-xl font-bold text-blue-700 dark:text-purple-200 flex items-center gap-2">
+        <span>🎬</span>
+        <span>Auto-import creators</span>
+        {activeCount > 0 && (
+          <span className="text-xs font-normal text-blue-400 dark:text-purple-400">
+            ({activeCount} active)
+          </span>
+        )}
+      </h2>
+      <p className="mt-1 text-xs text-blue-500 dark:text-purple-300">
+        Every few minutes the server checks each creator below and imports
+        their newest clip automatically. TikTok cannot be read anonymously, so
+        each handle is polled individually.
+      </p>
+
+      <form onSubmit={handleAdd} className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={handleInput}
+          onChange={(e) => setHandleInput(e.target.value)}
+          placeholder="@handle or tiktok.com/@handle"
+          className="min-w-0 flex-1 rounded-lg border border-blue-200 p-3 text-sm focus:ring-2 focus:ring-blue-200 dark:border-purple-600"
+        />
+        <button
+          type="submit"
+          disabled={!handleInput.trim() || adding}
+          className="shrink-0 rounded-full bg-pink-500 px-4 py-2 text-sm text-white shadow-sm transition hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {adding ? "Adding…" : "Add creator"}
+        </button>
+      </form>
+
+      {error && (
+        <div className="mt-2 text-sm text-red-600 dark:text-pink-300">{error}</div>
+      )}
+
+      {authors.length === 0 ? (
+        <p className="mt-4 text-sm text-blue-400 dark:text-purple-400">
+          No creators yet — add a TikTok handle to start auto-importing.
+        </p>
+      ) : (
+        <ul className="mt-4 space-y-2">
+          {authors.map((author) => (
+            <FeedAuthorRow
+              key={author.id}
+              author={author}
+              busy={busyId === author.id}
+              onToggle={() =>
+                act(
+                  author.id,
+                  () =>
+                    setTikTokFeedAuthorEnabled(author.id, !author.enabled),
+                  "Could not update that creator",
+                )
+              }
+              onPoll={() => handlePoll(author.id)}
+              onRemove={() =>
+                act(
+                  author.id,
+                  () => removeTikTokFeedAuthor(author.id),
+                  "Could not remove that creator",
+                )
+              }
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function FeedAuthorRow({
+  author,
+  busy,
+  onToggle,
+  onPoll,
+  onRemove,
+}: {
+  author: TikTokFeedAuthor;
+  busy: boolean;
+  onToggle: () => void;
+  onPoll: () => void;
+  onRemove: () => void;
+}) {
+  const label = author.displayName
+    ? `@${author.handle} · ${author.displayName}`
+    : `@${author.handle}`;
+
+  return (
+    <li className="rounded-xl border border-blue-200 dark:border-purple-600 bg-blue-50/60 dark:bg-purple-800/40 p-3">
+      <div className="flex items-start gap-3">
+        {author.avatarUrl ? (
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-blue-200 bg-pink-500 dark:border-purple-600">
+            <AvatarImage
+              src={
+                author.avatarUrl.startsWith("/")
+                  ? resolveAvatarUrl(author.avatarUrl)
+                  : `${API_BASE}/pixies/admin/avatar-proxy?url=${encodeURIComponent(author.avatarUrl)}`
+              }
+              alt={`@${author.handle} avatar`}
+            />
+          </span>
+        ) : (
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-sm dark:border-purple-600 dark:bg-purple-800">
+            🎬
+          </span>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-blue-700 dark:text-purple-200">
+            {label}
+            {!author.enabled && (
+              <span className="ml-1 text-xs font-normal text-blue-400 dark:text-purple-400">
+                · paused
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-blue-500 dark:text-purple-300">
+            checked {formatRelativeTime(author.lastCheckedAt)}
+            {author.importedCount > 0
+              ? ` · ${author.importedCount} imported`
+              : ""}
+          </p>
+          {author.lastStatus === "error" && author.lastError && (
+            <p className="mt-1 break-words text-xs text-red-600 dark:text-pink-300">
+              {author.lastError}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={onPoll}
+            disabled={busy}
+            className="rounded-full px-2 py-0.5 text-xs font-bold text-blue-500 hover:bg-pink-500 hover:text-white disabled:opacity-50 dark:text-purple-300"
+          >
+            poll now
+          </button>
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={busy}
+            className="rounded-full px-2 py-0.5 text-xs font-bold text-blue-500 hover:bg-blue-500 hover:text-white disabled:opacity-50 dark:text-purple-300"
+          >
+            {author.enabled ? "pause" : "resume"}
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={busy}
+            className="rounded-full px-2 py-0.5 text-xs font-bold text-blue-500 hover:bg-red-500 hover:text-white disabled:opacity-50 dark:text-purple-300"
+          >
+            remove
+          </button>
+        </div>
+      </div>
+
+      <a
+        href={author.profileUrl}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="mt-1 inline-block truncate text-xs text-pink-500 hover:underline"
+      >
+        {author.profileUrl}
+      </a>
+    </li>
+  );
+}
 
 function ImportQueuePanel({ refreshKey }: { refreshKey: number }) {
   const { showToast } = useToast();
@@ -771,6 +1047,8 @@ const AdminPixies = () => {
             </div>
 
             <ImportQueuePanel refreshKey={queueRefreshKey} />
+
+            <FeedAuthorsPanel refreshKey={queueRefreshKey} />
             </div>
           </main>
 
