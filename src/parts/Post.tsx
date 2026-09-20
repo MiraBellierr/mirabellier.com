@@ -9,6 +9,7 @@ import { Typography } from "@tiptap/extension-typography";
 import { Highlight } from "@tiptap/extension-highlight";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
+import { CodeBlockNodeExtension } from "@/components/tiptap-node/code-block-node/code-block-node-extension";
 import { useEffect, useMemo, useState, memo } from "react";
 
 type PostContent = object | string | null | undefined;
@@ -258,7 +259,8 @@ const Post = ({ html }: { html: PostContent }) => {
   const extensions = useMemo(
     () => {
       const baseExtensions = [
-        StarterKit,
+        StarterKit.configure({ codeBlock: false }),
+        CodeBlockNodeExtension,
         ReadonlyCaptionedImageExtension.configure({ allowBase64: true }),
         TextAlign.configure({ types: ["heading", "paragraph"] }),
         TaskList,

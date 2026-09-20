@@ -185,7 +185,7 @@
 
   .tiptap-code-block-content .hljs-comment,
   .tiptap-code-block-content .hljs-quote {
-    color: var(--tt-codeblock-comment);
+    color: var(--tt-codeblock-comment) !important;
     font-style: italic;
   }
 
@@ -193,46 +193,46 @@
   .tiptap-code-block-content .hljs-selector-tag,
   .tiptap-code-block-content .hljs-literal,
   .tiptap-code-block-content .hljs-addition {
-    color: var(--tt-codeblock-keyword);
+    color: var(--tt-codeblock-keyword) !important;
   }
 
   .tiptap-code-block-content .hljs-string,
   .tiptap-code-block-content .hljs-doctag,
   .tiptap-code-block-content .hljs-regexp {
-    color: var(--tt-codeblock-string);
+    color: var(--tt-codeblock-string) !important;
   }
 
   .tiptap-code-block-content .hljs-number,
   .tiptap-code-block-content .hljs-built_in,
   .tiptap-code-block-content .hljs-literal,
   .tiptap-code-block-content .hljs-bullet {
-    color: var(--tt-codeblock-number);
+    color: var(--tt-codeblock-number) !important;
   }
 
   .tiptap-code-block-content .hljs-title,
   .tiptap-code-block-content .hljs-title.function_,
   .tiptap-code-block-content .hljs-function .hljs-title,
   .tiptap-code-block-content .hljs-section {
-    color: var(--tt-codeblock-function);
+    color: var(--tt-codeblock-function) !important;
   }
 
   .tiptap-code-block-content .hljs-type,
   .tiptap-code-block-content .hljs-class .hljs-title,
   .tiptap-code-block-content .hljs-attribute {
-    color: var(--tt-codeblock-type);
+    color: var(--tt-codeblock-type) !important;
   }
 
   .tiptap-code-block-content .hljs-variable,
   .tiptap-code-block-content .hljs-template-variable,
   .tiptap-code-block-content .hljs-selector-id,
   .tiptap-code-block-content .hljs-selector-class {
-    color: var(--tt-codeblock-variable);
+    color: var(--tt-codeblock-variable) !important;
   }
 
   .tiptap-code-block-content .hljs-meta,
   .tiptap-code-block-content .hljs-symbol,
   .tiptap-code-block-content .hljs-link {
-    color: var(--tt-codeblock-accent);
+    color: var(--tt-codeblock-accent) !important;
   }
 
   .tiptap-code-block-content .hljs-emphasis {
