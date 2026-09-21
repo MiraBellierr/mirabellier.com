@@ -327,6 +327,15 @@
   }
 }
 
+/* Tailwind Typography wraps inline code in decorative backticks
+   (`.prose code::before/::after { content: "`" }`). On blog posts the code
+   mark already has its own pill background/border, so the fake quotes just
+   read as literal backtick characters around the text — drop them. */
+.prose code::before,
+.prose code::after {
+  content: none;
+}
+
 /* Reduce spacing for lists in blog post content */
 .prose ul,
 .prose ol {
