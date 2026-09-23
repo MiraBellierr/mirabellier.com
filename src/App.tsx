@@ -19,6 +19,7 @@ const BlogEdit = lazy(() => import("./pages/BlogEdit"));
 const Quotes = lazy(() => import("./pages/Quotes"));
 const Anime = lazy(() => import("./pages/Anime"));
 const Fanart = lazy(() => import("./pages/Fanart"));
+const HsrTeams = lazy(() => import("./pages/HsrTeams"));
 const Twitch = lazy(() => import("./pages/Twitch"));
 const Arena = lazy(() => import("./pages/Arena"));
 const ArenaFight = lazy(() => import("./pages/ArenaFight"));
@@ -145,6 +146,7 @@ function App() {
       <Route path="/projects" element={<Projects />} />
       <Route path="/anime" element={<Anime />} />
       <Route path="/fanart" element={<Fanart />} />
+      <Route path="/hsr" element={<HsrTeams />} />
       <Route path="/twitch" element={<Twitch />} />
       <Route path="/arena" element={<Arena />} />
       <Route path="/arena/fight" element={<ArenaFight />} />

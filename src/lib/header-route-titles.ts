@@ -21,6 +21,7 @@ export const HEADER_ROUTE_TITLES: HeaderRouteTitle[] = [
   { path: "/stats", title: "Site Stats" },
   { path: "/anime", title: "Anime" },
   { path: "/fanart", title: "Fan Art Search" },
+  { path: "/hsr", title: "Star Rail Teams" },
   { path: "/shrine", title: "Shrine" },
   { path: "/shrine/kanna", title: "Kanna Shrine" },
   { path: "/shrine/rossina", title: "Rossina Shrine" },

@@ -190,6 +190,17 @@ const SEO_ROUTES: RouteSeo[] = [
     ),
   },
   {
+    path: "/hsr",
+    title: "Star Rail Team Planner | Mirabellier",
+    description:
+      "Pick the Honkai: Star Rail characters you own and get every team you can build, ranked by prydwen.gg. Lock a team and the next one uses only what is left.",
+    structuredData: collectionPageJsonLd(
+      "Honkai: Star Rail Team Planner",
+      "Pick the Honkai: Star Rail characters you own and get every team you can build, ranked by prydwen.gg. Lock a team and the next one uses only what is left.",
+      `${SITE_URL}/hsr`,
+    ),
+  },
+  {
     path: "/pixies",
     title: "Pixies | Mirabellier",
     description: "Short videos and clips from the community.",

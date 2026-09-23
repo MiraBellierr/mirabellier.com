@@ -50,6 +50,7 @@ const STATIC_ROUTES = [
   { path: "/stats", priority: "0.5", changefreq: "daily" },
   { path: "/projects", priority: "0.8", changefreq: "monthly" },
   { path: "/anime", priority: "0.8", changefreq: "daily" },
+  { path: "/hsr", priority: "0.8", changefreq: "daily" },
   { path: "/fanart", priority: "0.7", changefreq: "weekly" },
   { path: "/twitch", priority: "0.7", changefreq: "hourly" },
   { path: "/pixies", priority: "0.8", changefreq: "daily" },

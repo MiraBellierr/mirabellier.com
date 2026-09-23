@@ -666,6 +666,63 @@ h6 {
   color: rgb(187, 247, 208) !important;
 }
 
+/* Star Rail team-planner status pills. The blanket `.dark .card-border span`
+   rule above would otherwise leave near-white text on these still-light
+   backgrounds, so each tone restates both its dark background and its text
+   colour, mirroring the `mint-chip` escape hatch. */
+.planner-pill {
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-weight: 700;
+}
+
+.planner-pill--available {
+  background: rgb(252, 231, 243);
+  color: rgb(190, 24, 93);
+}
+
+.dark .card-border .planner-pill--available {
+  background: rgba(244, 114, 182, 0.22) !important;
+  color: rgb(251, 207, 232) !important;
+}
+
+.planner-pill--locked {
+  background: rgb(254, 243, 199);
+  color: rgb(180, 83, 9);
+}
+
+.dark .card-border .planner-pill--locked {
+  background: rgba(251, 191, 36, 0.22) !important;
+  color: rgb(253, 230, 138) !important;
+}
+
+/* Selected / locked character buttons in the picker grid. */
+.dark .card-border .planner-char--owned {
+  background: rgba(244, 114, 182, 0.18) !important;
+  border-color: rgba(244, 114, 182, 0.55) !important;
+}
+
+.dark .card-border .planner-char--used {
+  background: rgba(251, 191, 36, 0.14) !important;
+  border-color: rgba(251, 191, 36, 0.45) !important;
+}
+
+.dark .card-border .planner-char--owned .planner-char-name {
+  color: rgb(251, 207, 232) !important;
+}
+
+.dark .card-border .planner-char--owned .planner-char-meta {
+  color: rgba(251, 207, 232, 0.8) !important;
+}
+
+.dark .card-border .planner-char--used .planner-char-name {
+  color: rgb(253, 230, 138) !important;
+}
+
+.dark .card-border .planner-char--used .planner-char-meta {
+  color: rgba(253, 230, 138, 0.8) !important;
+}
+
 /* Dark mode input fields */
 .dark input[type="text"],
 .dark input[type="email"],
