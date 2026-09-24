@@ -40,7 +40,8 @@ const Footer = () => {
             <a
               className="underline underline-offset-4 hover:text-pink-600"
               href={webring.prevUrl}
-              rel="external"
+              target="_blank"
+              rel="external noreferrer"
               title={`Previous site in ${webring.name}`}
             >
               ‹ prev
@@ -66,7 +67,8 @@ const Footer = () => {
             <a
               className="underline underline-offset-4 hover:text-pink-600"
               href={webring.nextUrl}
-              rel="external"
+              target="_blank"
+              rel="external noreferrer"
               title={`Next site in ${webring.name}`}
             >
               next ›
