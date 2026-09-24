@@ -90,6 +90,21 @@ const Now = () => {
       description:
         "What Mirabellier is focused on right now: reading, watching, building, and listening.",
       url: "https://mirabellier.com/now",
+      // Google requires `mainEntity` on `ProfilePage`; without it Search
+      // Console reports "Missing field mainEntity" for /now. Mirrors the
+      // Person node baked into the prerendered head in vite.config.ts and
+      // the sitewide `#person` node in index.html. Keep the three in sync.
+      mainEntity: {
+        "@type": "Person",
+        name: "Mirabellier",
+        url: "https://mirabellier.com",
+        jobTitle: "Full Stack Developer",
+        sameAs: [
+          "https://github.com/MiraBellierr",
+          "https://www.patreon.com/c/jasminebot/",
+          "https://ko-fi.com/mirabellier",
+        ],
+      },
     },
   });
 

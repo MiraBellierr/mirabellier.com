@@ -79,6 +79,21 @@ const SEO_ROUTES: RouteSeo[] = [
       description:
         "What Mirabellier is focused on right now: reading, watching, building, and listening.",
       url: `${SITE_URL}/now`,
+      // Google requires `mainEntity` on `ProfilePage`; without it Search
+      // Console reports "Missing field mainEntity". Mirrors the Person node
+      // in src/pages/Now.tsx (runtime head) and the sitewide `#person` node
+      // in index.html. Keep the three in sync.
+      mainEntity: {
+        "@type": "Person",
+        name: "Mirabellier",
+        url: SITE_URL,
+        jobTitle: "Full Stack Developer",
+        sameAs: [
+          "https://github.com/MiraBellierr",
+          "https://www.patreon.com/c/jasminebot/",
+          "https://ko-fi.com/mirabellier",
+        ],
+      },
     },
   },
   {
