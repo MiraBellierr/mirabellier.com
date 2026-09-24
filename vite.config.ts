@@ -1,8 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import type { OutputBundle } from "rollup";
-import { routeSeoPlugin, type RouteSeo } from "./vite-plugin-route-seo";
+import { routeSeoPlugin, type RouteSeo } from "./vite-plugin-route-seo.ts";
 
 const SITE_URL = "https://mirabellier.com";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
@@ -692,7 +691,7 @@ function bundleBudgetPlugin(): Plugin {
   return {
     name: "bundle-budget",
     apply: "build",
-    generateBundle(_options: unknown, bundle: OutputBundle) {
+    generateBundle(_options, bundle) {
       for (const [fileName, output] of Object.entries(bundle)) {
         if (output.type === "chunk") {
           const sizeKb = Buffer.byteLength(output.code, "utf8") / 1024;
@@ -735,7 +734,7 @@ function entryChunkPurityPlugin(): Plugin {
   return {
     name: "entry-chunk-purity",
     apply: "build",
-    generateBundle(_options: unknown, bundle: OutputBundle) {
+    generateBundle(_options, bundle) {
       const seen = new Set<string>();
       const offenders = new Set<string>();
       const walk = (fileName: string) => {
@@ -905,17 +904,25 @@ export default defineConfig({
       }
       return undefined;
     },
-    // Minify and optimize
-    minify: "esbuild",
+    // Minify and optimize. Vite 8 minifies with Oxc by default; the explicit
+    // "esbuild" value is deprecated there and would require installing esbuild
+    // only for minification (Rolldown/Oxc replaced it).
+    minify: "oxc",
     // Keep syntax compatible with older iPhone Safari builds used in the wild.
     target: "es2018",
+    // The postcss chain already runs autoprefixer, so Lightning CSS (Vite 8's
+    // default CSS minifier) adding prefixes for the same targets duplicates
+    // them and inflates the raw stylesheet ~18%. Point its lowering at the
+    // same baseline as autoprefixer's browserslist defaults instead of the
+    // JS `target` above.
+    cssTarget: "safari12",
     cssCodeSplit: true,
     // Stricter warning threshold than default oversized chunk budget.
     chunkSizeWarningLimit: 450,
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
     // Prevent multiple React/router instances (avoids invalid hook calls)
     dedupe: ["react", "react-dom", "react-router", "react-router-dom"],

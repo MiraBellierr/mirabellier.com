@@ -40,7 +40,7 @@ If you are peeking around this repo, welcome welcome. This part is the one peopl
 ## The stack
 
 - React 19 + TypeScript
-- Vite 7
+- Vite 8
 - Tailwind CSS
 - React Router 7
 - Tiptap 3 (+ lowlight syntax highlighting) for the blog editor
