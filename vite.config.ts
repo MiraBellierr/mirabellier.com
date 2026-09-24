@@ -802,6 +802,22 @@ export default defineConfig({
         manualChunks(id) {
           const chunkId = normalizedChunkPath(id);
 
+          // Vite 8 lowers syntax with Oxc, which injects its runtime helpers as
+          // virtual modules (`\0@oxc-project+runtime@x/helpers/esm/*.js`). Their
+          // ids are not under `node_modules`, so without this rule Rolldown does
+          // not give them a home and merges them into an async chunk that uses
+          // them (observed: tiptap-vendor). The entry chunk needs a helper (via
+          // visibility-timer.ts), so that merge makes the entry statically
+          // import the whole editor stack — which entryChunkPurityPlugin exists
+          // to catch, and did, on a build with `NODE_ENV=development` in `.env`.
+          // A tiny dedicated chunk keeps them off every route chunk.
+          if (
+            chunkId.includes("@oxc-project/runtime") ||
+            chunkId.includes("@oxc-project+runtime")
+          ) {
+            return "oxc-runtime";
+          }
+
           if (chunkId.includes("/node_modules/")) {
             // React + router: large, changes rarely. Splitting it out of the
             // entry chunk keeps `index-*.js` under budget and lets the runtime
