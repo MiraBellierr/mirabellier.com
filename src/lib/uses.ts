@@ -21,7 +21,7 @@ export const usesSections: UsesSection[] = [
     note: "One Vite single-page app. Routes are lazy-loaded; the rich-text editor stays behind a dynamic import so a first visit never downloads it.",
     items: [
       { name: "React 19 + TypeScript", detail: "strict mode, function components only" },
-      { name: "Vite 7", detail: "dev server + production build, esbuild minify" },
+      { name: "Vite 8", detail: "dev server + production build, Rolldown + Oxc minify" },
       { name: "React Router 7", detail: "~60 client routes" },
       { name: "Tailwind CSS 3", detail: "with @tailwindcss/typography for post bodies" },
       {

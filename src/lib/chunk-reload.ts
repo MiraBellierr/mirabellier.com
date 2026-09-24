@@ -18,9 +18,10 @@ const CHUNK_RELOAD_QUERY = "__chunk_reload";
 const CHUNK_RELOAD_COOLDOWN_MS = 90_000;
 const CHUNK_FAILURE_KEY = "mirabellier-chunk-failures";
 const CHUNK_FAILURE_WINDOW_MS = 30_000;
-// Vite 7's __vitePreload calls preventDefault() to suppress the throw, so a
+// Vite's __vitePreload calls preventDefault() to suppress the throw, so a
 // stale chunk never produces a second import attempt to count toward a
 // higher threshold — the page is already dead after the first failure.
+// (Verified unchanged in Vite 8's Rolldown-based preload helper.)
 const CHUNK_FAILURE_THRESHOLD = 1;
 
 export function isChunkLoadErrorMessage(message: string): boolean {
