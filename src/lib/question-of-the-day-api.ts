@@ -13,6 +13,7 @@ export type QuestionOfTheDayQuestion = {
   prompt: string;
   lockedAt: string | null;
   archivedAt: string | null;
+  carriedFromRecordedDate: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -107,6 +108,10 @@ function normalizeQuestion(value: unknown): QuestionOfTheDayQuestion | null {
       typeof source.lockedAt === "string" ? String(source.lockedAt) : null,
     archivedAt:
       typeof source.archivedAt === "string" ? String(source.archivedAt) : null,
+    carriedFromRecordedDate:
+      typeof source.carriedFromRecordedDate === "string"
+        ? String(source.carriedFromRecordedDate)
+        : null,
     createdAt: readString(source.createdAt, new Date().toISOString()),
     updatedAt: readString(source.updatedAt, new Date().toISOString()),
   };
@@ -148,6 +153,7 @@ function normalizeAdminQuestion(value: unknown): QuestionOfTheDayAdminQuestion {
     prompt: "",
     lockedAt: null,
     archivedAt: null,
+    carriedFromRecordedDate: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

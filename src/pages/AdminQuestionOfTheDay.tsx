@@ -236,9 +236,9 @@ const AdminQuestionOfTheDay = () => {
   const activeAnswerCount = currentData?.answers.length ?? 0;
   const activeQuestionState = !activeQuestion
     ? "waiting for a prompt"
-    : activeQuestion.recordedDate === currentData?.currentRecordedDate
-      ? "current UTC day"
-      : "carried forward until answered";
+    : activeQuestion.carriedFromRecordedDate
+      ? "carried forward until answered"
+      : "current UTC day";
   const queuedPromptCount = parseQueuedPrompts(queueDraft).length;
   const queueStart =
     queueData && queueData.questions.length
@@ -496,7 +496,8 @@ const AdminQuestionOfTheDay = () => {
                 </p>
 
                 <p className="text-xs text-blue-400">
-                  Unanswered questions stay live until someone answers them.
+                  Unanswered questions stay live and carry to the current day
+                  until someone answers them.
                 </p>
 
                 {saveSuccess ? (
@@ -549,8 +550,12 @@ const AdminQuestionOfTheDay = () => {
                           </p>
                           <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-blue-400">
                             {entry.isCurrent ? "live now" : "queued"} ·{" "}
-                            {entry.lockedAt ? "locked" : "queued"} ·{" "}
-                            {entry.answerCount} answer
+                            {entry.carriedFromRecordedDate
+                              ? "carried forward"
+                              : entry.lockedAt
+                                ? "locked"
+                                : "queued"}{" "}
+                            · {entry.answerCount} answer
                             {entry.answerCount === 1 ? "" : "s"}
                           </p>
                         </div>
@@ -670,7 +675,10 @@ const AdminQuestionOfTheDay = () => {
                   queue note
                 </h2>
                 <p>Each line becomes one UTC-day question.</p>
-                <p>Unanswered questions stay active instead of rolling over.</p>
+                <p>
+                  Unanswered questions carry to the current day until someone
+                  answers them.
+                </p>
                 <p>You can also force-archive the live question for testing.</p>
                 <p>Answer deletion now happens on the public answer pages.</p>
               </div>

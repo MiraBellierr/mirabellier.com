@@ -150,9 +150,11 @@ const QuestionOfTheDay = () => {
   const headingDate = formatQuestionHeadingDate(
     activeQuestionRecordedDate || new Date().toISOString().slice(0, 10),
   );
+  // The backend carries an unanswered question forward by re-dating it, so the
+  // old date is gone; carriedFromRecordedDate is the reliable "this one is
+  // still waiting" signal.
   const isCarriedOverQuestion = Boolean(
-    currentData?.question &&
-      currentData.question.recordedDate !== currentData.currentRecordedDate,
+    currentData?.question?.carriedFromRecordedDate,
   );
   const sortedAnswers = [...(currentData?.answers ?? [])].sort(
     (left, right) =>
@@ -531,8 +533,8 @@ const QuestionOfTheDay = () => {
                   little archive note
                 </h2>
                 <p>
-                  Unanswered questions stay live. Once a question gets an
-                  answer, it can move into the archive later.
+                  Unanswered questions stay live and carry to the current day
+                  until someone answers them.
                 </p>
               </div>
             </div>
