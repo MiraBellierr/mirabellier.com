@@ -11,7 +11,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "backend:dev": "node mirabellier-backend/app.js",
+    "dev:server": "node mirabellier-backend/app.js",
     "generate:sitemap": "node generate-sitemap.cjs",
     "convert:assets": "node convert-assets.cjs",
     "convert:assets:dry": "node convert-assets.cjs --dry-run",
