@@ -87,7 +87,7 @@ This frontend expects a working API at `VITE_API_BASE`. Backend setup lives in [
 - `npm run build` - run the TypeScript project build + production Vite build
 - `npm run preview` - preview the production build locally
 - `npm run lint` - run ESLint
-- `npm run backend:dev` - run the backend app entry from the repo root
+- `npm run dev:server` - run the backend app entry from the repo root
 - `npm run generate:sitemap` - regenerate `public/sitemap.xml` and the Atom/JSON feeds
 - `npm run indexnow:submit-all` - submit all sitemap URLs to IndexNow
 
