@@ -24,12 +24,11 @@ mirabellier-backend-go
 *.sln
 *.sw?
 .env
-mirabellier-backend
-scripts
-nginx.conf
-mirabellier
-mirabellier.conf
-extension
+/scripts
+/nginx.conf
+/mirabellier
+/mirabellier.conf
+/extension
 database.sqlite3
 database.*
 CAT_CHASE_PLAN.md

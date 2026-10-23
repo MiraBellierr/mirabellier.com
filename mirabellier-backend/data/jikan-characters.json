@@ -1,0 +1,611 @@
+{
+  "source": "https://api.jikan.moe/v4/characters/{id}",
+  "startId": 1,
+  "endId": 44000,
+  "lastProcessedId": 100,
+  "generatedAt": "2026-05-16T15:37:22.310Z",
+  "stats": {
+    "processed": 100,
+    "found": 85,
+    "missing": 15,
+    "failed": 0
+  },
+  "failures": [],
+  "characters": [
+    {
+      "id": 1,
+      "name": "Spike Spiegel",
+      "imageUrl": "https://myanimelist.net/images/characters/11/516853.jpg",
+      "favorites": 48950,
+      "url": "https://myanimelist.net/character/1/Spike_Spiegel"
+    },
+    {
+      "id": 2,
+      "name": "Faye Valentine",
+      "imageUrl": "https://myanimelist.net/images/characters/15/264961.jpg",
+      "favorites": 9665,
+      "url": "https://myanimelist.net/character/2/Faye_Valentine"
+    },
+    {
+      "id": 3,
+      "name": "Jet Black",
+      "imageUrl": "https://myanimelist.net/images/characters/11/253723.jpg",
+      "favorites": 2294,
+      "url": "https://myanimelist.net/character/3/Jet_Black"
+    },
+    {
+      "id": 5,
+      "name": "Ichigo Kurosaki",
+      "imageUrl": "https://myanimelist.net/images/characters/3/512788.jpg",
+      "favorites": 36785,
+      "url": "https://myanimelist.net/character/5/Ichigo_Kurosaki"
+    },
+    {
+      "id": 6,
+      "name": "Rukia Kuchiki",
+      "imageUrl": "https://myanimelist.net/images/characters/2/78215.jpg",
+      "favorites": 10241,
+      "url": "https://myanimelist.net/character/6/Rukia_Kuchiki"
+    },
+    {
+      "id": 7,
+      "name": "Orihime Inoue",
+      "imageUrl": "https://myanimelist.net/images/characters/9/505076.jpg",
+      "favorites": 3513,
+      "url": "https://myanimelist.net/character/7/Orihime_Inoue"
+    },
+    {
+      "id": 11,
+      "name": "Edward Elric",
+      "imageUrl": "https://myanimelist.net/images/characters/9/72533.jpg",
+      "favorites": 91072,
+      "url": "https://myanimelist.net/character/11/Edward_Elric"
+    },
+    {
+      "id": 12,
+      "name": "Alphonse Elric",
+      "imageUrl": "https://myanimelist.net/images/characters/5/54265.jpg",
+      "favorites": 15429,
+      "url": "https://myanimelist.net/character/12/Alphonse_Elric"
+    },
+    {
+      "id": 13,
+      "name": "Sasuke Uchiha",
+      "imageUrl": "https://myanimelist.net/images/characters/9/131317.jpg",
+      "favorites": 30153,
+      "url": "https://myanimelist.net/character/13/Sasuke_Uchiha"
+    },
+    {
+      "id": 14,
+      "name": "Itachi Uchiha",
+      "imageUrl": "https://myanimelist.net/images/characters/9/284122.jpg",
+      "favorites": 67546,
+      "url": "https://myanimelist.net/character/14/Itachi_Uchiha"
+    },
+    {
+      "id": 15,
+      "name": "Ippo Makunouchi",
+      "imageUrl": "https://myanimelist.net/images/characters/16/74142.jpg",
+      "favorites": 8876,
+      "url": "https://myanimelist.net/character/15/Ippo_Makunouchi"
+    },
+    {
+      "id": 16,
+      "name": "Edward Wong Hau Pepelu Tivrusky IV",
+      "imageUrl": "https://myanimelist.net/images/characters/16/30533.jpg",
+      "favorites": 6227,
+      "url": "https://myanimelist.net/character/16/Edward_Wong_Hau_Pepelu_Tivrusky_IV"
+    },
+    {
+      "id": 17,
+      "name": "Naruto Uzumaki",
+      "imageUrl": "https://myanimelist.net/images/characters/2/284121.jpg",
+      "favorites": 87478,
+      "url": "https://myanimelist.net/character/17/Naruto_Uzumaki"
+    },
+    {
+      "id": 18,
+      "name": "Haruhi Fujioka",
+      "imageUrl": "https://myanimelist.net/images/characters/13/55779.jpg",
+      "favorites": 7813,
+      "url": "https://myanimelist.net/character/18/Haruhi_Fujioka"
+    },
+    {
+      "id": 19,
+      "name": "Tamaki Suou",
+      "imageUrl": "https://myanimelist.net/images/characters/3/48467.jpg",
+      "favorites": 10160,
+      "url": "https://myanimelist.net/character/19/Tamaki_Suou"
+    },
+    {
+      "id": 20,
+      "name": "Mitsukuni Haninozuka",
+      "imageUrl": "https://myanimelist.net/images/characters/13/48471.jpg",
+      "favorites": 2497,
+      "url": "https://myanimelist.net/character/20/Mitsukuni_Haninozuka"
+    },
+    {
+      "id": 21,
+      "name": "Takashi Morinozuka",
+      "imageUrl": "https://myanimelist.net/images/characters/11/128685.jpg",
+      "favorites": 1260,
+      "url": "https://myanimelist.net/character/21/Takashi_Morinozuka"
+    },
+    {
+      "id": 22,
+      "name": "Hikaru Hitachiin",
+      "imageUrl": "https://myanimelist.net/images/characters/2/48468.jpg",
+      "favorites": 4095,
+      "url": "https://myanimelist.net/character/22/Hikaru_Hitachiin"
+    },
+    {
+      "id": 23,
+      "name": "Kyouya Ootori",
+      "imageUrl": "https://myanimelist.net/images/characters/13/90675.jpg",
+      "favorites": 3578,
+      "url": "https://myanimelist.net/character/23/Kyouya_Ootori"
+    },
+    {
+      "id": 24,
+      "name": "Kaoru Hitachiin",
+      "imageUrl": "https://myanimelist.net/images/characters/9/48469.jpg",
+      "favorites": 3271,
+      "url": "https://myanimelist.net/character/24/Kaoru_Hitachiin"
+    },
+    {
+      "id": 25,
+      "name": "Renge Houshakuji",
+      "imageUrl": "https://myanimelist.net/images/characters/10/55457.jpg",
+      "favorites": 163,
+      "url": "https://myanimelist.net/character/25/Renge_Houshakuji"
+    },
+    {
+      "id": 26,
+      "name": "Ging Freecss",
+      "imageUrl": "https://myanimelist.net/images/characters/2/231795.jpg",
+      "favorites": 1209,
+      "url": "https://myanimelist.net/character/26/Ging_Freecss"
+    },
+    {
+      "id": 27,
+      "name": "Killua Zoldyck",
+      "imageUrl": "https://myanimelist.net/images/characters/2/327920.jpg",
+      "favorites": 101080,
+      "url": "https://myanimelist.net/character/27/Killua_Zoldyck"
+    },
+    {
+      "id": 28,
+      "name": "Kurapika",
+      "imageUrl": "https://myanimelist.net/images/characters/3/549312.jpg",
+      "favorites": 26383,
+      "url": "https://myanimelist.net/character/28/Kurapika"
+    },
+    {
+      "id": 29,
+      "name": "Leorio Paladiknight",
+      "imageUrl": "https://myanimelist.net/images/characters/11/549311.jpg",
+      "favorites": 7640,
+      "url": "https://myanimelist.net/character/29/Leorio_Paladiknight"
+    },
+    {
+      "id": 30,
+      "name": "Gon Freecss",
+      "imageUrl": "https://myanimelist.net/images/characters/11/174517.jpg",
+      "favorites": 22877,
+      "url": "https://myanimelist.net/character/30/Gon_Freecss"
+    },
+    {
+      "id": 31,
+      "name": "Hisoka Morow",
+      "imageUrl": "https://myanimelist.net/images/characters/3/174561.jpg",
+      "favorites": 35473,
+      "url": "https://myanimelist.net/character/31/Hisoka_Morow"
+    },
+    {
+      "id": 32,
+      "name": "Ovan",
+      "imageUrl": "https://myanimelist.net/images/characters/13/61258.jpg",
+      "favorites": 74,
+      "url": "https://myanimelist.net/character/32/Ovan"
+    },
+    {
+      "id": 34,
+      "name": "Shino",
+      "imageUrl": "https://myanimelist.net/images/characters/8/85961.jpg",
+      "favorites": 39,
+      "url": "https://myanimelist.net/character/34/Shino"
+    },
+    {
+      "id": 35,
+      "name": "Tabby",
+      "imageUrl": "https://myanimelist.net/images/characters/10/85962.jpg",
+      "favorites": 14,
+      "url": "https://myanimelist.net/character/35/Tabby"
+    },
+    {
+      "id": 36,
+      "name": "Phyllo",
+      "imageUrl": "https://myanimelist.net/images/characters/11/137791.jpg",
+      "favorites": 12,
+      "url": "https://myanimelist.net/character/36/Phyllo"
+    },
+    {
+      "id": 37,
+      "name": "Sakisaka",
+      "imageUrl": "https://myanimelist.net/images/characters/10/131571.jpg",
+      "favorites": 1,
+      "url": "https://myanimelist.net/character/37/Sakisaka"
+    },
+    {
+      "id": 39,
+      "name": "Tsukasa",
+      "imageUrl": "https://myanimelist.net/images/characters/2/86095.jpg",
+      "favorites": 392,
+      "url": "https://myanimelist.net/character/39/Tsukasa"
+    },
+    {
+      "id": 40,
+      "name": "Luffy Monkey D.",
+      "imageUrl": "https://myanimelist.net/images/characters/9/310307.jpg",
+      "favorites": 148624,
+      "url": "https://myanimelist.net/character/40/Luffy_Monkey_D"
+    },
+    {
+      "id": 41,
+      "name": "Subaru",
+      "imageUrl": "https://myanimelist.net/images/characters/14/85930.jpg",
+      "favorites": 133,
+      "url": "https://myanimelist.net/character/41/Subaru"
+    },
+    {
+      "id": 43,
+      "name": "Sven Vollfied",
+      "imageUrl": "https://myanimelist.net/images/characters/5/58282.jpg",
+      "favorites": 370,
+      "url": "https://myanimelist.net/character/43/Sven_Vollfied"
+    },
+    {
+      "id": 44,
+      "name": "Eve",
+      "imageUrl": "https://myanimelist.net/images/characters/12/52806.jpg",
+      "favorites": 423,
+      "url": "https://myanimelist.net/character/44/Eve"
+    },
+    {
+      "id": 45,
+      "name": "Rinslet Walker",
+      "imageUrl": "https://myanimelist.net/images/characters/16/78923.jpg",
+      "favorites": 35,
+      "url": "https://myanimelist.net/character/45/Rinslet_Walker"
+    },
+    {
+      "id": 47,
+      "name": "Ginji Amano",
+      "imageUrl": "https://myanimelist.net/images/characters/6/520032.jpg",
+      "favorites": 406,
+      "url": "https://myanimelist.net/character/47/Ginji_Amano"
+    },
+    {
+      "id": 48,
+      "name": "Kazuki Fuuchouin",
+      "imageUrl": "https://myanimelist.net/images/characters/12/33496.jpg",
+      "favorites": 141,
+      "url": "https://myanimelist.net/character/48/Kazuki_Fuuchouin"
+    },
+    {
+      "id": 49,
+      "name": "Shido Fuyuki",
+      "imageUrl": "https://myanimelist.net/images/characters/2/30668.jpg",
+      "favorites": 28,
+      "url": "https://myanimelist.net/character/49/Shido_Fuyuki"
+    },
+    {
+      "id": 50,
+      "name": "Hevn",
+      "imageUrl": "https://myanimelist.net/images/characters/15/520028.jpg",
+      "favorites": 4,
+      "url": "https://myanimelist.net/character/50/Hevn"
+    },
+    {
+      "id": 52,
+      "name": "Kuroudo Akabane",
+      "imageUrl": "https://myanimelist.net/images/characters/11/30582.jpg",
+      "favorites": 385,
+      "url": "https://myanimelist.net/character/52/Kuroudo_Akabane"
+    },
+    {
+      "id": 53,
+      "name": "Himiko Kudou",
+      "imageUrl": "https://myanimelist.net/images/characters/3/470739.jpg",
+      "favorites": 9,
+      "url": "https://myanimelist.net/character/53/Himiko_Kudou"
+    },
+    {
+      "id": 54,
+      "name": "Paul Wang",
+      "imageUrl": "https://myanimelist.net/images/characters/5/30588.jpg",
+      "favorites": 1,
+      "url": "https://myanimelist.net/character/54/Paul_Wang"
+    },
+    {
+      "id": 55,
+      "name": "MakubeX",
+      "imageUrl": "https://myanimelist.net/images/characters/12/527233.jpg",
+      "favorites": 31,
+      "url": "https://myanimelist.net/character/55/MakubeX"
+    },
+    {
+      "id": 56,
+      "name": "Juubei Kakei",
+      "imageUrl": "https://myanimelist.net/images/characters/10/66595.jpg",
+      "favorites": 9,
+      "url": "https://myanimelist.net/character/56/Juubei_Kakei"
+    },
+    {
+      "id": 57,
+      "name": "Illumi Zoldyck",
+      "imageUrl": "https://myanimelist.net/images/characters/8/174521.jpg",
+      "favorites": 1957,
+      "url": "https://myanimelist.net/character/57/Illumi_Zoldyck"
+    },
+    {
+      "id": 58,
+      "name": "Chrollo Lucilfer",
+      "imageUrl": "https://myanimelist.net/images/characters/4/182387.jpg",
+      "favorites": 10962,
+      "url": "https://myanimelist.net/character/58/Chrollo_Lucilfer"
+    },
+    {
+      "id": 59,
+      "name": "Zeno Zoldyck",
+      "imageUrl": "https://myanimelist.net/images/characters/5/193007.jpg",
+      "favorites": 268,
+      "url": "https://myanimelist.net/character/59/Zeno_Zoldyck"
+    },
+    {
+      "id": 60,
+      "name": "Silva Zoldyck",
+      "imageUrl": "https://myanimelist.net/images/characters/4/198609.jpg",
+      "favorites": 128,
+      "url": "https://myanimelist.net/character/60/Silva_Zoldyck"
+    },
+    {
+      "id": 61,
+      "name": "Robin Nico",
+      "imageUrl": "https://myanimelist.net/images/characters/16/363700.jpg",
+      "favorites": 23811,
+      "url": "https://myanimelist.net/character/61/Robin_Nico"
+    },
+    {
+      "id": 62,
+      "name": "Zoro Roronoa",
+      "imageUrl": "https://myanimelist.net/images/characters/3/100534.jpg",
+      "favorites": 115783,
+      "url": "https://myanimelist.net/character/62/Zoro_Roronoa"
+    },
+    {
+      "id": 63,
+      "name": "Winry Rockbell",
+      "imageUrl": "https://myanimelist.net/images/characters/15/84336.jpg",
+      "favorites": 4103,
+      "url": "https://myanimelist.net/character/63/Winry_Rockbell"
+    },
+    {
+      "id": 64,
+      "name": "Franky",
+      "imageUrl": "https://myanimelist.net/images/characters/13/210053.jpg",
+      "favorites": 6808,
+      "url": "https://myanimelist.net/character/64/Franky"
+    },
+    {
+      "id": 65,
+      "name": "Pinako Rockbell",
+      "imageUrl": "https://myanimelist.net/images/characters/6/81200.jpg",
+      "favorites": 23,
+      "url": "https://myanimelist.net/character/65/Pinako_Rockbell"
+    },
+    {
+      "id": 66,
+      "name": "Scar",
+      "imageUrl": "https://myanimelist.net/images/characters/3/31591.jpg",
+      "favorites": 2108,
+      "url": "https://myanimelist.net/character/66/Scar"
+    },
+    {
+      "id": 67,
+      "name": "Izumi Curtis",
+      "imageUrl": "https://myanimelist.net/images/characters/5/85257.jpg",
+      "favorites": 936,
+      "url": "https://myanimelist.net/character/67/Izumi_Curtis"
+    },
+    {
+      "id": 68,
+      "name": "Roy Mustang",
+      "imageUrl": "https://myanimelist.net/images/characters/11/510227.jpg",
+      "favorites": 39343,
+      "url": "https://myanimelist.net/character/68/Roy_Mustang"
+    },
+    {
+      "id": 69,
+      "name": "Maes Hughes",
+      "imageUrl": "https://myanimelist.net/images/characters/13/73469.jpg",
+      "favorites": 6504,
+      "url": "https://myanimelist.net/character/69/Maes_Hughes"
+    },
+    {
+      "id": 70,
+      "name": "Riza Hawkeye",
+      "imageUrl": "https://myanimelist.net/images/characters/3/451785.jpg",
+      "favorites": 5824,
+      "url": "https://myanimelist.net/character/70/Riza_Hawkeye"
+    },
+    {
+      "id": 71,
+      "name": "L Lawliet",
+      "imageUrl": "https://myanimelist.net/images/characters/10/249647.jpg",
+      "favorites": 131081,
+      "url": "https://myanimelist.net/character/71/L_Lawliet"
+    },
+    {
+      "id": 72,
+      "name": "Kazuma Azuma",
+      "imageUrl": "https://myanimelist.net/images/characters/5/33059.jpg",
+      "favorites": 176,
+      "url": "https://myanimelist.net/character/72/Kazuma_Azuma"
+    },
+    {
+      "id": 74,
+      "name": "Tsukino Azusagawa",
+      "imageUrl": "https://myanimelist.net/images/characters/6/33056.jpg",
+      "favorites": 42,
+      "url": "https://myanimelist.net/character/74/Tsukino_Azusagawa"
+    },
+    {
+      "id": 75,
+      "name": "Ryuk",
+      "imageUrl": "https://myanimelist.net/images/characters/10/59125.jpg",
+      "favorites": 12852,
+      "url": "https://myanimelist.net/character/75/Ryuk"
+    },
+    {
+      "id": 76,
+      "name": "Kai Suwabara",
+      "imageUrl": "https://myanimelist.net/images/characters/11/33042.jpg",
+      "favorites": 21,
+      "url": "https://myanimelist.net/character/76/Kai_Suwabara"
+    },
+    {
+      "id": 78,
+      "name": "Ken Matsushiro",
+      "imageUrl": "https://myanimelist.net/images/characters/2/33044.jpg",
+      "favorites": 50,
+      "url": "https://myanimelist.net/character/78/Ken_Matsushiro"
+    },
+    {
+      "id": 79,
+      "name": "Ryo Kuroyanagi",
+      "imageUrl": "https://myanimelist.net/images/characters/9/33052.jpg",
+      "favorites": 134,
+      "url": "https://myanimelist.net/character/79/Ryo_Kuroyanagi"
+    },
+    {
+      "id": 80,
+      "name": "Light Yagami",
+      "imageUrl": "https://myanimelist.net/images/characters/6/63870.jpg",
+      "favorites": 99525,
+      "url": "https://myanimelist.net/character/80/Light_Yagami"
+    },
+    {
+      "id": 82,
+      "name": "Yuuichi Kirisaki",
+      "imageUrl": "https://myanimelist.net/images/characters/9/111035.jpg",
+      "favorites": 2,
+      "url": "https://myanimelist.net/character/82/Yuuichi_Kirisaki"
+    },
+    {
+      "id": 83,
+      "name": "Yukino Azusagawa",
+      "imageUrl": "https://myanimelist.net/images/characters/8/110969.jpg",
+      "favorites": 4,
+      "url": "https://myanimelist.net/character/83/Yukino_Azusagawa"
+    },
+    {
+      "id": 84,
+      "name": "Kageto Kinoshita",
+      "imageUrl": "https://myanimelist.net/images/characters/7/111036.jpg",
+      "favorites": 3,
+      "url": "https://myanimelist.net/character/84/Kageto_Kinoshita"
+    },
+    {
+      "id": 85,
+      "name": "Kakashi Hatake",
+      "imageUrl": "https://myanimelist.net/images/characters/7/284129.jpg",
+      "favorites": 49040,
+      "url": "https://myanimelist.net/character/85/Kakashi_Hatake"
+    },
+    {
+      "id": 86,
+      "name": "Rei Ayanami",
+      "imageUrl": "https://myanimelist.net/images/characters/11/314932.jpg",
+      "favorites": 21904,
+      "url": "https://myanimelist.net/character/86/Rei_Ayanami"
+    },
+    {
+      "id": 87,
+      "name": "Kino",
+      "imageUrl": "https://myanimelist.net/images/characters/15/303659.jpg",
+      "favorites": 5230,
+      "url": "https://myanimelist.net/character/87/Kino"
+    },
+    {
+      "id": 88,
+      "name": "Hermes",
+      "imageUrl": "https://myanimelist.net/images/characters/5/336494.jpg",
+      "favorites": 209,
+      "url": "https://myanimelist.net/character/88/Hermes"
+    },
+    {
+      "id": 89,
+      "name": "Shinji Ikari",
+      "imageUrl": "https://myanimelist.net/images/characters/5/225177.jpg",
+      "favorites": 21247,
+      "url": "https://myanimelist.net/character/89/Shinji_Ikari"
+    },
+    {
+      "id": 90,
+      "name": "Hikaru Shindou",
+      "imageUrl": "https://myanimelist.net/images/characters/14/208207.jpg",
+      "favorites": 462,
+      "url": "https://myanimelist.net/character/90/Hikaru_Shindou"
+    },
+    {
+      "id": 91,
+      "name": "Sai Fujiwara no",
+      "imageUrl": "https://myanimelist.net/images/characters/2/44575.jpg",
+      "favorites": 809,
+      "url": "https://myanimelist.net/character/91/Sai_Fujiwara_no"
+    },
+    {
+      "id": 92,
+      "name": "Akari Fujisaki",
+      "imageUrl": "https://myanimelist.net/images/characters/15/28057.jpg",
+      "favorites": 12,
+      "url": "https://myanimelist.net/character/92/Akari_Fujisaki"
+    },
+    {
+      "id": 93,
+      "name": "Akira Touya",
+      "imageUrl": "https://myanimelist.net/images/characters/3/28051.jpg",
+      "favorites": 275,
+      "url": "https://myanimelist.net/character/93/Akira_Touya"
+    },
+    {
+      "id": 94,
+      "name": "Asuka Langley Souryuu",
+      "imageUrl": "https://myanimelist.net/images/characters/12/79465.jpg",
+      "favorites": 30727,
+      "url": "https://myanimelist.net/character/94/Asuka_Langley_Souryuu"
+    },
+    {
+      "id": 95,
+      "name": "Yuki Mitani",
+      "imageUrl": "https://myanimelist.net/images/characters/13/75070.jpg",
+      "favorites": 22,
+      "url": "https://myanimelist.net/character/95/Yuki_Mitani"
+    },
+    {
+      "id": 96,
+      "name": "Tetsuo Kaga",
+      "imageUrl": "https://myanimelist.net/images/characters/13/75072.jpg",
+      "favorites": 13,
+      "url": "https://myanimelist.net/character/96/Tetsuo_Kaga"
+    },
+    {
+      "id": 97,
+      "name": "Kimihiro Tsutsui",
+      "imageUrl": "https://myanimelist.net/images/characters/2/75251.jpg",
+      "favorites": 1,
+      "url": "https://myanimelist.net/character/97/Kimihiro_Tsutsui"
+    }
+  ]
+}

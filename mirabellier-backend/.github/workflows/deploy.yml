@@ -1,0 +1,251 @@
+name: CI and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# One deploy at a time; let an in-progress deploy finish rather than leaving
+# the release/symlink swap half-done.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Nothing in the test suite launches a browser.
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    # Atomic release: upload the source into releases/<sha>/, run `npm ci` on
+    # the box so native modules (better-sqlite3, sharp) match its ABI, link
+    # the persistent state (.env, the SQLite DB, images/ videos/ and the
+    # runtime data/ files) in from a shared/ tree, then flip the `current`
+    # symlink and reload pm2. A failed build or a failed health check leaves
+    # `current` — and the running process — on the previous release.
+    # The pm2 process name ("mirabellier-api") lives in ecosystem.config.cjs.
+    env:
+      APP_BASE: /srv/mirabellier.com/api
+      RELEASE_DIR: /srv/mirabellier.com/api/releases/${{ github.sha }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Package the source
+        # Ship a tarball so `.git`, CI config and any local node_modules never
+        # reach the server; everything else (incl. the committed data/*.json
+        # catalog) does. Built in RUNNER_TEMP, then moved into the workspace so
+        # scp-action can pick it up by a bare relative name.
+        run: |
+          tar -czf "$RUNNER_TEMP/backend.tar.gz" \
+            --exclude=./.git \
+            --exclude=./.github \
+            --exclude=./node_modules \
+            --exclude=./backend.tar.gz \
+            .
+          mv "$RUNNER_TEMP/backend.tar.gz" backend.tar.gz
+
+      - name: Provision release + shared directories on the VPS
+        # appleboy/ssh-action pinned to a commit SHA (v1.2.5).
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_ROOT_USER }}
+          key: ${{ secrets.VPS_ROOT_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 30m
+          script: |
+            set -eu
+            base="${{ env.APP_BASE }}"
+            release="${{ env.RELEASE_DIR }}"
+
+            mkdir -p \
+              "$base/releases" \
+              "$base/shared/images" \
+              "$base/shared/videos" \
+              "$base/shared/data" \
+              "$base/shared/logs"
+
+            # .env is server-managed and required. CI never creates it.
+            if [ ! -f "$base/shared/.env" ]; then
+              echo "FATAL: $base/shared/.env is missing — create it before deploying." >&2
+              exit 1
+            fi
+
+            mkdir -p "$release"
+            # A re-run of the same commit starts from an empty release dir.
+            find "$release" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+
+      - name: Upload the source tarball
+        # appleboy/scp-action pinned to a commit SHA (v1.0.0).
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_ROOT_USER }}
+          key: ${{ secrets.VPS_ROOT_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 30m
+          source: "backend.tar.gz"
+          target: "${{ env.RELEASE_DIR }}"
+
+      - name: Install, link shared state, activate, health-check
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_ROOT_USER }}
+          key: ${{ secrets.VPS_ROOT_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 30m
+          script: |
+            set -eu
+            # nvm-style installs put node/npm/pm2 outside a non-login shell's PATH.
+            export PATH="$PATH:/usr/local/bin:/usr/bin:/usr/local/lib/node_modules/.bin"
+            export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+            base="${{ env.APP_BASE }}"
+            release="${{ env.RELEASE_DIR }}"
+
+            # --- unpack -------------------------------------------------------
+            cd "$release"
+            tar -xzf backend.tar.gz
+            rm -f backend.tar.gz
+            test -f "$release/package.json"
+            test -f "$release/app.js"
+            test -f "$release/ecosystem.config.cjs"
+
+            # --- dependencies (native, built against this host) --------------
+            npm ci --omit=dev --no-audit --no-fund
+
+            # --- provision the Playwright browser -----------------------------
+            # `npm ci` runs with PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1, so the
+            # Chromium build this Playwright version needs is never fetched
+            # automatically. The browser cache is keyed by revision, and a
+            # `playwright` bump can point at a newer one — the launch in
+            # lib/hsr-browser.js would then fail, the boot sync would leave
+            # data/hsr empty, and /hsr/* would serve 503 until a human ran the
+            # install by hand. Run it here instead; it is a ~2s no-op when the
+            # revision is already present.
+            #
+            # `--only-shell` matches the headless-only launch the app performs.
+            # This runs before `current` is flipped, so `set -eu` aborts the
+            # deploy on failure and the previous (working) release stays live.
+            npx playwright install --only-shell chromium
+
+            # Prove the app can actually launch it — a downloaded binary with
+            # missing system libraries passes the install but fails at runtime.
+            node -e "require('playwright').chromium.launch({ headless: true }).then(b => b.close()).then(() => console.log('playwright: chromium launches'))"
+
+            # --- sync the nginx site config when it changed ------------------
+            # `deploy/nginx/mirabellier.com.conf` is the source of truth for the
+            # main site block. Validate the candidate *in place* and restore the
+            # previous file if `nginx -t` rejects it, so a bad edit aborts the
+            # deploy without ever taking the site down.
+            nginx_src="$release/deploy/nginx/mirabellier.com.conf"
+            nginx_dst="/etc/nginx/sites-available/mirabellier.com"
+            if [ -f "$nginx_src" ] && ! cmp -s "$nginx_src" "$nginx_dst"; then
+              echo "nginx: config changed, validating candidate..."
+              cp "$nginx_dst" "${nginx_dst}.prev"
+              cp "$nginx_src" "$nginx_dst"
+              if nginx -t; then
+                systemctl reload nginx
+                echo "nginx: config updated and reloaded."
+                rm -f "${nginx_dst}.prev"
+              else
+                echo "nginx: candidate config invalid; restoring previous." >&2
+                cp "${nginx_dst}.prev" "$nginx_dst"
+                rm -f "${nginx_dst}.prev"
+                nginx -t
+                exit 1
+              fi
+            fi
+
+            # --- link persistent state from shared/ ------------------------—-
+            ln -sfn "$base/shared/.env"             "$release/.env"
+            ln -sfn "$base/shared/database.sqlite3" "$release/database.sqlite3"
+            ln -sfn "$base/shared/images"           "$release/images"
+            ln -sfn "$base/shared/videos"           "$release/videos"
+            mkdir -p "$release/data"
+            for f in tiktok-cookies.txt instagram-cookies.txt youtube-cookies.txt avatar-cache.json; do
+              ln -sfn "$base/shared/data/$f" "$release/data/$f"
+            done
+
+            # Repoint the `current` symlink at $1 in a single rename(2).
+            point_current_at () {
+              if [ -e "$base/current" ] && [ ! -L "$base/current" ]; then
+                rm -rf "$base/current"   # one-time migration from a real dir
+              fi
+              ln -sfn "$1" "$base/current.tmp"
+              mv -T "$base/current.tmp" "$base/current"
+            }
+
+            reload_pm2 () {
+              ( cd "$base/current" \
+                && pm2 startOrReload "$base/current/ecosystem.config.cjs" --update-env \
+                && pm2 save )
+            }
+
+            # --- release we're replacing, for rollback ---------------------—-
+            prev="$(readlink -f "$base/current" 2>/dev/null || true)"
+
+            # --- activate + reload, then verify it serves -----------------—--
+            point_current_at "$release"
+
+            # PORT is numeric; take the first run of digits off the PORT= line
+            # (tolerates surrounding quotes / a trailing CR).
+            port="$(sed -n 's/^PORT=[^0-9]*\([0-9][0-9]*\).*/\1/p' "$base/shared/.env" | head -n1)"
+            port="${port:-3000}"
+
+            ok=0
+            if reload_pm2; then
+              for _ in $(seq 1 15); do
+                # any HTTP response (the API's own 404 JSON included) means the
+                # process is up and listening; connection-refused does not.
+                if curl -s -o /dev/null --max-time 5 "http://127.0.0.1:${port}/"; then
+                  ok=1; break
+                fi
+                sleep 2
+              done
+            fi
+
+            if [ "$ok" -ne 1 ]; then
+              echo "Deploy of ${release} failed its health check on 127.0.0.1:${port}." >&2
+              if [ -n "${prev:-}" ] && [ -d "$prev" ] && [ "$prev" != "$release" ]; then
+                echo "Rolling back to ${prev}." >&2
+                point_current_at "$prev"
+                reload_pm2 || true
+              else
+                echo "No previous release to roll back to; pm2 process left as-is." >&2
+              fi
+              exit 1
+            fi
+
+            # --- prune old releases (keep 5, never the live one) ----------—--
+            live="$(readlink -f "$base/current")"
+            ls -1dt "$base"/releases/*/ 2>/dev/null | tail -n +6 | while read -r old; do
+              [ "$(readlink -f "$old")" = "$live" ] || rm -rf "$old"
+            done
