@@ -120,7 +120,7 @@ test("the www block reuses the apex certificate", () => {
   assert.ok(certOf(www), "the www block must load a certificate");
   assert.equal(certOf(www), certOf(apex));
   assert.equal(keyOf(www), keyOf(apex));
-  assert.match(certOf(www), /live\/mirabellier\.com\//);
+  assert.match(certOf(www), /live\/mirabellier\.com-0001\//);
 });
 
 // A port-80 www block is intentionally absent: http://www currently hits the
