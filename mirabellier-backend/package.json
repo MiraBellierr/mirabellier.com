@@ -47,7 +47,7 @@
     "express-rate-limit": "^8.7.0",
     "express-session": "^1.18.2",
     "helmet": "^8.3.0",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "passport": "^0.7.0",
     "passport-discord": "^0.1.4",
     "playwright": "^1.63.0",
