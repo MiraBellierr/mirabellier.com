@@ -117,9 +117,9 @@ function decodeHtmlEntities(value) {
     .replace(/&#0*39;/g, "'")
     .replace(/&apos;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 }
 
 function normalizeBooruPost(post, site) {

@@ -1392,8 +1392,8 @@ function extractProfileImageUrl(html) {
   }
   for (const candidate of candidates) {
     const url = unescapeJsonUrl(candidate)
-      .replace(/&amp;/g, "&")
       .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
       .trim();
     if (url.startsWith("https://")) return url;
   }

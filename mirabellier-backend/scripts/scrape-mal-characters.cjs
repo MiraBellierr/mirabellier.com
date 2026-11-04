@@ -176,7 +176,12 @@ function decodeHtml(value) {
 }
 
 function stripTags(value) {
-  return decodeHtml(String(value || "").replace(/<[^>]*>/g, ""))
+  let cleaned = String(value || "");
+  do {
+    const previous = cleaned;
+    cleaned = cleaned.replace(/<[^>]*>/g, "");
+  } while (cleaned !== previous);
+  return decodeHtml(cleaned)
     .replace(/\s+/g, " ")
     .trim();
 }

@@ -49,7 +49,7 @@ function serverBlocks(conf) {
 
 function blockNamed(conf, host) {
   const pattern = new RegExp(
-    `^\\s*server_name\\s+${host.replace(/\./g, "\\.")}\\s*;`,
+    `^\\s*server_name\\s+${host.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\s*;`,
     "m",
   );
   return serverBlocks(conf).find((block) => pattern.test(block.body));
